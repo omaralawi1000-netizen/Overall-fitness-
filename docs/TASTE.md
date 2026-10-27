@@ -60,7 +60,7 @@ These get the most care, and each has its own motion spec in DESIGN.md:
 - The PWA must feel installed, never like a website (no tap flash, no text selection on buttons, no 100vh jump, no zoom on input focus, safe areas respected).
 
 ## 9. Data and keys (firm)
-- Storage: every localStorage key and IndexedDB name starts with `aven2`. Never write to Aven's keys or databases; they are only read, during the one-way import.
+- Storage: every localStorage key and IndexedDB name starts with `a2` (Omar, 27 Oct; never `aven…`, because old Aven's "Delete everything" wipes every key starting with `aven`). Never write to Aven's keys or databases; they are only read, during the one-way import.
 - Import from Aven is one-way and read-only: Aven's backup file, plus a one-tap "copy my Aven data in".
 - Never commit real data: the repo is public. Tests use fake data built from Aven's backup format.
 - API keys are typed into Settings and stay on the phone: never in code, commits, logs or backups. The Gemini key the environment injects as a header is only for tests and is never put in code, commits or logs.
