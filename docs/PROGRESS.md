@@ -17,3 +17,26 @@ Problems found:
 
 ## Next step
 Open a new session and say "Start Phase 0". That session begins with Checkpoint 1, step 1 (the interview), after cloning the old app into reference/aven and reading it.
+
+## Session 2: Phase 0, Checkpoint 1 (27 Oct 2026)
+Done:
+- Brief: free-tier Gemini pacing, retry on 429, gemini-3.8-flash.
+- Old app cloned into reference/aven (gitignored) and read in full: all docs, every file in src/, android/, tests and the
+  Coach exam. Read-through notes in reference/notes/A–D (gitignored, local only).
+- Interview: 12 questions, answers and decisions in docs/INTERVIEW.md. Big decision: Aven 2 is for anyone (Omar's
+  friends, every type, Android and iPhone, own key or none); nothing about Omar is hardcoded; onboarding is a talk with
+  the Coach.
+- docs/INVENTORY.md (every old feature: keep/merge/cut/later), docs/LESSONS.md, docs/VISION.md, docs/COACH.md (incl.
+  exam v1: 22 conversations, target ≥ 8.5).
+- Found: old Aven's "Delete everything" wipes every localStorage key starting with `aven`, so an `aven2` prefix is at
+  risk (INTERVIEW.md, last section). Needs Omar's call.
+
+In progress:
+- Exam v1 "before" run of old Aven's Coach on gemini-3.8-flash (transcripts in reference/exam-v1/before/, harness
+  sources in reference/exam-v1/src/ to port into scripts/exam/ in Phase 1). Then fresh coach-judges score it, and the
+  baseline goes into COACH.md §8.
+
+## Next step
+Send Omar the Checkpoint 1 message (vision in a few lines, stack recommendation, cuts and merges that need his yes,
+decisions only he can make) and wait for his go. Open question from him: whether to open old Aven at phone width with
+test data and look at every screen before Checkpoint 2.
