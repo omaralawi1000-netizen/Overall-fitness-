@@ -9,7 +9,7 @@ Done:
 - CLAUDE.md.
 - docs/inspiration/: 3 key frames from each of the 26 videos in the "inspiration" release (the release has no pictures). Videos are not committed.
 - docs/inspiration/web-references.md: Omar's 15 web references, each fetched, with what was learned (Medium post and Ripplix clips were blocked).
-- docs/inspiration/notes.md: one line per file, written after Omar confirmed the list.
+- docs/inspiration/notes.md: one entry per video, grouped by theme. Omar confirmed the list on 27 Oct ("It's fine").
 
 Problems found:
 - GEMINI_API_KEY is not set in the cloud environment. generativelanguage.googleapis.com answers but refuses calls (401). Omar needs to add the key as GEMINI_API_KEY in the project's cloud environment settings. Needed before the Coach exam.
