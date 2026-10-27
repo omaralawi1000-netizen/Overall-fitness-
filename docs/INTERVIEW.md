@@ -26,3 +26,9 @@ nothing here gets hardcoded (see Decisions).
    work (logging, tracking, plain numbers) but can be simpler.
 7. **Watch:** Galaxy Watch Ultra. The Coach should use all the data it can get (old Aven reads it via Health Connect in
    its Android wrapper), and plan training, sleep and food around it dynamically.
+
+## Found while reading the old app (for the checkpoint)
+- **Storage prefix risk:** old Aven's Settings → "Delete everything" removes every localStorage key that starts with
+  `aven` (src/screens/Settings.tsx:880), and Aven Beta's "copy my real data in" copies every such key (src/lib/beta.ts:84).
+  An `aven2` prefix would be wiped by the old app and copied into its Beta. Needs Omar's call on a prefix that does not
+  start with "aven".
