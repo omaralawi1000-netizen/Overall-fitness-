@@ -8,6 +8,7 @@ Done:
 - docs/TASTE.md (the brief's Design and Firm rules, as a rulebook for the judges).
 - CLAUDE.md.
 - docs/inspiration/: 3 key frames from each of the 26 videos in the "inspiration" release (the release has no pictures). Videos are not committed.
+- docs/inspiration/web-references.md: Omar's 15 web references, each fetched, with what was learned (Medium post and Ripplix clips were blocked).
 - docs/inspiration/notes.md: one line per file, written after Omar confirmed the list.
 
 Problems found:

@@ -3,7 +3,7 @@
 ## Start every session
 1. Read `docs/BRIEF.md` first. It is the whole job.
 2. Then `docs/PROGRESS.md` and `PLAN.md` once they exist. PROGRESS.md says what's done and the exact next step.
-3. Taste and rules for judging: `docs/TASTE.md` (it wins over any skill). What Omar likes: `docs/inspiration/notes.md`.
+3. Taste and rules for judging: `docs/TASTE.md` (it wins over any skill). What Omar likes: `docs/inspiration/notes.md` and `docs/inspiration/web-references.md`.
 
 ## Talking to Omar
 Plain, short words. He's not a programmer, he dictates (expect misheard words), and he judges everything on his phone.
