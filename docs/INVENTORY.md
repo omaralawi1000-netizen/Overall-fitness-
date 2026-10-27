@@ -3,7 +3,8 @@
 Walked from every file in old Aven's `src/screens`, `src/lib`, `src/state`, `src/ui`, `src/data` and `android/`
 (v0.1.184, 27 Oct 2026). One line per feature: what it does, then the call and why.
 
-- **keep**: Aven 2 has it, rebuilt from zero to the DESIGN.md standard.
+- **keep**: Aven 2 has the *feature* (what it does for the person). How it looks and moves is designed new: old Aven's
+  design is inspiration only (Omar, 27 Oct). Any old design worth keeping goes to Omar as an improved proposal first.
 - **merge**: it lives on, folded into something else (named).
 - **cut**: gone on purpose. Needs Omar's yes at Checkpoint 1 (listed again at the end).
 - **later**: wanted, but not in the first phases. PLAN.md places it.

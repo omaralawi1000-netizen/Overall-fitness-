@@ -9,6 +9,10 @@ nothing here gets hardcoded (see Decisions).
   onboarding, their own data and its memory, so it works for anyone."
 - **Simple onboarding** [Omar, 27 Oct]: a new person tells the Coach about their life, in Danish or English.
 - **Set up alone** [Omar, 27 Oct]: a friend must be able to set up the app alone, with their own AI key or with no key at all.
+- **Old Aven's design is inspiration, not a template** [Omar, 27 Oct]: "Review the old app fully, for features, data, logic
+  and lessons. Treat its design like any other inspiration: don't carry anything over by default." If something from old
+  Aven is truly the best answer, propose it to Omar with what it is and why it beats a new idea, improved, never copied.
+  Omar decides.
 
 ## Answers
 1. **Weekdays:** works every weekday on split shifts (about 07:00–08:30 and 12:30–14:45). Usually trains after the
