@@ -32,6 +32,7 @@ nothing here gets hardcoded (see Decisions).
    that "the best in the world" can't happen overnight.
 9. **The perfect coach:** "A real living coach that knows me, knows everything, and helps me exactly when I need it."
    Access to everything, including the internet. Something never seen before.
+10. **Friends:** aim for every type: gym people, other sports, total beginners. Onboarding and the Coach must fit anyone.
 
 ## Found while reading the old app (for the checkpoint)
 - **Storage prefix risk:** old Aven's Settings → "Delete everything" removes every localStorage key that starts with
