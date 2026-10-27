@@ -20,3 +20,7 @@ nothing here gets hardcoded (see Decisions).
 4. **Food:** still cutting. Hardest part is building a routine; on track to a routine where he doesn't binge.
 5. **Food logging:** wants all of them: voice, typing, photo, barcode. (Note: photo needs an AI key; voice/text and
    barcode must work without one.)
+6. **School:** online, done "when I have time". No school features. The Coach treats school, work and exams like any
+   other life fact from memory ("exam week", "late shift"), and adapts training, sleep and food advice around them.
+   **Keys:** all of Omar's friends will have their own AI key. The app is designed AI-first; the no-key mode still has to
+   work (logging, tracking, plain numbers) but can be simpler.
