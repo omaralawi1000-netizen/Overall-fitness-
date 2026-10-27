@@ -256,9 +256,9 @@ product**, so many buttons and settings become "just tell the Coach".
 | Watch (Android): connect, sync, disconnect, recent workouts | | later (Android phase) | |
 | Reminders: training-day reminder | | merge → Coach speaks first | |
 | Data: storage error banner | | keep | |
-| Data: export backup (with or without photos) | | keep | |
+| Data: export backup (with or without photos) | | keep | First build phase (Omar, 27 Oct): save a file to the phone |
 | Data: Google Drive backup | | later | Works, but needs each friend's own Google client ID; file backup first |
-| Data: import backup with preview and Undo | | keep | |
+| Data: import backup with preview and Undo | | keep | First build phase, with the export |
 | Data: import from old Aven (file + one tap) | | new | Brief: one-way, read-only |
 | Data: demo data | | later | |
 | Data: delete everything | | keep | Fixed: resets every AI preference, and only Aven 2's own keys |
@@ -301,17 +301,19 @@ product**, so many buttons and settings become "just tell the Coach".
 | Persistent storage request | | keep | |
 | Glow/dither machinery (canvas glows, grain, frost copies, dock shadow) | | cut unless proven | Brief: only if the new design needs it. Design avoids banding by construction |
 | Beta build isolation | | keep, rebuilt | Checkpoint 2, step 13 |
-| Android TWA wrapper (Health Connect read/write, native rest countdown, Done ✓ on watch, background job) | | later (Android phase) | Reuse with new URLs and package id; about a day of work plus CI |
-| Health Connect sync via `#hc=` address | | later | Validation code ports as is |
-| Write weight + food totals to Health Connect | | later | |
+| Android TWA wrapper (Health Connect read/write, native rest countdown, Done ✓ on watch, background job) | | keep, right after the core loop (Omar, 27 Oct) | Reuse with new URLs and package id; about a day of work plus CI |
+| Health Connect sync via `#hc=` address | | keep, with the wrapper | Validation code ports as is |
+| Write weight + food totals to Health Connect | | keep, with the wrapper | |
 
 ---
 
-## Cuts and merges that need Omar's yes
+## Cuts and merges (Omar said yes to 1–6 on 27 Oct; 7 changed by him)
 1. **Looks**: 8 palettes, 9 backgrounds, glow strength, per-tab colours, surface/look options → one look with light and dark.
 2. **Today customising**: card order and on/off toggles → one fixed, well-chosen Today.
 3. **Fixed reminders and forms**: training reminder, post-workout check-in form, heavy-day switch → the Coach decides when to speak or ask, and you tell it if you want more or less.
 4. **Separate review and note surfaces**: Coach pin, Today notes, AI insights, Health coach line, weekly review card → one Coach voice (morning line, workout-start line, Sunday review).
 5. **Wrestling and "never lighter" built in** → learned per person (your sports, your training style).
 6. **Debug things in Settings** (rest traces, stutter recorder, FPS meter) → a hidden developer menu.
-7. **Later, not first**: Android wrapper (watch, background Coach, Done ✓), Google Drive backup, exercise figures and clips, demo data, the workout's breathing light.
+7. **Later, not first**: Google Drive backup, exercise figures and clips, demo data, the workout's breathing light.
+   Changed by Omar (27 Oct): the manual file backup (save to the phone, restore from it) ships in the first build phase,
+   and the watch and Health Connect (the Android wrapper) come right after the core loop, not at the end.

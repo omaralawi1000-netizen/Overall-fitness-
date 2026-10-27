@@ -83,6 +83,13 @@ things) arrive as a **preview** first, and nothing happens until you tap Apply.
   asked about, not logged; two foods that tie are offered as a choice, and the pick is remembered.
 - It never claims it changed something unless the action really ran.
 
+**Instant logging without the AI (Omar, 27 Oct).** Normal logging never waits on a model: sets ("8 at 80", "80 for 8, 8
+and 6"), common foods with an amount ("200 g skyr og to æg"), water and weight are read by a small parser on the phone
+and logged on the next frame, with the same card and Undo, online or offline, key or no key. Only what the parser can't
+read with confidence (a dish, a photo, a vague "a bowl of pasta") goes to the AI, and then as an estimate to review.
+The AI is for real coaching: questions, plans, patterns, changes. The parser has its own tests (Danish and English, the
+dictation slips in LESSONS.md) and the exam's logging conversations (3, 4, 5) must pass through it.
+
 Build notes: one pure action layer (validate → apply → undo, each tested) replaces `agent.ts` executors. Hard limits
 live in code, not only in the prompt.
 
@@ -159,11 +166,18 @@ Build notes: the old 6-step form (`Onboarding.tsx`) and `starter.ts` become the 
 
 ## 7. Models and keys
 - **The person's own key**, typed in Settings, stays on the phone, never in code, commits, logs or backups.
-- **Gemini first** (free tier works for one person's daily use), OpenAI optional. Groq optional for the best Danish
+- **Gemini first**, OpenAI optional. Groq optional for the best Danish
   speech-to-text.
 - **A small model routes**, a bigger one thinks only when it helps (old router kept), so a friend's free tier lasts.
 - **Spend** is tracked per month with a limit in the person's currency.
 - On rate limits or errors it retries once and then says so plainly, with the logging fallback still working.
+- **Real limits, not assumed ones** (checked 27 Oct): Google publishes per-model request limits only inside AI Studio
+  (ai.dev/rate-limit), per key's project and tier. What is known: a free-tier project gets **20 requests a day per model**
+  on gemini-3.8-flash (Google's own 429 for the test key says so); a project with billing is Tier 1 at once, with a
+  spend cap of $10 per 10 minutes and a $250 billing cap, and much higher request limits shown in AI Studio. Omar's own
+  key has billing and friends use it at the start, so daily use isn't held back by the free limit. The app reads the
+  real limit from Google's 429 answer (metric, limit, retry time) and says it plainly, instead of hard-coding a number.
+
 
 ## 8. The exam
 
@@ -233,5 +247,6 @@ free Gemini tier allows only **20 requests a day per model**, and the test allow
 run needs about 30–45 calls, so the baseline runs over the next day or two after the daily reset (about 08:00
 Copenhagen), then fresh coach-judges score it. To be filled in: average, lowest, safety, logging, the top 5 defects.
 
-What this means for friends: a free Gemini key gives roughly 20 Coach answers a day per model. Aven 2 spreads the work
-(a small model for quick jobs, the main one only when it helps) and says plainly when the day's allowance is used.
+The test key in this environment is on the free tier (that is the only reason the run is slow). Daily use is on Omar's
+billed key (§7). A friend on a free key still gets about 20 answers a day per model, so the router keeps quick jobs on
+a small model and normal logging never uses the AI at all (§3).

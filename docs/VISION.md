@@ -27,7 +27,7 @@ Anyone a friend hands it to (Omar, 27 Oct): gym regulars, people in other sports
 iPhone, with their own AI key or none.
 
 - **With a key** (Gemini free tier, or OpenAI): the full Coach.
-- **With no key:** logging by tap, voice-to-text, barcode, all tracking and charts, and the plain-numbers Coach notes
+- **With no key:** instant logging by tap, voice or text (sets, common foods, water, weight), barcode, all tracking and charts, and the plain-numbers Coach notes
   the app can compute itself. The app says honestly what a key would add.
 - **Android with the Aven 2 app wrapper:** the watch (Health Connect), the rest timer on the lock screen and watch, and
   a Coach that can speak first while the app is closed.
@@ -48,7 +48,7 @@ food targets as a preview: *Apply*, or say what to change. With no key, the same
 **Mid-workout, 15:40.** Sweaty hands, phone on the bench. The set he's on is outlined, with last time's numbers in it.
 He taps the big check: it answers on the very next frame, the row lights, the rest timer starts in the floating frost
 bar, and the next set moves into view. Beat last time and a small gold "+2.5 kg" rises and fades. He can also say
-"8 at 80" to the orb. It logs the set and says it back.
+"8 at 80" to the orb. The phone itself reads it, logs the set on the spot (no AI, works offline) and says it back.
 
 **The rest timer.** The bar fills calmly. In the last three seconds each second swells and the phone buzzes, then it
 turns "go" and names the next set. On Android with the wrapper it lives on the lock screen and the watch, with
@@ -58,7 +58,8 @@ Done ✓.
 targets. If a lift hit a new best, that gets its own moment: the one place in the app that's allowed to be loud.
 
 **Logging food.** He says *"200 gram skyr og to æg"* or types it, snaps the plate, or scans the barcode, all from one
-place. The Coach fills in the items as an estimate where it has to, and the totals land in the day ring with Undo.
+place. Common foods with an amount log instantly, read by the phone with no AI. For a dish or a photo the Coach fills
+in the items as an estimate, and the totals land in the day ring with Undo.
 Protein behind at 19:00? *"130 g of 220. Skyr and a chicken dinner closes it."*
 
 **A bad night.** The watch says 5 h 10. The morning line changes: *"Short night. Train anyway, you always do. Get

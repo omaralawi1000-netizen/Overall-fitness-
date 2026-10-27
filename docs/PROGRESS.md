@@ -29,7 +29,7 @@ Done:
 - docs/INVENTORY.md (every old feature: keep/merge/cut/later), docs/LESSONS.md, docs/VISION.md, docs/COACH.md (incl.
   exam v1: 22 conversations, target ≥ 8.5).
 - Found: old Aven's "Delete everything" wipes every localStorage key starting with `aven`, so an `aven2` prefix is at
-  risk (INTERVIEW.md, last section). Needs Omar's call.
+  risk (INTERVIEW.md). Omar chose `a2`.
 
 - Old Aven seen running at 384 px (docs/inspiration/old-aven-review.md).
 - Exam v1 harness committed (exam/v1/, fake people only).
@@ -39,6 +39,11 @@ Blocked:
   reset (~08:00 Copenhagen) in a copy of old Aven (exam/v1/README.md), over 1–2 days; then fresh coach-judges score it
   and the numbers go into COACH.md §8.
 
+Checkpoint 1 approved (Omar, 27 Oct, 18:07): go; yes to cuts 1–6; storage prefix `a2`; three changes written into
+BRIEF, VISION, COACH and INVENTORY (instant logging without the AI, file backup in the first build phase, watch and
+Health Connect right after the core loop). Real Gemini limits checked (COACH.md §7): the test key here is free tier
+(20/day per model), Omar's daily key has billing.
+
 ## Next step
-Checkpoint 1 message sent to Omar on 27 Oct; waiting for his go and his answers (storage prefix, cuts/merges). After
-his go: run the exam baseline once the Gemini quota resets, then Checkpoint 2 step 7 (GitHub Pages deploy workflow).
+Checkpoint 2 step 7: the GitHub Pages deploy workflow. In parallel, the exam baseline when the test key's quota resets
+(~08:00 Copenhagen, 28 Oct), then fresh coach-judges and COACH.md §8.

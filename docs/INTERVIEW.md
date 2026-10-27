@@ -46,4 +46,14 @@ nothing here gets hardcoded (see Decisions).
 - **Storage prefix risk:** old Aven's Settings → "Delete everything" removes every localStorage key that starts with
   `aven` (src/screens/Settings.tsx:880), and Aven Beta's "copy my real data in" copies every such key (src/lib/beta.ts:84).
   An `aven2` prefix would be wiped by the old app and copied into its Beta. Needs Omar's call on a prefix that does not
-  start with "aven".
+  start with "aven". **Decided (Omar, 27 Oct): `a2`.** Every Aven 2 storage key and database name starts with `a2`
+  (Beta: `beta:a2`); the old app's own keys and databases are only ever read, by the one-way import.
+## Checkpoint 1 answers (Omar, 27 Oct)
+- Go. Yes to cuts and merges 1–6 in INVENTORY.md, and yes to the `a2` storage prefix.
+- His own Gemini key has billing, and friends will use it at the start, so the free-tier daily limit is not the daily
+  limit that matters. Check real limits instead of assuming 20 a day (COACH.md §7).
+- Three changes:
+  1. Normal logging (sets like "8 at 80", common foods, water, weight) works instantly without the AI, so it is fast
+     and works offline. The AI is for real coaching.
+  2. A manual backup (save a file to the phone, restore from it) ships in the first build phase. Drive backup waits.
+  3. The watch and Health Connect come right after the core loop, not at the end.

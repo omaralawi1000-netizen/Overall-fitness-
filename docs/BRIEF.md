@@ -54,7 +54,7 @@ The Coach is the product. Everything else (workouts, food, health, progress) is 
 - My data is precious. Aven 2 runs on the same github.io origin as Aven, so give it its own storage namespace: prefix every localStorage key and IndexedDB name with `aven2`. Never write to Aven's keys or databases.
 - Bring my data over with a one-way, read-only import: Aven's backup file, plus a one-tap "copy my Aven data in" like Aven Beta has. Build the import test from Aven's backup format in the code. Never commit my real data: this repo is public.
 - API keys are typed into Settings and stay on the phone: never in code, commits, logs or backups.
-- For the Coach exam, a free Gemini key is injected automatically as the `x-goog-api-key` header on requests to generativelanguage.googleapis.com. There is no GEMINI_API_KEY variable: send Gemini requests without a key and the environment adds it. Use it only for tests. Never put a key in code, commits or logs. It is the free tier, which has rate limits: pace the Coach exam calls and retry on rate-limit errors (HTTP 429) with a wait. Use gemini-3.8-flash (gemini-2.5-flash is closed to new users).
+- For the Coach exam, a free Gemini key is injected automatically as the `x-goog-api-key` header on requests to generativelanguage.googleapis.com. There is no GEMINI_API_KEY variable: send Gemini requests without a key and the environment adds it. Use it only for tests. Never put a key in code, commits or logs. It is the free tier, which has rate limits: pace the Coach exam calls and retry on rate-limit errors (HTTP 429) with a wait. Use gemini-3.8-flash (gemini-2.5-flash is closed to new users). My own key, used on my phone and by friends at the start, has billing, so the free-tier limit only slows the exam, not daily use.
 - Stack. Default: React + TypeScript + Vite PWA on GitHub Pages, plus Aven's Android wrapper for background coaching and notifications. This keeps the loop where you can see and judge every screen with Playwright. If you find a concrete, measured reason that another stack gives clearly better motion or coaching, make the case at checkpoint 1 with evidence and one recommendation.
 - Port the logic, rebuild the UI. Copy domain logic that is clean and tested, together with its tests: the data model, parsers, nutrition maths, food and exercise data, AI clients and the Coach brain. Rewrite whatever is tangled. Build every screen, component and style from zero. Don't bring over the glow/dither machinery unless you prove the new design needs it.
 - Playwright: use the npm package through scripts, like Aven does. Don't depend on the Playwright MCP, which may not load in cloud sessions.
@@ -104,7 +104,9 @@ Take as many sessions as it needs. End every session by updating docs/PROGRESS.m
     - a motion spec for every signature moment
     Delete the losing prototypes.
 12. Write PLAN.md: phases, one per session, each ending in something I can actually use.
-    - Core loop first: live workout, Today and the Coach's foundation.
+    - Core loop first: live workout, Today and the Coach's foundation. Normal logging (sets like "8 at 80", common foods, water, weight) works instantly without the AI and offline; the AI is for real coaching.
+    - A manual backup (save a file to the phone, restore from it) ships in the first build phase. Google Drive backup can wait.
+    - The watch and Health Connect (the Android wrapper) come right after the core loop, not at the end.
     - Then food, voice, then the rest.
     - Last phase: a parity check against INVENTORY.md and the Coach exam. After that, I use both apps side by side for a week before Aven 2 replaces Aven.
 13. Set up a Beta channel like Aven's.
