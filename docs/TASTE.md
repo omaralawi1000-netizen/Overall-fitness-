@@ -63,7 +63,7 @@ These get the most care, and each has its own motion spec in DESIGN.md:
 - Storage: every localStorage key and IndexedDB name starts with `aven2`. Never write to Aven's keys or databases; they are only read, during the one-way import.
 - Import from Aven is one-way and read-only: Aven's backup file, plus a one-tap "copy my Aven data in".
 - Never commit real data: the repo is public. Tests use fake data built from Aven's backup format.
-- API keys are typed into Settings and stay on the phone: never in code, commits, logs or backups. `GEMINI_API_KEY` is only for tests and is never printed, logged or committed.
+- API keys are typed into Settings and stay on the phone: never in code, commits, logs or backups. The Gemini key the environment injects as a header is only for tests and is never put in code, commits or logs.
 - The app works without paid services; AI keys stay optional.
 
 ## 10. Build rules that affect what judges see

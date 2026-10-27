@@ -27,4 +27,4 @@ Run them before Omar sees anything visual or any Coach change. Spawn fresh ones 
 
 ## Never
 - Change `The-new-Claude-gym-app` (the old app). Read-only reference, cloned into `reference/` (gitignored).
-- Commit real data or API keys. Never print `GEMINI_API_KEY`.
+- Commit real data or API keys. The Gemini key is injected as a header by the environment (no variable); never put it in code, commits or logs.
