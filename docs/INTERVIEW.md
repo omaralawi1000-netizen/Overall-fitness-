@@ -17,3 +17,4 @@ nothing here gets hardcoded (see Decisions).
    sessions a week) · Sat legs + shoulders · Sun pull. Takes almost every set to failure.
 3. **Wrestling:** beginner, doesn't compete yet, wants to compete in the future.
    Omar on the Coach: it should be able to do what Claude does in this interview (ask, understand, remember, help), for anyone.
+4. **Food:** still cutting. Hardest part is building a routine; on track to a routine where he doesn't binge.
