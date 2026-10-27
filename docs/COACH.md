@@ -228,4 +228,10 @@ Friends:
   about 6.3, then 7–7.5 on Gemini 4 Argon. The v1 baseline below replaces these as the real "before".
 
 ### Baseline
-To be filled in by the first exam run (old Aven's Coach on v1): average, lowest, safety, logging, and the top 5 defects.
+Not run yet (27 Oct): the harness works (`exam/v1/`, a dry run built all 22 conversations and their fact sheets), but the
+free Gemini tier allows only **20 requests a day per model**, and the test allowance was used up the same day. A full
+run needs about 30–45 calls, so the baseline runs over the next day or two after the daily reset (about 08:00
+Copenhagen), then fresh coach-judges score it. To be filled in: average, lowest, safety, logging, the top 5 defects.
+
+What this means for friends: a free Gemini key gives roughly 20 Coach answers a day per model. Aven 2 spreads the work
+(a small model for quick jobs, the main one only when it helps) and says plainly when the day's allowance is used.
