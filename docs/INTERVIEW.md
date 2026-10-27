@@ -33,6 +33,8 @@ nothing here gets hardcoded (see Decisions).
 9. **The perfect coach:** "A real living coach that knows me, knows everything, and helps me exactly when I need it."
    Access to everything, including the internet. Something never seen before.
 10. **Friends:** aim for every type: gym people, other sports, total beginners. Onboarding and the Coach must fit anyone.
+11. **iPhones:** some friends have iPhones and will get it. Most friends have no watch and don't need notifications.
+    So the PWA must be fully good on iPhone Safari too; watch data and background coaching are Android extras.
 
 ## Found while reading the old app (for the checkpoint)
 - **Storage prefix risk:** old Aven's Settings → "Delete everything" removes every localStorage key that starts with
