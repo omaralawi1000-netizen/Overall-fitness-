@@ -13,3 +13,5 @@ nothing here gets hardcoded (see Decisions).
 ## Answers
 1. **Weekdays:** works every weekday on split shifts (about 07:00–08:30 and 12:30–14:45). Usually trains after the
    whole day, around 15:00–16:00; sometimes right after the morning shift.
+2. **Week (changes over time):** Mon wrestling · Tue push · Wed wrestling · Thu pull · Fri push or rest (usually 5 gym
+   sessions a week) · Sat legs + shoulders · Sun pull. Takes almost every set to failure.
