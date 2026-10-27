@@ -63,6 +63,6 @@ Half-done (on branch claude/project-thread-84tdii, not merged):
 - Films in site/lab/films/ are still round 1.
 
 ## Next step
-Finish the Headline fixes in site/lab/d4-headline.js/.css, re-shoot and re-film (tools in /tmp are lost with the session:
+Finish the Headline fixes in site/lab/d4-headline.js/.css, re-shoot and re-film (tools/lab/shot.mjs and film.mjs, serve site/ on port 8765;
 Playwright at 384×832, 2x, ffmpeg real + half speed), run fresh design and motion judges until no real defects, then PR
 into main, check the deploy, and send Omar my pick first. In parallel: the exam baseline on 28 Oct after the quota reset.
