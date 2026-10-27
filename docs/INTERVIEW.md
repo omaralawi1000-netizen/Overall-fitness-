@@ -30,6 +30,8 @@ nothing here gets hardcoded (see Decisions).
 8. **Daily use of old Aven:** all of it: food logging, workouts, reading his data, and talking to the Coach about what to
    improve in his workouts. Nothing stands out as the main annoyance; it's "pretty good" and early. The frustration is
    that "the best in the world" can't happen overnight.
+9. **The perfect coach:** "A real living coach that knows me, knows everything, and helps me exactly when I need it."
+   Access to everything, including the internet. Something never seen before.
 
 ## Found while reading the old app (for the checkpoint)
 - **Storage prefix risk:** old Aven's Settings → "Delete everything" removes every localStorage key that starts with
