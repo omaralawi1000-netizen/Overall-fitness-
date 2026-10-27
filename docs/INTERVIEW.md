@@ -27,6 +27,10 @@ nothing here gets hardcoded (see Decisions).
 7. **Watch:** Galaxy Watch Ultra. The Coach should use all the data it can get (old Aven reads it via Health Connect in
    its Android wrapper), and plan training, sleep and food around it dynamically.
 
+8. **Daily use of old Aven:** all of it: food logging, workouts, reading his data, and talking to the Coach about what to
+   improve in his workouts. Nothing stands out as the main annoyance; it's "pretty good" and early. The frustration is
+   that "the best in the world" can't happen overnight.
+
 ## Found while reading the old app (for the checkpoint)
 - **Storage prefix risk:** old Aven's Settings → "Delete everything" removes every localStorage key that starts with
   `aven` (src/screens/Settings.tsx:880), and Aven Beta's "copy my real data in" copies every such key (src/lib/beta.ts:84).
