@@ -35,6 +35,8 @@ nothing here gets hardcoded (see Decisions).
 10. **Friends:** aim for every type: gym people, other sports, total beginners. Onboarding and the Coach must fit anyone.
 11. **iPhones:** some friends have iPhones and will get it. Most friends have no watch and don't need notifications.
     So the PWA must be fully good on iPhone Safari too; watch data and background coaching are Android extras.
+12. **Tone:** "I just want the best coach." It adjusts like a real coach: harsh when progress is bad, casual when it's
+    normal, nice when he's doing well.
 
 ## Found while reading the old app (for the checkpoint)
 - **Storage prefix risk:** old Aven's Settings → "Delete everything" removes every localStorage key that starts with
