@@ -17,3 +17,33 @@ Problems found:
 
 ## Next step
 Open a new session and say "Start Phase 0". That session begins with Checkpoint 1, step 1 (the interview), after cloning the old app into reference/aven and reading it.
+
+## Session 2: Phase 0, Checkpoint 1 (27 Oct 2026)
+Done:
+- Brief: free-tier Gemini pacing, retry on 429, gemini-3.8-flash.
+- Old app cloned into reference/aven (gitignored) and read in full: all docs, every file in src/, android/, tests and the
+  Coach exam. Read-through notes in reference/notes/A–D (gitignored, local only).
+- Interview: 12 questions, answers and decisions in docs/INTERVIEW.md. Big decision: Aven 2 is for anyone (Omar's
+  friends, every type, Android and iPhone, own key or none); nothing about Omar is hardcoded; onboarding is a talk with
+  the Coach.
+- docs/INVENTORY.md (every old feature: keep/merge/cut/later), docs/LESSONS.md, docs/VISION.md, docs/COACH.md (incl.
+  exam v1: 22 conversations, target ≥ 8.5).
+- Found: old Aven's "Delete everything" wipes every localStorage key starting with `aven`, so an `aven2` prefix is at
+  risk (INTERVIEW.md). Omar chose `a2`.
+
+- Old Aven seen running at 384 px (docs/inspiration/old-aven-review.md).
+- Exam v1 harness committed (exam/v1/, fake people only).
+
+Blocked:
+- Exam v1 "before" run: free Gemini tier is 20 requests/day per model and was used up on 27 Oct. Re-run after the daily
+  reset (~08:00 Copenhagen) in a copy of old Aven (exam/v1/README.md), over 1–2 days; then fresh coach-judges score it
+  and the numbers go into COACH.md §8.
+
+Checkpoint 1 approved (Omar, 27 Oct, 18:07): go; yes to cuts 1–6; storage prefix `a2`; three changes written into
+BRIEF, VISION, COACH and INVENTORY (instant logging without the AI, file backup in the first build phase, watch and
+Health Connect right after the core loop). Real Gemini limits checked (COACH.md §7): the test key here is free tier
+(20/day per model), Omar's daily key has billing.
+
+## Next step
+Checkpoint 2 step 7: the GitHub Pages deploy workflow. In parallel, the exam baseline when the test key's quota resets
+(~08:00 Copenhagen, 28 Oct), then fresh coach-judges and COACH.md §8.
