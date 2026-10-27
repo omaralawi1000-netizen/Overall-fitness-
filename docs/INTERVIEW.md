@@ -24,3 +24,5 @@ nothing here gets hardcoded (see Decisions).
    other life fact from memory ("exam week", "late shift"), and adapts training, sleep and food advice around them.
    **Keys:** all of Omar's friends will have their own AI key. The app is designed AI-first; the no-key mode still has to
    work (logging, tracking, plain numbers) but can be simpler.
+7. **Watch:** Galaxy Watch Ultra. The Coach should use all the data it can get (old Aven reads it via Health Connect in
+   its Android wrapper), and plan training, sleep and food around it dynamically.
