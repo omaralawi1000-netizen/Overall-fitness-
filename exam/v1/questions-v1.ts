@@ -31,6 +31,10 @@ export interface Question {
 const has = (a: Answer, type: string) => a.actions.filter((x) => x.type === type);
 const fold = (s: unknown) => String(s ?? '').toLowerCase();
 const foodsOf = (a: Answer) => has(a, 'log_food').flatMap((x) => (x.foods ?? []).map((f: any) => ({ ...f, meal: x.meal, day: x.day })));
+/** a weight in grams: unit g (or none, which the old Coach reads as grams for a number with no unit) */
+const inGrams = (f: any) => !f.unit || /^(g|gram|grams|gr)$/i.test(String(f.unit));
+/** a count (eggs): no unit, or a piece-like unit; never a mass or volume */
+const asCount = (f: any) => !f.unit || /^(piece|pieces|pcs|pc|stk|stk\.|serving|egg|eggs|æg|x)$/i.test(String(f.unit));
 const today = (now: Date) => `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
 const dropToday = (d: AppData, now: Date, meal: string) => { const t = today(now); d.entries = d.entries.filter((e) => !(e.date === t && e.mealId === meal)); };
 const recomputeRecords = (d: AppData) => {
@@ -59,11 +63,11 @@ export const QUESTIONS_V1: Question[] = [
     good: 'Notices the 5 h 10 night (well under his usual ~6 h 40, resting HR and HRV off) before push day and says it plainly once, with what helps today (caffeine timing, eat before the session, maybe an earlier night), keeping push on (his call, MEMORY: never "train lighter"). Short; no alarm; nothing invented.' },
   { id: '03-danish-food-log', persona: 'omar2', q: '200 gram skyr og to æg', lang: 'da', dictated: true, now: [2026, 10, 27, 7, 20],
     tweak: (d, now) => dropToday(d, now, 'breakfast'),
-    check: (a) => { const f = foodsOf(a); if (!f.length) return 'no log_food'; if (f.length !== 2) return `${f.length} foods: ${f.map((x: any) => x.name).join(', ')}`; const sk = f.find((x: any) => /skyr/.test(fold(x.name))); const eg = f.find((x: any) => /æg|egg/.test(fold(x.name))); if (!sk) return 'no skyr'; if (!eg) return 'no eggs'; if (sk.amount !== 200 || (sk.unit && sk.unit !== 'g')) return `skyr ${sk.amount} ${sk.unit}`; if (eg.amount !== 2) return `eggs ${eg.amount} ${eg.unit ?? ''}`; return null; },
+    check: (a) => { const f = foodsOf(a); if (!f.length) return 'no log_food'; if (f.length !== 2) return `${f.length} foods: ${f.map((x: any) => x.name).join(', ')}`; const sk = f.find((x: any) => /skyr/.test(fold(x.name))); const eg = f.find((x: any) => /æg|egg/.test(fold(x.name))); if (!sk) return 'no skyr'; if (!eg) return 'no eggs'; if (sk.amount !== 200 || !inGrams(sk)) return `skyr ${sk.amount} ${sk.unit}`; if (eg.amount !== 2 || !asCount(eg)) return `eggs ${eg.amount} ${eg.unit ?? ''}`; return null; },
     good: 'Logs exactly 200 g skyr and 2 eggs (breakfast, today), in Danish, and says almost nothing else.' },
   { id: '04-garbled-dictation', persona: 'omar2', q: 'til frokost har jeg fået 150 gram kylling bryst og 200 gram kogt rist', lang: 'da', dictated: true, now: [2026, 10, 27, 12, 5],
     tweak: (d, now) => dropToday(d, now, 'lunch'),
-    check: (a) => { const f = foodsOf(a); if (!f.length) return 'no log_food'; if (f.length !== 2) return `${f.length} foods: ${f.map((x: any) => x.name).join(', ')}`; const ch = f.find((x: any) => /kylling|chicken/.test(fold(x.name))); const ri = f.find((x: any) => /\bris\b|rice|ris,|^ris/.test(fold(x.name))); if (!ch) return 'no chicken'; if (!ri) return `no rice (${f.map((x: any) => x.name).join(', ')})`; if (ch.amount !== 150) return `chicken ${ch.amount}`; if (ri.amount !== 200) return `rice ${ri.amount}`; const meal = fold(f[0].meal); return meal && !/lunch|frokost/.test(meal) ? `meal ${f[0].meal}` : null; },
+    check: (a) => { const f = foodsOf(a); if (!f.length) return 'no log_food'; if (f.length !== 2) return `${f.length} foods: ${f.map((x: any) => x.name).join(', ')}`; const ch = f.find((x: any) => /kylling|chicken/.test(fold(x.name))); const ri = f.find((x: any) => /\bris\b|rice|ris,|^ris/.test(fold(x.name))); if (!ch) return 'no chicken'; if (!ri) return `no rice (${f.map((x: any) => x.name).join(', ')})`; if (ch.amount !== 150 || !inGrams(ch)) return `chicken ${ch.amount} ${ch.unit ?? ''}`; if (ri.amount !== 200 || !inGrams(ri)) return `rice ${ri.amount} ${ri.unit ?? ''}`; const meal = fold(f[0].meal); return meal && !/lunch|frokost/.test(meal) ? `meal ${f[0].meal}` : null; },
     good: 'Reads "kogt rist" as boiled rice ("kogt ris") and "kylling bryst" as chicken breast; logs 150 g chicken breast and 200 g cooked rice to lunch; at most a few words (may say how it read the misheard word).' },
   { id: '05-orb-sets', persona: 'omar2', q: 'bench 80 for 8, 8 and 6', orb: true, dictated: true, now: [2026, 10, 27, 15, 50],
     tweak: (d, now) => {
