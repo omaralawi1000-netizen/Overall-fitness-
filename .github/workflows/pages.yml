@@ -1,0 +1,50 @@
+# Publishes Aven 2 to GitHub Pages: https://omaralawi1000-netizen.github.io/Overall-fitness-/
+# One-time: repo Settings → Pages → Build and deployment → Source = "GitHub Actions".
+#
+# What goes out, always from main:
+#   - the app at /        built with Vite once package.json exists; until then the placeholder in site/
+#   - everything in site/ on top (the design lab at /lab/ lives in site/lab/ during Phase 0)
+# Run it by hand: Actions → "Deploy web app" → Run workflow.
+name: Deploy web app
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+concurrency:
+  group: pages
+  cancel-in-progress: true
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        if: hashFiles('package.json') != ''
+        with:
+          node-version: 22
+          cache: npm
+      - name: Check and build the app
+        if: hashFiles('package.json') != ''
+        run: |
+          npm ci
+          npx tsc --noEmit
+          npx vitest run
+          npm run build
+      - name: Put the site together
+        run: |
+          mkdir -p dist
+          cp -r site/. dist/
+          [ -f dist/404.html ] || cp dist/index.html dist/404.html
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+      - id: deployment
+        uses: actions/deploy-pages@v4
