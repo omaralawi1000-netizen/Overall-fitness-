@@ -8,7 +8,7 @@
   const bottom = (mode = 'input') => `<div class="t-bottom t-glass" data-layer="${mode}"><div class="tint" style="opacity:${mode === 'input' ? 0 : 1}"></div><div class="fill"></div>
     <div class="t-layer ${mode === 'input' ? 'on' : ''}" data-l="input"><span class="ph">Ask, or say what you ate or lifted</span></div>
     <div class="t-layer" data-l="listen"><span class="heard"></span><span class="t-wave">${'<i></i>'.repeat(5)}</span></div>
-    <div class="t-layer ${mode === 'rest' ? 'on' : ''}" data-l="rest"><span class="clock tnum">2:30</span><span class="what"><b>Rest</b><span>Next: set 4, 77.5 × 8</span></span><button class="t-btn" data-press data-act="skip">Skip</button></div>
+    <div class="t-layer ${mode === 'rest' ? 'on' : ''}" data-l="rest"><span class="clock tnum">2:30</span><span class="what"><b>Rest</b><span>Set 4, 77.5 × 8</span></span><button class="t-btn" data-press data-act="skip">Skip</button></div>
     <button class="t-orbbtn" data-press aria-label="Speak"><div class="orb"></div></button>
   </div>`;
 
@@ -23,7 +23,22 @@
       <div><b class="tnum">0 <small>of 220 g</small></b><span class="t-bar"><i style="width:0"></i></span></div>
       <div><b class="tnum">0.3 <small>of 3 l</small></b><span class="t-bar"><i style="width:10%"></i></span></div></div></div>`;
 
-  const shell = (inner, mode) => `<div class="t grain"><div class="t-sky"></div><div class="scr">${inner}</div>${bottom(mode)}</div>`;
+  const chip = '<button class="t-memchip t-glass" data-press data-act="memory">What I know</button>';
+  // the memory tray is always there, parked above the screen, so opening it never adds a blurred layer mid-motion
+  const tray = (open) => `<div class="t-scrim ${open ? '' : 'off'}"></div>
+    <div class="t-tray t-glass ${open ? '' : 'parked'}"><button class="t-done" data-press data-act="close">Done</button><h3>What I know about you</h3><p class="sub">Change anything and I’ll use the new version from now on.</p>
+      ${memory.map((m) => `<div class="t-mem ${m.goal ? 'goal' : ''}"><p>${m.t}${m.goal ? '' : `<small>${m.src}</small>`}</p><button data-press aria-label="Edit">${icon.edit}</button></div>`).join('')}
+    </div>`;
+  const shell = (inner, mode, open = false) => `<div class="t grain"><div class="t-sky"></div><div class="scr">${inner}</div>${chip}${bottom(mode)}${tray(open)}</div>`;
+  const TRAY_OUT = 'translateY(calc(-100% - var(--lab-top)))';
+  function wireTray(root) {
+    root.addEventListener('click', (e) => {
+      const act = e.target.closest('[data-act]')?.dataset.act, t = A2.$(root, '.t-tray'), sc = A2.$(root, '.t-scrim');
+      if (act === 'memory' && t.classList.contains('parked')) { t.classList.remove('parked'); sc.classList.remove('off'); A2.go(t, [{ transform: TRAY_OUT }, { transform: 'none' }], A2.calm); A2.go(sc, [{ opacity: 0 }, { opacity: 1 }], A2.calm); }
+      if ((act === 'close' || e.target === sc) && !t.classList.contains('parked')) { t.classList.add('parked'); sc.classList.add('off'); A2.go(t, [{ transform: 'none' }, { transform: TRAY_OUT }], A2.quick); A2.go(sc, [{ opacity: 1 }, { opacity: 0 }], A2.quick); }
+    });
+  }
+  const withTray = (mount) => (root) => { wireTray(root); return mount?.(root); };
 
   const today = () => shell(`${morning()}
     <div class="t-sugg"><button data-press>200 g skyr and two eggs</button><button data-press>Why is my row stuck?</button><button data-press>Plan my week</button></div>`);
@@ -39,11 +54,7 @@
     ${woCard()}
     <p class="t-c small">Then incline dumbbell press, 30 kg for 3 sets of 8–10.</p>`);
 
-  const memoryScreen = () => `<div class="t grain"><div class="t-sky"></div><div class="scr">${morning()}</div>${bottom()}
-    <div class="t-scrim"></div>
-    <div class="t-tray t-glass"><h3>What I know about you</h3><p class="sub">Change anything and I’ll use the new version from now on.</p>
-      ${memory.map((m) => `<div class="t-mem ${m.goal ? 'goal' : ''}"><p>${m.t}${m.goal ? '' : `<small>${m.src}</small>`}</p><button data-press aria-label="Edit">${icon.edit}</button></div>`).join('')}
-    </div></div>`;
+  const memoryScreen = () => shell(morning(), 'input', true);
 
   // ── motion helpers ──
   function setLayer(root, name) {
@@ -60,7 +71,7 @@
   }
   function rest(root, secs, next) {
     const bar = A2.$(root, '.t-bottom'), clock = A2.$(bar, '.clock'), fill = A2.$(bar, '.fill');
-    if (next) A2.$(bar, '.what span').textContent = 'Next: ' + next;
+    if (next) A2.$(bar, '.what span').textContent = next[0].toUpperCase() + next.slice(1);
     let left = secs;
     const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
     clock.textContent = fmt(left);
@@ -123,12 +134,17 @@
         if (e.target.closest('[data-act="apply"]')) {
           // the card becomes its own receipt in place: contents cross-fade, then the frame settles to the new height
           if (card.dataset.applied) return; card.dataset.applied = '1';
+          // The glass frame stays and only its visible edge closes up (clip-path), so nothing in the thread moves.
+          // Its layout box keeps the old height; the space left under the receipt is breathing room above the bar.
           const h0 = card.offsetHeight;
-          A2.go(card, [{ opacity: 1 }, { opacity: 0 }], A2.quick, { fill: 'forwards' }).then(() => {
-            card.className = 't-rcpt t-glass';
-            card.innerHTML = `<span class="ic">${icon.check}</span><span>Thursday’s row target set<small>70 kg × 9, then 72.5 kg</small></span><button data-press>Undo</button>`;
-            const h1 = card.offsetHeight;
-            A2.go(card, [{ height: h0 + 'px', opacity: 0.4 }, { height: h1 + 'px', opacity: 1 }], A2.calm);
+          card.style.minHeight = h0 + 'px';
+          const kids = [...card.children];
+          Promise.all(kids.map((k) => A2.go(k, [{ opacity: 1 }, { opacity: 0 }], A2.quick, { fill: 'forwards' }))).then(() => {
+            card.innerHTML = `<div class="t-rcpt"><span class="ic">${icon.check}</span><span>Thursday’s row target set<small>70 kg × 9, then 72.5 kg</small></span><button data-press>Undo</button></div>`;
+            card.classList.add('closed'); const r = card.firstElementChild, h1 = r.offsetHeight + 12;
+            card.style.setProperty('--cut', h0 - h1 + 'px');
+            A2.go(card, [{ clipPath: 'inset(0 0 0 0 round 24px)' }, { clipPath: `inset(0 0 ${h0 - h1}px 0 round 24px)` }], A2.calm);
+            A2.go(r, [{ opacity: 0 }, { opacity: 1 }], A2.calm);
           });
         }
       });
@@ -141,17 +157,17 @@
     const wave = () => A2.$$(root, '.t-wave i').map((b, i) => b.animate([{ transform: 'scaleY(.2)' }, { transform: `scaleY(${[.7, 1, .55, .9, .4][i]})` }, { transform: 'scaleY(.25)' }], { duration: 520 + i * 70, iterations: Infinity, easing: 'ease-in-out' }));
     const run = async () => {
       await A2.wait(700); if (!alive) return;
-      await setLayer(root, 'listen');
-      const waves = wave();
+      const waves = wave(); // the bars answer the voice from the first frame the layer shows
+      setLayer(root, 'listen'); await A2.near(A2.calm);
       const heard = A2.$(root, '.heard');
       for (const w of 'bench 80 for 8'.split(' ')) { if (!alive) return; await A2.wait(260); heard.textContent += (heard.textContent ? ' ' : '') + w; }
       await A2.wait(500); if (!alive) return;
-      waves.forEach((a) => a.cancel());
       const vr = A2.$(root, '.t-set.cur'); const vNext = nextText(vr); tick(vr);
       add(root, `<div class="t-rcpt t-glass"><span class="ic">${icon.check}</span><span>Bench press, set 3<small>80 kg × 8, logged from your voice</small></span><button data-press>Undo</button></div>`);
       add(root, '<p class="t-c">That’s your best bench yet: 80 × 8, three times.</p>');
-      await setLayer(root, 'rest');
+      setLayer(root, 'rest');
       stopRest = rest(root, wo.rest.total, vNext);
+      await A2.wait(A2.quick.duration); waves.forEach((a) => a.cancel()); // only once the listening layer has faded
     };
     run();
     return () => { alive = false; stopRest?.(); };
@@ -160,11 +176,11 @@
   A2.direction({
     name: 'Thread', axis: 'Interaction model: the Coach is the app',
     screens: [
-      { label: 'Today', html: today },
-      { label: 'Workout', html: workout, mount: mountWorkout },
-      { label: 'Memory', html: memoryScreen },
-      { label: '★ Reply', html: () => shell(morning()), mount: mountReply },
-      { label: '★ Voice log', html: workout, mount: mountVoice },
+      { label: 'Today', html: today, mount: withTray() },
+      { label: 'Workout', html: workout, mount: withTray(mountWorkout) },
+      { label: 'Memory', html: memoryScreen, mount: withTray() },
+      { label: '★ Reply', html: () => shell(morning()), mount: withTray(mountReply) },
+      { label: '★ Voice log', html: workout, mount: withTray(mountVoice) },
     ],
   });
 })();

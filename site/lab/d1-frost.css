@@ -28,9 +28,9 @@
 .f-pill { display: inline-block; padding: 0 9px; border-radius: 999px; background: rgba(191, 224, 255, .16); color: var(--ice); font-weight: 600; white-space: nowrap; }
 
 .f-train { margin-top: 12px; padding: 18px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; }
-.f-train h3 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.f-train h3 { margin: 0; font-size: 28px; font-weight: 700; letter-spacing: -0.02em; }
 .f-train span { color: var(--ink2); font-size: 14.5px; grid-column: 1; }
-.f-start { grid-row: 1 / span 2; grid-column: 2; height: 52px; padding: 0 22px; border-radius: 999px; background: var(--ice); color: var(--ice-ink);
+.f-start { grid-row: 1 / span 3; grid-column: 2; height: 52px; padding: 0 22px; border-radius: 999px; background: var(--ice); color: var(--ice-ink);
   font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px; transition: transform 160ms cubic-bezier(.23, 1, .32, 1); }
 [data-press][data-down] { transform: scale(.96); }
 .f-start svg { width: 14px; height: 14px; }
@@ -86,7 +86,13 @@
 .f-row.cur { background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1.5px rgba(191, 224, 255, .5); }
 .f-row.cur .f-chk { background: var(--ice); box-shadow: none; }
 .f-row.cur .f-chk svg { opacity: 1; color: var(--ice-ink); }
-.f-row .gain { position: absolute; right: 58px; top: 6px; color: var(--gold); font-size: 13px; font-weight: 700; opacity: 0; pointer-events: none; }
+.f-row .p.up { color: var(--gold); font-weight: 600; }
+.f-lede { margin: -8px 4px 20px; color: var(--ink2); font-size: 16.5px; line-height: 1.45; }
+.f-lede .f-pill { color: var(--ice); }
+.f-when { color: var(--ink2); font-size: 14px; grid-column: 1; }
+.f-train { padding: 20px 18px; }
+.f-close { position: absolute; z-index: 5; top: calc(var(--lab-top) + 2px); right: 16px; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; color: var(--ink2); }
+.f-close svg { width: 18px; height: 18px; }
 
 /* rest bar: frost floating above the list, with the next set */
 .f-rest { position: absolute; z-index: 6; left: 12px; right: 12px; bottom: calc(14px + env(safe-area-inset-bottom)); height: 76px; border-radius: 28px;

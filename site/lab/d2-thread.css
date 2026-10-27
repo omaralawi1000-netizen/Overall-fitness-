@@ -76,13 +76,16 @@
 .t-layer .clock { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; min-width: 64px; }
 .t-layer .what { flex: 1; display: grid; line-height: 1.25; }
 .t-layer .what b { font-size: 15px; font-weight: 600; }
-.t-layer .what span { font-size: 13.5px; color: var(--ink2); }
+.t-layer .what span { font-size: 13.5px; color: var(--ink2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.t-layer .what { min-width: 0; }
 .t-layer .heard { flex: 1; font-size: 17px; font-weight: 500; }
 .t-wave { display: flex; gap: 3px; align-items: center; height: 26px; }
 .t-wave i { width: 3px; height: 26px; border-radius: 2px; background: var(--aqua); transform-origin: center; transform: scaleY(.2); }
 
 /* memory tray: drops from the top over the thread */
 .t-scrim { position: absolute; inset: 0; z-index: 7; background: rgba(0, 0, 0, .42); }
+.t-scrim.off { opacity: 0; pointer-events: none; }
+.t-tray.parked { transform: translateY(calc(-100% - var(--lab-top))); pointer-events: none; }
 .t-tray { position: absolute; z-index: 8; left: 10px; right: 10px; top: calc(var(--lab-top) - 4px); border-radius: 30px; padding: 18px 8px 10px; background: rgba(28, 44, 44, .55); }
 .t-tray h3 { margin: 0 12px 2px; font-size: 22px; font-weight: 600; letter-spacing: -0.015em; }
 .t-tray .sub { margin: 0 12px 10px; color: var(--ink2); font-size: 14.5px; }
@@ -93,6 +96,9 @@
 .t-mem button { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; color: var(--ink3); flex: none; }
 .t-mem button svg { width: 18px; height: 18px; }
 .t-mem.goal p::before { content: "Goal  "; color: var(--aqua); font-weight: 600; }
+.t-card.closed { padding: 6px 6px 0; clip-path: inset(0 0 var(--cut) 0 round 24px); }
+.t-card.closed .t-rcpt { margin: 0; }
+.t-done { float: right; height: 40px; padding: 0 14px; margin: -6px 4px 0 0; border-radius: 999px; font-weight: 600; font-size: 14.5px; color: var(--aqua); }
 .t-memchip { position: absolute; z-index: 5; top: calc(var(--lab-top) + 2px); right: 16px; height: 36px; padding: 0 14px; border-radius: 999px; font-size: 13.5px; font-weight: 600; color: var(--ink2); }
 .t-word { display: inline; opacity: 0; }
 /* Schibsted's tabular figures space out punctuation (2 , 550): keep its proportional figures */

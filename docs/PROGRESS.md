@@ -47,3 +47,22 @@ Health Connect right after the core loop). Real Gemini limits checked (COACH.md 
 ## Next step
 Checkpoint 2 step 7: the GitHub Pages deploy workflow. In parallel, the exam baseline when the test key's quota resets
 (~08:00 Copenhagen, 28 Oct), then fresh coach-judges and COACH.md §8.
+
+## Session 2, continued: Checkpoint 2 (27 Oct 2026)
+Done:
+- Step 7: Pages deploy workflow (.github/workflows/pages.yml), merged to main. Omar still has to switch Settings → Pages →
+  Source to "GitHub Actions".
+- Steps 8–9: the lab in site/lab/ (picker, 4 directions: Frost, Thread, Timeline, Headline) and films/films.html, merged
+  to main. Round-1 judge defects fixed.
+
+Half-done (on branch claude/project-thread-84tdii, not merged):
+- Round-2 judge fixes: Frost, Thread and Timeline done (Timeline's rest now lives on the line under Bench).
+- Headline not yet: rest as part of the sentence ("Rest. Set 4 in 2:30" with a counting pill; Done turns into "Skip rest"
+  in the same button, no new glass), siblings slide by the height change (FLIP) instead of jumping, Record's new content
+  starts ~180 ms after the tap, glint on A2.slow, Finish as one sentence with count-up pills of fixed width.
+- Films in site/lab/films/ are still round 1.
+
+## Next step
+Finish the Headline fixes in site/lab/d4-headline.js/.css, re-shoot and re-film (tools in /tmp are lost with the session:
+Playwright at 384×832, 2x, ffmpeg real + half speed), run fresh design and motion judges until no real defects, then PR
+into main, check the deploy, and send Omar my pick first. In parallel: the exam baseline on 28 Oct after the quota reset.

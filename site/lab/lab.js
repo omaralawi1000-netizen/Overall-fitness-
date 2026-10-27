@@ -38,7 +38,12 @@
    * (Velocity is not carried yet: DESIGN.md decides the spring engine that resamples it.)
    */
   A2.go = (el, frames, s = A2.calm, extra = {}) => {
-    if (!el || A2.reduced) return Promise.resolve();
+    if (!el) return Promise.resolve();
+    if (A2.reduced) { // gentler, not nothing: keep only the fades, on the quick spring
+      frames = frames.map((f) => ('opacity' in f ? { opacity: f.opacity } : {}));
+      if (!frames.some((f) => 'opacity' in f)) return Promise.resolve();
+      s = A2.quick;
+    }
     const pe = extra.pseudoElement || null;
     const running = el.getAnimations().filter((a) => a.id === 'a2' && (a.effect.pseudoElement || null) === pe);
     if (running.length) {
@@ -51,6 +56,8 @@
     a.id = 'a2';
     return a.finished.then(() => true, () => false);
   };
+  /** a spring is visually 95% there by about half its settle time: chain the next step on this, not on `finished` */
+  A2.near = (s = A2.calm) => A2.wait(Math.round(s.duration * 0.5));
   /** spring value at time t (s) with initial velocity v0 (units/s), critically damped: for script-driven settles */
   A2.settleAt = (x0, target, v0, t, response = 0.42) => {
     const w = (2 * Math.PI) / response, d = x0 - target;

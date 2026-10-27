@@ -11,7 +11,7 @@
   const today = () => `<div class="d grain"><div class="d-sky"></div><div class="scr">
     <div class="d-head"><h1>Today</h1><span>${day.dateShort}</span></div>
     ${week()}
-    <div class="d-line"><span class="d-axis"></span><span class="d-past" style="height:62px"></span>
+    <div class="d-line"><span class="d-axis"></span><span class="d-past" style="height:90px"></span>
       ${item('05:50', 'Woke up', '6 h 41 of sleep, your usual', 'past')}
       ${nowCard(`<div class="d-nowcard d-glass"><div class="orb"></div><p>Push after work. Bench <span class="d-pill tnum">80 kg × 8</span> is the target, 2.5 kg up on last week.<small>Down 0.4 kg this week, on pace for 90 kg by 31 January.</small></p></div>`)}
       ${item('07:00', 'Work', 'Until 08:30', 'block quiet')}
@@ -20,7 +20,7 @@
       <div class="d-item"><span class="h tnum">15:30</span><div class="d-train d-glass"><div><b>Push</b><span>6 exercises, about 1 hour</span></div><button class="d-btn pri" data-press>${icon.play}Start</button></div></div>
       ${item('19:00', 'Dinner', '2,550 kcal and 220 g protein for the day', 'quiet')}
       ${item('22:30', 'Bed', 'For 7 hours before tomorrow’s wrestling', 'quiet')}
-    </div></div></div>`;
+    </div></div><div class="d-ask d-glass"><span>Ask the Coach</span><div class="orb"></div></div></div>`;
 
   const sets = (e, k) => `<div class="d-sets">${e.sets.map((s, i) => `<button class="d-s ${s.done ? 'done' : ''} ${s.current ? 'cur' : ''}" data-press data-k="${k}" data-i="${i}" data-kind="${s.kind}"><span class="tnum">${s.kg} × ${s.reps}</span><small>${s.kind === 'W' ? 'warm-up' : s.current ? 'tap when done' : 'set ' + s.kind}</small></button>`).join('')}</div>`;
   const workout = () => `<div class="d grain"><div class="d-sky"></div><div class="scr">
@@ -28,12 +28,13 @@
     <div class="d-line"><span class="d-axis"></span><span class="d-past" style="height:100%;transform:scaleY(.34)"></span>
       ${item('15:30', 'Started', 'Warm-up done', 'past')}
       <div class="d-ex"><span class="h"></span><h3>Bench press</h3><div class="sub">80 × 8 twice. One more and it’s your best bench yet.</div>${sets(wo.exercises[0], 0)}</div>
+      <div class="d-rest" data-state="idle"><span class="seg"></span><span class="tip"></span>
+        <div class="txt"><b class="clock tnum">2:30</b><span class="lbl">Rest between sets</span></div><button class="d-btn sm" data-press data-act="skip">Skip</button></div>
       <div class="d-ex todo"><h3>Incline dumbbell press</h3><div class="sub">${wo.exercises[1].note}</div>${sets(wo.exercises[1], 1)}</div>
       <div class="d-ex todo"><h3>Cable fly</h3><div class="sub">${wo.exercises[2].note}</div></div>
       <div class="d-ex todo"><h3>Shoulder press, triceps, raises</h3><div class="sub">About 25 minutes</div></div>
       ${item('16:32', 'Done', 'If you keep this pace', 'quiet')}
     </div></div>
-    <div class="d-restbar d-glass parked"><span class="clock tnum">2:30</span><span class="what"><b>Rest</b><span>Next: set 4, 77.5 × 8</span></span><button class="d-btn" data-press data-act="skip">Skip</button></div>
   </div>`;
 
   const coach = () => `<div class="d grain"><div class="d-sky"></div><div class="scr">
@@ -41,7 +42,7 @@
     <div class="d-line"><span class="d-axis"></span><span class="d-past" style="height:40px"></span>
       ${item('20:04', 'You asked', 'Why is my row stuck?', 'past')}
       ${nowCard(`<div class="d-nowcard d-glass"><div class="orb"></div><p>Barbell row has sat at <span class="d-pill tnum">70 kg × 8</span> for four sessions. You’re cutting and every set goes to failure, so recovery is the limit.<small>Next pull: keep 70 and go for 9 on the first set. At 9, 9, 8 it moves to 72.5.</small></p></div>`, '20:05')}
-      ${item('Thu', 'Pull', 'Row target 70 × 9, ready to apply', 'quiet')}
+      <div class="d-item"><span class="h tnum">Thu</span><div class="d-train d-glass"><div><b>Pull</b><span>Row target 70 kg × 9</span></div><button class="d-btn pri" data-press data-act="apply">Apply</button></div></div>
     </div>
     <div class="d-sec">What I know about you</div>
     <div class="d-mem d-glass">${memory.map((m) => `<div><b>${m.t}</b><span>${m.src}</span></div>`).join('')}</div>
@@ -96,7 +97,7 @@
     box.addEventListener('pointermove', (e) => { if (grab == null) return; const nx = e.clientX - box.getBoundingClientRect().left - grab; const before = yAt(x).i; paint(nx); hist2.push([e.timeStamp, x]); if (hist2.length > 5) hist2.shift(); if (yAt(x).i !== before) A2.buzz(6); });
     const end = () => {
       if (grab == null) return; grab = null;
-      const a = hist2[0], b = hist2.at(-1), v = a && b && b[0] > a[0] ? ((b[1] - a[1]) / (b[0] - a[0])) * 1000 : 0;
+      const recent = hist2.filter((h) => performance.now() - h[0] < 100), a = recent[0], b = recent.at(-1), v = a && b && b[0] > a[0] ? ((b[1] - a[1]) / (b[0] - a[0])) * 1000 : 0;
       A2.go(lens, [{ scale: '1.04' }, { scale: '1' }], A2.calm);
       settle(Math.max(-3000, Math.min(3000, v)));
     };
@@ -106,40 +107,52 @@
 
   const mountMorning = (root) => {
     // each child is faded on its own (never a parent of a glass card, which would stop its blur mid-fade)
-    const past = A2.$(root, '.d-past'), items = A2.$$(root, '.d-head, .d-week div, .d-item > *, .d-now > *');
+    const past = A2.$(root, '.d-past'), items = A2.$$(root, '.d-head, .d-week div, .d-item > *, .d-now > :not(.ph)');
     if (A2.reduced) return;
     items.forEach((el, i) => A2.go(el, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], A2.calm, { delay: 60 + i * 38, fill: 'backwards' }));
+    // the dots and block bars on the line are pseudo-elements: they arrive with their row
+    A2.$$(root, '.d-item').forEach((el) => { const i = items.indexOf(el.firstElementChild); for (const pe of ['::before', '::after']) A2.go(el, [{ opacity: 0 }, { opacity: 1 }], A2.calm, { pseudoElement: pe, delay: 60 + i * 38, fill: 'backwards' }); });
     A2.go(A2.$(root, '.d-axis'), [{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], A2.slow, { delay: 80, fill: 'backwards' });
     A2.go(past, [{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], A2.slow, { delay: 260, fill: 'backwards' });
     const ph = A2.$(root, '.ph');
     A2.go(ph, [{ opacity: 0, transform: 'scale(.6)' }, { opacity: 1, transform: 'none' }], A2.calm, { delay: 520, fill: 'backwards' });
   };
 
-  const PARK = 'translateY(calc(100% + 24px))';
+  // Rest is time on the line: a violet segment fills down from the set you just did, with a dot at "now" on its tip.
+  // The block is always there (quiet between rests), so nothing appears, vanishes or pushes the list.
   const mountWorkout = (root) => {
-    let t = null, seg = null;
+    let t = null, anims = [], idle = null;
+    const blk = A2.$(root, '.d-rest'), clock = A2.$(blk, '.clock'), lbl = A2.$(blk, '.lbl'), seg = A2.$(blk, '.seg'), tip = A2.$(blk, '.tip');
+    const fmt = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+    const swap = (el, text) => { el.textContent = text; A2.go(el, [{ opacity: 0, transform: 'translateY(4px)' }, { opacity: 1, transform: 'none' }], A2.quick); };
+    const toIdle = () => {
+      clearInterval(t); clearTimeout(idle); blk.dataset.state = 'idle';
+      anims.forEach((a) => a.pause());
+      A2.go(seg, [{ opacity: 1 }, { opacity: 0 }], A2.quick, { fill: 'forwards' }); A2.go(tip, [{ opacity: 1 }, { opacity: 0 }], A2.quick, { fill: 'forwards' });
+      swap(clock, '2:30'); swap(lbl, 'Rest between sets');
+    };
+    const go = (next) => { clearInterval(t); blk.dataset.state = 'go'; swap(clock, 'Go'); swap(lbl, next); A2.buzz([40, 60, 40]); idle = setTimeout(toIdle, 2500); };
     root.addEventListener('click', (e) => {
+      if (e.target.closest('[data-act="skip"]')) { if (blk.dataset.state === 'rest') toIdle(); return; }
       const b = e.target.closest('.d-s.cur'); if (!b) return;
       b.classList.remove('cur'); b.classList.add('done'); A2.$(b, 'small').textContent = b.dataset.kind === 'W' ? 'warm-up' : 'set ' + b.dataset.kind;
       A2.go(b, [{ transform: 'scale(.94)' }, { transform: 'none' }], A2.calm); A2.buzz(18);
-      const nx = b.nextElementSibling; if (nx) { nx.classList.add('cur'); A2.$(nx, 'small').textContent = 'tap when done'; A2.go(nx, [{ opacity: .5 }, { opacity: 1 }], A2.calm); }
-      const bar = A2.$(root, '.d-restbar');
-      if (bar.classList.contains('parked')) { bar.classList.remove('parked'); A2.go(bar, [{ transform: PARK }, { transform: 'none' }], A2.calm); }
-      let left = wo.rest.total; const clock = A2.$(bar, '.clock');
-      clearInterval(t); t = setInterval(() => { left--; clock.textContent = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`; if (left <= 0) clearInterval(t); }, 1000);
-      const ex = b.closest('.d-ex');
-      if (seg) { const old = seg; A2.go(old, [{ opacity: 1 }, { opacity: 0 }], A2.quick, { fill: 'forwards' }).then(() => old.remove()); }
-      seg = document.createElement('span'); seg.className = 'd-restseg';
-      seg.style.top = ex.offsetTop + ex.offsetHeight - 6 + 'px'; seg.style.height = '40px';
-      A2.$(root, '.d-line').appendChild(seg);
-      seg.animate([{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], { duration: wo.rest.total * 1000, easing: 'linear', fill: 'forwards' });
-      A2.$(bar, '[data-act="skip"]').onclick = () => {
-        clearInterval(t);
-        if (seg) { const old = seg; seg = null; old.getAnimations().forEach((a) => a.pause()); A2.go(old, [{ opacity: 1 }, { opacity: 0 }], A2.quick, { fill: 'forwards' }).then(() => old.remove()); }
-        bar.classList.add('parked'); A2.go(bar, [{ transform: 'none' }, { transform: PARK }], A2.quick);
-      };
+      const nx = b.nextElementSibling;
+      if (nx) { nx.classList.add('cur'); A2.$(nx, 'small').textContent = 'tap when done'; A2.go(nx, [{ opacity: .5 }, { opacity: 1 }], A2.calm); }
+      const sub = A2.$(b.closest('.d-ex'), '.sub');
+      if (b.dataset.kind === '3' && sub) swap(sub, 'Best bench yet: 80 × 8, three times.');
+      const next = nx ? `Set ${nx.dataset.kind}, ${A2.$(nx, 'span').textContent}` : 'Incline dumbbell press';
+      clearTimeout(idle); clearInterval(t); anims.forEach((a) => a.cancel());
+      let left = wo.rest.total; blk.dataset.state = 'rest';
+      clock.textContent = fmt(left); swap(lbl, `until ${next[0].toLowerCase() + next.slice(1)}`);
+      const ms = left * 1000;
+      seg.getAnimations().forEach((a) => a.cancel()); tip.getAnimations().forEach((a) => a.cancel());
+      anims = [seg.animate([{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], { duration: ms, easing: 'linear', fill: 'forwards' }),
+        tip.animate([{ transform: 'translateY(0)' }, { transform: 'translateY(120px)' }], { duration: ms, easing: 'linear', fill: 'forwards' })];
+      A2.go(tip, [{ opacity: 0 }, { opacity: 1 }], A2.calm);
+      t = setInterval(() => { left--; if (left <= 0) go(next); else clock.textContent = fmt(left); }, 1000);
     });
-    return () => clearInterval(t);
+    return () => { clearInterval(t); clearTimeout(idle); };
   };
 
   A2.direction({

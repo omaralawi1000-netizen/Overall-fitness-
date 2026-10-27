@@ -19,8 +19,8 @@
   const today = () => `<div class="f grain"><div class="f-sky"></div><div class="scr">
     <div class="f-date">${day.dateLong}</div>
     <h1 class="f-title">Good morning, ${day.name}</h1>
-    <section class="f-coach f-glass"><div class="orb"></div><p>Push today after work. Bench <span class="f-pill tnum">80 kg × 8</span> is the target, 2.5 kg up on last week.<small>${day.morningSub}</small></p></section>
-    <section class="f-train f-glass"><h3>Push</h3><span>${day.plan.at}, 6 exercises, 1 h</span>
+    <p class="f-lede">Bench <span class="f-pill tnum">80 kg × 8</span> is today’s target, 2.5 kg up on last week. ${day.morningSub}</p>
+    <section class="f-train f-glass"><span class="f-when">Today at ${day.plan.at}</span><h3>Push</h3><span>6 exercises, about an hour</span>
       <button class="f-start" data-press>${icon.play}Start</button></section>
     <section class="f-glass" style="margin-top:12px">
       <div class="f-rings" style="margin:0">${ring(0, 'of 2,550 kcal', '0')}${ring(0, 'of 220 g protein', '0 g')}${ring(0.1, 'of 3 l water', '0.3 l')}</div>
@@ -31,7 +31,7 @@
   const row = (s, i) => `<div class="f-row ${s.done ? 'done' : ''} ${s.current ? 'cur' : ''}" data-i="${i}">
       <span class="n">${s.kind}</span><span class="p tnum">${s.prev}</span>
       <span class="v tnum">${s.kg}<small>kg</small></span><span class="v tnum">${s.reps}<small>reps</small></span>
-      <button class="f-chk" data-press aria-label="Done">${icon.check}</button><span class="gain">${gain(s)}</span></div>`;
+      <button class="f-chk" data-press aria-label="Done">${icon.check}</button></div>`;
   const workoutHtml = (restLeft) => `<div class="f grain"><div class="f-sky"></div><div class="scr">
     <div class="f-wohead"><h1>Push</h1><span class="f-time tnum">${wo.elapsed}</span></div>
     <div class="f-prog"><i></i></div>
@@ -51,6 +51,7 @@
   /** the rest bar: fill drains on the compositor (scaleX), the clock text changes once a second */
   function runRest(root, from, total, next) {
     const bar = A2.$(root, '.f-rest'), clock = A2.$(bar, '.clock'), fill = A2.$(bar, '.fill');
+    bar._stop?.(); // one rest at a time, whoever started the last one
     let left = from, timer, drain;
     const startDrain = () => { drain?.cancel(); drain = fill.animate([{ transform: `scaleX(${left / total})` }, { transform: 'scaleX(0)' }], { duration: left * 1000, easing: 'linear', fill: 'forwards' }); };
     const paint = () => {
@@ -61,7 +62,7 @@
       } else clock.textContent = fmt(left);
     };
     A2.$(bar, '.what').innerHTML = `<b>Rest</b><span>Next: ${next.split(', ').slice(1).join(', ')}</span>`;
-    bar.classList.remove('go');
+    if (bar.classList.contains('go')) { A2.go(A2.$(bar, '.tint'), [{ opacity: 1 }, { opacity: 0 }], A2.quick); bar.classList.remove('go'); }
     A2.$(bar, '.btns').innerHTML = '<button data-press data-act="add">+30 s</button><button data-press data-act="skip">Skip</button>';
     paint(); startDrain();
     timer = setInterval(() => {
@@ -74,6 +75,7 @@
       A2.go(A2.$(bar, '.tint'), [{ opacity: 0 }, { opacity: 1 }], A2.calm);
       clock.textContent = 'Go';
       A2.$(bar, '.what').innerHTML = `<b>${next.split(':')[0]}</b><span>${next.split(': ')[1]}</span>`;
+      A2.go(A2.$(bar, '.what'), [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], A2.calm);
       A2.$(bar, '.btns').innerHTML = '<button data-press data-act="close">Done</button>';
       A2.go(clock, [{ transform: 'scale(.86)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], A2.calm);
       A2.buzz([40, 60, 40]);
@@ -84,7 +86,9 @@
       if (act === 'skip') { clearInterval(timer); drain?.cancel(); left = 0; go(); }
       if (act === 'close') hideRest(root);
     };
-    return () => { clearInterval(timer); drain?.cancel(); };
+    const stop = () => { clearInterval(timer); drain?.cancel(); };
+    bar._stop = stop;
+    return stop;
   }
   // The bar always exists (its blurred layer never appears or vanishes mid-motion, LESSONS 3); it parks below the screen.
   // Showing or hiding while it moves turns it round from where it is.
@@ -111,9 +115,12 @@
       A2.go(chk, [{ backgroundColor: '#bfe0ff' }, { backgroundColor: 'rgba(242, 245, 250, .16)' }], A2.calm, { pseudoElement: '::before' });
       A2.go(A2.$(chk, 'svg'), [{ transform: 'scale(.7)', color: '#06121f' }, { transform: 'none', color: '#f2f5fa' }], A2.calm);
       A2.buzz(18);
-      const gainEl = A2.$(r, '.gain');
-      if (gainEl.textContent) A2.go(gainEl, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'translateY(-4px)' }], A2.calm, { fill: 'forwards' })
-        .then((done) => done && A2.wait(350)).then(() => A2.go(gainEl, [{ opacity: 1, transform: 'translateY(-4px)' }, { opacity: 0, transform: 'translateY(-10px)' }], A2.slow));
+      // what beat last time replaces last time's numbers in the same cell, in gold
+      const i = +r.dataset.i, ex = wo.exercises[[...root.querySelectorAll('.f-ex')].indexOf(r.closest('.f-ex'))], g = ex && gain(ex.sets[i]);
+      if (g) { const p = A2.$(r, '.p'); p.textContent = g; p.classList.add('up'); A2.go(p, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], A2.calm); }
+      const hint = A2.$(r.closest('.f-ex'), '.f-hint');
+      if (hint && ex.sets[i].kind === 3) { A2.go(hint, [{ opacity: 0 }, { opacity: 1 }], A2.calm); hint.textContent = 'Best bench yet: 80 × 8, three times.'; }
+        
       const next = r.nextElementSibling;
       if (next?.classList.contains('f-row')) {
         next.classList.add('cur');
@@ -134,7 +141,8 @@
     <div class="f-sec">What I know about you<button data-press>Edit</button></div>
     <div class="f-mem f-glass">${memory.map((m) => `<div class="${m.goal ? 'goal' : ''}"><b>${m.t}</b><span>${m.src}</span></div>`).join('')}</div>
   </div>
-  <div class="f-ask f-glass"><span>Message the Coach</span><button data-press aria-label="Speak">${icon.mic}</button></div></div>`;
+  <div class="f-ask f-glass"><span>Message the Coach</span><button data-press aria-label="Speak">${icon.mic}</button></div>
+  <button class="f-close f-glass" data-press aria-label="Close">${icon.close}</button></div>`;
 
   A2.direction({
     name: 'Frost', axis: 'Structure: the familiar native app, perfected',

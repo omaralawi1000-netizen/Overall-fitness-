@@ -65,13 +65,18 @@
 .d-s.done { background: rgba(255, 255, 255, .09); box-shadow: none; color: var(--ink2); }
 .d-s.cur { background: var(--vio); color: var(--vio-ink); box-shadow: none; }
 .d-s.cur small { color: rgba(18, 11, 51, .6); }
-.d-restseg { position: absolute; left: 44px; width: 2px; top: 0; height: 0; background: var(--vio); border-radius: 1px; transform-origin: top; }
-.d-restbar { position: absolute; z-index: 6; left: 12px; right: 12px; bottom: calc(14px + env(safe-area-inset-bottom)); height: 72px; border-radius: 28px; display: flex; align-items: center; gap: 14px; padding: 0 10px 0 20px; }
-.d-restbar.parked { transform: translateY(calc(100% + 24px)); pointer-events: none; }
-.d-restbar .clock { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
-.d-restbar .what { flex: 1; display: grid; line-height: 1.25; }
-.d-restbar .what b { font-size: 15px; }
-.d-restbar .what span { font-size: 13.5px; color: var(--ink2); }
+.d-rest { position: relative; height: 132px; display: flex; align-items: flex-start; gap: 12px; padding-top: 2px; }
+.d-rest .seg { position: absolute; left: -15px; top: 0; width: 4px; height: 120px; border-radius: 2px; background: var(--vio); transform-origin: top; transform: scaleY(0); }
+.d-rest .tip { position: absolute; left: -21px; top: -8px; width: 16px; height: 16px; border-radius: 50%; background: var(--vio); box-shadow: 0 0 0 6px rgba(180, 168, 255, .16), 0 0 20px rgba(180, 168, 255, .45); opacity: 0; }
+.d-rest .txt { display: grid; flex: 1; }
+.d-rest .clock { font-size: 30px; font-weight: 700; letter-spacing: -0.02em; line-height: 1.1; color: var(--ink3); }
+.d-rest .lbl { font-size: 14.5px; color: var(--ink3); }
+.d-rest[data-state="rest"] .clock, .d-rest[data-state="go"] .clock { color: var(--ink); }
+.d-rest[data-state="go"] .clock { color: var(--vio); }
+.d-rest[data-state="rest"] .lbl, .d-rest[data-state="go"] .lbl { color: var(--ink2); }
+.d-btn.sm { height: 44px; padding: 0 16px; font-size: 14.5px; }
+.d-rest .d-btn { opacity: 0; pointer-events: none; transition: opacity 200ms ease-out; }
+.d-rest[data-state="rest"] .d-btn { opacity: 1; pointer-events: auto; }
 
 /* history scrubber: a lift curve you drag through with a glass lens above your thumb */
 .d-chart { position: relative; height: 300px; margin: 8px -16px 0; touch-action: none; -webkit-user-select: none; user-select: none; }
