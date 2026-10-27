@@ -18,3 +18,5 @@ nothing here gets hardcoded (see Decisions).
 3. **Wrestling:** beginner, doesn't compete yet, wants to compete in the future.
    Omar on the Coach: it should be able to do what Claude does in this interview (ask, understand, remember, help), for anyone.
 4. **Food:** still cutting. Hardest part is building a routine; on track to a routine where he doesn't binge.
+5. **Food logging:** wants all of them: voice, typing, photo, barcode. (Note: photo needs an AI key; voice/text and
+   barcode must work without one.)
