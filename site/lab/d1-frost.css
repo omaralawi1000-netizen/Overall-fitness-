@@ -1,0 +1,128 @@
+/* Direction 1, Frost: the calm native app. Classic structure (large titles, cards, a dock), done to the Apple bar. */
+.f { --bg: #03060c; --ink: #f2f5fa; --ink2: rgba(233, 239, 250, .58); --ink3: rgba(233, 239, 250, .36);
+  --line: rgba(255, 255, 255, .09); --glass: rgba(150, 175, 220, .085); --glass-hi: rgba(255, 255, 255, .16);
+  --ice: #bfe0ff; --ice-ink: #06121f; --gold: #f1d68b;
+  --orb-a: #bfe8ff; --orb-b: #3d63ff; --orb-glow: rgba(90, 140, 255, .32);
+  position: absolute; inset: 0; background: var(--bg); color: var(--ink);
+  font-family: "Hanken Grotesk", system-ui, sans-serif; font-size: 16px; line-height: 1.38; letter-spacing: -0.005em; }
+/* depth behind the glass: two quiet fields of light, far away, plus grain */
+.f-sky { position: absolute; inset: 0; overflow: hidden; z-index: 0; }
+.f-sky::before { content: ""; position: absolute; width: 140%; height: 70%; left: -30%; top: -22%;
+  background: radial-gradient(closest-side, rgba(64, 104, 210, .30), rgba(64, 104, 210, .10) 55%, transparent); }
+.f-sky::after { content: ""; position: absolute; width: 90%; height: 50%; right: -35%; top: 38%;
+  background: radial-gradient(closest-side, rgba(60, 170, 190, .14), transparent); }
+.f .scr { z-index: 1; padding: calc(var(--lab-top) + 4px) 16px 128px; }
+
+.f-glass { position: relative; background: var(--glass); border-radius: 22px;
+  -webkit-backdrop-filter: blur(22px) saturate(1.5); backdrop-filter: blur(22px) saturate(1.5);
+  box-shadow: inset 0 1px 0 var(--glass-hi), inset 0 0 0 1px var(--line); }
+
+.f-date { color: var(--ink2); font-size: 15px; font-weight: 500; margin: 6px 4px 2px; }
+.f-title { font-size: 34px; line-height: 1.08; font-weight: 700; letter-spacing: -0.025em; margin: 0 4px 18px; }
+
+/* the Coach's line: the one bold thing on Today */
+.f-coach { display: flex; gap: 14px; padding: 18px 18px 18px 16px; align-items: flex-start; }
+.f-coach .orb { --orb: 34px; margin-top: 2px; }
+.f-coach p { margin: 0; font-size: 19px; line-height: 1.34; font-weight: 500; letter-spacing: -0.012em; }
+.f-coach small { display: block; margin-top: 8px; color: var(--ink2); font-size: 14.5px; line-height: 1.4; font-weight: 400; letter-spacing: 0; }
+.f-pill { display: inline-block; padding: 0 9px; border-radius: 999px; background: rgba(191, 224, 255, .16); color: var(--ice); font-weight: 600; white-space: nowrap; }
+
+.f-train { margin-top: 12px; padding: 18px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 12px; }
+.f-train h3 { margin: 0; font-size: 22px; font-weight: 700; letter-spacing: -0.02em; }
+.f-train span { color: var(--ink2); font-size: 14.5px; grid-column: 1; }
+.f-start { grid-row: 1 / span 2; grid-column: 2; height: 52px; padding: 0 22px; border-radius: 999px; background: var(--ice); color: var(--ice-ink);
+  font-weight: 700; font-size: 16px; display: flex; align-items: center; gap: 8px; transition: transform 160ms cubic-bezier(.23, 1, .32, 1); }
+[data-press][data-down] { transform: scale(.96); }
+.f-start svg { width: 14px; height: 14px; }
+
+.f-rings { margin-top: 12px; padding: 16px 8px; display: grid; grid-template-columns: repeat(3, 1fr); }
+.f-ring { display: grid; justify-items: center; gap: 6px; }
+.f-ring svg { width: 64px; height: 64px; transform: rotate(-90deg); }
+.f-ring circle { fill: none; stroke-width: 6; }
+.f-ring .bg { stroke: rgba(255, 255, 255, .08); }
+.f-ring .fg { stroke: var(--ink); stroke-linecap: round; }
+.f-ring b { font-size: 15px; font-weight: 600; }
+.f-ring i { font-style: normal; color: var(--ink2); font-size: 13px; margin-top: -4px; }
+
+.f-week { margin-top: 12px; padding: 14px 10px; display: grid; grid-template-columns: repeat(7, 1fr); text-align: center; }
+.f-week div { display: grid; gap: 6px; justify-items: center; font-size: 12.5px; color: var(--ink3); }
+.f-week b { font-weight: 600; color: var(--ink2); font-size: 13px; }
+.f-week .dot { width: 8px; height: 8px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .25); }
+.f-week .done .dot { background: var(--ink2); box-shadow: none; }
+.f-week .today b { color: var(--ink); }
+.f-week .today .dot { background: var(--ice); box-shadow: 0 0 0 4px rgba(191, 224, 255, .14); }
+
+/* dock: three tabs and the orb, see-through frost floating over content */
+.f-dock { position: absolute; z-index: 5; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); display: flex; gap: 10px; align-items: center; }
+.f-tabs { flex: 1; height: 62px; border-radius: 31px; display: grid; grid-template-columns: repeat(3, 1fr); padding: 5px; }
+.f-tab { border-radius: 26px; display: grid; justify-items: center; align-content: center; gap: 2px; color: var(--ink3); font-size: 11.5px; font-weight: 600; }
+.f-tab svg { width: 22px; height: 22px; }
+.f-tab[aria-current] { color: var(--ink); background: rgba(255, 255, 255, .09); }
+.f-orbbtn { width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; }
+.f-orbbtn .orb { --orb: 40px; }
+
+/* live workout */
+.f-wohead { display: flex; align-items: baseline; justify-content: space-between; margin: 4px 4px 4px; }
+.f-wohead h1 { margin: 0; font-size: 34px; font-weight: 700; letter-spacing: -0.025em; }
+.f-wohead .f-time { font-size: 17px; font-weight: 600; color: var(--ink2); }
+.f-prog { height: 4px; border-radius: 2px; background: rgba(255, 255, 255, .08); margin: 10px 4px 18px; overflow: hidden; }
+.f-prog i { display: block; height: 100%; width: 41%; background: var(--ink2); border-radius: 2px; transform-origin: left; }
+.f-ex { padding: 16px 12px 8px; margin-bottom: 12px; }
+.f-ex h3 { margin: 0 6px; font-size: 19px; font-weight: 700; letter-spacing: -0.015em; }
+.f-ex .note { margin: 2px 6px 10px; color: var(--ink2); font-size: 14px; }
+.f-hint { margin: -4px 6px 10px; color: var(--gold); font-size: 14px; font-weight: 500; }
+.f-row { display: grid; grid-template-columns: 30px 1fr 64px 56px 52px; align-items: center; gap: 6px; height: 56px; padding: 0 2px 0 6px; border-radius: 16px; position: relative; }
+.f-row .n { color: var(--ink3); font-weight: 600; font-size: 15px; text-align: center; }
+.f-row .p { color: var(--ink3); font-size: 14px; }
+.f-row .v { font-size: 18px; font-weight: 600; text-align: right; }
+.f-row .v small { font-size: 12px; color: var(--ink3); font-weight: 500; margin-left: 2px; }
+.f-chk { width: 48px; height: 48px; border-radius: 15px; display: grid; place-items: center; justify-self: end; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .18); position: relative; }
+.f-chk svg { width: 20px; height: 20px; opacity: .3; }
+.f-chk::before { content: ""; position: absolute; inset: 0; border-radius: inherit; background: rgba(242, 245, 250, .16); transform: scale(.4); opacity: 0; }
+.f-row.done .f-chk::before { transform: none; opacity: 1; }
+.f-row.done .f-chk { box-shadow: none; }
+.f-row.done .f-chk svg { opacity: 1; color: var(--ink); position: relative; }
+.f-row.done .v { color: var(--ink2); }
+.f-row.cur { background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1.5px rgba(191, 224, 255, .5); }
+.f-row.cur .f-chk { background: var(--ice); box-shadow: none; }
+.f-row.cur .f-chk svg { opacity: 1; color: var(--ice-ink); }
+.f-row .gain { position: absolute; right: 58px; top: 6px; color: var(--gold); font-size: 13px; font-weight: 700; opacity: 0; pointer-events: none; }
+
+/* rest bar: frost floating above the list, with the next set */
+.f-rest { position: absolute; z-index: 6; left: 12px; right: 12px; bottom: calc(14px + env(safe-area-inset-bottom)); height: 76px; border-radius: 28px;
+  display: grid; grid-template-columns: 52px 1fr auto; align-items: center; gap: 12px; padding: 0 10px 0 12px; overflow: hidden;
+  background: rgba(150, 175, 220, .12); }
+.f-rest .fill { position: absolute; inset: 0; background: rgba(191, 224, 255, .10); transform-origin: left; z-index: -1; }
+.f-rest .clock { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; text-align: center; display: inline-block; }
+.f-rest .what { display: grid; line-height: 1.25; }
+.f-rest .what b { font-size: 15px; font-weight: 600; }
+.f-rest .what span { font-size: 13.5px; color: var(--ink2); }
+.f-rest .btns { display: flex; gap: 6px; }
+.f-rest .btns button { height: 48px; min-width: 52px; padding: 0 12px; border-radius: 18px; background: rgba(255, 255, 255, .08); font-weight: 600; font-size: 14.5px; transition: transform 160ms cubic-bezier(.23, 1, .32, 1); }
+.f-rest .tint { position: absolute; inset: 0; background: rgba(191, 224, 255, .12); opacity: 0; z-index: -1; }
+.f-rest.go .tint { opacity: 1; }
+.f-rest.parked { transform: translateY(calc(100% + 24px)); pointer-events: none; }
+.f-rest .digit { display: inline-block; }
+
+/* Coach */
+.f-coachtop { display: grid; justify-items: center; gap: 12px; padding: 10px 0 18px; text-align: center; }
+.f-coachtop .orb { --orb: 96px; }
+.f-coachtop h1 { margin: 0; font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+.f-coachtop p { margin: 0; color: var(--ink2); font-size: 15px; max-width: 30ch; }
+.f-sec { margin: 22px 6px 8px; font-size: 15px; font-weight: 600; color: var(--ink2); display: flex; justify-content: space-between; }
+.f-sec button { color: var(--ice); font-weight: 600; }
+.f-mem { padding: 4px 0; }
+.f-mem div { padding: 13px 16px; display: grid; gap: 2px; }
+.f-mem div + div { box-shadow: inset 0 1px 0 var(--line); }
+.f-mem b { font-weight: 500; font-size: 15.5px; line-height: 1.35; }
+.f-mem span { color: var(--ink3); font-size: 13px; }
+.f-mem .goal b::before { content: ""; display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ice); margin: 0 8px 2px 0; }
+.f-bub { padding: 14px 16px; border-radius: 22px; max-width: 88%; font-size: 16px; }
+.f-bub.me { margin: 6px 0 10px auto; background: rgba(255, 255, 255, .1); border-bottom-right-radius: 8px; width: fit-content; }
+.f-bub.coach { border-bottom-left-radius: 8px; }
+.f-bub.coach p { margin: 0 0 8px; }
+.f-bub.coach p:last-child { margin: 0; }
+.f-ask { position: absolute; z-index: 5; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); height: 58px; border-radius: 29px; display: flex; align-items: center; gap: 10px; padding: 0 7px 0 20px; color: var(--ink3); }
+.f-ask span { flex: 1; }
+.f-ask button { width: 44px; height: 44px; border-radius: 50%; background: var(--ice); color: var(--ice-ink); display: grid; place-items: center; }
+.f-ask svg { width: 20px; height: 20px; }

@@ -1,0 +1,76 @@
+/* Direction 4, Headline: type leads. Every screen is one sentence from the Coach, with the numbers inside it. */
+.hl { --bg: #050507; --ink: #f4f3f1; --ink2: rgba(240, 239, 236, .56); --ink3: rgba(240, 239, 236, .32); --line: rgba(255, 255, 255, .08);
+  --glass: rgba(200, 200, 215, .07); --hi: rgba(255, 255, 255, .14); --gold: #f0d68a;
+  --orb-a: #dfe8ff; --orb-b: #3f63ff; --orb-glow: rgba(110, 145, 255, .3);
+  position: absolute; inset: 0; background: var(--bg); color: var(--ink);
+  font-family: "Onest", system-ui, sans-serif; font-size: 16px; line-height: 1.4; }
+.h-sky { position: absolute; inset: 0; overflow: hidden; }
+.h-sky::before { content: ""; position: absolute; width: 120%; height: 50%; left: -10%; top: -14%;
+  background: radial-gradient(closest-side, rgba(150, 160, 200, .12), transparent); }
+.hl .scr { z-index: 1; padding: calc(var(--lab-top) + 8px) 22px 150px; display: flex; flex-direction: column; min-height: 100%; }
+.h-glass { background: var(--glass); -webkit-backdrop-filter: blur(20px) saturate(1.3); backdrop-filter: blur(20px) saturate(1.3);
+  box-shadow: inset 0 1px 0 var(--hi), inset 0 0 0 1px var(--line); }
+
+.h-date { color: var(--ink2); font-size: 14.5px; margin-bottom: 18px; }
+.h-big { font-family: "Fraunces", Georgia, serif; font-optical-sizing: auto; font-weight: 340; font-size: 38px; line-height: 1.12;
+  letter-spacing: -0.02em; margin: 0; text-wrap: balance; }
+.h-nw { white-space: nowrap; }
+.h-num { display: inline-block; font-family: "Onest", system-ui, sans-serif; font-weight: 600; font-size: .78em; letter-spacing: -0.02em;
+  padding: 0 .32em; border-radius: .5em; background: rgba(255, 255, 255, .09); vertical-align: .06em; white-space: nowrap; }
+.h-sub { color: var(--ink2); font-size: 16px; margin: 18px 0 0; max-width: 34ch; }
+.h-facts { margin-top: 30px; display: grid; gap: 0; }
+.h-facts div { display: flex; justify-content: space-between; padding: 14px 2px; box-shadow: inset 0 -1px 0 var(--line); font-size: 15.5px; }
+.h-facts div span:last-child { color: var(--ink2); }
+.h-spacer { flex: 1; min-height: 20px; }
+
+/* the one action, at the thumb */
+.h-cta { position: absolute; z-index: 6; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); display: flex; gap: 10px; align-items: center; }
+.h-go { flex: 1; height: 62px; border-radius: 31px; background: var(--ink); color: #0b0b0e; font-weight: 600; font-size: 17px; display: flex; align-items: center; justify-content: center; gap: 10px; transition: transform 160ms cubic-bezier(.23, 1, .32, 1); }
+.h-go svg { width: 15px; height: 15px; }
+.h-orbbtn { width: 62px; height: 62px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+.h-orbbtn .orb { --orb: 40px; }
+[data-press][data-down] { transform: scale(.96); }
+
+/* workout: the set you're on is the headline; the rest of the session is a quiet list under it */
+.h-ex { color: var(--ink2); font-size: 15px; margin-bottom: 10px; }
+.h-setline { display: flex; gap: 8px; margin-top: 22px; }
+.h-setline i { flex: 1; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .1); }
+.h-setline i.done { background: var(--ink2); }
+.h-setline i.cur { background: var(--ink); }
+.h-edit { display: flex; gap: 10px; margin-top: 18px; }
+.h-edit button { flex: 1; height: 58px; border-radius: 18px; font-size: 15px; color: var(--ink2); display: flex; align-items: center; justify-content: center; gap: 8px; }
+.h-edit button b { color: var(--ink); font-size: 18px; font-weight: 600; }
+.h-list { margin-top: 26px; }
+.h-list div { display: flex; justify-content: space-between; padding: 13px 0; box-shadow: inset 0 -1px 0 var(--line); font-size: 15px; color: var(--ink2); }
+.h-list div b { color: var(--ink); font-weight: 500; }
+.h-rest { position: absolute; z-index: 6; left: 16px; right: 16px; bottom: calc(16px + env(safe-area-inset-bottom)); height: 62px; border-radius: 31px; display: flex; align-items: center; padding: 0 8px 0 22px; gap: 12px; overflow: hidden; }
+.h-rest .fill { position: absolute; inset: 0; background: rgba(255, 255, 255, .07); transform-origin: left; }
+.h-rest .clock { font-size: 24px; font-weight: 600; position: relative; }
+.h-rest span.w { flex: 1; font-size: 14px; color: var(--ink2); position: relative; }
+.h-rest button { position: relative; height: 46px; padding: 0 18px; border-radius: 23px; background: rgba(255, 255, 255, .1); font-weight: 600; font-size: 15px; }
+
+/* record: the one loud moment. Gold lives only here. */
+.h-rec .h-big { color: var(--ink); }
+.h-gold { position: relative; display: block; color: var(--gold); font-family: "Onest", system-ui, sans-serif; font-weight: 700; font-size: 84px; letter-spacing: -0.04em; line-height: 1; margin-top: 18px; }
+.h-gold .num { position: relative; display: inline-block; }
+.h-gold .shine { position: absolute; inset: 0; color: transparent; pointer-events: none;
+  background: linear-gradient(100deg, transparent 40%, rgba(255, 250, 230, .95) 50%, transparent 60%) no-repeat; background-size: 250% 100%; background-position: 160% 0;
+  -webkit-background-clip: text; background-clip: text; }
+.h-stack { display: grid; }
+.h-stack > * { grid-area: 1 / 1; }
+.h-gold small { font-size: 22px; font-weight: 600; color: var(--ink2); letter-spacing: 0; margin-left: 6px; }
+
+/* finish */
+.h-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 28px; }
+.h-stats div { padding: 14px 12px; border-radius: 20px; display: grid; gap: 2px; }
+.h-stats b { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; }
+.h-stats span { font-size: 13px; color: var(--ink2); }
+.h-next { margin-top: 14px; padding: 16px; border-radius: 22px; }
+.h-next span { color: var(--ink2); font-size: 14px; display: block; }
+.h-next b { font-size: 18px; font-weight: 600; display: block; margin-top: 2px; }
+
+/* Coach and memory: memory is written as sentences you can tap to change */
+.h-mem { margin-top: 26px; font-family: "Fraunces", Georgia, serif; font-weight: 340; font-size: 22px; line-height: 1.42; color: var(--ink2); }
+.h-mem button { display: inline; font: inherit; color: var(--ink); text-align: left; box-shadow: inset 0 -1px 0 rgba(255, 255, 255, .22); border-radius: 2px; transition: transform 160ms cubic-bezier(.23, 1, .32, 1); }
+.h-q { align-self: flex-end; margin: 4px 0 18px; padding: 10px 16px; border-radius: 20px 20px 6px 20px; font-size: 15.5px; }
+.h-label { color: var(--ink3); font-size: 13.5px; margin: 34px 0 0; }

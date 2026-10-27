@@ -1,0 +1,95 @@
+/* Direction 3, Day line: you see your training as time. One vertical line is the day; the playhead is now. */
+.d { --bg: #06050d; --ink: #f1f0fa; --ink2: rgba(232, 230, 250, .58); --ink3: rgba(232, 230, 250, .34); --line: rgba(255, 255, 255, .08);
+  --glass: rgba(170, 160, 235, .08); --hi: rgba(255, 255, 255, .15); --vio: #b4a8ff; --vio-ink: #120b33; --gold: #efd88f;
+  --orb-a: #e0d8ff; --orb-b: #6a4dff; --orb-glow: rgba(140, 110, 255, .34);
+  position: absolute; inset: 0; background: var(--bg); color: var(--ink);
+  font-family: "Familjen Grotesk", system-ui, sans-serif; font-size: 16px; line-height: 1.38; }
+.d-sky { position: absolute; inset: 0; overflow: hidden; }
+.d-sky::before { content: ""; position: absolute; width: 120%; height: 55%; left: -10%; top: 18%;
+  background: radial-gradient(closest-side, rgba(110, 80, 230, .2), rgba(110, 80, 230, .06) 60%, transparent); }
+.d .scr { z-index: 1; padding: calc(var(--lab-top) + 4px) 16px 130px; }
+.d-glass { background: var(--glass); -webkit-backdrop-filter: blur(20px) saturate(1.4); backdrop-filter: blur(20px) saturate(1.4);
+  box-shadow: inset 0 1px 0 var(--hi), inset 0 0 0 1px var(--line); }
+
+.d-head { display: flex; justify-content: space-between; align-items: baseline; margin: 4px 4px 14px; }
+.d-head h1 { margin: 0; font-size: 30px; font-weight: 600; letter-spacing: -0.02em; }
+.d-head span { color: var(--ink2); font-size: 15px; }
+
+/* the line: hours on the left, things on the right of it */
+.d-line { position: relative; padding-left: 58px; }
+.d-axis { position: absolute; left: 44px; top: 0; bottom: 0; width: 2px; border-radius: 1px; background: rgba(255, 255, 255, .1); transform-origin: top; }
+.d-past { position: absolute; left: 44px; top: 0; width: 2px; border-radius: 1px; background: var(--ink2); transform-origin: top; }
+.d-item { position: relative; min-height: 46px; padding: 6px 0 12px; }
+.d-item .h { position: absolute; left: -62px; width: 34px; text-align: right; top: 7px; font-size: 13px; color: var(--ink3); }
+.d-item::before { content: ""; position: absolute; left: -19px; top: 12px; width: 10px; height: 10px; border-radius: 50%; background: var(--bg); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .28); }
+.d-item.past::before { background: var(--ink2); box-shadow: none; }
+.d-item b { display: block; font-size: 16.5px; font-weight: 600; }
+.d-item span { color: var(--ink2); font-size: 14.5px; }
+.d-item.block { padding-left: 12px; }
+.d-item.block::after { content: ""; position: absolute; left: 0; top: 6px; bottom: 12px; width: 3px; border-radius: 2px; background: rgba(255, 255, 255, .12); }
+.d-item.quiet b { font-weight: 500; color: var(--ink2); }
+
+/* now: the playhead, with the Coach's line on it. The bold thing on this screen. */
+.d-now { position: relative; margin: 4px 0 18px -58px; padding-left: 58px; }
+.d-now .h { position: absolute; left: -6px; width: 34px; text-align: right; top: 20px; font-size: 13px; font-weight: 700; color: var(--vio); }
+.d-now .ph { position: absolute; left: 37px; top: 15px; width: 16px; height: 16px; border-radius: 50%; background: var(--vio); box-shadow: 0 0 0 6px rgba(180, 168, 255, .16), 0 0 22px rgba(180, 168, 255, .5); }
+.d-nowcard { border-radius: 24px; padding: 16px; display: flex; gap: 12px; }
+.d-nowcard .orb { --orb: 30px; margin-top: 2px; }
+.d-nowcard p { margin: 0; font-size: 18px; line-height: 1.36; font-weight: 500; }
+.d-nowcard small { display: block; color: var(--ink2); font-size: 14px; margin-top: 6px; font-weight: 400; }
+.d-pill { display: inline-block; padding: 0 8px; border-radius: 999px; background: rgba(180, 168, 255, .16); color: var(--vio); font-weight: 600; white-space: nowrap; }
+.d-train { border-radius: 22px; padding: 14px 14px 14px 16px; display: flex; align-items: center; gap: 12px; margin-top: 2px; }
+.d-train div { flex: 1; }
+.d-btn { height: 48px; padding: 0 20px; border-radius: 999px; font-weight: 600; font-size: 15.5px; background: rgba(255, 255, 255, .08); display: inline-flex; align-items: center; gap: 8px; transition: transform 160ms cubic-bezier(.23, 1, .32, 1); }
+.d-btn.pri { background: var(--vio); color: var(--vio-ink); }
+.d-btn svg { width: 14px; height: 14px; }
+[data-press][data-down] { transform: scale(.96); }
+
+/* week ribbon at the top: the line continues sideways into the other days */
+.d-week { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; margin: 0 0 16px; }
+.d-week div { height: 54px; border-radius: 16px; display: grid; place-items: center; align-content: center; gap: 1px; font-size: 12px; color: var(--ink3); }
+.d-week b { font-size: 15px; color: var(--ink2); font-weight: 600; }
+.d-week .on { background: rgba(180, 168, 255, .14); color: var(--vio); }
+.d-week .on b { color: var(--ink); }
+.d-week .done b { text-decoration: none; color: var(--ink); }
+
+/* workout: the session is a line too; rest is literally a growing segment of time */
+.d-ex { position: relative; padding: 4px 0 14px; }
+.d-ex::before { content: ""; position: absolute; left: -19px; top: 9px; width: 10px; height: 10px; border-radius: 50%; background: var(--ink2); }
+.d-ex.todo::before { background: var(--bg); box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .28); }
+.d-ex h3 { margin: 0; font-size: 18px; font-weight: 600; }
+.d-ex .sub { color: var(--ink2); font-size: 14px; }
+.d-sets { display: flex; gap: 6px; margin-top: 10px; flex-wrap: wrap; }
+.d-s { min-width: 92px; height: 56px; border-radius: 16px; display: grid; place-items: center; align-content: center; padding: 0 10px; font-size: 16px; font-weight: 600; box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .14); }
+.d-s small { font-size: 11.5px; color: var(--ink3); font-weight: 500; }
+.d-s.done { background: rgba(255, 255, 255, .09); box-shadow: none; color: var(--ink2); }
+.d-s.cur { background: var(--vio); color: var(--vio-ink); box-shadow: none; }
+.d-s.cur small { color: rgba(18, 11, 51, .6); }
+.d-restseg { position: absolute; left: 44px; width: 2px; top: 0; height: 0; background: var(--vio); border-radius: 1px; transform-origin: top; }
+.d-restbar { position: absolute; z-index: 6; left: 12px; right: 12px; bottom: calc(14px + env(safe-area-inset-bottom)); height: 72px; border-radius: 28px; display: flex; align-items: center; gap: 14px; padding: 0 10px 0 20px; }
+.d-restbar.parked { transform: translateY(calc(100% + 24px)); pointer-events: none; }
+.d-restbar .clock { font-size: 26px; font-weight: 700; letter-spacing: -0.02em; }
+.d-restbar .what { flex: 1; display: grid; line-height: 1.25; }
+.d-restbar .what b { font-size: 15px; }
+.d-restbar .what span { font-size: 13.5px; color: var(--ink2); }
+
+/* history scrubber: a lift curve you drag through with a glass lens above your thumb */
+.d-chart { position: relative; height: 300px; margin: 8px -16px 0; touch-action: none; -webkit-user-select: none; user-select: none; }
+.d-chart svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+.d-lens { position: absolute; top: 0; left: 0; width: 132px; margin-left: -66px; padding: 10px 12px; border-radius: 20px; text-align: center; pointer-events: none; will-change: transform; }
+.d-lens b { display: block; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; }
+.d-lens span { font-size: 12.5px; color: var(--ink2); }
+.d-cursor { position: absolute; top: 74px; bottom: 30px; left: 0; width: 2px; margin-left: -1px; background: rgba(180, 168, 255, .5); border-radius: 1px; pointer-events: none; will-change: transform; }
+.d-dot { position: absolute; left: 0; top: 0; width: 16px; height: 16px; margin: -8px 0 0 -8px; border-radius: 50%; background: var(--vio); box-shadow: 0 0 0 5px rgba(180, 168, 255, .2); pointer-events: none; will-change: transform; }
+.d-cap { color: var(--ink2); font-size: 15px; margin: 6px 4px 0; }
+
+/* Coach: the orb sits on the playhead and the answer opens from it */
+.d-ask { position: absolute; z-index: 6; left: 14px; right: 14px; bottom: calc(14px + env(safe-area-inset-bottom)); height: 62px; border-radius: 31px; display: flex; align-items: center; gap: 10px; padding: 0 8px 0 20px; color: var(--ink3); }
+.d-ask span { flex: 1; }
+.d-ask .orb { --orb: 44px; }
+.d-mem { border-radius: 24px; padding: 6px 0; margin-top: 10px; }
+.d-mem div { padding: 12px 16px; display: grid; gap: 2px; }
+.d-mem div + div { box-shadow: inset 0 1px 0 var(--line); }
+.d-mem b { font-weight: 500; font-size: 15.5px; }
+.d-mem span { color: var(--ink3); font-size: 13px; }
+.d-sec { margin: 20px 4px 4px; font-size: 15px; font-weight: 600; color: var(--ink2); }
