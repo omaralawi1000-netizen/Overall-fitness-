@@ -12,7 +12,7 @@ Done:
 - docs/inspiration/notes.md: one entry per video, grouped by theme. Omar confirmed the list on 27 Oct ("It's fine").
 
 Problems found:
-- GEMINI_API_KEY is not set in the cloud environment. generativelanguage.googleapis.com answers but refuses calls (401). Omar needs to add the key as GEMINI_API_KEY in the project's cloud environment settings. Needed before the Coach exam.
+- Gemini: set and working (checked 27 Oct after Omar switched the environment). The key is not a GEMINI_API_KEY variable; the cloud proxy adds it to every call to generativelanguage.googleapis.com, so call the API with no key. A test call to gemini-3.8-flash answered. Note: gemini-2.5-flash now returns 404 ("no longer available to new users"), so use gemini-3.8-flash.
 - Downloading release assets: `gh release download` fails (GraphQL is blocked in cloud sessions). Use the REST API: `gh api -H "Accept: application/octet-stream" repos/omaralawi1000-netizen/Overall-fitness-/releases/assets/<id>`.
 
 ## Next step
