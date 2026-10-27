@@ -31,12 +31,14 @@ Done:
 - Found: old Aven's "Delete everything" wipes every localStorage key starting with `aven`, so an `aven2` prefix is at
   risk (INTERVIEW.md, last section). Needs Omar's call.
 
-In progress:
-- Exam v1 "before" run of old Aven's Coach on gemini-3.8-flash (transcripts in reference/exam-v1/before/, harness
-  sources in reference/exam-v1/src/ to port into scripts/exam/ in Phase 1). Then fresh coach-judges score it, and the
-  baseline goes into COACH.md §8.
+- Old Aven seen running at 384 px (docs/inspiration/old-aven-review.md).
+- Exam v1 harness committed (exam/v1/, fake people only).
+
+Blocked:
+- Exam v1 "before" run: free Gemini tier is 20 requests/day per model and was used up on 27 Oct. Re-run after the daily
+  reset (~08:00 Copenhagen) in a copy of old Aven (exam/v1/README.md), over 1–2 days; then fresh coach-judges score it
+  and the numbers go into COACH.md §8.
 
 ## Next step
-Send Omar the Checkpoint 1 message (vision in a few lines, stack recommendation, cuts and merges that need his yes,
-decisions only he can make) and wait for his go. Open question from him: whether to open old Aven at phone width with
-test data and look at every screen before Checkpoint 2.
+Checkpoint 1 message sent to Omar on 27 Oct; waiting for his go and his answers (storage prefix, cuts/merges). After
+his go: run the exam baseline once the Gemini quota resets, then Checkpoint 2 step 7 (GitHub Pages deploy workflow).
