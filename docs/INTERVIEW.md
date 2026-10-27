@@ -15,3 +15,5 @@ nothing here gets hardcoded (see Decisions).
    whole day, around 15:00–16:00; sometimes right after the morning shift.
 2. **Week (changes over time):** Mon wrestling · Tue push · Wed wrestling · Thu pull · Fri push or rest (usually 5 gym
    sessions a week) · Sat legs + shoulders · Sun pull. Takes almost every set to failure.
+3. **Wrestling:** beginner, doesn't compete yet, wants to compete in the future.
+   Omar on the Coach: it should be able to do what Claude does in this interview (ask, understand, remember, help), for anyone.
