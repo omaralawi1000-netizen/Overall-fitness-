@@ -299,7 +299,7 @@
     ${PERF ? '<div class="label">' : '<button class="label" id="splitBtn" type="button">'}<b id="lbl"></b><span id="sub"></span>${PERF ? '</div>' : '</button>'}
     <button class="btn" id="sheetBtn" type="button">Sheet</button>
     <button class="btn" id="skyBtn" type="button">Sky</button>
-    <div class="fps" id="fps">– fps</div>`;
+    <div class="fps" id="fps">–<small>script fps</small></div>`;
   sheetEl.querySelector('.content').innerHTML = `
     <div class="grabber"></div>
     <header><h2>Sheet</h2><button class="close" id="closeBtn" type="button" aria-label="Close">×</button></header>
@@ -530,7 +530,7 @@
     last = t;
     stamps.push(t);
     while (stamps.length && t - stamps[0] > 1000) stamps.shift();
-    if (t - chipAt > 300) { chipAt = t; fpsEl.textContent = `${stamps.length} fps`; }
+    if (t - chipAt > 300) { chipAt = t; fpsEl.innerHTML = `${stamps.length}<small>script fps</small>`; }
     requestAnimationFrame(frame);
   }
 
@@ -643,7 +643,7 @@
     card.innerHTML = `
       <h2>${method} · ${NAMES[method]}</h2>
       <table><tr><th></th><th>fps</th><th>slow</th><th>hitches</th><th>worst</th></tr>${rows}</table>
-      ${sixty ? '<p class="warn">Most frames took about 16.7 ms: that is 60 Hz. Either the screen ran at 60 Hz (battery saver, or Motion smoothness not on Adaptive), or this method is too heavy. If E also shows about 60, it is the screen.</p>' : ''}
+      ${sixty ? '<p class="warn">These are script frames. On this phone Chrome runs scripts at about 60 fps even while the screen shows 120 Hz (seen 1 Nov with Show refresh rate on), so about 60 here is normal. Use this card for stutters (hitches) and to compare methods, not to read the refresh rate.</p>' : ''}
       <p class="dim">slow = frames over 12.5 ms, which miss 120 Hz. hitches = frames over 21 ms, a visible stutter. worst = the longest frame. The meter only sees frames the page makes, so your eye counts too.</p>
       <p class="dim">Chrome ${chrome || '?'} · ${W}×${H} · ${DPR}×</p>
       <div class="row"><button class="btn" id="again" type="button">Run again</button><button class="btn on" id="mine" type="button">Your turn, 15 s</button></div>

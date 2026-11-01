@@ -77,7 +77,8 @@ button, a { font: inherit; color: inherit; }
 .btn { height: 48px; min-width: 56px; padding: 0 14px; border-radius: 16px; border: 0; background: rgba(255, 255, 255, .13); font-weight: 650; font-size: 15px; cursor: pointer; }
 .btn:active { background: rgba(255, 255, 255, .28); }
 .btn.on { background: #f2f4f8; color: #0b0c12; }
-.fps { min-width: 56px; text-align: right; font-size: 13px; font-weight: 650; color: var(--dim); font-variant-numeric: tabular-nums; }
+.fps { min-width: 56px; text-align: right; font-size: 15px; line-height: 1.1; font-weight: 650; color: var(--dim); font-variant-numeric: tabular-nums; }
+.fps small { display: block; font-size: 10px; font-weight: 500; }
 
 .sheet { left: 8px; right: 8px; bottom: -100px; height: calc(var(--sheetH) + 100px); border-radius: 28px 28px 0 0; z-index: 20; touch-action: none; visibility: hidden; user-select: none; -webkit-user-select: none; }
 .sheet .labels i b { top: 82px; }
