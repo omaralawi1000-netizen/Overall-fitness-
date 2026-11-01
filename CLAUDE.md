@@ -32,7 +32,7 @@ Run them before Omar sees anything visual or any Coach change. Spawn fresh ones 
 ## Working efficiently (Omar, 1 Nov)
 Model and effort are Omar's to switch. When the work calls for a different setting, tell him which one and why.
 - **Opus, high effort:** concept and design work, DESIGN.md, signature-moment motion, the Coach brain and exam judging, anything touching user data. Riskiest work (data import, backup, storage): Opus main with Opus as advisor.
-- **Normal build phases:** Sonnet on medium as main model, Opus as advisor (`/advisor opus`; exists in Claude Code 2.1.316). Ask the advisor before committing to an approach, when an error repeats, and before calling a task done. Sonnet on high when stuck.
+- **Normal build phases:** Sonnet on high as main model, Opus as advisor (`/advisor opus`; exists in Claude Code 2.1.316). Ask the advisor before committing to an approach, when an error repeats, and before calling a task done. Still stuck: tell Omar to switch to Opus.
 - **Small fixes, copy and doc edits:** Sonnet on low, alone.
 - If the same fix fails twice, stop and tell Omar (stronger model or a new approach). If you skipped a file or didn't test, raise the effort.
 - One phase per session. On long tasks, commit, push and update PROGRESS.md after each working step, so a usage-limit cutoff loses nothing. Use /clear between unrelated tasks.
