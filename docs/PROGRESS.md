@@ -15,6 +15,79 @@ Problems found:
 - Gemini: set and working (checked 27 Oct after Omar switched the environment). There is no GEMINI_API_KEY variable; the environment injects the key as the x-goog-api-key header on requests to generativelanguage.googleapis.com, so send requests without a key. A test call to gemini-3.8-flash answered. Note: gemini-2.5-flash now returns 404 ("no longer available to new users"), so use gemini-3.8-flash.
 - Downloading release assets: `gh release download` fails (GraphQL is blocked in cloud sessions). Use the REST API: `gh api -H "Accept: application/octet-stream" repos/omaralawi1000-netizen/Overall-fitness-/releases/assets/<id>`.
 
+## Next step
+Open a new session and say "Start Phase 0". That session begins with Checkpoint 1, step 1 (the interview), after cloning the old app into reference/aven and reading it.
+
+## Session 2: Phase 0, Checkpoint 1 (27 Oct 2026)
+Done:
+- Brief: free-tier Gemini pacing, retry on 429, gemini-3.8-flash.
+- Old app cloned into reference/aven (gitignored) and read in full: all docs, every file in src/, android/, tests and the
+  Coach exam. Read-through notes in reference/notes/A–D (gitignored, local only).
+- Interview: 12 questions, answers and decisions in docs/INTERVIEW.md. Big decision: Aven 2 is for anyone (Omar's
+  friends, every type, Android and iPhone, own key or none); nothing about Omar is hardcoded; onboarding is a talk with
+  the Coach.
+- docs/INVENTORY.md (every old feature: keep/merge/cut/later), docs/LESSONS.md, docs/VISION.md, docs/COACH.md (incl.
+  exam v1: 22 conversations, target ≥ 8.5).
+- Found: old Aven's "Delete everything" wipes every localStorage key starting with `aven`, so an `aven2` prefix is at
+  risk (INTERVIEW.md). Omar chose `a2`.
+
+- Old Aven seen running at 384 px (docs/inspiration/old-aven-review.md).
+- Exam v1 harness committed (exam/v1/, fake people only).
+
+Blocked:
+- Exam v1 "before" run: free Gemini tier is 20 requests/day per model and was used up on 27 Oct. Re-run after the daily
+  reset (~08:00 Copenhagen) in a copy of old Aven (exam/v1/README.md), over 1–2 days; then fresh coach-judges score it
+  and the numbers go into COACH.md §8.
+
+Checkpoint 1 approved (Omar, 27 Oct, 18:07): go; yes to cuts 1–6; storage prefix `a2`; three changes written into
+BRIEF, VISION, COACH and INVENTORY (instant logging without the AI, file backup in the first build phase, watch and
+Health Connect right after the core loop). Real Gemini limits checked (COACH.md §7): the test key here is free tier
+(20/day per model), Omar's daily key has billing.
+
+## Next step
+Checkpoint 2 step 7: the GitHub Pages deploy workflow. In parallel, the exam baseline when the test key's quota resets
+(~08:00 Copenhagen, 28 Oct), then fresh coach-judges and COACH.md §8.
+
+## Session 2, continued: Checkpoint 2 (27 Oct 2026)
+Done:
+- Step 7: Pages deploy workflow (.github/workflows/pages.yml), merged to main. Omar switched Source to "GitHub Actions"
+  (1 Nov); no deploy has run since, so the live site still shows the old page until the next push to main.
+- Steps 8–9: the lab in site/lab/ (picker, 4 directions: Frost, Thread, Timeline, Headline) and films/films.html. Corrected
+  1 Nov: these are only on branch claude/project-thread-84tdii, never merged to main (main has only a placeholder).
+
+Half-done (on branch claude/project-thread-84tdii, not merged):
+- Round-2 judge fixes: Frost, Thread and Timeline done (Timeline's rest now lives on the line under Bench).
+- Headline not yet: rest as part of the sentence ("Rest. Set 4 in 2:30" with a counting pill; Done turns into "Skip rest"
+  in the same button, no new glass), siblings slide by the height change (FLIP) instead of jumping, Record's new content
+  starts ~180 ms after the tap, glint on A2.slow, Finish as one sentence with count-up pills of fixed width.
+- Films in site/lab/films/ are still round 1.
+
+## Next step
+Finish the Headline fixes in site/lab/d4-headline.js/.css, re-shoot and re-film (tools/lab/shot.mjs and film.mjs, serve site/ on port 8765;
+Playwright at 384×832, 2x, ffmpeg real + half speed), run fresh design and motion judges until no real defects, then PR
+into main, check the deploy, and send Omar my pick first. In parallel: the exam baseline on 28 Oct after the quota reset.
+
+## Session 3: blank page (1 Nov 2026)
+Omar's decision: the design starts from a blank page. Old Aven is a reference for features, data and lessons only. The lab
+(site/lab/), old-aven-review.md and the old style guide are history, not direction; the Headline fixes above are dropped.
+Done:
+- Removal list applied: every inherited design rule removed from BRIEF, TASTE, VISION, INVENTORY, LESSONS, inspiration
+  notes, web references, the design and motion judges and CLAUDE.md. Replaced by Omar's seven statements (TASTE.md §3) and
+  phone test cases. Kept as tests (Omar agreed): one tap ticks a set, the 5-second test, no dead buttons; noise/dither allowed.
+- Concepts in words (no UI yet): /mnt/project-files/aven2/ (project files, not the repo).
+- The Coach exam job is off until the Coach phase (its criteria get fixed first).
+- Before merging (Omar's list): leftovers fixed, Checkpoint 2 steps rewritten for the new process (BRIEF steps 8–12),
+  site/lab/ removed (kept in Git history), the exam persona's real details replaced with a made-up person (jonas; a
+  dry run passes in a scratch copy of old Aven), docs/concepts.md (all 12 concepts + 25 seeds), more references in
+  web-references.md, "shows instead of tells" in VISION and COACH, docs/research/tech-scan-2026-11-01.md saved.
+- Omar's picks: prototype Living Notebook and Conversation Workspace (each with "why has my bench stalled?" as an
+  explorable chart and "25 minutes left" as a plan change); Atmosphere is tested as a material in the blur test.
+- Omar (1 Nov): his real personal details stay in the public docs (INTERVIEW, VISION, COACH examples); he's fine with
+  them being public. Only the exam fixture uses a made-up person, and COACH.md §8 now describes that person (Jonas).
+
+- Merged to main (PR #5); the first "Deploy web app" run was green and the site shows the new placeholder.
+- Blur test built at site/blurtest/ (BRIEF step 10): compare view with split strips A–E and flip view, and perf.html
+  per method. What was built: docs/blur-test-plan.md, "As built". Judged by design-judge and motion-judge before Omar.
 - Blur test judged on Omar's phone: the screen ran at 120 Hz and felt smooth on A and B; live blur cost nothing
   measurable (the page meter counts script frames, capped near 60, and is now labelled so). C stuttered and is dropped.
   Final pick (Omar): **A, plain live blur**; grain only if a screen still shows rings. Rules: TASTE.md §4b. Motion rule
@@ -27,6 +100,10 @@ Problems found:
   1 Nov spec defects; the exam fixture one is done), and planned Noticer and "four weeks later" tests in §8.
 - Visual explanation references (Explorable Explanations, A2UI, generative UI, Rive, Motion) in web-references.md; the
   bench chart now has an adjustable "Try a next top set" and is one trusted component the Coach picks.
+
+- CLAUDE.md "Working efficiently" (Omar, 1 Nov): Opus high for design, Coach and data; Sonnet high with Opus as advisor for
+  normal builds; Sonnet low for copy and docs; commit and update PROGRESS.md after each working step.
+- Fix: an edit on 1 Nov cut sessions 2 and 3 out of this file; restored from Git history.
 
 ## Next step
 Omar tries the concepts on his phone: https://omaralawi1000-netizen.github.io/Overall-fitness-/concepts/ and picks the

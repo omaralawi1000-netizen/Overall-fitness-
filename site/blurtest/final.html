@@ -83,7 +83,7 @@
       const isB = (g.dataset.side === 'L') === bLeft;
       const isSheet = g.classList.contains('sheetL') || g.classList.contains('sheetR');
       g.innerHTML = '<div class="pane"></div>' + (isB ? '<div class="grain"></div>' : '') + '<div class="edge"></div>'
-        + (isSheet ? `<div class="tag">${isB ? 'B · grain' : 'A · plain'}<span>${isB ? 'my pick' : 'runner-up'}</span></div>` : '');
+        + (isSheet ? `<div class="tag">${isB ? 'B · grain' : 'A · plain'}<span>${isB ? 'my first pick' : 'Omar\u2019s pick'}</span></div>` : '');
     });
   }
   document.getElementById('swap').addEventListener('click', () => { bLeft = !bLeft; build(); });
