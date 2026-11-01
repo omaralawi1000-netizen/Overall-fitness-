@@ -149,5 +149,15 @@ Done:
   blur, Heat's record moment (flare, light change, sweep, three glass layers).
 - Tools: tools/looks/shot.mjs (screens), clip.mjs (videos, real and half speed), banding.py.
 
+## Session 5: the design bar (1 Nov 2026, night)
+Omar tried the three looks and said "They look like those": ordinary. He asked for research on what the best apps do
+(layout, not style) and a look at old Aven. Seven researchers searched the web, then a three-round debate (nine seats,
+including a harsh critic and a 5-second stranger) ended in 16 testable rules. Nothing was built.
+Result in docs/research/design-bar-2026-11-01.md: the looks are a screen, not an app (no tabs, food, week, finish, ask door),
+and they have no signature of their own. Scores: Heat 5.2, Ink 4.7, Ink rich 3.8 out of 10.
+
 ## Next step
-Omar picks one look on his phone. Then the sprint continues with the winner, starting with the five held fixes above.
+Omar decides: build one new round of the whole app shell to the 16 rules in two identity directions (A: orb plus day
+strip, B: numerals plus state field, no orb), judged by the crop test and the 5-second test against an ordinary
+Hevy-plus-MyFitnessPal control. The five held fixes (session 4) carry over to whichever wins. Open question for Omar:
+orb or non-orb as the signature.
