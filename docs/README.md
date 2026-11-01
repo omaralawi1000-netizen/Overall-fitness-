@@ -12,7 +12,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 
 ## Design
 - `docs/inspiration/notes.md`: what Omar likes. `docs/inspiration/web-references.md`: his web links. The numbered images are screenshots.
-- `docs/research/design-bar-2026-11-01.md`: the design bar (not in the repo yet; check the project folder if missing).
+- `docs/research/design-bar-2026-11-01.md`: the design bar.
 - `docs/history/`: old material, history not direction (`old-aven-review.md`).
 
 ## Research
