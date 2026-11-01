@@ -50,3 +50,10 @@ Then a "your turn" round. The meter only sees frames the page makes, so Omar's e
 - The page scrolls inside a full-screen box, not the page itself, so Chrome's address bar stays put and nothing jumps.
 - "Sky" makes the background drift slowly (the Atmosphere material test). The bar sits above the sheet, so Sheet and Sky are always reachable.
 - The deploy fails if anything in `site/` touches browser storage (`.github/workflows/pages.yml`).
+
+## Results on Omar's phone (1 Nov 2026, Chrome 156, 384×735 css, 3.75×)
+Hands-off speed test, all methods:
+- Every method ran at 60 fps, E (the no-blur baseline) included. So the screen was at 60 Hz during the hands-off run, most likely Samsung's adaptive refresh dropping to 60 when nothing touches the screen. The 120 Hz question is still open: it needs "Your turn" runs (finger on the screen).
+- A, B, D, E: no hitches; worst frame 17–19 ms in every part.
+- C: 4 hitches while the sheet moved (57 fps, worst 67 ms); everything else clean. C is the heaviest method, but this was one run.
+- Still to come: which strip looks best, banding, and "Your turn" numbers.
