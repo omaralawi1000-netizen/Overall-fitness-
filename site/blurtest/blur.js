@@ -272,9 +272,14 @@
   });
   const scrollMax = () => scroller.scrollHeight - scroller.clientHeight;
 
-  function feedCopy() {
+  function feedCopy(pad) {
     const c = feed.cloneNode(true);
     c.setAttribute('aria-hidden', 'true');
+    // Full-width bands reach into the pad too, so the blur pulls in band colour (as live blur's mirrored edge does), not sky.
+    c.querySelectorAll('.band').forEach((b) => {
+      b.style.marginLeft = b.style.marginRight = -(16 + pad) + 'px';
+      b.style.paddingLeft = b.style.paddingRight = 16 + pad + 'px';
+    });
     const src = feed.querySelectorAll('canvas'), dst = c.querySelectorAll('canvas');
     dst.forEach((d, i) => { d.width = src[i].width; d.height = src[i].height; d.getContext('2d').drawImage(src[i], 0, 0); });
     return c;
@@ -390,7 +395,7 @@
       sc.style.left = pad + 'px';
       sc.style.top = pad + 'px';
       sc.style.width = scroller.clientWidth + 'px';
-      sc.append(feedCopy());
+      sc.append(feedCopy(pad));
       pos.append(sc);
       p.append(pos, tint());
       posList.push({ el: pos, surf, x, pad });

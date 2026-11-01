@@ -24,7 +24,7 @@ The goal is to find the best-looking blur that stays smooth on Omar's phone, wit
 `perf.html?m=A`, and the same for B–E, loads only that method. A fixed 20-second run plays: a scroll fling, the sheet opening, a catch mid-way, then closing, scrolling with the sheet half open, and the sky moving. For each part it shows:
 - average fps
 - slow: the share of frames over 12.5 ms (a missed 120 Hz frame; 8.3 ms exactly would count normal jitter)
-- hitches: frames over 25 ms, a visible stutter
+- hitches: frames over 21 ms (2.5 frames at 120 Hz), a visible stutter
 - the longest frame
 If most frames take about 16.7 ms it warns that either the screen ran at 60 Hz or the method is too heavy, and says to compare with E.
 
@@ -43,7 +43,7 @@ Then a "your turn" round. The meter only sees frames the page makes, so Omar's e
 
 ## As built (1 Nov 2026)
 - `site/blurtest/index.html` (compare), `perf.html` (speed test), shared `blur.js` and `blur.css`. No files to load: the sky and the three photos are drawn by the page.
-- Opens in split view. The top edge, the bar and the sheet each have five strips, A to E left to right. Tap a letter for flip view (the address becomes `?m=B`, so a reload keeps it). Split goes back.
+- Opens in split view. The top edge, the bar and the sheet each have five strips, A to E left to right. Tap a letter for flip view (the address becomes `?m=B`, so a reload keeps it). Tapping the label in the bar goes back to split.
 - Same tint and edge on every method; only the blur mechanism differs. E has a stronger tint because it has no blur.
 - The sky is computed in full precision and dithered once. D's pre-blurred sky is exact (a blurred gaussian is a wider gaussian), so D can't band from its own picture.
 - C's copy follows the scroll on the compositor (a scroll timeline), so it shouldn't trail on Chrome 115 or newer.

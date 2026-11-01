@@ -95,7 +95,7 @@ button, a { font: inherit; color: inherit; }
 .chart i:last-child { background: linear-gradient(#ffd36e, #ff6a3d); }
 
 /* Speed test result card: solid on purpose, so it never adds blur of its own. */
-.card { position: fixed; z-index: 50; left: 16px; right: 16px; top: 50%; transform: translateY(-50%); max-height: calc(100% - 48px); overflow: auto; padding: 20px; border-radius: 24px; background: #0e1018; border: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 20px 60px rgba(0, 0, 0, .5); }
+.card { position: fixed; z-index: 50; left: 16px; right: 16px; top: 50%; transform: translateY(-50%); max-height: calc(100% - 2 * (88px + env(safe-area-inset-bottom))); overflow: auto; padding: 20px; border-radius: 24px; background: #0e1018; border: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 20px 60px rgba(0, 0, 0, .5); }
 .card h2 { margin: 0 0 8px; font-size: 22px; }
 .card p { margin: 0 0 12px; font-size: 15px; }
 .card .dim { color: var(--dim); font-size: 13px; }
