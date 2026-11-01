@@ -201,3 +201,6 @@ button { cursor: pointer; }
 /* Room under the last card for the floating answer, so it never covers a button. */
 .ws .panel { padding-bottom: 128px; }
 .ws .edit-note, .ws .bench-btns { scroll-margin-bottom: 120px; }
+/* LESSONS 38: Undo can't be hit by the second tap of the Accept that made it (arms after 450 ms). */
+@keyframes arm { from { pointer-events: none; } to { pointer-events: auto; } }
+.undo button { animation: arm 0s 450ms both; }
