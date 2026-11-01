@@ -84,19 +84,19 @@
 .ink .ex-last .fig { font-weight: 600; }
 .ink .done-rows, .ink .up-rows { list-style: none; margin: 10px 0 0; padding: 0; }
 .ink .done-rows li, .ink .up-rows li { position: relative; display: grid; grid-template-columns: 92px auto 1fr auto; align-items: center; gap: 14px; min-height: 40px; }
-.ink .done-rows .col, .ink .up-rows .col { text-align: right; font-size: 22px; position: relative; z-index: 1; white-space: nowrap; }
+.ink .done-rows .col, .ink .up-rows .col { justify-self: end; text-align: right; font-size: 22px; position: relative; z-index: 1; white-space: nowrap; }
 .ink .done-rows .w, .ink .up-rows .w { color: var(--graphite); font-size: 15px; }
 .ink .done-rows .at { grid-column: 4; color: var(--graphite); font-size: 13px; font-weight: 500; }
 .ink .row-undo { grid-column: 3; grid-row: 1; justify-self: end; font-size: 15px; }
 .ink .up-rows li { color: var(--graphite); }
 /* A record: a yellow marker stroke behind the figures, swept in from the left. Ink stays on top. */
 .ink .marker { position: absolute; left: 0; top: 7px; width: 98px; height: 26px; background: var(--marker); border-radius: 3px 6px 4px 7px; transform-origin: 0 50%; z-index: 0; }
-.ink .done-rows li.rec .col { color: #121317; transition: color 160ms 90ms; }
+.ink .done-rows li.rec .col { color: #121317; transition: color 120ms 220ms; } /* darkens as the marker reaches it */
 .ink .done-rows li.rec-pending .marker { scale: 0 1; }
 .ink .now-rule { position: relative; height: 2px; margin: 14px 0 16px; background: var(--hair); }
 .ink .drain { position: absolute; inset: 0; background: var(--ink); transform-origin: 0 50%; }
 .ink .now-label { font-size: 15px; font-weight: 650; }
-.ink .figure { display: flex; align-items: baseline; gap: 6px; margin: 2px 0 8px; white-space: nowrap; }
+.ink .figure { display: flex; width: max-content; align-items: baseline; gap: 6px; margin: 2px 0 8px; white-space: nowrap; }
 .ink .fv { position: relative; display: inline-flex; align-items: baseline; font-size: 88px; line-height: 1; font-weight: 800; font-stretch: 68%; letter-spacing: -0.015em; padding: 4px 0 12px; min-height: 72px; }
 .ink .fv .v { display: inline-block; font-variant-numeric: tabular-nums; }
 .ink .fv .bar { position: absolute; left: 2px; bottom: 2px; width: min(100%, 52px); height: 4px; border-radius: 2px; background: currentColor; }
@@ -107,7 +107,7 @@
 .ink .fw .v, .ink .fw .bar { transition: color 320ms cubic-bezier(.2, .8, .2, 1), background-color 320ms cubic-bezier(.2, .8, .2, 1); }
 .ink[data-bump='open'] .fw .v { color: var(--pencil); }
 .ink[data-bump='open'] .fw .bar { background: var(--pencil); }
-.ink .w-coach { font-size: 22px; line-height: 1.22; min-height: 0; text-wrap: pretty; }
+.ink .w-coach { font-size: 22px; line-height: 1.22; min-height: 2.44em; text-wrap: pretty; } /* two lines kept, so Apply/Undo never shifts it */
 .ink .w-coach:empty { display: none; }
 .ink .bump-acts { margin-top: 18px; }
 .ink .next-pane { margin-top: 8px; }
@@ -133,10 +133,12 @@
 .ink .slab-rt { font-size: 20px; font-weight: 750; opacity: 0.8; font-variant-numeric: tabular-nums; }
 .ink .slab-rt:empty { display: none; }
 .ink .slab-t { font-size: 24px; font-weight: 750; }
-.ink.resting .slab { color: var(--graphite); }
-.ink.resting .slab::before { opacity: 0; }
-.ink .roll, .ink .fv .v.roll { position: relative; display: inline-grid; overflow: clip; overflow-clip-margin: 2px; }
+.ink.resting .slab { color: var(--ink); }
+.ink.resting .slab::before { opacity: 0.1; } /* resting, but still a button that takes you back */
+.ink .roll, .ink .fv .v.roll { position: relative; display: inline-grid; overflow-x: visible; overflow-y: clip; overflow-clip-margin: 2px; }
 .ink .roll > span { grid-area: 1 / 1; }
+/* The old text lies over the box, so the box (and whatever follows it) takes the new width at once. */
+.ink .roll > .roll-old { position: absolute; inset: 0; white-space: nowrap; }
 
 /* ---------- The edit tray ---------- */
 .ink .scrim { position: absolute; inset: 0; z-index: 8; background: var(--scrim); }

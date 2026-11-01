@@ -14,8 +14,11 @@ export const SPRINGS = {
 };
 /** The one exit: things that leave (a ghost copy, a block making way) fade on this, short and fixed, no spring. */
 export const EXIT = { duration: 120, easing: 'cubic-bezier(.3, 0, .6, 1)' };
+/** OUT: the quick way out for a whole screen being covered by another (gone before the other's glass passes over). */
+export const OUT = { damping: 1, response: 0.2 };
 /** Light (Heat only): a light goes out fast, the next comes up slowly. Light changes; nothing moves. */
-export const LIGHT = { out: { damping: 1, response: 0.2 }, in: { damping: 1, response: 0.8 } };
+export const LIGHT = { out: OUT, in: { damping: 1, response: 0.8 } };
+/** The one colour change (ink drying, waiting set darkening): CSS var --fade holds the same 280 ms curve. */
 
 const RM = matchMedia('(prefers-reduced-motion: reduce)');
 export const reduced = () => RM.matches;
@@ -162,16 +165,23 @@ export function travel(el, from, spec = SPRINGS.type, extra = {}) {
   ], spec, extra);
 }
 
-/** Roll a text from its old value to a new one: old slides up and out, new rises in (Type spring). */
-export function roll(el, text, { dir = 1 } = {}) {
+/**
+ * Roll a text from its old value to a new one: old slides up and out, new rises in (Type spring).
+ * The box takes the new text's width at once (the old text is laid over it, not beside it), and `move` (things after
+ * it on the same line) slide to their new places on the same spring instead of jumping.
+ */
+export function roll(el, text, { dir = 1, move = [] } = {}) {
   if (el.dataset.text === String(text)) return;
   const old = el.dataset.text ?? el.textContent;
   el.dataset.text = String(text);
   if (RM.matches || old === '') { el.textContent = text; return; }
-  el.classList.add('roll');
-  el.innerHTML = `<span class="roll-old" aria-hidden="true"></span><span class="roll-new"></span>`;
-  const o = el.firstChild, n = el.lastChild;
-  o.textContent = old; n.textContent = text;
+  let o, n;
+  flip(move, () => {
+    el.classList.add('roll');
+    el.innerHTML = `<span class="roll-old" aria-hidden="true"></span><span class="roll-new"></span>`;
+    o = el.firstChild; n = el.lastChild;
+    o.textContent = old; n.textContent = text;
+  }, SPRINGS.type);
   const h = Math.max(el.getBoundingClientRect().height, 12) * 0.7 * dir;
   play(n, [{ opacity: 0, transform: `translateY(${h}px)` }, { opacity: 1, transform: 'none' }], SPRINGS.type);
   const out = play(o, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: `translateY(${-h}px)` }], SPRINGS.type, { fill: 'forwards' });

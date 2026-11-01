@@ -2,7 +2,7 @@
    embers on Today, full heat while you work, a cool sea-green while you rest that warms back up as the rest runs out.
    Everything you act on sits on one big pane of frosted glass in that light. The Coach's proposals are hollow
    (outlined) numbers; Apply fills them with light, Undo drains them. */
-import { SPRINGS, EXIT, LIGHT, Channel, play, fade, flip, ghost, fadeGhost, swap, travel, roll, pressable, timers, reduced } from './motion.js';
+import { SPRINGS, EXIT, OUT, LIGHT, Channel, play, fade, flip, ghost, fadeGhost, swap, travel, roll, pressable, timers, reduced } from './motion.js';
 import { paintField, fieldLayer } from './bg.js';
 import * as S from './state.js';
 
@@ -179,30 +179,46 @@ export function heat(stage) {
     b.disabled = true; // not tappable at once (LESSONS 38)
     T.after(400, () => { b.disabled = false; });
   }
+  /** The plan card's minutes change look with the trim state: the whole right-hand caption cross-fades as one (a copy
+   *  with its current looks frozen fades where it stands while the new one comes up), so no half-state ever shows. */
+  function capFade() {
+    const span = $('.plan-card .cap > span:last-child');
+    const x = ghost(span);
+    const src = [span, ...span.querySelectorAll('*')], dst = [x.g, ...x.g.querySelectorAll('*')];
+    src.forEach((e, i) => {
+      const cs = getComputedStyle(e);
+      for (const k of ['display', 'color', '-webkit-text-stroke', 'font-family', 'font-weight', 'text-decoration', 'margin-right']) dst[i].style.setProperty(k, cs.getPropertyValue(k));
+    });
+    x.g.style.textAlign = 'right';
+    x.host.append(x.g);
+    return () => {
+      fadeGhost(x.g, [{ opacity: 1 }, { opacity: 0 }]);
+      play(span, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set, { delay: reduced() ? 0 : 60 });
+    };
+  }
+  const planBox = () => [$('.plan-card')];
   function trimApply() {
     if (s.trim.state !== 'open') return;
     const cut = [...hplan.querySelectorAll('li.cut')];
     const rest = [...hplan.querySelectorAll('li:not(.cut)'), $('.tiles')];
-    const mins = $('.plan-card .mins'), wasMin = $('.plan-card .was-min');
-    const hollow = ghost(mins, ['color', '-webkit-text-stroke', 'font-family', 'font-weight']);
-    const struck = ghost(wasMin, ['display', 'text-decoration', 'color']);
+    const cap = capFade();
     s.trim.state = 'applied';
     const line = $('.trim-undo');
     undoAfter(line, `Trimmed to ${S.minutesLeft(s)} min.`);
-    flip([$('.trim-slot'), $('.plan-card'), $('.tiles'), mins], () => {
+    flip([$('.trim-slot'), $('.plan-card'), $('.tiles')], () => {
       root.dataset.trim = 'applied'; // the hollow number fills, cut rows fold away
       $('.h-say').innerHTML = `Done by <span class="num">${S.doneBy(s)}</span>, in time for wrestling.`;
       $('.h-ask').textContent = `Cable fly and pushdowns are off; incline is two sets.`;
       swap($('.trim-acts'), line);
     });
-    for (const x of [hollow, struck]) { x.host.append(x.g); fadeGhost(x.g, [{ opacity: 1 }, { opacity: 0 }]); }
-    play(mins, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set);
+    cap();
     cut.forEach((li) => li.animate([{ opacity: 1 }, { opacity: 0 }], { ...EXIT, fill: 'forwards' }));
-    T.after(180, () => { flip(rest, () => cut.forEach((li) => { li.hidden = true; })); });
+    T.after(180, () => { flip(rest, () => cut.forEach((li) => { li.hidden = true; }), SPRINGS.set, planBox()); });
     sync();
   }
   function trimKeep() {
     if (s.trim.state !== 'open') return;
+    const cap = capFade();
     s.trim.state = 'kept';
     root.dataset.trim = 'kept';
     const line = $('.trim-undo');
@@ -213,19 +229,22 @@ export function heat(stage) {
       $('.h-ask').textContent = 'Leave straight after for wrestling.';
       swap($('.trim-acts'), line);
       trimUI();
-    });
+    }, SPRINGS.set, planBox());
+    cap();
   }
   function trimUndo() {
     const was = s.trim.state;
     if (was !== 'applied' && was !== 'kept') return;
     s.trim.state = 'open';
     const before = [...hplan.querySelectorAll('li:not(.cut)'), $('.tiles'), $('.trim-slot'), $('.plan-card')];
+    const cap = capFade();
     flip(before, () => {
       renderPlan(); trimUI();
       $('.h-say').innerHTML = `Leave by <span class="num">16:50</span> for wrestling.`;
       $('.h-ask').textContent = 'Trim the rest of Push to fit?';
       swap($('.trim-undo'), $('.trim-acts'));
-    });
+    }, SPRINGS.set, planBox());
+    cap();
     // The returning rows appear once the tiles below have made room, so nothing slides over them.
     hplan.querySelectorAll('li.cut').forEach((li) => play(li, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set, { delay: reduced() ? 0 : 140 }));
     sync();
@@ -244,22 +263,28 @@ export function heat(stage) {
     chips.innerHTML = ex.done.map((d, i) => chip(d, i)).join('');
     $('.h-count').innerHTML = `<span class="num">${s.cur + 1}</span>/<span class="num">${s.exercises.filter((e) => !S.isCut(s, e)).length}</span>`;
   }
+  /** The big weight: long ones (100 kg and up with a half) step down a size so the reps still fit beside them. */
+  function setW(text, opts = {}) {
+    $('.nb.w').classList.toggle('long', String(text).length > 4);
+    roll(wv, text, { ...opts, move: [$('.nb.w small')] });
+  }
+  function renderCoach(n = S.nowSet(s)) {
+    const coach = $('.work-face .h-coach');
+    if (S.bumpOpen(s)) { coach.innerHTML = `Sets 1 and 2 moved fast. Try <span class="num">82.5</span>?`; return; }
+    const lastR = n.ex.last[1][n.n - 1];
+    coach.innerHTML = lastR != null ? `Set <span class="num">${n.n}</span> of <span class="num">${n.of}</span> · last time <span class="num">${lastR}</span> reps` : `Set <span class="num">${n.n}</span> of <span class="num">${n.of}</span>`;
+  }
   function renderSet() {
     const n = S.nowSet(s);
     const proposing = S.bumpOpen(s);
     root.dataset.bump = proposing ? 'open' : (s.bump.state === 'applied' && n.ex.id === 'bench' && n.n === 3 ? 'applied' : 'none');
-    roll(wv, S.fmtKg(proposing ? 82.5 : n.w));
+    setW(S.fmtKg(proposing ? 82.5 : n.w));
     roll(rv, n.r);
     $('.hollow').textContent = '82.5';
     $('.fill').textContent = '82.5';
     $('.bump-acts').hidden = !proposing;
     if (!(n.ex.id === 'bench' && n.n === 3)) $('.bump-undo').hidden = true;
-    const coach = $('.work-face .h-coach');
-    if (proposing) coach.innerHTML = `Sets 1 and 2 moved fast. Try <span class="num">82.5</span>?`;
-    else if (root.dataset.bump !== 'applied') {
-      const lastR = n.ex.last[1][n.n - 1];
-      coach.innerHTML = lastR != null ? `Set <span class="num">${n.n}</span> of <span class="num">${n.of}</span> · last time <span class="num">${lastR}</span> reps` : `Set <span class="num">${n.n}</span> of <span class="num">${n.of}</span>`;
-    }
+    if (root.dataset.bump !== 'applied') renderCoach(n);
     renderNext();
   }
   function renderNext() {
@@ -268,10 +293,14 @@ export function heat(stage) {
   }
   function renderGo() {
     const n = S.nowSet(s), open = root.dataset.screen === 'workout';
+    const was = root.classList.contains('resting');
     root.classList.toggle('resting', !!restInfo && !open);
     if (restInfo && !open) {
-      roll(goL, 'Resting');
-      roll(goR, S.mmss(restInfo.left));
+      // Says what a tap does (back to the workout) and how long is left. The seconds just change; only the switch
+      // into this state rolls.
+      const t = `Resting ${S.mmss(restInfo.left)}`;
+      if (was) { goL.textContent = t; goL.dataset.text = t; } else roll(goL, t);
+      roll(goR, 'Back to workout');
       return;
     }
     // In the workout the button always says Done, even while resting (the rest counts down in the card), so the next
@@ -299,7 +328,7 @@ export function heat(stage) {
       g.setAttribute('aria-hidden', 'true');
       Object.assign(g.style, { position: 'absolute', left: r.left - b.left + 'px', top: r.top - b.top + 'px', width: r.width + 'px', margin: 0, pointerEvents: 'none' });
       // On a tick the big number has already flown into its chip: the fading copy leaves it out (no double image).
-      if (rest) g.querySelector('.nums')?.style.setProperty('visibility', 'hidden');
+      if (rest) g.querySelector('.nb.w')?.style.setProperty('visibility', 'hidden');
       slab.append(g);
       hide.hidden = true;
       fadeGhost(g, [{ opacity: 1 }, { opacity: 0, transform: 'translateY(-10px)' }]);
@@ -328,6 +357,7 @@ export function heat(stage) {
     $('.rest-next').innerHTML = s.finished ? '' : `Next <span class="num">${S.fmtKg(n.w)}×${n.r}</span>`;
     const note = $('.rest-note');
     if (info.rec.record) note.innerHTML = `Best bench yet · about <span class="num">${info.rec.est.toFixed(1)}</span> kg est.`;
+    else if (info.exDone) note.innerHTML = `${esc(info.ex.name)} done, <span class="num">${info.ex.done.length}</span> sets. ${esc(S.current(s).name)} next.`;
     else if (info.last != null && info.rec.r > info.last) { const d = info.rec.r - info.last; note.innerHTML = `<span class="num">+${d}</span> rep${d > 1 ? 's' : ''} on last time`; }
     else note.textContent = 'Breathe out slowly. Shoulders down.';
     // A record keeps the heat while its flare burns, then cools to the rest light (the two never mix).
@@ -357,7 +387,8 @@ export function heat(stage) {
   function doTick() {
     if (Date.now() < lock) return;
     lock = Date.now() + 1500; // a double tap can't tick the next set too (no real set is that short)
-    const from = $('.nb.w').getBoundingClientRect();
+    // Ticked early from the rest card: the big number isn't on screen, so the chip just arrives (no flight from nowhere).
+    const from = workFace.hidden ? null : $('.nb.w').getBoundingClientRect();
     let info, el;
     flip([$('.slab-wrap'), $('.h-next')], () => {
       info = S.tick(s);
@@ -374,7 +405,9 @@ export function heat(stage) {
     const fl = travel(el.querySelector('.num'), from, SPRINGS.type);
     const reclip = () => { chips.style.overflow = ''; };
     if (fl) fl.finished.then(reclip, reclip); else reclip();
-    play(el, [{ opacity: 0.2 }, { opacity: 1 }], SPRINGS.type);
+    // Only the pill fades up around the number; the number itself stays solid all the way in.
+    play(el, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.type, { pseudoElement: '::before' });
+    if (!from) play(el.querySelector('.num'), [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], SPRINGS.type);
     if (info.rec.record) T.after(160, () => {
       el.classList.add('flare');
       if (!reduced()) flare.animate([{ opacity: 0 }, { opacity: 0.75, offset: 0.25 }, { opacity: 0 }], { duration: 1400, easing: 'cubic-bezier(.2,.7,.3,1)' });
@@ -387,9 +420,14 @@ export function heat(stage) {
     if (info.exDone && !s.finished) {
       T.after(900, () => {
         if (info.undone) return;
-        const head = $('.ex-head');
-        const a = head.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-10px)' }], { ...EXIT, fill: 'forwards' });
-        a.finished.then(() => { renderExercise(); renderNext(); a.cancel(); play(head, [{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }]); }, () => {});
+        // The name and its sets leave together and the next exercise comes up in their place.
+        const parts = [$('.ex-head'), chips];
+        const outs = parts.map((p) => p.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-10px)' }], { ...EXIT, fill: 'forwards' }));
+        outs[0].finished.then(() => {
+          renderExercise(); renderNext();
+          outs.forEach((a) => a.cancel());
+          parts.forEach((p) => play(p, [{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }]));
+        }, () => {});
       });
     }
     renderPlan();
@@ -437,17 +475,23 @@ export function heat(stage) {
     const line = $('.bump-undo');
     undoAfter(line, 'Bench is now 82.5 kg.');
     swap($('.bump-acts'), line);
-    T.after(560, () => { if (root.dataset.bump === 'applied') { wv.dataset.text = ''; roll(wv, '82.5'); root.dataset.bump = 'set'; } });
+    T.after(560, () => { if (root.dataset.bump === 'applied') { wv.dataset.text = ''; setW('82.5'); root.dataset.bump = 'set'; } });
     renderGo();
   }
   function bumpKeep() {
     if (!S.bumpOpen(s)) return;
     s.bump.state = 'kept';
+    // The hollow 82.5 fades where it stands while a solid 80 comes up in its place (no solid 82.5 in between).
+    const h = ghost($('.hollow-wrap'), ['display']);
+    h.host.append(h.g);
+    fadeGhost(h.g, [{ opacity: 1 }, { opacity: 0 }]);
     root.dataset.bump = 'none';
     const line = $('.bump-undo');
     undoAfter(line, 'Staying at 80.');
     swap($('.bump-acts'), line);
-    renderSet();
+    // "kg" slides from beside the wider 82.5 to beside 80 instead of jumping.
+    flip([$('.nb.w small')], () => { wv.dataset.text = ''; wv.textContent = ''; renderSet(); }, SPRINGS.type);
+    play(wv, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set, { delay: reduced() ? 0 : 60 });
   }
   function bumpUndo() {
     if (!(s.bump.state === 'applied' || s.bump.state === 'kept')) return;
@@ -468,7 +512,7 @@ export function heat(stage) {
     root.dataset.screen = 'workout';
     work.setAttribute('aria-hidden', 'false'); today.setAttribute('aria-hidden', 'true');
     wy.to(0, SPRINGS.lift);
-    tOp.to(0, SPRINGS.set);
+    tOp.to(0, OUT); // Today goes dark fast, so it never shows through the rising workout
     if (!restInfo) light('work');
     renderGo();
     history.pushState({ looks: 'workout' }, '');
@@ -477,7 +521,7 @@ export function heat(stage) {
     root.dataset.screen = 'today';
     work.setAttribute('aria-hidden', 'true'); today.setAttribute('aria-hidden', 'false');
     wy.to(innerHeight, SPRINGS.set);
-    tOp.to(1, SPRINGS.set);
+    T.after(170, () => { if (root.dataset.screen === 'today') tOp.to(1, SPRINGS.set); }); // once the workout is mostly out of the way
     if (!restInfo) light('today');
     renderPlan(); trimUI(); renderGo();
     if (!fromPop && history.state?.looks === 'workout') { selfBack++; history.back(); }
@@ -489,17 +533,21 @@ export function heat(stage) {
   const tH = () => tray.getBoundingClientRect().height + 40;
   const ty = new Channel(tray, 'translate', (v) => `0 ${v}px`, 600);
   const sOp = new Channel(scrim, 'opacity', String, 0);
+  // The big white button would glow through the tray's glass: it dims while the tray is up.
+  const gOp = new Channel($('.go'), 'opacity', String, 1);
   function openTray() {
     if (restInfo) return;
     trayOpen = true;
     tray.hidden = false; scrim.hidden = false;
     const n = S.nowSet(s);
-    $('.tw').textContent = S.fmtKg(S.bumpOpen(s) ? 80 : n.w);
-    $('.tr').textContent = n.r;
+    const tw = S.fmtKg(S.bumpOpen(s) ? 80 : n.w);
+    $('.tw').textContent = tw; $('.tw').dataset.text = tw; $('.tw').classList.toggle('long', tw.length > 4);
+    $('.tr').textContent = n.r; $('.tr').dataset.text = String(n.r);
     $('.tray-done').textContent = `Use for set ${n.n}`;
     if (ty.value > tH()) ty.set(tH());
     ty.to(0, SPRINGS.lift);
     sOp.to(1);
+    gOp.to(0, OUT);
     history.pushState({ looks: 'tray' }, '');
   }
   function closeTray(v, fromPop) {
@@ -509,13 +557,15 @@ export function heat(stage) {
     const a = ty.to(tH(), SPRINGS.lift, v != null ? { v } : {});
     if (a) a.finished.then(hide, () => {}); else hide(); // reduced motion: no animation, hide at once
     sOp.to(0);
+    gOp.to(1);
     if (!fromPop && history.state?.looks === 'tray') { selfBack++; history.back(); }
   }
   tray.addEventListener('click', (e) => {
     const b = e.target.closest('[data-d]');
     if (!b) return;
     const ex = S.current(s), n = S.nowSet(s);
-    if (S.bumpOpen(s)) { s.bump.state = 'kept'; root.dataset.bump = 'none'; $('.bump-acts').hidden = true; }
+    const wasProposing = S.bumpOpen(s);
+    if (wasProposing) { s.bump.state = 'kept'; root.dataset.bump = 'none'; swap($('.bump-acts'), null); }
     let w = ex.wOverride ?? n.w, r = ex.rOverride ?? n.r;
     if (b.dataset.d === 'w-') w = Math.max(0, w - 2.5);
     if (b.dataset.d === 'w+') w += 2.5;
@@ -523,8 +573,10 @@ export function heat(stage) {
     if (b.dataset.d === 'r+') r += 1;
     ex.wOverride = w; ex.rOverride = r;
     const dir = b.dataset.d.endsWith('-') ? -1 : 1;
+    $('.tw').classList.toggle('long', S.fmtKg(w).length > 4);
     roll($('.tw'), S.fmtKg(w), { dir }); roll($('.tr'), r, { dir });
-    roll(wv, S.fmtKg(w), { dir }); roll(rv, r, { dir });
+    setW(S.fmtKg(w), { dir }); roll(rv, r, { dir });
+    renderCoach(); // the Coach's "Try 82.5?" goes once you set the weight yourself
     renderGo();
   });
   let drag = null;

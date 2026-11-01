@@ -46,7 +46,9 @@
 .heat .undo:disabled { opacity: 0.45; }
 
 /* Frosted glass, method A: live blur where the light and type pass behind it. */
-.heat .card { position: relative; border-radius: 30px; padding: 16px 18px; background: var(--card);
+.heat .card { position: relative; isolation: isolate; border-radius: 30px; padding: 16px 18px; }
+/* The glass is drawn by ::before, so when the card grows or shrinks its edge moves on the same spring as the rows. */
+.heat .card::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none; background-color: var(--card);
   -webkit-backdrop-filter: blur(26px) saturate(1.7); backdrop-filter: blur(26px) saturate(1.7);
   box-shadow: inset 0 1px 0 var(--card-edge), inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), 0 30px 60px -30px rgba(0, 0, 0, 0.6); }
 .heat .cap { display: flex; justify-content: space-between; align-items: baseline; font-family: 'Archivo', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0; color: var(--dim); }
@@ -84,10 +86,12 @@
 .heat .ex-sub { color: var(--soft); font-size: 15px; margin-top: 4px; }
 .heat .ex-sub .num { font-size: 13px; }
 .heat .chips { list-style: none; display: flex; flex-wrap: nowrap; overflow: clip; gap: 8px; margin: 14px 0 12px; padding: 0; min-height: 40px; }
-.heat .chip { display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 20px; background: rgba(255, 246, 238, 0.1); box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.2); }
+.heat .chip { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 20px; }
+.heat .chip::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: rgba(255, 246, 238, 0.1); box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.2); }
 .heat .chip .num { font-size: 14px; font-weight: 600; }
 .heat .chip small { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: rgba(255, 246, 238, 0.12); font-size: 12px; color: var(--soft); }
-.heat .chip.rec { box-shadow: inset 0 0 0 1.5px var(--gold); color: var(--gold); }
+.heat .chip.rec { color: var(--gold); }
+.heat .chip.rec::before { box-shadow: inset 0 0 0 1.5px var(--gold); }
 .heat .chip-undo { height: 32px; padding: 0 12px; margin-left: 2px; border-radius: 16px; background: var(--white); color: #1C0A04; font-size: 13px; font-weight: 700; }
 .heat .chip-undo:disabled { opacity: 0.5; }
 .heat .chip-undo::before { content: ''; position: absolute; inset: -6px -4px; }
@@ -109,6 +113,7 @@
 .heat .cols .num { letter-spacing: 0; font-size: 14px; color: var(--white); }
 .heat .nums { display: flex; justify-content: space-between; align-items: baseline; margin: 10px 0 6px; }
 .heat .nb { position: relative; display: inline-flex; align-items: baseline; gap: 6px; font-family: 'Unbounded', sans-serif; font-size: 76px; line-height: 1.02; font-weight: 700; letter-spacing: -0.04em; min-height: 88px; }
+.heat .nb.w.long { font-size: 60px; }
 .heat .nb small { font-family: 'Archivo', sans-serif; font-size: 17px; margin-right: 14px; font-weight: 600; letter-spacing: 0; color: var(--soft); }
 .heat .nb .v { display: inline-block; }
 .heat .hollow-wrap { position: absolute; left: 0; top: 0; display: none; pointer-events: none; }
@@ -140,8 +145,10 @@
 .heat .go-r { font-size: 15px; font-weight: 650; opacity: 0.75; }
 .heat.resting .go { color: #EFFFFA; }
 .heat.resting .go-fill { opacity: 0; }
-.heat .roll, .heat .nb .v.roll { position: relative; display: inline-grid; overflow: clip; overflow-clip-margin: 4px; }
+.heat .roll, .heat .nb .v.roll { position: relative; display: inline-grid; overflow-x: visible; overflow-y: clip; overflow-clip-margin: 4px; }
 .heat .roll > span { grid-area: 1 / 1; }
+/* The old text lies over the box, so the box (and whatever follows it) takes the new width at once. */
+.heat .roll > .roll-old { position: absolute; inset: 0; white-space: nowrap; }
 
 /* ---------- Tray ---------- */
 .heat .scrim { position: absolute; inset: 0; z-index: 8; background: rgba(0, 0, 0, 0.42); }
@@ -153,7 +160,8 @@
 .heat .tray-row .lbl { font-size: 17px; font-weight: 600; color: var(--soft); }
 .heat .tray-row .tu { font-size: 15px; font-weight: 600; color: var(--soft); }
 .heat .tray-row .num { font-size: 34px; font-weight: 600; text-align: center; }
+.heat .tray-row .num.long { font-size: 26px; }
 .heat .step { width: 64px; height: 64px; border-radius: 32px; font-size: 28px; box-shadow: inset 0 0 0 1.5px rgba(255, 240, 230, 0.35); }
 .heat .tray-done { margin-top: 14px; width: 100%; height: 64px; border-radius: 32px; }
 /* Grain on every blurred surface, so the blur never shows rings (see bg.js grain). */
-.heat .card, .heat .slab, .heat .h-dock::before, .heat .tray { background-image: var(--grain); background-size: var(--grain-size); }
+.heat .card::before, .heat .slab, .heat .h-dock::before, .heat .tray { background-image: var(--grain); background-size: var(--grain-size); }

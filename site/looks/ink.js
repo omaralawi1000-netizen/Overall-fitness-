@@ -2,7 +2,7 @@
    The Coach's words lean (italic), your numbers stand (upright, condensed, heavy). Blue is the Coach's pencil: a
    proposal stays blue until you tap Apply, then the ink dries. Rich = the same grammar on a living field of our own
    colours, with frosted panes and depth. */
-import { SPRINGS, EXIT, Channel, play, fade, flip, fold, ghost, fadeGhost, swap, travel, roll, pressable, timers, reduced } from './motion.js';
+import { SPRINGS, EXIT, OUT, Channel, play, fade, flip, fold, ghost, fadeGhost, swap, travel, roll, pressable, timers, reduced } from './motion.js';
 import { paintField, fieldLayer, drift } from './bg.js';
 import * as S from './state.js';
 
@@ -15,13 +15,13 @@ function richBackground(root, dark) {
   // Our own colours only: ink, chalk, a slate made from the Coach's blue, and (by day) a little of the record's marker
   // yellow. The field is kept well below the pencil's saturation, so the pencil stays the bluest thing on screen and
   // "blue = the Coach's proposal" still reads. At night yellow is left out: dimmed yellow turns olive.
-  const blue = dark ? [34, 52, 128] : [110, 140, 196], deep = dark ? [14, 18, 52] : [74, 98, 150];
-  const wash = dark ? [72, 92, 150] : [150, 178, 222], warm = [255, 222, 70];
+  const blue = dark ? [36, 42, 62] : [110, 140, 196], deep = dark ? [12, 13, 19] : [74, 98, 150];
+  const wash = dark ? [62, 68, 86] : [150, 178, 222], warm = [255, 222, 70];
   const a = dark
     ? paintField([
       { x: 0.1, y: 0.3, sx: 0.55, sy: 0.42, c: blue, a: 0.95 },
       { x: 0.96, y: 0.76, sx: 0.5, sy: 0.42, c: deep, a: 0.95 },
-    ], [9, 10, 16], { seed: 3 })
+    ], [9, 10, 13], { seed: 3 })
     : paintField([
       { x: 0.06, y: 0.3, sx: 0.5, sy: 0.38, c: blue, a: 0.6 },
       { x: 0.98, y: 0.78, sx: 0.5, sy: 0.4, c: deep, a: 0.45 },
@@ -163,13 +163,15 @@ export function ink(stage, { rich = false } = {}) {
     // The ink dries first (blue to ink), then the cut rows fold away and everything below closes up.
     T.after(200, () => {
       const after = [...plan.querySelectorAll('li:not(.cut)'), $('.day-pane')];
+      const olds = [$('.plan-sum'), ...[...plan.querySelectorAll('s.was')].map((x) => x.parentElement)].map((x) => ghost(x));
       fold(cutRows.filter((r) => r.isConnected), after, true, SPRINGS.set, boxes('.plan-pane'));
       $('.was-min').hidden = true; $('.was-by').hidden = true;
-      plan.querySelectorAll('.plan s.was').forEach((x) => fold([x], [x.nextElementSibling], true));
+      plan.querySelectorAll('s.was').forEach((x) => { x.hidden = true; });
+      for (const o of olds) { o.host.append(o.g); fadeGhost(o.g, [{ opacity: 1 }, { opacity: 0 }]); play(o.el, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set, { delay: 60 }); }
     });
     undoAfter(line, `Trimmed to ${S.minutesLeft(s)} min.`);
     swap(acts, line); // same slot, same height: nothing below moves
-    $('.t-coach').innerHTML = `Done by ${fig(S.doneBy(s))}, in time for wrestling at ${fig('17:15')}.`;
+    $('.t-coach').innerHTML = `Done by ${fig(S.doneBy(s))}, in time to leave at ${fig('16:50')}.`;
     syncWorkout();
   }
   function trimUndo() {
@@ -200,10 +202,10 @@ export function ink(stage, { rich = false } = {}) {
     drawStrikes(-1);
     s.trim.state = 'kept';
     root.dataset.trim = 'kept';
-    trimUI();
     const line = $('.trim-undo');
     undoAfter(line, 'Kept the full plan.');
-    swap($('.trim-acts'), line);
+    swap($('.trim-acts'), line); // first, so the fading copy still reads what you tapped
+    trimUI();
     const coach = $('.t-coach');
     coach.innerHTML = `Full plan it is. Done by ${fig(S.doneBy(s))}, so leave straight after.`;
     play(coach, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set);
@@ -213,6 +215,7 @@ export function ink(stage, { rich = false } = {}) {
   /* ---------- Workout ---------- */
   const doneRows = $('.done-rows'), upRows = $('.up-rows');
   const fw = $('.fw .v'), fr = $('.fr .v'), was = $('.fw .was');
+  const after = (v) => (v === fw ? [$('.unit'), $('.x'), $('.fr')] : []); // what sits after a number on its line
   const slabL = $('.slab-l'), slabR = $('.slab-r'), slabT = $('.slab-t'), slabRT = $('.slab-rt');
   let restInfo = null, lastTick = null, tickLock = 0, selfBack = 0;
 
@@ -229,8 +232,8 @@ export function ink(stage, { rich = false } = {}) {
     const n = S.nowSet(s);
     const proposing = S.bumpOpen(s) && !waiting;
     root.dataset.bump = proposing ? 'open' : s.bump.state === 'applied' && n.ex.id === 'bench' && n.n === 3 ? 'applied' : 'none';
-    $('.now-label').innerHTML = `${n.n === 1 && waiting ? esc(n.ex.name) + ' · ' : ''}Set ${fig(n.n)} of ${fig(n.of)}${waiting ? ' · after rest' : ''}`;
-    roll(fw, proposing ? '82.5' : S.fmtKg(n.w));
+    $('.now-label').innerHTML = `Set ${fig(n.n)} of ${fig(n.of)}${waiting ? ' · after rest' : ''}`;
+    roll(fw, proposing ? '82.5' : S.fmtKg(n.w), { move: after(fw) });
     roll(fr, n.r);
     was.textContent = '80';
     root.classList.toggle('waiting', waiting);
@@ -341,9 +344,10 @@ export function ink(stage, { rich = false } = {}) {
     T.after(400, () => { const b = newRow.querySelector('.row-undo'); if (b) b.disabled = false; });
     // 1. The figure shrinks into the list as a row (scaling down only, so it stays sharp).
     travel(newRow.querySelector('.col'), from, SPRINGS.type);
-    play(newRow.querySelector('.w'), [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set, { delay: 60 });
-    // 2. The next set rises into the Now slot, waiting in graphite; the slab's face becomes the rest.
-    play($('.now'), [{ opacity: 0, transform: 'translateY(22px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set, { delay: 40 });
+    newRow.querySelectorAll('.w, .at, .row-undo').forEach((x) => play(x, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set, { delay: 120 }));
+    // 2. The next set rises into the Now slot, waiting in graphite; the slab's face becomes the rest. (Its content
+    //    rises, not the lens around it, so the glass never blinks.)
+    [...$('.now').children].filter((x) => !x.hidden).forEach((x) => play(x, [{ opacity: 0, transform: 'translateY(22px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set, { delay: 40 }));
     let note = '';
     if (info.rec.record) note = `Best bench yet: about ${info.rec.est.toFixed(1)} kg estimated, up from ${info.rec.prevBest.toFixed(1)}.`;
     else if (info.last != null && info.rec.r > info.last) { const d = info.rec.r - info.last; note = `+${d} rep${d > 1 ? 's' : ''} on last time.`; }
@@ -401,7 +405,13 @@ export function ink(stage, { rich = false } = {}) {
     drain.getAnimations().forEach((a) => a.cancel());
     drain.style.scale = '1 1';
     root.classList.remove('waiting');
-    flip([$('.now-rule'), $('.now'), $('.next-pane')], () => { renderExercise(); renderNow(); }, SPRINGS.set, boxes('.ex-pane', '.now'));
+    if (from) flip([$('.now-rule'), $('.now'), $('.next-pane')], () => { renderExercise(); renderNow(); }, SPRINGS.set, boxes('.ex-pane', '.now'));
+    else {
+      // The exercise had already moved on: swap the whole content back the way it left, nothing slides through rows.
+      renderExercise(); renderNow();
+      [$('.ex-block'), $('.now-rule'), ...[...$('.now').children].filter((x) => !x.hidden && !x.classList.contains('figure')), $('.next-pane')]
+        .forEach((x) => play(x, [{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set));
+    }
     renderSlab();
     renderPlan();
     // The figure travels back up from the row it became.
@@ -443,7 +453,7 @@ export function ink(stage, { rich = false } = {}) {
     dropWas();
     flip([...figParts(), $('.next-pane')], () => {
       root.dataset.bump = 'none';
-      roll(fw, '80', { dir: -1 });
+      roll(fw, '80', { dir: -1, move: after(fw) });
       swap($('.bump-acts'), line);
       renderNow();
     }, SPRINGS.set, boxes('.ex-pane', '.now'));
@@ -474,7 +484,7 @@ export function ink(stage, { rich = false } = {}) {
     today.setAttribute('aria-hidden', 'true');
     wy.to(0, SPRINGS.lift);
     // Rich panes are see-through, so Today must be gone before the workout's panes pass over it (no doubled text).
-    tOp.to(0, rich ? SPRINGS.type : SPRINGS.set);
+    tOp.to(0, rich ? OUT : SPRINGS.set);
     renderSlab();
     if (push) history.pushState({ looks: 'workout' }, '');
   }
@@ -502,6 +512,9 @@ export function ink(stage, { rich = false } = {}) {
   const tH = () => tray.getBoundingClientRect().height + 40;
   const ty = new Channel(tray, 'translate', (v) => `0 ${v}px`, 600);
   const sOp = new Channel(scrim, 'opacity', (v) => String(v), 0);
+  // The slab fades while the tray is up (else it shows through the tray's glass as a grey shape). Only the slab: fading
+  // the dock itself would switch off its blur mid-fade.
+  const dOp = new Channel($('.slab'), 'opacity', (v) => String(v), 1);
   function trayVals() {
     const n = S.nowSet(s);
     $('.tw').textContent = S.fmtKg(S.bumpOpen(s) ? 82.5 : n.w);
@@ -515,6 +528,7 @@ export function ink(stage, { rich = false } = {}) {
     if (ty.value > tH()) ty.set(tH());
     ty.to(0, SPRINGS.lift);
     sOp.to(1, SPRINGS.set);
+    dOp.to(0, SPRINGS.set);
     history.pushState({ looks: 'tray' }, '');
   }
   function closeTray(v, fromPop) {
@@ -523,6 +537,7 @@ export function ink(stage, { rich = false } = {}) {
     const hide = () => { if (!trayOpen) { tray.hidden = true; scrim.hidden = true; } };
     const a = ty.to(tH(), SPRINGS.lift, v != null ? { v } : {});
     if (a) a.finished.then(hide, () => {}); else hide(); // reduced motion: no animation, hide at once
+    dOp.to(1, SPRINGS.set);
     sOp.to(0, SPRINGS.set);
     if (!fromPop && history.state?.looks === 'tray') { selfBack++; history.back(); }
   }
@@ -530,8 +545,13 @@ export function ink(stage, { rich = false } = {}) {
     const b = e.target.closest('[data-d]');
     if (!b) return;
     const ex = S.current(s), n = S.nowSet(s);
-    if (S.bumpOpen(s)) { s.bump.state = 'kept'; root.dataset.bump = 'none'; $('.bump-acts').hidden = true; $('.w-coach').innerHTML = ''; }
-    let w = ex.wOverride ?? n.w, r = ex.rOverride ?? n.r;
+    const base = S.bumpOpen(s) ? s.bump.to : n.w; // the tray showed the Coach's number, so a step starts from it
+    if (S.bumpOpen(s)) {
+      s.bump.state = 'kept';
+      dropWas();
+      flip([...figParts(), $('.next-pane')], () => { root.dataset.bump = 'none'; swap($('.bump-acts'), null); $('.w-coach').innerHTML = lastBeat(); }, SPRINGS.set, boxes('.ex-pane', '.now'));
+    }
+    let w = ex.wOverride ?? base, r = ex.rOverride ?? n.r;
     if (b.dataset.d === 'w-') w = Math.max(0, w - 2.5);
     if (b.dataset.d === 'w+') w += 2.5;
     if (b.dataset.d === 'r-') r = Math.max(1, r - 1);
@@ -539,7 +559,7 @@ export function ink(stage, { rich = false } = {}) {
     ex.wOverride = w; ex.rOverride = r;
     roll($('.tw'), S.fmtKg(w), { dir: b.dataset.d === 'w-' ? -1 : 1 });
     roll($('.tr'), r, { dir: b.dataset.d === 'r-' ? -1 : 1 });
-    roll(fw, S.fmtKg(w), { dir: b.dataset.d === 'w-' ? -1 : 1 });
+    roll(fw, S.fmtKg(w), { dir: b.dataset.d === 'w-' ? -1 : 1, move: after(fw) });
     roll(fr, r, { dir: b.dataset.d === 'r-' ? -1 : 1 });
   });
   // Direct tracking: drag the tray down; let go and a spring takes over at the finger's speed.
