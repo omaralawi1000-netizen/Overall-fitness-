@@ -7,7 +7,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 - `docs/TASTE.md`: the tests the judges check. `docs/VISION.md`: what Aven 2 is.
 - `docs/COACH.md`: the Coach rulebook. `exam/v1/`: the Coach exam.
 - `docs/INTERVIEW.md`: Omar's Checkpoint 1 answers. `docs/INVENTORY.md`: every old-Aven feature and what Aven 2 does with it. `docs/LESSONS.md`: lessons from old Aven.
-- `docs/concepts.md`: the twelve concepts in words. `docs/blur-test-plan.md`: how blur is tested.
+- `docs/concepts.md`: the twelve concepts in words. `docs/blur-test-plan.md`: how blur is tested (both go when their pages in `site/` are archived).
 - `.claude/agents/`: the judges. `.claude/skills/`: design and motion skills.
 
 ## Design

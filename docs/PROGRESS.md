@@ -55,17 +55,7 @@ Done:
 - Steps 8–9: the lab in site/lab/ (picker, 4 directions: Frost, Thread, Timeline, Headline) and films/films.html. Corrected
   1 Nov: these are only on branch claude/project-thread-84tdii, never merged to main (main has only a placeholder).
 
-Half-done (on branch claude/project-thread-84tdii, not merged):
-- Round-2 judge fixes: Frost, Thread and Timeline done (Timeline's rest now lives on the line under Bench).
-- Headline not yet: rest as part of the sentence ("Rest. Set 4 in 2:30" with a counting pill; Done turns into "Skip rest"
-  in the same button, no new glass), siblings slide by the height change (FLIP) instead of jumping, Record's new content
-  starts ~180 ms after the tap, glint on A2.slow, Finish as one sentence with count-up pills of fixed width.
-- Films in site/lab/films/ are still round 1.
-
-## Next step
-Finish the Headline fixes in site/lab/d4-headline.js/.css, re-shoot and re-film (tools/lab/shot.mjs and film.mjs, serve site/ on port 8765;
-Playwright at 384×832, 2x, ffmpeg real + half speed), run fresh design and motion judges until no real defects, then PR
-into main, check the deploy, and send Omar my pick first. In parallel: the exam baseline on 28 Oct after the quota reset.
+Dropped 1 Nov: the unmerged lab branch (Headline fixes, films) and its next step; see Session 3.
 
 ## Session 3: blank page (1 Nov 2026)
 Omar's decision: the design starts from a blank page. Old Aven is a reference for features, data and lessons only. The lab
