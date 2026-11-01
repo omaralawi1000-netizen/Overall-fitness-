@@ -82,8 +82,8 @@ Done:
   web-references.md, "shows instead of tells" in VISION and COACH, docs/research/tech-scan-2026-11-01.md saved.
 - Omar's picks: prototype Living Notebook and Conversation Workspace (each with "why has my bench stalled?" as an
   explorable chart and "25 minutes left" as a plan change); Atmosphere is tested as a material in the blur test.
-- Still Omar's call: other real details in INTERVIEW, VISION, COACH (listed for him, not changed). COACH.md §8's persona
-  line still describes the old numbers.
+- Omar (1 Nov): his real personal details stay in the public docs (INTERVIEW, VISION, COACH examples); he's fine with
+  them being public. Only the exam fixture uses a made-up person, and COACH.md §8 now describes that person (Jonas).
 
 - Merged to main (PR #5); the first "Deploy web app" run was green and the site shows the new placeholder.
 - Blur test built at site/blurtest/ (BRIEF step 10): compare view with split strips A–E and flip view, and perf.html
