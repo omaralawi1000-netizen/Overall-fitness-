@@ -35,7 +35,7 @@
 .dl .top { display: flex; justify-content: space-between; align-items: center; font-size: 15px; font-weight: 550; color: var(--dim); }
 .dl .state { display: inline-flex; align-items: center; color: var(--ink); font-weight: 650; }
 
-.dl .band { position: relative; height: 104px; margin: 16px 0 4px; }
+.dl .band { position: relative; height: 104px; margin: 16px 0 28px; }
 .dl .lane { position: absolute; left: 0; right: 0; top: 26px; height: 40px; border-radius: 10px; background: var(--well); overflow: clip; }
 .dl .blk { position: absolute; top: 0; bottom: 0; border-radius: 8px; }
 .dl .blk.work { background: var(--block); background-image: repeating-linear-gradient(135deg, transparent 0 5px, var(--hair) 5px 7px); }
@@ -52,6 +52,12 @@
 .dl .hours span { position: absolute; transform: translateX(-50%); }
 .dl .hours span:first-child { transform: none; }
 .dl .hours span:last-child { transform: translateX(-100%); }
+.dl .legend { position: absolute; left: 0; bottom: -30px; display: flex; gap: 14px; margin: 0; font-size: 12px; color: var(--dim); }
+.dl .legend span { display: flex; align-items: center; gap: 5px; }
+.dl .lg { display: inline-block; width: 12px; height: 10px; border-radius: 3px; }
+.dl .lg.work { background: var(--block); background-image: repeating-linear-gradient(135deg, transparent 0 2px, var(--hair-strong) 2px 3px); }
+.dl .lg.ses { background: var(--ember); }
+.dl .lg.meal { width: 9px; height: 9px; border-radius: 50%; background: var(--food); }
 
 .dl .hero { margin-top: 22px; }
 .dl .big { display: flex; align-items: baseline; gap: 8px; line-height: 0.92; }
@@ -134,7 +140,7 @@
 .dl-sheet .ex:disabled { opacity: 0.5; }
 
 /* ---------- Workout ---------- */
-.dl .wo { position: absolute; inset: 0; z-index: 30; display: flex; flex-direction: column; background: var(--bg); will-change: translate; }
+.dl .wo { position: absolute; inset: 0; z-index: 30; display: flex; flex-direction: column; background: var(--bg); will-change: translate; container: wo / size; }
 .dl .wo-field { position: absolute; inset: 0; z-index: -1; overflow: clip; }
 .dl .wo-field canvas { display: block; }
 .dl .f-rest { opacity: 0; }
@@ -161,12 +167,14 @@
 /* Record marker: dark ink on marker yellow, readable by night too (held fix). */
 .dl .rec { padding: 1px 7px; border-radius: 5px; background: var(--marker); color: var(--marker-ink); font-size: 13px; font-weight: 800; }
 
-.dl .wo-hero { position: relative; flex: 1; min-height: 200px; container-type: size; }
-.dl .h-work, .dl .h-rest { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 20px; }
+.dl .wo-hero { position: relative; flex: 1; min-height: 200px; }
+.dl .h-work, .dl .h-rest { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-start; padding: max(14px, calc(9cqh - 40px)) 20px 0; }
 .dl .h-rest { opacity: 0; }
 .dl .coachtag { align-self: flex-start; margin-bottom: 6px; padding: 3px 9px; border-radius: 8px; font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--coach); box-shadow: inset 0 0 0 1.5px var(--coach); }
 .dl .setval { align-self: flex-start; position: relative; display: flex; align-items: baseline; gap: 8px; margin-left: -12px; padding: 6px 44px 10px 12px; border-radius: 24px; background: var(--well) !important; line-height: 0.95; }
-.dl .setval .vw, .dl .setval .vr { position: relative; display: inline-block; font-size: 100px; font-weight: 800; font-stretch: 75%; letter-spacing: -0.03em; overflow: clip; }
+.dl .setval .vw, .dl .setval .vr { position: relative; display: inline-block; padding-right: 0.06em; font-size: 100px; font-weight: 800; font-stretch: 75%; letter-spacing: -0.03em; overflow: clip; }
+.dl .setval.long .vw { font-size: 80px; }
+.dl .setval.long .vr { font-size: 80px; }
 .dl .setval .vu { font-size: 17px; font-weight: 600; color: var(--dim); }
 .dl .setval .vx { font-size: 36px; font-weight: 500; color: var(--dim); margin: 0 2px; }
 /* Tappable numbers: a soft well with a pencil, never the dashed "draft" look (held fix). */
@@ -210,12 +218,12 @@
 .dl .ap-t { flex: 1; }
 .dl .ap-undo { min-height: 48px; padding: 0 14px; font-weight: 750; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 2px; }
 .dl .wo-cta { flex: none; padding: 0 12px calc(14px + env(safe-area-inset-bottom)); }
-.dl .cta { width: 100%; height: 76px; border-radius: 24px; background: var(--ink) !important; color: var(--bg) !important; font-size: 22px !important; font-weight: 800; }
+.dl .cta { transition: background-color 240ms ease-out; width: 100%; height: 76px; border-radius: 24px; background: var(--ink) !important; color: var(--bg) !important; font-size: 22px !important; font-weight: 800; }
 .dl .cta .cta-l { position: relative; display: inline-block; }
 .dl .wo[data-phase="rest"] .cta { background: color-mix(in srgb, var(--ink) 88%, var(--rest)) !important; }
 
-/* Short screens (a phone's browser bar, a Coach card in the slot): the hero tightens instead of overflowing. */
-@container (max-height: 330px) {
+/* Short screens (a phone browser bar): sized from the whole workout screen, never from the hero, so a Coach card arriving changes nothing above it. */
+@container wo (max-height: 760px) {
   .dl .count { font-size: 88px; }
   .dl .setval .vw, .dl .setval .vr { font-size: 80px; }
   .dl .rest-next { margin-top: 8px; font-size: 17px; }
@@ -223,8 +231,13 @@
   .dl .rest-adj button { height: 48px; }
   .dl .delta { margin-top: 8px; }
 }
-@container (max-height: 260px) {
+@container wo (max-height: 680px) {
   .dl .count { font-size: 72px; }
   .dl .plates { display: none; }
   .dl .then { display: none; }
 }
+
+.dl .slide-knob { transition: scale 160ms ease-out; }
+.dl .h-work > *, .dl .h-rest > * { flex-shrink: 0; }
+/* Blur method A plus still grain on blurred surfaces only: the banding check showed faint steps under the glass tabs. */
+.dl .glass, .dl .live { background-image: var(--grain); background-size: var(--grain-size); }

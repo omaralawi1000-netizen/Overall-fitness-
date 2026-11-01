@@ -2,8 +2,8 @@
    Tabs Today · Train · Food · Progress, plus an Ask button beside the bar. One huge poster number per screen, and a
    full-screen field whose colour is the state (always named in words too). No orb. Accepting a Coach change is a tap
    on its own button. */
-import { Channel, SPRINGS, play, flip, travel, roll, pressable, fold } from './motion.js';
-import { paintField } from './bg.js';
+import { Channel, SPRINGS, OUT, play, flip, travel, roll, pressable, ghost, fadeGhost } from './motion.js';
+import { paintField, grain } from './bg.js';
 import * as C from './core.js';
 
 const { esc, kg, num } = C;
@@ -75,7 +75,7 @@ export function rooms(stage, { day = 'train', setDay }) {
     </div>
   </div></div></section>
   <section class="panel" data-panel="food" hidden><div class="scroll"><div class="pad">
-    <h1 class="title">Food</h1>
+    <header class="top"><h1 class="title">Food</h1><span class="state"><i class="sym ${dayField}"></i>${STATE_WORD[dayField]}</span></header>
     <div class="poster small"><span class="pn num" data-fpn>${Math.round(C.left(d).p)}</span><span class="pu">g</span></div>
     <p class="mean">protein left · <b class="num" data-fkcal>${num(C.left(d).kcal)}</b> kcal left</p>
     <div class="meals" data-meals>${mealsHTML()}</div>
@@ -100,7 +100,7 @@ export function rooms(stage, { day = 'train', setDay }) {
     <div class="wo-hero">
       <div class="h-work">
         <span class="coachtag" hidden>Coach set this</span>
-        <button class="setval" aria-label="Change weight and reps"><span class="pw"><span class="vw num">80</span><small>kg</small></span><span class="pr"><span class="vx">×</span><span class="vr num">8</span><small>reps</small></span></button>
+        <button class="setval" aria-label="Change weight and reps"><span class="pw"><span class="vw num">80</span><small>kg</small></span><span class="pr"><span class="vx">×</span><span class="vr num">8</span><small>reps</small></span><i class="pen" aria-hidden="true"><svg viewBox="0 0 16 16"><path d="M10.5 2.5l3 3-8 8H2.5v-3z"/></svg></i></button>
         <p class="delta" data-delta></p>
         <p class="then" data-then></p>
       </div>
@@ -117,6 +117,7 @@ export function rooms(stage, { day = 'train', setDay }) {
 
   const $ = (s, r = app) => r.querySelector(s);
   const $$ = (s, r = app) => [...r.querySelectorAll(s)];
+  grain(); // still noise under the glass: the banding check found rings in B's blurred cards (rule: grain only where rings show)
   const paint = (el, k) => { const f = FIELDS[k]; el.replaceChildren(paintField(f.blobs, f.base, { w: app.clientWidth, h: app.clientHeight, over: 1, seed: k.length * 7 })); };
   paint($('.f-day'), dayField);
 
@@ -235,8 +236,9 @@ export function rooms(stage, { day = 'train', setDay }) {
   const openWo = () => {
     if (woOpen) return; woOpen = true;
     if (!$('.f-work').firstChild) { paint($('.f-work'), 'train'); paint(fRest, 'rest'); }
-    wo.hidden = false; woY.set(woY.value || app.clientHeight); woY.to(0, SPRINGS.set);
-    live.hidden = true; app.style.removeProperty('--toast-bottom');
+    if (wo.hidden) woY.set(app.clientHeight); // reopened mid-close: carry on from where it is
+    wo.hidden = false; woY.to(0, SPRINGS.set);
+    live.hidden = true; app.style.removeProperty('--toast-bottom'); app.classList.remove('has-live');
     C.keepAwake(true);
   };
   const closeWo = () => {
@@ -244,7 +246,7 @@ export function rooms(stage, { day = 'train', setDay }) {
     const a = woY.to(app.clientHeight, SPRINGS.set);
     const done = () => { if (!woOpen) wo.hidden = true; };
     a ? a.finished.then(done, done) : done();
-    live.hidden = false; app.style.setProperty('--toast-bottom', '170px');
+    live.hidden = false; app.style.setProperty('--toast-bottom', '170px'); app.classList.add('has-live');
     play(live, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set, { delay: 120 });
     renderLive();
   };
@@ -265,7 +267,7 @@ export function rooms(stage, { day = 'train', setDay }) {
   const cta = $('.cta'), ctaL = $('.cta-l'), val = $('.setval');
   pressable(cta, { scale: 0.97 }); pressable(val, { scale: 0.97 });
 
-  const doneHTML = () => C.curEx(w).sets.map((s, i) => (s.done ? `<li class="${s.record ? 'best' : ''}"><span class="sr">Set ${i + 1}:</span><span class="dv num">${kg(s.w)}×${s.r}</span>${s.record ? '<mark class="rec">New best</mark>' : '<i aria-hidden="true">✓</i>'}</li>` : `<li class="todo${i === C.curIdx(w) ? ' cur' : ''}"><span class="sr">Set ${i + 1} not done</span><span class="num">${i + 1}</span></li>`)).join('');
+  const doneHTML = () => C.curEx(w).sets.map((s, i) => (s.done ? `<li class="${s.record ? 'best' : ''}"><span class="sr">Set ${i + 1}:</span><span class="dv num">${kg(s.w)}×${s.r}</span>${s.record ? '<mark class="rec">Best</mark>' : '<i aria-hidden="true">✓</i>'}</li>` : `<li class="todo${i === C.curIdx(w) ? ' cur' : ''}"><span class="sr">Set ${i + 1} not done</span><span class="num">${i + 1}</span></li>`)).join('');
   const deltaLine = (ns) => {
     if (ns.lastR == null) return '';
     const dw = ns.w - ns.lastW, dr = ns.r - ns.lastR;
@@ -275,23 +277,27 @@ export function rooms(stage, { day = 'train', setDay }) {
     return `${base} · same`;
   };
   const thenLine = () => { const n = C.nextUp(w); return n ? (n.same ? `Then set ${n.n} · ${kg(n.w)} × ${n.r}` : `Then ${esc(n.name)} · ${kg(n.w)} × ${n.r}`) : 'Last set of the workout'; };
+  const metaLine = (ns) => { $('[data-meta]').textContent = w.phase === 'rest' ? `Set ${ns.n - 1} of ${ns.of} done` : `Set ${ns.n} of ${ns.of}`; };
   function renderWork({ animate = false } = {}) {
     const ns = C.nowSet(w);
     if (!ns) { if (w.phase === 'work') { ctaL.textContent = 'All sets logged'; cta.disabled = true; } return; }
-    const set = (el, t) => (animate ? roll(el, t) : (el.textContent = t, el.dataset.text = t));
+    const set = (el, t) => (animate ? roll(el, t, { dir: parseFloat(t) < parseFloat(el.dataset.text ?? el.textContent) ? -1 : 1 }) : (el.textContent = t, el.dataset.text = t));
     set($('.vw'), kg(ns.w)); set($('.vr'), String(ns.r));
-    $('[data-meta]').textContent = w.phase === 'rest' ? `Set ${ns.n - 1} of ${ns.of} done` : `Set ${ns.n} of ${ns.of}`;
+    metaLine(ns);
     $('[data-delta]').innerHTML = deltaLine(ns);
     $('[data-then]').innerHTML = thenLine();
     $('.coachtag').hidden = !ns.coach;
-    $('.vw').classList.toggle('long', kg(ns.w).length > 3);
+    $('.setval').classList.toggle('long', kg(ns.w).length > 3);
     if (w.phase === 'work') set(ctaL, `Log ${kg(ns.w)} × ${ns.r}`);
   }
   function renderRest() {
     $('.count').textContent = C.mmss(C.restLeft(w));
     const n = C.nowSet(w), t = n || C.nextUp(w);
     if (t) {
-      $('[data-rest-next]').innerHTML = `Next · ${n ? `set ${t.n}` : esc(t.name)} · <b class="num">${kg(t.w)} × ${t.r}</b>`;
+      const rn = $('[data-rest-next]'), was = rn.querySelector('b')?.textContent;
+      rn.innerHTML = `Next · ${n ? `set ${t.n}` : esc(t.name)} · <b class="num">${kg(t.w)} × ${t.r}</b>`;
+      const fig = rn.querySelector('b');
+      if (was && was !== fig.textContent && w.phase === 'rest') play(fig, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], SPRINGS.type);
       const ex = n ? n.ex : w.exercises.find((e) => e.name === t.name);
       $('[data-plates]').textContent = ex?.barbell ? `Load each side: ${C.plates(t.w).join(' + ')} kg` : '';
     } else { $('[data-rest-next]').textContent = 'That was the last set.'; $('[data-plates]').textContent = ''; }
@@ -321,10 +327,12 @@ export function rooms(stage, { day = 'train', setDay }) {
       if (chip) travel(chip, { left: from.left, top: from.top, width: chip.getBoundingClientRect().width * 2.6 }, SPRINGS.type);
       const mk = doneList.children[i]?.querySelector('.rec');
       if (mk) play(mk, [{ transform: 'scale(0.6)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.press, { delay: 160 });
-      renderWork(); renderRest();
-      workOp.to(0, SPRINGS.set); workS.to(0.94, SPRINGS.set);
-      restLOp.to(1, SPRINGS.set); restS.to(1, SPRINGS.set);
+      const nx = C.nowSet(w); if (nx) metaLine(nx); // the outgoing number keeps its value while it leaves
+      renderRest();
+      workOp.to(0, OUT); workS.to(0.94, SPRINGS.set); // the outgoing number leaves fast: no two big numerals overlapping
+      if (restLOp.now().x < 0.02) restS.set(0.94);
       restOp.to(1, SPRINGS.set);
+      T.after(80, () => { if (w.phase !== 'rest') return; restLOp.to(1, SPRINGS.set); restS.to(1, SPRINGS.set); });
       setState('rest'); roll(ctaL, 'Skip rest');
       renderCoach();
     } else if (kind === 'tick') { renderRest(); if (!live.hidden) renderLive(); }
@@ -332,10 +340,12 @@ export function rooms(stage, { day = 'train', setDay }) {
       if (data.moved) { play($('.tt'), [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set); $('.tt').textContent = C.curEx(w).name; }
       flip([...doneList.children], () => { doneList.innerHTML = doneHTML(); }, SPRINGS.set);
       setState('work');
-      renderWork({ animate: true });
-      workS.set(1.06); workOp.to(1, SPRINGS.set); workS.to(1, SPRINGS.set);
-      restLOp.to(0, SPRINGS.set); restS.to(0.94, SPRINGS.set);
+      const seen = workOp.now().x > 0.02; // skipped straight away: the old number is still on its way out
+      renderWork({ animate: seen });
+      if (!seen) workS.set(1.06);
+      restLOp.to(0, OUT); restS.to(0.94, SPRINGS.set);
       restOp.to(0, SPRINGS.set);
+      T.after(80, () => { if (w.phase !== 'work') return; workOp.to(1, SPRINGS.set); workS.to(1, SPRINGS.set); });
       renderCoach();
       if (!live.hidden) renderLive();
     } else if (kind === 'value') renderWork({ animate: true });
@@ -356,11 +366,16 @@ export function rooms(stage, { day = 'train', setDay }) {
         <div class="dr-acts"><button class="use">Use ${kg(pr.to)} kg</button><button class="keep">Keep ${kg(pr.from)}</button></div></div>`
       : st === 'accepted' ? `<div class="applied"><span class="ap-k">${I.ask}Coach</span><span class="ap-t">${pr.scope.length ? `Set${pr.scope.length > 1 ? 's' : ''} ${pr.scope.map((x) => x + 1).join(' and ')}: <b class="num">${kg(pr.to)} kg</b>` : ''}</span><button class="ap-undo">Undo</button></div>`
       : st === 'note' ? `<p class="cnote"><span class="ap-k">${I.ask}Coach</span>${esc(C.historyLine(pr).what)} · ${esc(C.historyLine(pr).status)}</p>` : '';
-    const prev = slot.firstElementChild;
+    const prev = slot.querySelector(':scope > :not(.ghost)');
     if (st === slotState && prev) { prev.outerHTML = html; wire(); return; }
     const was = slotState; slotState = st;
     const tmp = document.createElement('div'); tmp.innerHTML = html; const el = tmp.firstElementChild;
-    flip([hWork, hRest, $('.wo-state'), doneList], () => { prev?.remove(); if (el) slot.append(el); }, SPRINGS.set);
+    // The hero is laid out from the top of the screen, so the slot filling or emptying never moves it.
+    const gh = prev ? ghost(prev) : null;
+    const top0 = slot.getBoundingClientRect().top;
+    prev?.remove();
+    if (el) slot.append(el);
+    if (gh) { gh.g.style.top = parseFloat(gh.g.style.top) - (slot.getBoundingClientRect().top - top0) + 'px'; slot.append(gh.g); fadeGhost(gh.g); }
     if (el) {
       play(el, [{ opacity: 0, transform: 'translateY(10px) scale(0.98)' }, { opacity: 1, transform: 'none' }], SPRINGS.set);
       // Accepting fills the hollow number: the "ink" pours in on the accepted card's number.
@@ -390,6 +405,5 @@ export function rooms(stage, { day = 'train', setDay }) {
   });
 
   renderAll();
-  void fold;
   return () => { T.stop(); C.keepAwake(false); app.remove(); };
 }

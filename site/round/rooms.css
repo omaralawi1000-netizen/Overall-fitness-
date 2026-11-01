@@ -1,5 +1,5 @@
 /* Direction B, "Rooms". Dark by design: the field's colour is the state. Unbounded for the poster numbers, Archivo
-   for reading. Glass is method A (plain live blur, a tint, an edge highlight, no grain). */
+   for reading. Glass is method A (plain live blur, a tint, an edge highlight) plus still grain, because the banding check showed rings. */
 .rm {
   --ink: #FFF6EE; --dim: rgba(255, 240, 230, 0.7); --faint: rgba(255, 240, 230, 0.45); --hair: rgba(255, 240, 230, 0.14); --hair-strong: rgba(255, 240, 230, 0.26);
   --well: rgba(255, 246, 238, 0.1); --glass: rgba(255, 246, 238, 0.09); --edge: rgba(255, 255, 255, 0.28); --bg: #140A07;
@@ -74,6 +74,9 @@
 .rm .meal li small { display: block; font-size: 13px; color: var(--dim); }
 .rm .empty { margin: 6px 0 0; font-size: 15px; color: var(--dim); }
 .rm .food-dock { position: absolute; left: 12px; right: 12px; bottom: 100px; z-index: 3; }
+.rm.has-live .food-dock { bottom: 170px; }
+.rm .top .title { margin: 0; }
+.rm .panel[data-panel="food"] .top { margin: 6px 0 14px; }
 .rm .food-dock .btn { margin: 0; height: 64px; box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3); }
 .rm .card .chart { color: var(--ink); margin-top: 8px; }
 
@@ -122,7 +125,7 @@
 .rm-sheet .st-done { background: var(--ink) !important; color: #1A0E0A !important; }
 
 /* ---------- Workout ---------- */
-.rm .wo { position: absolute; inset: 0; z-index: 30; display: flex; flex-direction: column; background: var(--bg); will-change: translate; }
+.rm .wo { position: absolute; inset: 0; z-index: 30; display: flex; flex-direction: column; background: var(--bg); will-change: translate; container: wo / size; }
 .rm .wo .field { z-index: -1; }
 .rm .f-rest { opacity: 0; }
 .rm .wo > :not(.field) { position: relative; }
@@ -142,10 +145,10 @@
 .rm .wo-done li.todo.cur { box-shadow: inset 0 0 0 2px var(--ink); color: var(--ink); }
 .rm .wo-done .dv { display: inline-block; }
 /* Record marker: dark text on gold, readable at night (held fix). */
-.rm .rec { padding: 2px 7px; border-radius: 6px; background: var(--gold); color: #1A0E0A; font-size: 12px; font-weight: 800; }
+.rm .rec { white-space: nowrap; padding: 2px 7px; border-radius: 6px; background: var(--gold); color: #1A0E0A; font-size: 12px; font-weight: 800; }
 
-.rm .wo-hero { position: relative; flex: 1; min-height: 200px; container-type: size; }
-.rm .h-work, .rm .h-rest { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: center; padding: 0 20px; transform-origin: 30% 50%; }
+.rm .wo-hero { position: relative; flex: 1; min-height: 200px; }
+.rm .h-work, .rm .h-rest { position: absolute; inset: 0; display: flex; flex-direction: column; justify-content: flex-start; padding: max(14px, calc(9cqh - 40px)) 20px 0; transform-origin: 30% 50%; }
 .rm .h-rest { opacity: 0; }
 .rm .coachtag { align-self: flex-start; margin-bottom: 8px; padding: 4px 10px; border-radius: 9px; font-size: 12px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; background: var(--coach); color: #12142A; }
 /* Tappable numbers: underlined with a thick bar, never the hollow "proposed" look (held fix). */
@@ -153,7 +156,12 @@
 .rm .setval .pw, .rm .setval .pr { display: flex; align-items: baseline; gap: 6px; line-height: 0.85; }
 .rm .setval .vw, .rm .setval .vr { position: relative; display: inline-block; font-family: 'Unbounded', sans-serif; font-weight: 700; letter-spacing: -0.05em; overflow: clip; }
 .rm .setval .vw { font-size: 104px; }
-.rm .setval .vw.long { font-size: 84px; }
+.rm .setval.long .vw { font-size: 76px; }
+.rm .setval.long .vr { font-size: 52px; }
+.rm .setval .vw, .rm .setval .vr { padding-right: 0.08em; }
+/* Tappable numbers: the bar under them plus a pencil, never the hollow "proposed" look (held fix). */
+.rm .setval .pen { align-self: flex-start; margin-left: -4px; color: var(--dim); }
+.rm .setval .pen svg { width: 18px; height: 18px; stroke-width: 1.8; }
 .rm .setval .vr { font-size: 60px; }
 .rm .setval small { font-size: 16px; font-weight: 650; color: var(--dim); }
 .rm .setval .vx { font-size: 30px; color: var(--dim); }
@@ -167,7 +175,7 @@
 .rm .rest-adj button { height: 52px; padding: 0 18px; border-radius: 16px; background: rgba(255, 255, 255, 0.12) !important; font-weight: 700; }
 
 .rm .wo-coach { flex: none; padding: 0 12px; }
-.rm .draft { margin-bottom: 10px; padding: 14px 16px 16px; border-radius: 24px; background: rgba(10, 14, 30, 0.4); -webkit-backdrop-filter: blur(24px) saturate(1.5); backdrop-filter: blur(24px) saturate(1.5); box-shadow: inset 0 0 0 1.5px var(--coach); }
+.rm .draft { margin-bottom: 10px; padding: 14px 16px 16px; border-radius: 24px; border: 2px dashed color-mix(in srgb, var(--coach) 75%, transparent); background: rgba(10, 14, 30, 0.4); -webkit-backdrop-filter: blur(24px) saturate(1.5); backdrop-filter: blur(24px) saturate(1.5); }
 .rm .dr-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 0; font-size: 13px; }
 .rm .dr-k { display: flex; align-items: center; gap: 6px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; color: var(--coach); }
 .rm .dr-k svg, .rm .ap-k svg { width: 16px; height: 16px; }
@@ -187,10 +195,10 @@
 .rm .ap-t { flex: 1; }
 .rm .ap-undo { min-height: 48px; padding: 0 14px; font-weight: 750; text-decoration: underline; text-underline-offset: 4px; text-decoration-thickness: 2px; }
 .rm .wo-cta { flex: none; padding: 0 12px calc(14px + env(safe-area-inset-bottom)); }
-.rm .cta { width: 100%; height: 76px; border-radius: 24px; background: var(--ink) !important; color: #1A0E0A !important; font-size: 22px !important; font-weight: 800; }
+.rm .cta { transition: background-color 240ms ease-out; width: 100%; height: 76px; border-radius: 24px; background: var(--ink) !important; color: #1A0E0A !important; font-size: 22px !important; font-weight: 800; }
 .rm .cta-l { position: relative; display: inline-block; }
 
-@container (max-height: 330px) {
+@container wo (max-height: 760px) {
   .rm .count { font-size: 84px; }
   .rm .setval .vw { font-size: 80px; }
   .rm .setval .vr { font-size: 48px; }
@@ -198,7 +206,12 @@
   .rm .rest-adj { margin-top: 10px; }
   .rm .rest-adj button { height: 48px; }
 }
-@container (max-height: 260px) {
+@container wo (max-height: 680px) {
   .rm .count { font-size: 68px; }
   .rm .plates, .rm .then { display: none; }
 }
+
+.rm .slide-knob { transition: scale 160ms ease-out; }
+.rm .h-work > *, .rm .h-rest > * { flex-shrink: 0; }
+/* Blur method A plus still grain on blurred surfaces only: the banding check showed rings under B's glass. */
+.rm .glass, .rm .card, .rm .meal, .rm .live, .rm .draft, .rm-sheet .sheet { background-image: var(--grain); background-size: var(--grain-size); }

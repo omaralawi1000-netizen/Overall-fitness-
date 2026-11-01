@@ -1,8 +1,8 @@
 /* Direction A, "Day line": time first, one door for everything.
    Tabs Today · Plan · Progress, plus the Log key (a newly designed orb) for food, water, weight and questions.
    Today is the day drawn as a band. The workout carries the same line: one segment per set. */
-import { Channel, SPRINGS, play, flip, travel, roll, swap, pressable, fold } from './motion.js';
-import { paintField } from './bg.js';
+import { Channel, SPRINGS, OUT, play, flip, travel, roll, pressable, fold, ghost, fadeGhost } from './motion.js';
+import { paintField, grain } from './bg.js';
 import * as C from './core.js';
 
 const { esc, kg, num } = C;
@@ -44,7 +44,7 @@ function paintOrb(size) {
     R += (hr - R) * rim; G += (hg - G) * rim; B += (hb - B) * rim;
     const L = dk ? 0.78 + 0.5 * lit : 0.86 + 0.24 * lit;
     R *= L; G *= L; B *= L;
-    const spec = Math.pow(Math.max(0, -0.5 * u - 0.7 * v + 0.5 * z), 18) * 220;
+    const spec = Math.pow(Math.max(0, -0.5 * u - 0.7 * v + 0.5 * z), 10) * (dk ? 70 : 50); // a soft sheen, not a gloss
     const edge = Math.min(1, (1 - Math.sqrt(r2)) * n * 0.5); // soft anti-aliased edge
     const rn = () => Math.random() + Math.random() - 1;
     d[i] = R + spec + rn(); d[i + 1] = G + spec + rn(); d[i + 2] = B + spec + rn(); d[i + 3] = 255 * edge;
@@ -61,6 +61,7 @@ export function dayline(stage, { day = 'train', setDay }) {
   app.dataset.day = d.kind;
   stage.append(app);
   const T = w.t; // timers that stop on unmount
+  grain(); // still noise under the glass tabs and strip: the banding check found faint steps there
   let tab = 'today', woOpen = false;
 
   /* ---------- Today ---------- */
@@ -82,6 +83,7 @@ export function dayline(stage, { day = 'train', setDay }) {
     return `<div class="band" role="img" aria-label="Your day: work ${d.work.map(([a, b]) => `${C.hhmm(a)}–${C.hhmm(b)}`).join(' and ')}${d.session ? `, ${d.session.name} at ${C.hhmm(d.session.start)}` : ''}, ${d.log.length} meals logged">
       <div class="lane">${blocks}${ses}<i class="past-veil" style="width:${X(t)}%"></i></div>
       <div class="lane-dots">${dots}</div>
+      <p class="legend"><span><i class="lg work"></i>Work</span><span><i class="lg ses"></i>Training</span><span><i class="lg meal"></i>Meals</span></p>
       <i class="now" style="left:${X(t)}%"><b>Now</b></i>
       <div class="hours">${hours}</div>
     </div>`;
@@ -265,7 +267,7 @@ export function dayline(stage, { day = 'train', setDay }) {
     const m = C.entryMacros(entry);
     refreshToday();
     const dot = $('.dot.fresh:last-of-type') || $$('.dot.fresh').pop();
-    if (dot) play(dot, [{ transform: 'translate(-50%, -50%) scale(0)' }, { transform: 'translate(-50%, -50%) scale(1)' }], SPRINGS.press);
+    if (dot) play(dot, [{ transform: 'translate(-50%, -50%) scale(0)' }, { transform: 'translate(-50%, -50%) scale(1)' }], SPRINGS.type);
     const list = $('[data-list]');
     flip($$('[data-list] .row'), () => { list.innerHTML = listHTML(); }, SPRINGS.set);
     const row = $(`[data-entry="${d.log.indexOf(entry)}"]`);
@@ -292,8 +294,9 @@ export function dayline(stage, { day = 'train', setDay }) {
     if (woOpen) return;
     woOpen = true;
     if (!fw.firstChild) paintFields();
+    if (wo.hidden) woY.set(app.clientHeight); // reopened mid-close: carry on from where it is
     wo.hidden = false;
-    woY.set(woY.value || app.clientHeight); woY.to(0, SPRINGS.set);
+    woY.to(0, SPRINGS.set);
     live.hidden = true; app.style.removeProperty('--toast-bottom');
     C.keepAwake(true);
   };
@@ -342,16 +345,18 @@ export function dayline(stage, { day = 'train', setDay }) {
   };
   const thenLine = () => { const n = C.nextUp(w); return n ? (n.same ? `Then set ${n.n} · ${kg(n.w)} × ${n.r}` : `Then ${esc(n.name)} · ${kg(n.w)} × ${n.r}`) : 'Last set of the workout'; };
 
+  const metaLine = (ns) => { $('[data-meta]').textContent = w.phase === 'rest' ? `Set ${ns.n - 1} of ${ns.of} done` : `Set ${ns.n} of ${ns.of}`; };
   function renderWork({ animate = false } = {}) {
     const ns = C.nowSet(w);
     if (!ns) { if (w.phase === 'work') { ctaL.textContent = 'All sets logged'; cta.disabled = true; } return; }
-    const set = (el, t) => (animate ? roll(el, t) : (el.textContent = t, el.dataset.text = t));
+    const set = (el, t) => (animate ? roll(el, t, { dir: parseFloat(t) < parseFloat(el.dataset.text ?? el.textContent) ? -1 : 1 }) : (el.textContent = t, el.dataset.text = t));
     set($('.vw'), kg(ns.w)); set($('.vr'), String(ns.r));
-    $('[data-meta]').textContent = w.phase === 'rest' ? `Set ${ns.n - 1} of ${ns.of} done` : `Set ${ns.n} of ${ns.of}`;
+    metaLine(ns);
     $('[data-last]').textContent = lastLine(ns);
     $('[data-delta]').innerHTML = deltaLine(ns);
     $('[data-then]').innerHTML = thenLine();
     const ct = $('.coachtag'); ct.hidden = !ns.coach;
+    $('.setval').classList.toggle('long', kg(ns.w).length > 3);
     if (w.phase === 'work') set(ctaL, `Log ${kg(ns.w)} × ${ns.r}`);
   }
   function renderRest() {
@@ -361,7 +366,10 @@ export function dayline(stage, { day = 'train', setDay }) {
     const target = n || C.nextUp(w);
     if (target) {
       const tw = target.w;
-      $('[data-rest-next]').innerHTML = `Next · ${target.same === false || !n ? esc(target.name) + ' · ' : `set ${target.n} · `}<b class="num">${kg(tw)} × ${target.r}</b>`;
+      const rn = $('[data-rest-next]'), was = rn.querySelector('b')?.textContent;
+      rn.innerHTML = `Next · ${target.same === false || !n ? esc(target.name) + ' · ' : `set ${target.n} · `}<b class="num">${kg(tw)} × ${target.r}</b>`;
+      const fig = rn.querySelector('b');
+      if (was && was !== fig.textContent && w.phase === 'rest') play(fig, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], SPRINGS.type);
       const ex = n ? n.ex : w.exercises.find((e) => e.name === target.name);
       $('[data-plates]').textContent = ex?.barbell ? `Each side of the bar: ${C.plates(tw).join(' + ')} kg` : '';
     } else { $('[data-rest-next]').textContent = 'That was the last set.'; $('[data-plates]').textContent = ''; }
@@ -414,10 +422,12 @@ export function dayline(stage, { day = 'train', setDay }) {
         if (mk) play(mk, [{ transform: 'scale(0.6)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.press, { delay: 160 });
       }
       // Rest takes the screen.
-      renderWork(); renderRest(); runBar();
-      workOp.to(0, SPRINGS.set); workY.to(-18, SPRINGS.set);
-      restLOp.to(1, SPRINGS.set); restY.to(0, SPRINGS.set);
+      const nx = C.nowSet(w); if (nx) metaLine(nx); // the outgoing number keeps its value while it leaves
+      renderRest(); runBar();
+      workOp.to(0, OUT); workY.to(-18, SPRINGS.set); // the outgoing number leaves fast, so two big numerals never overlap
+      if (restLOp.now().x < 0.02) restY.set(16);
       restOp.to(1, SPRINGS.set);
+      T.after(80, () => { if (w.phase !== 'rest') return; restLOp.to(1, SPRINGS.set); restY.to(0, SPRINGS.set); });
       roll(ctaL, 'Skip rest');
       wo.dataset.phase = 'rest';
       renderCoach();
@@ -425,7 +435,8 @@ export function dayline(stage, { day = 'train', setDay }) {
       renderRest();
       if (!live.hidden) renderLive();
     } else if (kind === 'rest-end') {
-      barAnim?.cancel();
+      $('.rest-bar i').style.transform = 'scaleX(0)'; // hold the empty bar, no flash back to full
+      barAnim?.cancel(); barAnim = null;
       if (data.moved) {
         play($('.tt'), [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set);
         $('.tt').textContent = C.curEx(w).name;
@@ -433,12 +444,17 @@ export function dayline(stage, { day = 'train', setDay }) {
         fold([...doneList.children], [], true);
         doneList.innerHTML = '';
       } else segs.innerHTML = segHTML();
-      renderWork({ animate: true });
-      workY.set(18); workOp.to(1, SPRINGS.set); workY.to(0, SPRINGS.set);
-      restLOp.to(0, SPRINGS.set); restY.to(16, SPRINGS.set);
+      const seen = workOp.now().x > 0.02; // skipped straight away: the old number is still on its way out
+      renderWork({ animate: seen });
+      if (!seen) workY.set(18);
+      restLOp.to(0, OUT); restY.to(16, SPRINGS.set);
       restOp.to(0, SPRINGS.set);
       wo.dataset.phase = 'work';
-      if (data.natural) play($('.setval'), [{ transform: 'scale(0.94)' }, { transform: 'none' }], SPRINGS.press);
+      T.after(80, () => {
+        if (w.phase !== 'work') return;
+        workOp.to(1, SPRINGS.set); workY.to(0, SPRINGS.set);
+        if (data.natural) play($('.setval'), [{ transform: 'scale(0.96)' }, { transform: 'none' }], SPRINGS.set);
+      });
       renderCoach();
       if (!live.hidden) renderLive();
     } else if (kind === 'value') {
@@ -461,7 +477,7 @@ export function dayline(stage, { day = 'train', setDay }) {
     else if (pr && pr.state === 'accepted') st = 'accepted';
     else if (pr && ['completed', 'undone', 'kept'].includes(pr.state)) st = 'note';
     if (st === slotState && st !== 'accepted' && st !== 'note') return;
-    const prev = slot.firstElementChild;
+    const prev = slot.querySelector(':scope > :not(.ghost)');
     const html = st === 'open' ? `<div class="draft" role="group" aria-label="The Coach suggests a change">
         <p class="dr-top"><span class="dr-k">Coach suggests</span><span class="dr-scope">${esc(C.scopeLine(pr))}</span></p>
         <p class="dr-val"><s class="num">${kg(pr.from)}</s>${I.arrow}<span class="new num">${kg(pr.to)}</span><span class="u">kg</span></p>
@@ -475,12 +491,17 @@ export function dayline(stage, { day = 'train', setDay }) {
     const next = document.createElement('div');
     next.innerHTML = html;
     const el = next.firstElementChild;
-    const ns = [hWork, hRest, $('.wo-done'), $('.wo-line')];
-    flip(ns, () => {
-      if (prev) { prev.remove(); }
-      if (el) slot.append(el);
-    }, SPRINGS.set);
-    if (el) play(el, [{ opacity: 0, transform: 'translateY(10px) scale(0.98)' }, { opacity: 1, transform: 'none' }], SPRINGS.set, { delay: ev.arrived ? 0 : 60 });
+    // The hero is laid out from the top of the screen, so the slot filling or emptying never moves it.
+    const gh = prev ? ghost(prev) : null;
+    const top0 = slot.getBoundingClientRect().top;
+    prev?.remove();
+    if (el) slot.append(el);
+    if (gh) {
+      const dy = slot.getBoundingClientRect().top - top0;
+      gh.g.style.top = parseFloat(gh.g.style.top) - dy + 'px';
+      slot.append(gh.g); fadeGhost(gh.g);
+    }
+    if (el) play(el, [{ opacity: 0, transform: 'translateY(10px) scale(0.98)' }, { opacity: 1, transform: 'none' }], SPRINGS.set);
     wire();
   }
   function wire() {

@@ -168,7 +168,24 @@ state map and navigation, two directions (A "Day line": Today · Plan · Progres
 B "Rooms": Today · Train · Food · Progress + Ask, state colour fields, no orb), an ordinary control, and what a PWA
 can really do on Android and iPhone. Nothing built.
 
+## Session 7: final design round, Part 2 (1 Nov 2026, night)
+- Built at `site/round/` (live at /round/): A "Day line" (?v=1), B "Rooms" (?v=2) and the ordinary control (?v=3,
+  Hevy + MyFitnessPal pattern). Each has the tabs, Today (training day; rest day via the switch at the bottom of
+  Today or `&day=rest`), the workout working and resting with a Coach proposal, Food add, Progress. No storage.
+- Motion shown: a set ticks into rest, rest ends into the next set, the Coach's 82.5 arrives during rest, is accepted
+  (A: slide; B: outlined button), then undone. Logging a set never accepts. Accept has a 0.5 s guard.
+- Judges, one round (Sonnet): design A 7/10, B 7/10 (B beat the control on the crop and 5-second tests, A only on
+  Today). Motion A 5/10, B 5/10, mostly one defect: the Coach card arriving resized and moved the hero. Fixed: the
+  hero is laid out from the top of the screen and sized from the whole screen, so the card changes nothing above it
+  (measured: the countdown moved 78–100 px before, 1–2 px now). Also fixed: the old card fades where it stood, the
+  incoming hero waits 80 ms, no teleports when skipping fast or reopening mid-close, no rest-bar flash, rolls go
+  down when a number drops, press spring only for records.
+- Banding: the check found rings under B's glass (225–741 staircases) and faint steps under A's glass tabs, so their
+  blurred surfaces got the still grain (rule: grain only where rings show). After: clean except the picker's edge.
+- Tools: tools/round/shot.mjs (screens, scripted taps), tools/round/clip.mjs (videos).
+- Needs phone: blur and banding on his screen, tap latency on Log, slide-to-accept feel, Skip within 250 ms,
+  rest running out.
+
 ## Next step
-Waiting for Omar's go on Part 2: build A, B and the ordinary control as clickable shells at /round/ (no storage),
-as listed at the end of docs/design-round-2026-11-01.md. One Sonnet judge round, then Omar picks on his phone and
-the gym sprint starts with the winner.
+Omar picks a spine on his phone at /round/ and says what he liked and didn't. Update docs/keepers.md from his
+answers only. Then the gym sprint starts with the winner, using only keepers that fit it.
