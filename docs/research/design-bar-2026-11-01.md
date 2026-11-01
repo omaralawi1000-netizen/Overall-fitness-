@@ -2,6 +2,8 @@
 
 Omar's request (1 Nov, evening, after trying Ink, Ink rich and Heat at /looks/ on his phone): "They look like those. Research what the absolute best apps in the world do … every screen, every layout, workout screen, today … just the layout, not the design. I want you to know what my bar is. And look at my old app." Then: "have them discuss" (the researchers debate before the answer is merged).
 
+Update (1 Nov, night): the rules were triaged in `docs/design-round-2026-11-01.md`, which wins where they disagree (for example, rule 14's "the log tap also accepts" is dropped).
+
 This file is the one place for the result. Nothing was built. Omar picks the next step.
 
 ## The short answer
