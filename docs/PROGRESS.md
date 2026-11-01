@@ -105,10 +105,10 @@ Done:
   normal builds; Sonnet low for copy and docs; commit and update PROGRESS.md after each working step.
 - Fix: an edit on 1 Nov cut sessions 2 and 3 out of this file; restored from Git history.
 
-- Omar tried the concepts (1 Nov, afternoon) and changed direction: a normal app with clear categories (Today, Train,
-  Food, Health style), everything in its place, understandable for anyone; the Coach lives inside each category, not
+- Omar tried the concepts (1 Nov, afternoon) and changed direction: a normal app with clear categories (which ones is
+  undecided), everything in its place, understandable for anyone; the Coach lives inside each category, not
   as the whole screen. Recorded in BRIEF (Design). The concept proposal for this is waiting for his yes.
 
 ## Next step
-Omar answers the proposal (tabs, where the Coach lives, which concept parts carry over). Then build the next concept
+Omar decides the categories (undecided; Today, Train, Food, Health was only my proposal). Then build the next concept
 round: the same tab app in 2–3 visual directions on the picker, then BRIEF step 12.
