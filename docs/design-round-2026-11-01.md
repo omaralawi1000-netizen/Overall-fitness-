@@ -28,7 +28,7 @@ Omar's ask (1 Nov, night): triage the design-bar rules, define the Coach ladder,
 Each rung looks different, so you always know whether anything changed.
 1. **Observation** — a short italic line ("Bench up three weeks running"). No button. Nothing changes.
 2. **Recommendation** — a line with a target mark and "Why?" ("Try 82.5 next week"). Nothing changes; "Plan it" makes it a proposal.
-3. **Proposed change** — a dashed draft: old value struck, new value hollow, scope ("Bench, sets 3–4, today"), one reason, and two equal text buttons, **Use 82.5** / **Keep 80**. Never filled, never shifts what's under your thumb.
+3. **Proposed change** — a draft: old value struck, new value in the Coach's colour (A: a dashed card; B: a dashed glass card with the number drawn hollow), scope ("Bench, sets 3–4, today"), one reason, an accept control (**Slide to use 82.5** in A, an outlined **Use 82.5 kg** in B) and **Keep 80** as text. Never filled, never shifts what's under your thumb.
 4. **Accepted change** — the new value solid, no strike, a "Coach" tag with **Undo** until its scope ends, and a history entry.
 5. **Completed action** — the set is logged at 82.5: your real data. History reads "80 → 82.5, done 82.5 × 8". Undo now only restores the plan for sets not yet done; a logged set changes only by editing it.
 
