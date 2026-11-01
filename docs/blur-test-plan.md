@@ -62,5 +62,6 @@ Hands-off speed test, all methods:
 
 ## Decision (1 Nov 2026)
 - Omar, with Show refresh rate on: the screen ran at 120 Hz while scrolling and dragging on A and B, and it felt smooth. The page's meter showed about 60 for every method, E included: it counts script frames, which Chrome caps near 60 on his phone (LESSONS 6), so it can find stutters but can't read the refresh rate. The meter now says so.
-- Pick: **B (live blur + grain)**, runner-up A. Final check page: `site/blurtest/final.html` (B next to A over the darkest gradients, with a Swap button). Omar's yes/no on it is the last step.
-- Rules for when to use B, D and E: TASTE.md §4b. Motion rule (browser-driven, 120 Hz): TASTE.md §4.
+- My pick was B (live blur + grain), runner-up A, shown side by side on `site/blurtest/final.html` over the darkest gradients.
+- **Omar's final pick (1 Nov, on his phone): A, plain live blur.** Both still showed faint banding to his eye on the darkest gradient, but A looked cleaner and the colour richer; B's grain greyed the dark glass. Grain only comes back if a future screen shows rings after its background is drawn dithered.
+- Rules for when to use A, D and E: TASTE.md §4b. Motion rule (browser-driven, 120 Hz): TASTE.md §4.
