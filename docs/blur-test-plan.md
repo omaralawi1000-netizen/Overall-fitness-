@@ -59,3 +59,8 @@ Hands-off speed test, all methods:
 - Still to come: which strip looks best, banding, and "Your turn" numbers.
 - "Your turn" (finger moving, 15 s): E 65 fps, 1 hitch (25 ms); A 64 fps, 0 hitches (19 ms); B 65 fps, 0 hitches (18 ms). Live blur costs nothing measurable over the no-blur baseline. But even with a finger on the screen, 85–89% of frames took about 16.7 ms on every method, E included, so Chrome in a tab ran at about 60 Hz on his phone. 120 Hz is still unproven: check again once Aven 2 runs installed (full screen).
 - Conclusion so far (1 Nov): performance doesn't separate A, B and D; the choice is design. C is out (the heaviest, the only one that stuttered, and it can trail). E stays as the fallback for battery saver or reduced transparency. D only works over a still background.
+
+## Decision (1 Nov 2026)
+- Omar, with Show refresh rate on: the screen ran at 120 Hz while scrolling and dragging on A and B, and it felt smooth. The page's meter showed about 60 for every method, E included: it counts script frames, which Chrome caps near 60 on his phone (LESSONS 6), so it can find stutters but can't read the refresh rate. The meter now says so.
+- Pick: **B (live blur + grain)**, runner-up A. Final check page: `site/blurtest/final.html` (B next to A over the darkest gradients, with a Swap button). Omar's yes/no on it is the last step.
+- Rules for when to use B, D and E: TASTE.md §4b. Motion rule (browser-driven, 120 Hz): TASTE.md §4.
