@@ -15,6 +15,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 - `docs/design-round-2026-11-01.md`: the final design round's decision (rules triaged, Coach ladder, navigation, two directions, PWA limits). Wins over the design bar.
 - `docs/keepers.md`: ideas Omar explicitly approved after prototypes (only his yes adds one).
 - `docs/research/design-bar-2026-11-01.md`: the design bar.
+- `docs/research/taste-2026-11-01.md`: what Omar loves in old Aven (seven reviewers, two rounds) and the taste test link.
 - `docs/history/`: old material, history not direction (`old-aven-review.md`).
 
 ## Research
@@ -32,6 +33,7 @@ Base: https://omaralawi1000-netizen.github.io/Overall-fitness-/
 ## Shared project folder (outside the repo)
 Lives in the project's shared folder under `aven2/`. Not in git.
 - `aven2/design-review-2026-11-01/`: the design review: shared brief, three directions (light, ink, instrument), research, navigation, critic and skeptic notes.
+- `aven2/taste-2026-11-01/`: the taste work: brief, debate files, 48 old-Aven screenshots, old-Aven films, round screenshots, and the taste test page source (`taste-test/`).
 - `aven2/motion-evidence/`: real app recordings (Hevy, Strong, Flighty, Ladder and others), a clip and a still for each, plus `chapters.json`. Clips artifact: https://claude.ai/artifact/Sow9V4qvaMQtwmC2VLCusy
 - `aven2/research/aven2-tech-scan.html`: the tech scan as a page.
 - `aven2/2026-11-01-blank-page.md` and `aven2/2026-11-01-best-six.md`: the blank-page ideas and the best six.
