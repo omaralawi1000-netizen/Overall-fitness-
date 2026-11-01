@@ -13,6 +13,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 ## Design
 - `docs/inspiration/notes.md`: what Omar likes. `docs/inspiration/web-references.md`: his web links. The numbered images are screenshots.
 - `docs/design-round-2026-11-01.md`: the final design round's decision (rules triaged, Coach ladder, navigation, two directions, PWA limits). Wins over the design bar.
+- `docs/keepers.md`: ideas Omar explicitly approved after prototypes (only his yes adds one).
 - `docs/research/design-bar-2026-11-01.md`: the design bar.
 - `docs/history/`: old material, history not direction (`old-aven-review.md`).
 
@@ -23,7 +24,8 @@ Read this first to find anything. Then open only the file for the topic you're w
 
 ## Live pages (`site/`, published by `.github/workflows/pages.yml`)
 Base: https://omaralawi1000-netizen.github.io/Overall-fitness-/
-- `/looks/` (`site/looks/`): three clickable looks, Ink, Ink rich, Heat. Waiting for Omar's pick.
+- `/round/` (`site/round/`): the final design round: Day line, Rooms and the Ordinary control.
+- `/looks/` (`site/looks/`): three clickable looks, Ink, Ink rich, Heat (history: superseded by /round/).
 - `/concepts/` (`site/concepts/`): the concept prototypes.
 - `/blurtest/` (`site/blurtest/`): blur tests for his phone.
 
