@@ -1,0 +1,31 @@
+// Screenshots of the three looks at phone width. usage: node tools/looks/shot.mjs <v> <dark|light> [outdir]
+// Serve site/ first: python3 -m http.server 8765 --bind 127.0.0.1 (from site/).
+import { chromium } from '/opt/node-tools/node_modules/playwright/index.mjs';
+const [v = '1', scheme = 'dark', out = '/tmp/claude-0/looks'] = process.argv.slice(2);
+const b = await chromium.launch({ args: ['--enable-gpu-rasterization', '--ignore-gpu-blocklist'] });
+const p = await b.newPage({ viewport: { width: 384, height: 832 }, deviceScaleFactor: 2, colorScheme: scheme, hasTouch: true, isMobile: true });
+const errs = [];
+p.on('console', (m) => m.type() === 'error' && errs.push(m.text()));
+p.on('pageerror', (e) => errs.push(String(e)));
+const shot = (n) => p.screenshot({ path: `${out}/v${v}-${scheme}-${n}.png` });
+await p.goto(`http://127.0.0.1:8765/looks/?v=${v}`);
+await p.waitForTimeout(1600);
+await shot('1-today');
+await p.locator('[data-act="slab"], [data-act="go"]').first().tap(); await p.waitForTimeout(1200);
+await shot('2-workout');
+await p.locator('[data-act="bump-apply"]').tap(); await p.waitForTimeout(900);
+await shot('3-applied');
+await p.locator('[data-act="slab"], [data-act="go"]').first().tap(); await p.waitForTimeout(250);
+await shot('4-tick-mid');
+await p.waitForTimeout(1200);
+await shot('5-rest');
+await p.locator('[data-act="slab"], [data-act="go"]').first().tap(); await p.waitForTimeout(1000);
+await shot('6-next');
+await p.locator('.fw, .nb.w').first().tap(); await p.waitForTimeout(900);
+await shot('7-tray');
+await p.locator('.tray-done').tap(); await p.waitForTimeout(700);
+await p.locator('[data-act="close"]').tap(); await p.waitForTimeout(1000);
+await p.locator('[data-act="trim-apply"]').tap(); await p.waitForTimeout(1000);
+await shot('8-today-trimmed');
+console.log(errs.length ? 'ERRORS:\n' + errs.join('\n') : 'no errors');
+await b.close();
