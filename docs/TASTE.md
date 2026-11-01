@@ -19,7 +19,7 @@ Omar judges everything on his phone. Anything only the phone can show (blur, ban
 - Inspiration (docs/inspiration/) shows what Omar likes. Never copy a screen. If a reference can be beaten, beat it.
 
 ## 3. What Omar wants, in his words (1 Nov), checked on every screen
-1. **The best-looking blur that stays smooth on his phone.** Never solve lag by removing blur; find a better way to blur. → needs phone
+1. **The best-looking blur that stays smooth on his phone.** Where blur is part of the design, fix lag with a better blur method, not by removing it. → needs phone
 2. **Zero banding.** Noise or dither is allowed when the blur test needs it. → needs phone
 3. **See-through materials where they're beautiful.** Not everywhere by rule.
 4. **Colours judged per screen** by whether they look beautiful and alive. No global colour bans.

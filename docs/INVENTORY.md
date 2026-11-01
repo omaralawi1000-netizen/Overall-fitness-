@@ -47,7 +47,7 @@ product**, so many buttons and settings become "just tell the Coach".
 
 | Feature | What it does | Call | Why |
 |---|---|---|---|
-| Full-page workout window, swipe down to minimise | Rises like a music player, kept alive | keep | Proven shape; rebuilt cleanly (old one is the most fragile code) |
+| Full-page workout window, swipe down to minimise | Kept alive while you use the rest of the app | keep: capability kept, presentation open | Each concept decides how it looks; rebuilt cleanly (old one is the most fragile code) |
 | Minimise chevron, Escape closes | | keep | |
 | Status bar follows the window | | keep | Feels native |
 | Tap title to rename | | keep | |
@@ -207,7 +207,7 @@ product**, so many buttons and settings become "just tell the Coach".
 |---|---|---|---|
 | Health tab coach line | Sleep vs usual + top note | merge → Coach line | One voice |
 | Goal card with pace | | keep | |
-| 24-hour ribbon (sleep, heart, steps, moves) | | keep | Strong, original view |
+| 24-hour view of the day (sleep, heart, steps, moves) | | keep: capability kept, presentation open | Each concept decides how it looks |
 | Chapters: Recovery / Activity / Body rows grow into pages | | keep | |
 | Sleep page (hypnogram, score, 14 nights) | | keep | |
 | Heart page (resting, HRV, overnight vitals, VO2 max) | | keep | |
@@ -237,7 +237,7 @@ product**, so many buttons and settings become "just tell the Coach".
 | Training: default rest, effort RPE/RIR, weight jump, workout view, sound, haptics, lock-screen rest | | keep | |
 | Food: meals (rename, add, remove), water quick amounts, online lookup | | keep | |
 | Units & locale: language, kg/lb, km/mi, cm/in, week start, day start hour | | keep | |
-| Appearance: 8 palettes | | cut → one look, plus light/dark | Fewer knobs, done perfectly (brief) |
+| Appearance: 8 palettes | | cut → no palette picker; the chosen design decides its look (light/dark kept) | Fewer knobs, done perfectly (brief) |
 | Appearance: 9 backgrounds incl. your photo | | cut | Same |
 | Appearance: background glow Full / Soft / Off | | cut | Same; reduced motion covers the need |
 | Appearance: theme System / Light / Dark | | keep | |
@@ -300,7 +300,7 @@ product**, so many buttons and settings become "just tell the Coach".
 | Danish first paint | | keep | |
 | Persistent storage request | | keep | |
 | Glow/dither machinery (canvas glows, grain, frost copies, dock shadow) | | old code not ported | New noise or dither is allowed if the blur test needs it (zero banding) |
-| Beta build isolation | | keep, rebuilt | Checkpoint 2, step 13 |
+| Beta build isolation | | keep, rebuilt | Checkpoint 2, step 14 |
 | Android TWA wrapper (Health Connect read/write, native rest countdown, Done ✓ on watch, background job) | | keep, right after the core loop (Omar, 27 Oct) | Reuse with new URLs and package id; about a day of work plus CI |
 | Health Connect sync via `#hc=` address | | keep, with the wrapper | Validation code ports as is |
 | Write weight + food totals to Health Connect | | keep, with the wrapper | |
@@ -308,7 +308,7 @@ product**, so many buttons and settings become "just tell the Coach".
 ---
 
 ## Cuts and merges (Omar said yes to 1–6 on 27 Oct; 7 changed by him)
-1. **Looks**: 8 palettes, 9 backgrounds, glow strength, per-tab colours, surface/look options → one look with light and dark.
+1. **Looks**: 8 palettes, 9 backgrounds, glow strength, per-tab colours, surface/look options → no palette or background pickers; the chosen design decides its look, with light and dark.
 2. **Today customising**: card order and on/off toggles → one fixed, well-chosen Today.
 3. **Fixed reminders and forms**: training reminder, post-workout check-in form, heavy-day switch → the Coach decides when to speak or ask, and you tell it if you want more or less.
 4. **Separate review and note surfaces**: Coach pin, Today notes, AI insights, Health coach line, weekly review card → one Coach voice (morning line, workout-start line, Sunday review).

@@ -75,8 +75,16 @@ Done:
   notes, web references, the design and motion judges and CLAUDE.md. Replaced by Omar's seven statements (TASTE.md §3) and
   phone test cases. Kept as tests (Omar agreed): one tap ticks a set, the 5-second test, no dead buttons; noise/dither allowed.
 - Concepts in words (no UI yet): /mnt/project-files/aven2/ (project files, not the repo).
-- The Coach exam job is paused until the Coach phase (its criteria get fixed first). exam/v1/personas-v1.ts: unchanged
-  until Omar decides (replace the details or make the repo private).
+- The Coach exam job is off until the Coach phase (its criteria get fixed first).
+- Before merging (Omar's list): leftovers fixed, Checkpoint 2 steps rewritten for the new process (BRIEF steps 8–12),
+  site/lab/ removed (kept in Git history), the exam persona's real details replaced with a made-up person (jonas; a
+  dry run passes in a scratch copy of old Aven), docs/concepts.md (all 12 concepts + 25 seeds), more references in
+  web-references.md, "shows instead of tells" in VISION and COACH, docs/research/tech-scan-2026-11-01.md saved.
+- Omar's picks: prototype Living Notebook and Conversation Workspace (each with "why has my bench stalled?" as an
+  explorable chart and "25 minutes left" as a plan change); Atmosphere is tested as a material in the blur test.
+- Still Omar's call: other real details in INTERVIEW, VISION, COACH (listed for him, not changed). COACH.md §8's persona
+  line still describes the old numbers.
 
 ## Next step
-Omar picks 2–3 concepts. Then the blur test page (/blurtest/, plan in the concepts file), then concept UI for his picks.
+Build the blur test page at /blurtest/ (BRIEF step 10; plan in docs/blur-test-plan.md, facts from the tech scan's
+section A). Omar judges it on his phone. Concept UI for Living Notebook and Conversation Workspace only after that.

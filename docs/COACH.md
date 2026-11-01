@@ -93,6 +93,21 @@ dictation slips in LESSONS.md) and the exam's logging conversations (3, 4, 5) mu
 Build notes: one pure action layer (validate → apply → undo, each tested) replaces `agent.ts` executors. Hard limits
 live in code, not only in the prompt.
 
+**Showing instead of telling (Omar, 1 Nov).** When it helps understanding, the answer is a visual explanation instead of
+(or next to) a short text. The Coach picks one component from a fixed catalog of tested, interactive pieces and fills it
+with data; it never writes UI code, and no AI-generated code ever runs.
+- **The catalog** (grows only by building and testing a new component): a chart of real history (scrubbable, e.g. "why
+  has my bench stalled?"), a side-by-side comparison (this week vs last, plan A vs plan B), a plan change you can drag
+  and then apply with Undo (e.g. "25 minutes left"), an animated explanation (a short, fixed sequence such as why
+  failure sets cost recovery), a recipe step.
+- **Data:** every number comes from the app's own data or computed facts, checked against the fact sheet before the
+  component is shown. Estimates are labelled as estimates; a number the app can't verify isn't shown.
+- **Choice:** the AI returns a component name and data references (which lift, which weeks), never raw numbers or
+  markup; the app looks the numbers up and validates the request. An unknown component or a bad reference falls back to
+  plain text.
+- **Exam:** a judged conversation can expect a visual answer where one explains better (e.g. the stalled lift), and a
+  visual that shows an unverified number is a defect like an invented fact.
+
 ## 4. When it speaks first
 
 **For the person:** it decides by itself whether something is worth saying, and usually it isn't. When it speaks, it's
@@ -204,7 +219,7 @@ failure; Galaxy Watch):
 2. **Bad night**: 5 h 10 sleep before push day. Morning line.
 3. **Danish food log**: "200 gram skyr og to æg".
 4. **Garbled dictation**: a misheard Danish food sentence.
-5. **Mid-workout to the orb**: "bench 80 for 8, 8 and 6".
+5. **Mid-workout by voice**: "bench 80 for 8, 8 and 6".
 6. **Changing his mind**: "move pull to Thursday… no wait, Friday".
 7. **Stalled lift**: "why is my row stuck?" (rows at 70 × 8 for 4 sessions).
 8. **Protein behind at 19:00**.

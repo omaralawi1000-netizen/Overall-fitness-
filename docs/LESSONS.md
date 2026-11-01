@@ -9,7 +9,7 @@ Facts and taste learned the hard way (Oct 2026). Not old CSS rules: the new desi
 3. Adding or dropping a compositor layer mid-animation gives black frames. Layers that move exist before the motion
    and stay after it. Entrance animations end on their neutral state, never on an explicit last keyframe.
 4. Live blur on many cards measured about half the frame rate (36 fps on 20 Oct). Blur is a budget: count blurred
-   layers per screen and measure on Beta. Never solve lag by removing blur.
+   layers per screen and measure on Beta. Where blur is part of the design, fix lag with a better blur method, not by removing it.
 5. Animating `box-shadow`, `width`/`height`/`top`, or CSS variables on `<html>` restyles or repaints every frame.
    Transform and opacity are the cheap path; anything else is measured first.
 6. On the phone, a script count-up runs at about 60 fps; browser-driven (WAAPI/CSS) animation reaches 120.

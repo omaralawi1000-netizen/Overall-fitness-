@@ -1,6 +1,6 @@
 # Web references
 
-Omar's web references (added 27 Oct 2026). Treat them like the rest of the inspiration: study the principle, never copy the look. Omar's latest words win over anything here (1 Nov: the design starts from a blank page), and every idea must pass the 5-second test. Use them in research and for the Checkpoint 2 directions, and say which reference shaped which choice.
+Omar's web references (added 27 Oct 2026). Treat them like the rest of the inspiration: study the principle, never copy the look. Omar's latest words win over anything here (1 Nov: the design starts from a blank page), and every idea must pass the 5-second test. Use them in research and for the Checkpoint 2 concepts, and say which reference shaped which choice.
 
 Each entry has Omar's reason first, then **Learned** (what the source actually says, fetched 27 Oct 2026). **Couldn't open** marks what was blocked.
 
@@ -39,7 +39,7 @@ Omar: simplicity → fluidity → delight; the tray system as a model for sheets
 https://macrumors.com/2026/06/10/how-liquid-glass-is-changing-in-ios-27
 Omar: the frost must stay legible; readability beats spectacle.
 - **Learned:** iOS 27 diffuses busy content behind the glass more strongly. When content scrolls under a floating bar, an even toolbar backing fades in to keep text legible. Glass got a darker edge and brighter specular highlights for separation, and it respects Reduce Transparency and Increase Contrast. Users get a clear-to-tinted slider.
-- **For us:** frost strength should rise when what's behind it is busy. Separate layers with edge and highlight, not heavier blur.
+- **Worth testing:** frost strength that rises when what's behind it is busy, and layers separated by edge and highlight (a blur-test idea, not a rule).
 
 ### 5. Siri in iOS 27 (MacStories review)
 https://www.macstories.net/stories/ios-and-ipados-27-review/5/
@@ -109,3 +109,51 @@ Omar: full flow recordings of top apps.
 
 ### 15. Mobbin and Dribbble
 Need a login. Omar brings screenshots himself; they go into docs/inspiration/ with a line in notes.md.
+
+## More references (from my research)
+Places to study, not rules. Added 1 Nov 2026 from Omar's own research; nothing here has been fetched or checked yet.
+
+**Craft and motion collections**
+- rauno.me/craft
+- 60fps.design (filters: ai, workout, voice)
+- designspells.com
+- designeer.xyz
+- motionsites.ai
+- motion.dev/examples
+- motion-primitives.com
+- fancycomponents.dev
+- reactbits.dev
+- GSAP Flip
+- tympanus.net/codrops
+- awwwards.com
+- thefwa.com
+- vibrant.design
+- motionvault.dev
+
+**Game and HUD interfaces**
+- gameuidatabase.com
+- hudsandguis.com
+
+**App flows and details**
+- mobbin.com
+- pageflows.com
+- screensdesign.com/animation-explorer
+- detail.design
+- showreel.design
+- design-on-x.com
+- bestdesignsonx.com
+
+**Ideas and research**
+- The Rive AI orb mascot experiment
+- Explorable Explanations (worrydream.com)
+- Ink & Switch Potluck
+- Microsoft HAX guidelines (human-AI interaction)
+
+**App moments to look up on 60fps.design**
+- Monogram pulse response
+- Monogram rich card swipe
+- Perplexity voice stroke
+- Harvee graph morph
+- Apple Calendar button morph
+- Opal gem reveal
+- Bevel avatar

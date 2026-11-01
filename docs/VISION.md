@@ -19,6 +19,11 @@ a score. Aven 2 turns it round: **the Coach is the app**.
   the thing, shows exactly what changed, and gives you Undo. It never gives advice text when it could do the thing.
 - **It tells the truth.** Every number it says comes from your data, worked out by the app, not guessed by the AI: real
   wins, plain misses, stalled lifts, whether you're on pace. When the data can't show something, it says so.
+- **It shows instead of tells** (Omar, 1 Nov). When a picture explains it better, the answer is a small interactive
+  piece instead of a paragraph: a chart of your real history you can scrub ("why has my bench stalled?"), a
+  side-by-side comparison, a plan change you can drag and apply ("25 minutes left"), an animated explanation, a recipe
+  step. It picks from a catalog of tested components, filled only with verified numbers, with estimates labelled.
+  Never AI-generated code.
 - **It looks and moves like nothing else.** The best-looking blur that stays smooth, zero banding, see-through
   materials where they're beautiful, colour that looks alive on each screen, big thumb targets, instant taps, and calm
   but expressive motion you can catch mid-gesture.
@@ -51,8 +56,8 @@ He taps the big check: it answers on the very next frame, the row lights, the re
 and the next set moves into view. Beat last time and a small "+2.5 kg" rises and fades. He can also say
 "8 at 80" by voice. The phone itself reads it, logs the set on the spot (no AI, works offline) and says it back.
 
-**The rest timer.** The bar fills calmly. In the last three seconds each second swells and the phone buzzes, then it
-turns "go" and names the next set. On Android with the wrapper it lives on the lock screen and the watch, with
+**The rest timer.** It counts down the rest. In the last three seconds the phone buzzes, then it says "go" and names
+the next set. On Android with the wrapper it lives on the lock screen and the watch, with
 Done ✓.
 
 **After training.** Finish. The summary counts up the time, volume and sets, names what moved, and sets next time's

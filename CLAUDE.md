@@ -9,7 +9,7 @@
 Plain, short words. He's not a programmer, he dictates (expect misheard words), and he judges everything on his phone.
 
 ## Skills (`.claude/skills/`)
-- **frontend-design**, **emil-design-eng**: taste for every screen. Boldness in one place, quiet around it.
+- **frontend-design**, **emil-design-eng**: references for taste on every screen.
 - **apple-design**: a reference for motion, materials, sheets and gestures, not a house style.
 - **animation-performance**: check every animation against 120 fps and the cost of blur.
 - **mobile-native**: the PWA must feel installed, never like a website.

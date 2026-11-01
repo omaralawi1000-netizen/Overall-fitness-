@@ -24,7 +24,7 @@ The Coach is the product. Everything else (workouts, food, health, progress) is 
 - The bar: a top Apple designer finds nothing to wince at, and someone seeing it for the first time asks "what app is that?" Never generic or template-looking.
 - Research before designing. Study the apps and studios most praised right now for motion, depth and detail, from current sources. Note what makes them great and what nobody has done yet in fitness or coaching.
 - Blank page (1 Nov): the design starts from zero. Old Aven is a reference for features, data and lessons only. No colour, colour ban, material, glass recipe, orb rule, layout, navigation, typography or motion restriction carries over from it. site/lab/, docs/inspiration/old-aven-review.md and old Aven's style guide are history, not direction.
-- Inspiration: docs/inspiration/ and notes.md show what I like. Study what makes each one work. Never copy a screen. If you can beat a reference, beat it. Use them in your research and when building the Checkpoint 2 directions, and tell me which reference shaped which choice.
+- Inspiration: docs/inspiration/ and notes.md show what I like. Study what makes each one work. Never copy a screen. If you can beat a reference, beat it. Use them in your research and when writing the Checkpoint 2 concepts, and tell me which reference shaped which choice.
 - New must still be obvious. Every unusual idea passes a 5-second test: a stranger understands the screen and the next action. No gimmicks. Beautiful but confusing is a fail.
 - What I want, in my own words (1 Nov):
   - The best-looking blur that stays smooth on my phone.
@@ -63,7 +63,7 @@ The Coach is the product. Everything else (workouts, food, health, progress) is 
 - Batch your questions: at most one message of questions per phase, unless something blocks you.
 
 ## Skills and judges (in .claude/skills and .claude/agents)
-- frontend-design and emil-design-eng: taste for every screen. Spend boldness in one place, and keep everything around it quiet.
+- frontend-design and emil-design-eng: references for taste on every screen.
 - apple-design: a reference for motion, materials, sheets and gestures, not a house style.
 - animation-performance: check every animation against the 120 fps budget and the cost of blur.
 - mobile-native: the PWA must feel installed, never like a website.
@@ -91,26 +91,24 @@ Take as many sessions as it needs. End every session by updating docs/PROGRESS.m
 
 ### Checkpoint 2: how it looks and moves
 7. First set up the GitHub Pages deploy workflow. If it needs a click from me, tell me exactly what to click.
-8. Build at least 4 genuinely different directions, each on a named axis. At least 2 must be bold: a new way to interact or a new way to see my training that no fitness app has, not a reskin. All of them still pass the 5-second test. Each direction shows:
-   - the same key screens: Today, a live workout mid-set with the rest timer, the Coach and its memory
-   - at least 2 signature moments in motion
-   Use the prototype skill's divergence rules, craft bar and picker. Where it says "one piece per run", treat each direction's set of key screens as the piece, and run it separately for each signature moment.
-9. Deploy the picker to GitHub Pages under /lab/, with its own storage prefix, so I can flip through the directions on my own phone. Also film each direction at real speed and half speed (384×832, in each direction's own theme) and put the clips on the lab page.
-10. Judge with fresh design-judges and motion-judges, and iterate until they stop finding real defects. Then show me your pick first, with your main reason and the main trade-off, and the runners-up after it.
-11. After my yes, write DESIGN.md: the chosen direction as rules.
+8. Concepts in words first (no UI): at least 6 genuinely different concepts, each with one organizing idea (no blended hybrids): how the Coach is present, navigation, hierarchy, art direction, motion identity, the one memorable interaction, which inspiration clips it draws on, how it handles "I have 25 minutes left" mid-workout, its first-open/no-data state, and its main trade-off. At least 2 must not use an orb or glass as their organizing idea. They live in docs/concepts.md.
+9. I pick 2–3 concepts. No concept UI before my picks.
+10. The blur test: 4–5 blur methods side by side on Pages (/blurtest/), with scrolling content, gradients, text and an interruptible sheet, each method honestly labelled (live blur, pre-blurred image, fake). Looks are compared together, performance one method at a time. I judge it on my phone; materials for the concepts come from what passes.
+11. Concept UI for my picks, after I've judged the blur. Each one shows the same key screens (Today, a live workout mid-set with the rest timer, the Coach and its memory), at least 2 signature moments in motion, and whatever I asked each prototype to prove. Use the prototype skill's divergence rules, craft bar and picker. Deploy the picker under /lab/ with its own storage prefix, and film each at real speed and half speed (384×832). Judge with fresh design-judges and motion-judges until they stop finding real defects, then show me your pick first, with your main reason and the main trade-off.
+12. After my yes, write DESIGN.md: the chosen direction as rules.
     - colour and type tokens, spacing, radii, materials, depth
     - one shared set of springs
     - how the Coach is present
     - navigation
     - a motion spec for every signature moment
     Delete the losing prototypes.
-12. Write PLAN.md: phases, one per session, each ending in something I can actually use.
+13. Write PLAN.md: phases, one per session, each ending in something I can actually use.
     - Core loop first: live workout, Today and the Coach's foundation. Normal logging (sets like "8 at 80", common foods, water, weight) works instantly without the AI and offline; the AI is for real coaching.
     - A manual backup (save a file to the phone, restore from it) ships in the first build phase. Google Drive backup can wait.
     - The watch and Health Connect (the Android wrapper) come right after the core loop, not at the end.
     - Then food, voice, then the rest.
     - Last phase: a parity check against INVENTORY.md and the Coach exam. After that, I use both apps side by side for a week before Aven 2 replaces Aven.
-13. Set up a Beta channel like Aven's.
+14. Set up a Beta channel like Aven's.
 
 ## Every build session
 - I'll say "do phase N". Do that phase fully and to the DESIGN.md standard, then tick it off in PLAN.md and update PROGRESS.md.

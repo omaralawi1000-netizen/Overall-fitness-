@@ -1,6 +1,6 @@
 // Coach exam v1 (Aven 2, 27 Oct 2026): fake people in old Aven's AppData format, built for a "now" chosen per
-// conversation. Never anyone's real data: omar2 is invented from the shape of Omar's week as told in the interview
-// (docs/INTERVIEW.md in Aven 2), with made-up numbers; the friends are invented outright.
+// conversation. Never anyone's real data: jonas is made up; only the shape of his week (gym plus a
+// sport, shifts, a cut) follows the interview, and every name, time and number is invented; the friends are invented outright.
 // Every persona is a function of `now`: call it AFTER the clock is set to that moment (the builders read Date.now()).
 import { defaultData } from '../../src/state/defaults';
 import { buildStarter, assignWeek } from '../../src/lib/starter';
@@ -105,12 +105,12 @@ function logSessions(d: AppData, from: string, now: Date, startHour: number, sta
   }
 }
 
-// ── omar2 ───────────────────────────────────────────────────
+// ── jonas (made up) ───────────────────────────────────────────────────
 // Wrestling Mon + Wed (planned activities), Push Tue + Fri, Pull Thu + Sun, Legs & shoulders Sat. Split shifts on
-// weekdays, trains about 15:30. Cutting at 2,550 kcal / 220 g protein / 70 g fat / 260 g carbs. Galaxy Watch.
-export const OMAR_FROM_DAYS = 28;
+// weekdays, trains about 16:15. Cutting at 2,600 kcal / 215 g protein / 75 g fat / 270 g carbs. A smartwatch.
+export const JONAS_FROM_DAYS = 28;
 /** his normal day of food, about 2,450 kcal and 210 g protein (a wobble from `k`), eaten up to `upTo` (ms) */
-export function omarDay(date: string, k: number, upTo = Infinity): FoodEntry[] {
+export function jonasDay(date: string, k: number, upTo = Infinity): FoodEntry[] {
   const s = 1 + wob(k) * 0.05;
   const g = (x: number) => Math.round(x * s);
   const weekend = [0, 6].includes(wdOf(date));
@@ -126,10 +126,10 @@ export function omarDay(date: string, k: number, upTo = Infinity): FoodEntry[] {
       ['dinner', 'rye', 100, at(date, 20, 30)]];
   return rows.filter((r) => r[3] <= upTo).map(([meal, key, grams, when]) => food(date, meal, key, g(grams), when));
 }
-export function omar2(now: Date): AppData {
+export function jonas(now: Date): AppData {
   const today = dayKey(now.getTime(), 0);
-  const from = addDays(today, -OMAR_FROM_DAYS);
-  const d = base('en', 'Omar', 'fatloss', 'some', [0, 2, 4, 5, 6], { kcal: 2550, protein: 220, fat: 70, carbs: 260 });
+  const from = addDays(today, -JONAS_FROM_DAYS);
+  const d = base('en', 'Jonas', 'fatloss', 'some', [0, 2, 4, 5, 6], { kcal: 2600, protein: 215, fat: 75, carbs: 270 });
   const push: Routine = { id: 'rt-push', name: 'Push', items: [item('bench-press', 3, 6, 10, 1), item('incline-db-press', 3, 8, 12), item('machine-chest-press', 2, 8, 12), item('tricep-pushdown', 3, 10, 15, 0, 90), item('lateral-raise', 3, 12, 15, 0, 75)], createdAt: at(from, 10) - 7 * 86400000, updatedAt: at(from, 10) - 7 * 86400000 };
   const pull: Routine = { id: 'rt-pull', name: 'Pull', items: [item('lat-pulldown', 3, 8, 12), item('barbell-row', 3, 6, 10, 1), item('seated-cable-row', 2, 8, 12), item('face-pull', 3, 12, 15, 0, 75), item('db-curl', 3, 8, 12, 0, 90), item('hammer-curl', 2, 8, 12, 0, 90)], createdAt: push.createdAt, updatedAt: push.updatedAt };
   const legs: Routine = { id: 'rt-legs', name: 'Legs & shoulders', items: [item('back-squat', 3, 6, 10, 1, 150), item('romanian-deadlift', 3, 8, 10), item('leg-press', 2, 10, 12), item('leg-curl', 3, 10, 12, 0, 90), item('standing-calf-raise', 3, 10, 15, 0, 75), item('overhead-press', 3, 6, 10, 1), item('lateral-raise', 3, 12, 15, 0, 75)], createdAt: push.createdAt, updatedAt: push.updatedAt };
@@ -147,21 +147,21 @@ export function omar2(now: Date): AppData {
   }
   // food: every day of the four weeks, today up to now
   d.entries = [];
-  for (let i = OMAR_FROM_DAYS, k = 0; i >= 0; i--, k++) { const date = addDays(today, -i); d.entries.push(...omarDay(date, k, i === 0 ? now.getTime() : Infinity)); }
+  for (let i = JONAS_FROM_DAYS, k = 0; i >= 0; i--, k++) { const date = addDays(today, -i); d.entries.push(...jonasDay(date, k, i === 0 ? now.getTime() : Infinity)); }
   // one evening over two and a half weeks ago (the cut is mostly steady now)
   const old = addDays(today, -17);
   d.entries.push(food(old, 'snacks', 'chips', 175, at(old, 21, 40)), food(old, 'snacks', 'choc', 100, at(old, 21, 50)));
-  // weigh-ins most mornings: 95.0 four weeks ago, down about 0.5 kg a week, the usual day-to-day noise
-  for (let i = OMAR_FROM_DAYS; i >= 0; i--) {
+  // weigh-ins most mornings: 88.0 four weeks ago, down about 0.5 kg a week, the usual day-to-day noise
+  for (let i = JONAS_FROM_DAYS; i >= 0; i--) {
     if (i % 3 === 2) continue;
     const date = addDays(today, -i);
     if (at(date, 6, 15) > now.getTime()) continue;
-    d.weights.push({ id: id('wt'), date, kg: Math.round((95.0 - ((OMAR_FROM_DAYS - i) * 0.5) / 7 + wob(i) * 0.35) * 10) / 10, at: at(date, 6, 15) });
+    d.weights.push({ id: id('wt'), date, kg: Math.round((88.0 - ((JONAS_FROM_DAYS - i) * 0.5) / 7 + wob(i) * 0.35) * 10) / 10, at: at(date, 6, 15) });
   }
   // the watch: nights of about 6 h 40 (up at 06:00 on weekdays, longer at the weekend), resting HR ~52, HRV ~60
   d.health = [];
   d.steps = [];
-  for (let i = OMAR_FROM_DAYS; i >= 0; i--) {
+  for (let i = JONAS_FROM_DAYS; i >= 0; i--) {
     const date = addDays(today, -i); const we = [0, 6].includes(wdOf(date));
     const h: HealthDay = { date, sleepMin: Math.round((we ? 470 : 400) + wob(i + 3) * 20), restHr: Math.round(52 + wob(i + 7) * 2), hrv: Math.round(60 + wob(i + 11) * 5) };
     if (i > 0) Object.assign(h, { totalKcal: Math.round(3150 + wob(i) * 200), activeKcal: Math.round(850 + wob(i + 1) * 150) });
@@ -169,12 +169,12 @@ export function omar2(now: Date): AppData {
     if (i > 0) d.steps.push({ date, count: Math.round(10500 + wob(i + 5) * 2500) });
   }
   d.memory = [
-    mem('Works split shifts on weekdays (about 07:00–08:30 and 12:30–14:45); usually trains after work, around 15:30, sometimes right after the morning shift.', 'schedule', now, 25),
+    mem('Works split shifts on weekdays (about 06:30–09:00 and 13:00–15:30); usually trains after work, around 16:15, sometimes right after the morning shift.', 'schedule', now, 25),
     mem('Takes almost every set to failure; does not want to be told to train lighter.', 'preference', now, 25),
     mem('Beginner wrestler (Mondays and Wednesdays); does not compete yet but wants to compete one day.', 'goal', now, 24),
     mem('Cutting. The hard part is a steady food routine without big evenings; it is getting better.', 'food', now, 24),
-    mem('Wears a Galaxy Watch (sleep and heart rate come from it).', 'gear', now, 23),
-    mem('Goal: 90 kg by 31 January 2027.', 'goal', now, OMAR_FROM_DAYS, { goal: { metric: 'weight', target: 90, by: '2027-01-31', startDate: from, start: 95.0 } }),
+    mem('Wears a smartwatch (sleep and heart rate come from it).', 'gear', now, 23),
+    mem('Goal: 83 kg by 28 February 2027.', 'goal', now, JONAS_FROM_DAYS, { goal: { metric: 'weight', target: 83, by: '2027-02-28', startDate: from, start: 88.0 } }),
   ];
   d.marks = { heavySeen: addDays(from, -30) };
   return d;
@@ -297,4 +297,4 @@ export function runner(now: Date): AppData {
   return d;
 }
 
-export const PERSONAS_V1: Record<string, (now: Date) => AppData> = { omar2, beginner, footballer, missed, teen, bulker, runner };
+export const PERSONAS_V1: Record<string, (now: Date) => AppData> = { jonas, beginner, footballer, missed, teen, bulker, runner };

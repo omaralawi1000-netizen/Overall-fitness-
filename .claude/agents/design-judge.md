@@ -16,7 +16,7 @@ Never judge against old Aven's design, `site/lab/` or `docs/inspiration/old-aven
 5. The work you were given: screenshots (open them with Read), clips (pull frames with `ffmpeg -i clip.mp4 -vf fps=10 /tmp/judge/f%03d.png`, then Read them), and the UI code or diff.
 
 ## What you check
-- The bar: would a top Apple designer wince? Does it look premium, minimal and its own, or generic and "AI-looking"?
+- The bar: would a top Apple designer wince? Does it look premium and its own, or generic and "AI-looking"?
 - The 5-second test: can a stranger tell what the screen is and what to do next?
 - Omar's seven statements (TASTE.md §3): best-looking blur that stays smooth, zero banding, see-through where it's beautiful, colour judged per screen by whether it looks beautiful and alive (no global colour bans), big thumb targets, instant taps, calm but expressive catchable motion.
 - Layout at 384 css px wide: big thumb-reachable targets, safe areas, no clipped text, no layout jumps, spacing and radii consistent with DESIGN.md.

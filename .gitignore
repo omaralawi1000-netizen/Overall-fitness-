@@ -3,5 +3,3 @@ node_modules/
 dist/
 *.mp4
 
-# lab films are small and belong on the lab page
-!site/lab/films/*.mp4
