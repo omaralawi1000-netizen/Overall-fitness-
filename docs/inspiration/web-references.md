@@ -115,15 +115,15 @@ Places to study, not rules. Added 1 Nov 2026 from Omar's own research; nothing h
 
 **Craft and motion collections**
 - rauno.me/craft
-- 60fps.design (filters: ai, workout, voice)
-- designspells.com
+- 60fps.design (filters: ai, workout, voice): https://60fps.design/shots/filter/ai , https://60fps.design/shots/filter/workout , https://60fps.design/shots/filter/voice
+- designspells.com: https://designspells.com/?tag=motion
 - designeer.xyz
 - motionsites.ai
 - motion.dev/examples
 - motion-primitives.com
-- fancycomponents.dev
+- fancycomponents.dev: https://fancycomponents.dev/docs/introduction
 - reactbits.dev
-- GSAP Flip
+- GSAP Flip: https://gsap.com/docs/v3/Plugins/Flip/
 - tympanus.net/codrops
 - awwwards.com
 - thefwa.com
@@ -139,15 +139,15 @@ Places to study, not rules. Added 1 Nov 2026 from Omar's own research; nothing h
 - pageflows.com
 - screensdesign.com/animation-explorer
 - detail.design
-- showreel.design
+- showreel.design: https://showreel.design/year/2026/
 - design-on-x.com
 - bestdesignsonx.com
 
 **Ideas and research**
-- The Rive AI orb mascot experiment
+- The Rive AI orb mascot experiment: https://rive.app/marketplace/28088-53050-ai-orb-mascot/ (the "mr-square-in-chat" link is dead)
 - Explorable Explanations (worrydream.com)
-- Ink & Switch Potluck
-- Microsoft HAX guidelines (human-AI interaction)
+- Ink & Switch Potluck: https://www.inkandswitch.com/potluck/
+- Microsoft HAX guidelines (human-AI interaction): https://www.microsoft.com/en-us/research/publication/guidelines-for-human-ai-interaction/
 
 **App moments to look up on 60fps.design**
 - Monogram pulse response
@@ -161,8 +161,8 @@ Places to study, not rules. Added 1 Nov 2026 from Omar's own research; nothing h
 ## Visual explanations (the Coach shows instead of tells)
 Omar, 1 Nov. Links and notes only. Used for the visual explanation in both concept prototypes (site/concepts/).
 - ★ Explorable Explanations (worrydream.com/ExplorableExplanations): explanations with assumptions you can adjust. Model for "why has my bench stalled?".
-- ★ Google A2UI (developers.googleblog.com/fast-reliable-a2ui, and the A2UI + CopilotKit post): the agent picks from trusted components instead of writing UI.
+- ★ Google A2UI (https://developers.googleblog.com/fast-reliable-a2ui/, and the A2UI + CopilotKit post: https://developers.googleblog.com/en/build-generative-ui-apps-with-a2ui-copilotkit-agents/): the agent picks from trusted components instead of writing UI.
 - AI SDK generative UI (ai-sdk.dev/docs/ai-sdk-ui/generative-user-interfaces): tool results rendered as typed components.
-- Google generative UI overview (cloud.google.com/discover/generative-ui).
-- Rive (rive.app): interactive, state-driven animation for explanations. The "mr-square-in-chat" link is dead.
+- Google generative UI overview (https://cloud.google.com/discover/generative-ui).
+- Rive (https://rive.app): interactive, state-driven animation for explanations. The "mr-square-in-chat" link is dead (dead link).
 - Motion docs: layout animations and performance (motion.dev/docs/react-layout-animations, motion.dev/docs/performance).

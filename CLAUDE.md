@@ -3,7 +3,7 @@
 ## Start every session
 1. Read `docs/BRIEF.md` first. It is the whole job.
 2. Then `docs/PROGRESS.md` and `PLAN.md` once they exist. PROGRESS.md says what's done and the exact next step.
-3. Taste and rules for judging: `docs/TASTE.md`. Omar's latest words win over it, over older docs and over any skill. Design starts from a blank page (1 Nov): old Aven, `site/lab/` and old-aven-review.md are history, not direction. What Omar likes: `docs/inspiration/notes.md` and `docs/inspiration/web-references.md`.
+3. Taste and rules for judging: `docs/TASTE.md`. Omar's latest words win over it, over older docs and over any skill. Design starts from a blank page (1 Nov): old Aven, `site/lab/` and `docs/history/old-aven-review.md` are history, not direction. What Omar likes: `docs/inspiration/notes.md` and `docs/inspiration/web-references.md`.
 
 ## Talking to Omar
 Plain, short words. He's not a programmer, he dictates (expect misheard words), and he judges everything on his phone.
@@ -43,3 +43,6 @@ Default model is **Sonnet 5.5, high effort**. It costs half of Opus 5.5 per toke
 - On long tasks, commit, push and update PROGRESS.md after each working step, so a usage-limit cutoff loses nothing.
 - Don't re-read large files already summarised in docs. Build concepts only to "judgeable"; polish only the winner.
 - Judges only for work Omar will see. Blur and banding are judged on his phone, never headless.
+
+## References
+- Read only the reference file for the topic you're working on. Layout: `docs/README.md`.
