@@ -112,3 +112,42 @@ Done:
 ## Next step
 Omar decides the categories (undecided; Today, Train, Food, Health was only my proposal). Then build the next concept
 round: the same tab app in 2–3 visual directions on the picker, then BRIEF step 12.
+
+## Session 4: three looks (1 Nov 2026, evening)
+After the design review (Ink + Setpoint chart marks recommended), Omar: "Ink sounds too safe … I'm going for exceptional
+design, not just user-friendly." He asked for three versions of the same two screens, Today and the live workout
+mid-set, as clickable screens with motion, to pick from on his phone: 1. Ink as specified. 2. Ink rich (same grammar on a
+living background in our own colours, not driven by his data, with glass and depth). 3. A wildcard built only for wow,
+within his seven wishes, not the blue-purple AI gradient look, still passing the 5-second test and one-tap ticking.
+Five fixes are held for the winner (he listed them): the record marker's contrast in night mode, a different signal for
+tappable source numbers than blue "proposed", italic only for short Coach lines, the middle Coach key making typing as
+easy as speaking (tested on an iPhone too), and "ink dries" working in night mode.
+Done:
+- site/looks/ (picker: Ink, Ink rich, Heat). Shared: motion.js (the four Ink springs as CSS linear(); a Channel hands
+  position and speed to the next spring when interrupted), state.js (made-up Sunday session; every number computed),
+  bg.js (dithered painted fields, see-through layers, still grain for blurred glass). Each look shows tick, rest, next
+  set, Apply/Undo of the Coach's 82.5 and of Today's trim, a record, and an edit tray.
+- Ink rich: a slowly drifting field made from the pencil's blue (plus a little marker yellow by day; graphite with a
+  hint of blue at night, so the pencil stays the bluest thing), panes as tinted glass, live blur only on the dock and
+  tray. Heat: dark only; a glowing field that goes from ember to sea-green on rest, frosted slab, Unbounded
+  numbers, proposals drawn hollow that pour full on Apply.
+- Banding: tools/looks/banding.py counts staircases (3+ long flat steps in a row) in screenshots. Live blur showed them
+  in the dock and tray, so every blurred surface got still grain; after that Ink rich and Heat are clean in the test.
+  Plain Ink has no gradients; its only hits are one-level steps in the soft shadows of the look switcher and the tray.
+  Blur, banding and smoothness on the real screen are still "needs phone".
+- Judges: three rounds (design and motion). Round 2 fixes: numbers roll without shifting sideways, the tick flies from
+  the right place, Undo kept after an exercise switch, Heat's Today fades fast under the rising workout, resting dock
+  says "Resting m:ss · Back to workout", Keep 80 without a flash, glass edges follow FLIP height changes, the big button
+  dims under the tray, long weights step down a size. A double tap ticks once (1.5 s lock); a tap during rest ends it
+  and ticks the next set.
+- Round 3 (design: Ink 8, Ink rich 7, Heat 8, Heat strongest; motion: Ink 6, Ink rich 5.5, Heat 6) fixed and checked
+  with slow-motion strips, no fourth round: "Keep full plan" now says how late it makes him (14 min); weight and reps
+  fly separately into the done row/chip; a nested FLIP no longer makes "× 8" jump on Keep 80; a roll tapped again
+  mid-flight leaves from where it is; old Today summary fades before the new one shows; Heat can change the next set
+  during rest (the "Next" pill); trimmed Incline loses its third dot; the record figures darken sooner at night.
+  Still "needs phone": glass edges animate `bottom` on ::before (main thread), Ink rich's drifting field under the dock
+  blur, Heat's record moment (flare, light change, sweep, three glass layers).
+- Tools: tools/looks/shot.mjs (screens), clip.mjs (videos, real and half speed), banding.py.
+
+## Next step
+Omar picks one look on his phone. Then the sprint continues with the winner, starting with the five held fixes above.

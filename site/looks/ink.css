@@ -1,0 +1,205 @@
+/* Ink and Ink rich. Tokens from the review's "Ink, as amended": light by day, dark by night, set by the phone. */
+@font-face { font-family: 'Archivo'; font-style: normal; font-weight: 100 900; font-stretch: 62% 125%; font-display: block; src: url(fonts/archivo.woff2) format('woff2'); }
+@font-face { font-family: 'Archivo'; font-style: italic; font-weight: 100 900; font-stretch: 62% 125%; font-display: block; src: url(fonts/archivo-italic.woff2) format('woff2'); }
+
+.ink {
+  --ground: #F2F4F3; --ink: #121317; --graphite: #5B5F66; --pencil: #2B3CF0; --marker: #FFE14A;
+  --on-ink: #F2F4F3; --hair: rgba(18, 19, 23, 0.1); --glass: rgba(242, 244, 243, 0.72); --glass-edge: rgba(255, 255, 255, 0.9);
+  --scrim: rgba(18, 19, 23, 0.22);
+  position: fixed; inset: 0; overflow: clip;
+  background: var(--ground); color: var(--ink);
+  font-family: 'Archivo', system-ui, sans-serif; font-stretch: 100%; font-size: 17px; line-height: 1.35;
+  font-feature-settings: 'tnum' 1; -webkit-font-smoothing: antialiased;
+}
+@media (prefers-color-scheme: dark) {
+  .ink {
+    --ground: #0F1012; --ink: #ECEDE7; --graphite: #9A9EA5; --pencil: #8E9BFF; --on-ink: #0F1012;
+    --hair: rgba(236, 237, 231, 0.1); --glass: rgba(15, 16, 18, 0.8); --glass-edge: rgba(255, 255, 255, 0.1); --scrim: rgba(0, 0, 0, 0.45);
+  }
+}
+.ink button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.ink button:focus-visible { outline: 2px solid var(--pencil); outline-offset: 3px; border-radius: 8px; }
+.ink [hidden] { display: none !important; }
+.ink .fig { font-style: normal; font-stretch: 75%; font-weight: 700; font-variant-numeric: tabular-nums; }
+
+/* Screens: Today underneath, the workout rises over it. The dock is one object shared by both. */
+.ink .screen { position: absolute; inset: 0; will-change: translate, opacity; }
+.ink .workout { background: var(--ground); z-index: 2; }
+.ink .scroll { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; padding: calc(env(safe-area-inset-top) + 76px) 20px calc(env(safe-area-inset-bottom) + 136px); scrollbar-width: none; }
+.ink .scroll::-webkit-scrollbar { display: none; }
+
+/* ---------- Today ---------- */
+.ink .t-head { display: flex; justify-content: space-between; align-items: baseline; color: var(--graphite); font-size: 15px; font-weight: 500; margin-bottom: 14px; }
+.ink .coach { font-style: italic; font-weight: 450; letter-spacing: -0.01em; margin: 0; }
+.ink .coach .fig { font-weight: 750; }
+.ink .t-coach { font-size: 26px; line-height: 1.18; text-wrap: balance; }
+.ink .acts { display: flex; gap: 12px; margin-top: 18px; }
+.ink .btn-apply, .ink .btn-keep { height: 56px; padding: 0 20px; border-radius: 14px; font-size: 17px; font-weight: 650; white-space: nowrap; }
+.ink .btn-apply { background: var(--pencil); color: #fff; }
+@media (prefers-color-scheme: dark) { .ink .btn-apply { color: #0F1012; } }
+.ink .btn-apply .fig { font-weight: 800; }
+.ink .btn-keep { box-shadow: inset 0 0 0 1.5px var(--hair), inset 0 0 0 1.5px color-mix(in srgb, var(--graphite) 35%, transparent); }
+.ink .undo-line { display: flex; align-items: center; gap: 4px; margin-top: 18px; min-height: 56px; color: var(--graphite); font-size: 15px; }
+.ink .undo { min-height: 44px; padding: 0 10px; font-weight: 700; color: var(--ink); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
+.ink .undo:disabled { opacity: 0.5; }
+
+.ink .pane { position: relative; }
+.ink .plan-pane { margin-top: 30px; }
+.ink .label { font-size: 13px; font-weight: 650; letter-spacing: 0.08em; text-transform: uppercase; color: var(--graphite); }
+.ink .plan-sum { margin-top: 4px; font-size: 17px; }
+.ink .plan-sum .fig { font-size: 19px; }
+.ink .plan { list-style: none; margin: 10px 0 0; padding: 0; }
+.ink .plan li { position: relative; display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 14px; min-height: 50px; border-top: 1px solid var(--hair); }
+.ink .plan .col { text-align: right; font-size: 21px; }
+.ink .plan .nm { position: relative; justify-self: start; }
+.ink .plan .aside { color: var(--graphite); font-size: 15px; }
+.ink .plan li.complete .nm, .ink .plan li.complete .col { color: var(--graphite); }
+.ink .strike { position: absolute; left: -2px; right: -2px; top: 54%; height: 2px; background: var(--pencil); transform-origin: 0 50%; scale: 0 1; border-radius: 1px; }
+.ink:is([data-trim='open'], [data-trim='applied']) li.cut .strike { scale: 1 1; }
+.ink .plan li.cut .nm, .ink .plan li.cut .col, .ink .plan li.cut .aside { color: color-mix(in srgb, var(--ink) 50%, var(--ground)); }
+
+/* Tracked changes: old values struck, new ones in the Coach's blue until applied, then the ink dries. */
+.ink s.was { text-decoration: none; position: relative; color: var(--graphite); margin-right: 6px; }
+.ink s.was::after { content: ''; position: absolute; left: -2px; right: -2px; top: 52%; height: 2px; background: var(--pencil); border-radius: 1px; }
+.ink .prop { color: var(--pencil); transition: color 320ms cubic-bezier(.2, .8, .2, 1); }
+.ink[data-trim='applied'] .prop { color: var(--ink); }
+.ink[data-trim='kept'] .plan-sum .prop { display: none; }
+.ink[data-trim='kept'] .plan-sum s.was { color: var(--ink); margin-right: 0; }
+.ink[data-trim='kept'] .plan-sum s.was::after { display: none; }
+
+.ink .day-pane { margin-top: 30px; }
+.ink .day-pane .row { display: grid; grid-template-columns: 64px 1fr auto; align-items: center; gap: 14px; min-height: 50px; border-top: 1px solid var(--hair); }
+.ink .day-pane .col { text-align: right; font-size: 21px; white-space: nowrap; }
+.ink .day-pane .w { color: var(--graphite); font-size: 15px; }
+.ink .meter { width: 72px; height: 6px; border-radius: 3px; background: var(--hair); overflow: hidden; }
+.ink .meter b { display: block; height: 100%; width: 100%; background: var(--ink); transform-origin: 0 50%; scale: var(--p) 1; border-radius: 3px; }
+
+/* ---------- Workout ---------- */
+.ink .w-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; margin: -6px 0 10px; font-size: 15px; }
+.ink .back { min-height: 44px; padding-right: 12px; font-weight: 600; }
+.ink .w-title { text-align: center; font-weight: 600; }
+.ink .w-count { color: var(--graphite); font-size: 13px; }
+.ink .ex-name { font-size: 26px; font-weight: 650; letter-spacing: -0.01em; margin: 6px 0 2px; line-height: 1.15; }
+.ink .ex-last { color: var(--graphite); font-size: 15px; }
+.ink .ex-last .fig { font-weight: 600; }
+.ink .done-rows, .ink .up-rows { list-style: none; margin: 10px 0 0; padding: 0; }
+.ink .done-rows li, .ink .up-rows li { position: relative; display: grid; grid-template-columns: 92px auto 1fr auto; align-items: center; gap: 14px; min-height: 40px; }
+.ink .col .cw, .ink .col .cr { display: inline-block; }
+.ink .done-rows .col, .ink .up-rows .col { justify-self: end; text-align: right; font-size: 22px; position: relative; z-index: 1; white-space: nowrap; }
+.ink .done-rows .w, .ink .up-rows .w { color: var(--graphite); font-size: 15px; }
+.ink .done-rows .at { grid-column: 4; color: var(--graphite); font-size: 13px; font-weight: 500; }
+.ink .row-undo { grid-column: 3; grid-row: 1; justify-self: end; font-size: 15px; }
+.ink .up-rows li { color: var(--graphite); }
+/* A record: a yellow marker stroke behind the figures, swept in from the left. Ink stays on top. */
+.ink .marker { position: absolute; left: 0; top: 7px; width: 98px; height: 26px; background: var(--marker); border-radius: 3px 6px 4px 7px; transform-origin: 0 50%; z-index: 0; }
+.ink .done-rows li.rec .col { color: #121317; transition: color 160ms 60ms; } /* darkens as the marker reaches it (never white on yellow at night) */
+.ink .done-rows li.rec-pending .marker { scale: 0 1; }
+.ink .now-rule { position: relative; height: 2px; margin: 14px 0 16px; background: var(--hair); }
+.ink .drain { position: absolute; inset: 0; background: var(--ink); transform-origin: 0 50%; }
+.ink .now-label { font-size: 15px; font-weight: 650; }
+.ink .figure { display: flex; width: max-content; align-items: baseline; gap: 6px; margin: 2px 0 8px; white-space: nowrap; }
+.ink .fv { position: relative; display: inline-flex; align-items: baseline; font-size: 88px; line-height: 1; font-weight: 800; font-stretch: 68%; letter-spacing: -0.015em; padding: 4px 0 12px; min-height: 72px; }
+.ink .fv .v { display: inline-block; font-variant-numeric: tabular-nums; }
+.ink .fv .bar { position: absolute; left: 2px; bottom: 2px; width: min(100%, 52px); height: 4px; border-radius: 2px; background: currentColor; }
+.ink .unit { font-size: 26px; font-weight: 600; color: var(--graphite); margin-right: 6px; }
+.ink .x { font-size: 40px; font-weight: 500; color: var(--graphite); margin-right: 4px; }
+.ink .fw .was { display: none; font-size: 34px; font-weight: 700; font-stretch: 75%; align-self: center; margin-right: 10px; }
+.ink[data-bump='open'] .fw .was { display: inline-block; }
+.ink .fw .v, .ink .fw .bar { transition: color 320ms cubic-bezier(.2, .8, .2, 1), background-color 320ms cubic-bezier(.2, .8, .2, 1); }
+.ink[data-bump='open'] .fw .v { color: var(--pencil); }
+.ink[data-bump='open'] .fw .bar { background: var(--pencil); }
+.ink .w-coach { font-size: 22px; line-height: 1.22; min-height: 2.44em; text-wrap: pretty; } /* two lines kept, so Apply/Undo never shifts it */
+.ink .w-coach:empty { display: none; }
+.ink .bump-acts { margin-top: 18px; }
+.ink .next-pane { margin-top: 8px; }
+.ink .next-ex { margin-top: 10px; color: var(--graphite); font-size: 15px; }
+.ink .next-ex .fig { font-weight: 600; }
+/* Waiting through the rest: the next set is already there, in graphite. When rest ends, it darkens to ink. */
+.ink .now-label, .ink .fv { transition: color 280ms cubic-bezier(.2, .8, .2, 1); }
+.ink.waiting .now-label, .ink.waiting .fv { color: var(--graphite); }
+.ink.waiting .fv .bar { opacity: 0; }
+
+/* ---------- The dock and the slab (one object, two states) ---------- */
+.ink .dock { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; padding: 12px 20px calc(env(safe-area-inset-bottom) + 16px); }
+/* The glass under the slab has no hard top edge: the blur fades in over 28 px, so nothing behind it is cut in half. */
+.ink .dock::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; top: -28px; z-index: -1; pointer-events: none;
+  background: var(--glass); -webkit-backdrop-filter: blur(22px) saturate(1.5); backdrop-filter: blur(22px) saturate(1.5);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 28px); mask-image: linear-gradient(180deg, transparent, #000 28px); }
+.ink .slab { position: relative; isolation: isolate; display: flex; align-items: center; justify-content: space-between; width: 100%; height: 88px; padding: 0 26px; border-radius: 20px; color: var(--on-ink); font-size: 22px; font-weight: 700; transition: color 220ms cubic-bezier(.2, .8, .2, 1); }
+.ink .slab::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: var(--ink); z-index: -1; transition: opacity 220ms cubic-bezier(.2, .8, .2, 1); }
+.ink .slab::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--graphite) 45%, transparent); z-index: -2; }
+.ink .slab.down::before { opacity: 0.82; }
+.ink .slab-r { font-size: 17px; font-weight: 600; opacity: 0.8; }
+.ink .slab-rg { display: inline-flex; align-items: baseline; gap: 6px; }
+.ink .slab-rt { font-size: 20px; font-weight: 750; opacity: 0.8; font-variant-numeric: tabular-nums; }
+.ink .slab-rt:empty { display: none; }
+.ink .slab-t { font-size: 24px; font-weight: 750; }
+.ink.resting .slab { color: var(--ink); }
+.ink.resting .slab::before { opacity: 0.1; } /* resting, but still a button that takes you back */
+.ink .roll, .ink .fv .v.roll { position: relative; display: inline-grid; overflow-x: visible; overflow-y: clip; overflow-clip-margin: 2px; }
+.ink .roll > span { grid-area: 1 / 1; }
+/* The old text lies over the box, so the box (and whatever follows it) takes the new width at once. */
+.ink .roll > .roll-old { position: absolute; inset: 0; white-space: nowrap; }
+
+/* ---------- The edit tray ---------- */
+.ink .scrim { position: absolute; inset: 0; z-index: 8; background: var(--scrim); }
+.ink .tray { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 9; padding: 10px 20px calc(env(safe-area-inset-bottom) + 18px); border-radius: 30px; touch-action: none;
+  background: var(--glass); -webkit-backdrop-filter: blur(26px) saturate(1.6); backdrop-filter: blur(26px) saturate(1.6); box-shadow: inset 0 1px 0 var(--glass-edge), 0 20px 50px -10px rgba(0, 0, 0, 0.3); }
+.ink .grip { width: 40px; height: 5px; border-radius: 3px; background: var(--hair); margin: 0 auto 10px; box-shadow: inset 0 0 0 10px color-mix(in srgb, var(--graphite) 40%, transparent); }
+.ink .tray-row { display: grid; grid-template-columns: 1fr 64px 96px 28px 64px; align-items: center; min-height: 76px; border-bottom: 1px solid var(--hair); }
+.ink .tray-row .lbl { font-size: 17px; font-weight: 600; }
+.ink .tray-row .fig { font-size: 40px; text-align: right; font-stretch: 70%; font-weight: 800; }
+.ink .tray-row .tu { color: var(--graphite); padding-left: 6px; }
+.ink .step { height: 64px; width: 64px; border-radius: 16px; font-size: 30px; font-weight: 500; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--graphite) 35%, transparent); }
+.ink .tray-done { margin-top: 14px; width: 100%; height: 64px; border-radius: 18px; background: var(--ink) !important; color: var(--on-ink) !important; font-size: 19px !important; font-weight: 700 !important; }
+
+/* ================= Ink rich: a living field of our own colours, frosted panes, depth ================= */
+.ink.rich { background: var(--ground); }
+.rich .bg { position: absolute; inset: 0; overflow: clip; z-index: 0; }
+.rich .field { position: absolute; left: -12.5%; top: -12.5%; will-change: transform; }
+.rich .field canvas { display: block; }
+.ink.rich .workout { background: transparent; }
+.ink.rich .screen { z-index: 1; }
+.ink.rich .workout { z-index: 2; }
+.ink.rich .scroll { padding-left: 12px; padding-right: 12px; }
+.ink.rich .t-head { padding: 0 8px; }
+.ink.rich .w-head { padding: 0 6px; }
+.rich { --lens: rgba(255, 255, 255, 0.55); --lens-shadow: 0 18px 36px -18px rgba(30, 40, 90, 0.4), 0 2px 6px -2px rgba(30, 40, 90, 0.12);
+  --pane: rgba(255, 255, 255, 0.62); --pane-edge: rgba(255, 255, 255, 0.95); --graphite: #464A52;
+  --pane-shadow: 0 24px 48px -22px rgba(16, 28, 120, 0.45), 0 2px 6px -2px rgba(16, 28, 120, 0.12);
+  --glass: rgba(246, 247, 255, 0.42); --glass-edge: rgba(255, 255, 255, 0.85); --hair: rgba(18, 19, 23, 0.12); }
+@media (prefers-color-scheme: dark) {
+  .rich { --lens: rgba(255, 255, 255, 0.06); --lens-shadow: 0 22px 44px -16px rgba(0, 0, 0, 0.75), 0 2px 6px -2px rgba(0, 0, 0, 0.4);
+    --pane: rgba(14, 16, 28, 0.42); --pane-edge: rgba(255, 255, 255, 0.14); --graphite: #A9AEB8;
+    --pane-shadow: 0 24px 50px -20px rgba(0, 0, 0, 0.7), 0 2px 6px -2px rgba(0, 0, 0, 0.4);
+    --glass: rgba(12, 14, 26, 0.5); --glass-edge: rgba(255, 255, 255, 0.12); --hair: rgba(236, 237, 231, 0.12); }
+}
+/* Panes are frosted by tint and edge light, not live blur: the field behind them is already soft, so blur would look
+   the same and cost a full redraw every frame while it drifts. Live blur is kept for the dock and the tray, where
+   sharp text slides underneath. */
+.rich .pane { padding: 18px 18px 16px; border-radius: 28px; isolation: isolate; }
+/* The glass is drawn by ::before, so when a pane grows or shrinks its edge can follow the content on the same spring
+   (motion.js flip boxes) instead of snapping. */
+.rich .pane::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--pane-edge) 18%, transparent), transparent 120px), var(--pane); box-shadow: inset 0 1px 0 var(--pane-edge), inset 0 0 0 0.5px color-mix(in srgb, var(--pane-edge) 60%, transparent), var(--pane-shadow); }
+.rich .coach-pane { padding: 20px 20px 18px; }
+.rich .plan-pane, .rich .day-pane { margin-top: 12px; }
+.rich .ex-pane { padding-bottom: 8px; }
+/* The workout is one sheet of glass; the set you're on is a raised lens inside it (depth, not a stack of equal cards).
+   It moves with its content, so ticking never makes two panes overlap. */
+.rich .now { position: relative; isolation: isolate; margin: 12px -8px 0; padding: 18px 16px 16px; border-radius: 22px; }
+.rich .now::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--pane-edge) 22%, transparent), transparent 90px), var(--lens);
+  box-shadow: inset 0 1px 0 var(--pane-edge), inset 0 0 0 0.5px color-mix(in srgb, var(--pane-edge) 60%, transparent), var(--lens-shadow); }
+.rich .next-pane { margin-top: 10px; }
+.rich .now-rule { margin: 12px 0 2px; }
+.rich .plan li:first-child, .rich .day-pane .row:first-child { border-top: 0; }
+.rich .dock::before { -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8); }
+.rich .slab { box-shadow: 0 16px 34px -14px rgba(18, 24, 90, 0.55); }
+.rich .slab::before { background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 86%, #3a46ff), var(--ink) 60%); }
+@media (prefers-color-scheme: dark) { .rich .slab { box-shadow: 0 16px 34px -14px rgba(0, 0, 0, 0.8); } .rich .slab::before { background: linear-gradient(180deg, #fff, var(--ink) 70%); } }
+.rich.resting .slab { box-shadow: none; }
+.rich .tray { background: var(--glass); -webkit-backdrop-filter: blur(28px) saturate(1.8); backdrop-filter: blur(28px) saturate(1.8); }
+/* Grain on the blurred glass: the banding check (tools/looks/banding.py) found faint rings under the tray and in the
+   dock's soft top edge in every look, so it's there by TASTE §4b, not by default (see bg.js grain). */
+.ink .dock::before, .ink .tray { background-image: var(--grain); background-size: var(--grain-size); }
