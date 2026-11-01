@@ -28,3 +28,13 @@ Run them before Omar sees anything visual or any Coach change. Spawn fresh ones 
 ## Never
 - Change `The-new-Claude-gym-app` (the old app). Read-only reference, cloned into `reference/` (gitignored).
 - Commit real data or API keys. The Gemini key is injected as a header by the environment (no variable); never put it in code, commits or logs.
+
+## Working efficiently (Omar, 1 Nov)
+Model and effort are Omar's to switch. When the work calls for a different setting, tell him which one and why.
+- **Opus, high effort:** concept and design work, DESIGN.md, signature-moment motion, the Coach brain and exam judging, anything touching user data. Riskiest work (data import, backup, storage): Opus main with Opus as advisor.
+- **Normal build phases:** Sonnet on medium as main model, Opus as advisor (`/advisor opus`; exists in Claude Code 2.1.316). Ask the advisor before committing to an approach, when an error repeats, and before calling a task done. Sonnet on high when stuck.
+- **Small fixes, copy and doc edits:** Sonnet on low, alone.
+- If the same fix fails twice, stop and tell Omar (stronger model or a new approach). If you skipped a file or didn't test, raise the effort.
+- One phase per session. On long tasks, commit, push and update PROGRESS.md after each working step, so a usage-limit cutoff loses nothing. Use /clear between unrelated tasks.
+- Don't re-read large files already summarised in docs. Build concepts only to "judgeable"; polish only the winner.
+- Judges only for work Omar will see. Blur and banding are judged on his phone, never headless.
