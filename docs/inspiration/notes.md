@@ -2,14 +2,13 @@
 
 The "inspiration" release on this repo holds 26 videos and no pictures. The videos aren't committed (too big). Each one has three key frames here, named `NN-name-1.jpg`, `-2.jpg` and `-3.jpg`. To watch a clip, download it from the release.
 
-Each entry says what the clip shows and what Omar likes about it. Omar confirmed this list on 27 Oct 2026. Use the principle, never the look. docs/TASTE.md wins, and everything must pass the 5-second test. See also web-references.md.
+Each entry says what the clip shows and what Omar likes about it. Omar confirmed this list on 27 Oct 2026. The clips are evidence of what Omar likes; his latest words win (1 Nov: the design starts from a blank page). Never copy a screen, and everything must pass the 5-second test. See also web-references.md.
 
 ## The orb and the Coach
 
 **01 · ai-orb-sunrise** (`4600b61efca8205504cb432891167c7d.mp4`)
 - **Shows:** a blue AI money app. The orb sinks into a glowing "sunrise" at the bottom while it listens, then light floods the screen and the greeting types itself in.
 - **Omar likes:** the calm, cinematic handover from orb to answer.
-- **Caution:** this orb changes shape, which breaks our rule. Borrow only the light and the timing.
 
 **02 · glass-orb-ribbon** (`79cb79d13c8e27b8846a20f055936f5e.mp4`)
 - **Shows:** a glass sphere with a glowing ribbon turning inside it. The shape never changes; only light and depth move.
@@ -29,7 +28,7 @@ Each entry says what the clip shows and what Omar likes about it. Omar confirmed
 
 **17 · slide-to-approve** (`Screen_Recording_20261018_130334_X.mp4`)
 - **Shows:** the AI checks a proposal, you approve it with one swipe, and the home screen updates with the result.
-- **Omar likes:** the AI does the work and he confirms with one gesture. (Ticking a set stays tap-only.)
+- **Omar likes:** the AI does the work and he confirms with one gesture. (Ticking a set is still one tap: a test in TASTE.md §6.)
 
 ## Things that travel between screens
 
@@ -119,5 +118,5 @@ Each entry says what the clip shows and what Omar likes about it. Omar confirmed
 - **Shows:** dark stats widgets. Placeholders turn into charts that draw themselves in, one after another.
 - **Omar likes:** data arriving calmly.
 
-## What Omar never wants
-See docs/TASTE.md (orange or warm surfaces, grey/navy/brown mud, solid floating blocks, overshoot without a throw, an orb that changes shape) and LESSONS.md once it exists.
+## Old "never wants"
+Removed on 1 Nov: there are no global colour, material, orb or motion bans any more. What Omar wants now is in docs/TASTE.md §3.

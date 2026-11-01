@@ -50,10 +50,10 @@ Checkpoint 2 step 7: the GitHub Pages deploy workflow. In parallel, the exam bas
 
 ## Session 2, continued: Checkpoint 2 (27 Oct 2026)
 Done:
-- Step 7: Pages deploy workflow (.github/workflows/pages.yml), merged to main. Omar still has to switch Settings → Pages →
-  Source to "GitHub Actions".
-- Steps 8–9: the lab in site/lab/ (picker, 4 directions: Frost, Thread, Timeline, Headline) and films/films.html, merged
-  to main. Round-1 judge defects fixed.
+- Step 7: Pages deploy workflow (.github/workflows/pages.yml), merged to main. Omar switched Source to "GitHub Actions"
+  (1 Nov); no deploy has run since, so the live site still shows the old page until the next push to main.
+- Steps 8–9: the lab in site/lab/ (picker, 4 directions: Frost, Thread, Timeline, Headline) and films/films.html. Corrected
+  1 Nov: these are only on branch claude/project-thread-84tdii, never merged to main (main has only a placeholder).
 
 Half-done (on branch claude/project-thread-84tdii, not merged):
 - Round-2 judge fixes: Frost, Thread and Timeline done (Timeline's rest now lives on the line under Bench).
@@ -66,3 +66,17 @@ Half-done (on branch claude/project-thread-84tdii, not merged):
 Finish the Headline fixes in site/lab/d4-headline.js/.css, re-shoot and re-film (tools/lab/shot.mjs and film.mjs, serve site/ on port 8765;
 Playwright at 384×832, 2x, ffmpeg real + half speed), run fresh design and motion judges until no real defects, then PR
 into main, check the deploy, and send Omar my pick first. In parallel: the exam baseline on 28 Oct after the quota reset.
+
+## Session 3: blank page (1 Nov 2026)
+Omar's decision: the design starts from a blank page. Old Aven is a reference for features, data and lessons only. The lab
+(site/lab/), old-aven-review.md and the old style guide are history, not direction; the Headline fixes above are dropped.
+Done:
+- Removal list applied: every inherited design rule removed from BRIEF, TASTE, VISION, INVENTORY, LESSONS, inspiration
+  notes, web references, the design and motion judges and CLAUDE.md. Replaced by Omar's seven statements (TASTE.md §3) and
+  phone test cases. Kept as tests (Omar agreed): one tap ticks a set, the 5-second test, no dead buttons; noise/dither allowed.
+- Concepts in words (no UI yet): /mnt/project-files/aven2/ (project files, not the repo).
+- The Coach exam job is paused until the Coach phase (its criteria get fixed first). exam/v1/personas-v1.ts: unchanged
+  until Omar decides (replace the details or make the repo private).
+
+## Next step
+Omar picks 2–3 concepts. Then the blur test page (/blurtest/, plan in the concepts file), then concept UI for his picks.

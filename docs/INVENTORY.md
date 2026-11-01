@@ -20,7 +20,7 @@ product**, so many buttons and settings become "just tell the Coach".
 | Feature | What it does | Call | Why |
 |---|---|---|---|
 | Header date + name | Long date and your name | keep | Orientation; name comes from onboarding |
-| Coach button (sparkle) | Opens the Coach | merge → the orb, always present | One way in to the Coach from anywhere |
+| Coach button (sparkle) | Opens the Coach | merge → the Coach, one tap away from anywhere | One way in to the Coach from anywhere |
 | Settings button (gear) | Opens Settings | keep | |
 | Coach pin | Top card: things the Coach noticed | merge → the Coach's morning line on Today | Same job, one voice; it speaks only when it matters |
 | Day ring (food ledger) | Today's kcal/macros; tap → Food | keep | The one number most people check |
@@ -57,7 +57,7 @@ product**, so many buttons and settings become "just tell the Coach".
 | List / Focus toggle | Two views of one workout | keep, decided in Checkpoint 2 | Directions may make one view the default |
 | Finish button (muted → accent → ready glow) | | keep | |
 | Progress hairline | | keep | |
-| Living light / breath | Window light breathes, warms over the hour | later | Decoration; only if the chosen direction wants it |
+| Living light / breath | Window light breathes, warms over the hour | later | Each concept decides (blank page, 1 Nov) |
 | Staged list build | | merge → general performance rule | Implementation detail |
 | Empty session state | | keep | |
 | Exercise card (name, muscles, menu, note, hints) | | keep | |
@@ -81,7 +81,7 @@ product**, so many buttons and settings become "just tell the Coach".
 | Workout bar: next / rest / go / done / empty | | keep | The rest timer's home |
 | Rest −15 / +15 / Skip | | keep | |
 | Last 3 s swell + buzz, chime, "go" state | | keep, redesigned | Signature moment: rest timer |
-| Orb in the bar (dictate sets) | | keep | |
+| Voice button in the bar (dictate sets) | | keep | |
 | One tick path (tap, voice, Coach, watch) | | keep | Clean rule, port the logic |
 | Auto-resume on tick | | keep | |
 | Rest cue anywhere in the app | | keep | |
@@ -161,7 +161,7 @@ product**, so many buttons and settings become "just tell the Coach".
 | Coach chat (full sheet, kept on the phone) | | keep, rebuilt | The product |
 | Typing bar (grows, Enter sends, Stop) | | keep | |
 | Queue while busy | | keep | |
-| Orb as microphone, auto-stop on quiet | | keep | Signature moment: the orb listening |
+| Tap to talk, auto-stop on quiet | | keep | Signature moment: the Coach listening |
 | Send a photo | | keep | |
 | Long-press anything → "Ask the Coach about this" | | keep | Strong, unique |
 | Suggested prompts on an empty chat | | keep | Built from the person's data |
@@ -177,7 +177,7 @@ product**, so many buttons and settings become "just tell the Coach".
 | New chat | | keep | |
 | First-open disclaimer | | keep | |
 | Long chats load in batches | | keep | |
-| Orb screen (full-screen voice) | | keep | |
+| Full-screen voice | | keep | |
 | Speech: Groq Whisper, then browser speech, then typing | | keep | |
 | Type instead / Speak instead | | keep | |
 | Said words morph into a bubble | | keep, redesigned | |
@@ -282,9 +282,9 @@ product**, so many buttons and settings become "just tell the Coach".
 
 | Feature | What it does | Call | Why |
 |---|---|---|---|
-| Four tabs + dock with orb | | keep, decided in Checkpoint 2 | Directions may change navigation |
+| Four tabs + dock | | open, decided in Checkpoint 2 | Navigation is open; each concept decides (1 Nov) |
 | Tab switch animation | | keep, redesigned | |
-| Colour field per tab, backgrounds by time | | cut | Goes with palettes/backgrounds |
+| Colour field per tab, backgrounds by time | | open | Reopened 1 Nov: colour is judged per screen, no global bans |
 | Status bar tint | | keep | |
 | Page sinks behind sheets, calm mode | | keep | |
 | Screen wake lock during a workout | | keep | |
@@ -299,7 +299,7 @@ product**, so many buttons and settings become "just tell the Coach".
 | Broken screen guard | | keep | |
 | Danish first paint | | keep | |
 | Persistent storage request | | keep | |
-| Glow/dither machinery (canvas glows, grain, frost copies, dock shadow) | | cut unless proven | Brief: only if the new design needs it. Design avoids banding by construction |
+| Glow/dither machinery (canvas glows, grain, frost copies, dock shadow) | | old code not ported | New noise or dither is allowed if the blur test needs it (zero banding) |
 | Beta build isolation | | keep, rebuilt | Checkpoint 2, step 13 |
 | Android TWA wrapper (Health Connect read/write, native rest countdown, Done ✓ on watch, background job) | | keep, right after the core loop (Omar, 27 Oct) | Reuse with new URLs and package id; about a day of work plus CI |
 | Health Connect sync via `#hc=` address | | keep, with the wrapper | Validation code ports as is |

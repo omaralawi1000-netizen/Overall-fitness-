@@ -19,8 +19,9 @@ a score. Aven 2 turns it round: **the Coach is the app**.
   the thing, shows exactly what changed, and gives you Undo. It never gives advice text when it could do the thing.
 - **It tells the truth.** Every number it says comes from your data, worked out by the app, not guessed by the AI: real
   wins, plain misses, stalled lifts, whether you're on pace. When the data can't show something, it says so.
-- **It looks and moves like nothing else.** Frosted glass with real depth, calm springs you can catch mid-motion, and
-  one orb that listens, breathes and answers. Premium and quiet, with the boldness spent on a few moments that matter.
+- **It looks and moves like nothing else.** The best-looking blur that stays smooth, zero banding, see-through
+  materials where they're beautiful, colour that looks alive on each screen, big thumb targets, instant taps, and calm
+  but expressive motion you can catch mid-gesture.
 
 ## Who it's for
 Anyone a friend hands it to (Omar, 27 Oct): gym regulars, people in other sports, and total beginners, on Android or
@@ -37,7 +38,7 @@ iPhone, with their own AI key or none.
 ## A day with it
 Omar's real week is used as the example. For a friend, every line would come from their own onboarding and data.
 
-**Morning, 06:05.** He opens the app before the bus. The orb wakes, and one line arrives under the date: *"Push today
+**Morning, 06:05.** He opens the app before the bus. The Coach wakes, and one line arrives under the date: *"Push today
 after work. Bench 82.5 × 8 is the target, 2.5 kg up on last week. Down 0.4 kg this week, right on pace."* Nothing else
 asks for attention. If there's nothing worth saying, there's no line.
 
@@ -46,9 +47,9 @@ you're after. Each answer becomes a memory card you can see. Two minutes later i
 food targets as a preview: *Apply*, or say what to change. With no key, the same questions come as big tap answers.
 
 **Mid-workout, 15:40.** Sweaty hands, phone on the bench. The set he's on is outlined, with last time's numbers in it.
-He taps the big check: it answers on the very next frame, the row lights, the rest timer starts in the floating frost
-bar, and the next set moves into view. Beat last time and a small gold "+2.5 kg" rises and fades. He can also say
-"8 at 80" to the orb. The phone itself reads it, logs the set on the spot (no AI, works offline) and says it back.
+He taps the big check: it answers on the very next frame, the row lights, the rest timer starts,
+and the next set moves into view. Beat last time and a small "+2.5 kg" rises and fades. He can also say
+"8 at 80" by voice. The phone itself reads it, logs the set on the spot (no AI, works offline) and says it back.
 
 **The rest timer.** The bar fills calmly. In the last three seconds each second swells and the phone buzzes, then it
 turns "go" and names the next set. On Android with the wrapper it lives on the lock screen and the watch, with
@@ -83,8 +84,8 @@ Want me to move 300 kcal to after 20:00 so the plan matches how you actually eat
    about the person.
 3. **It acts, you stay in control.** Every change is visible and has Undo. Big changes are a preview first. Memory is
    always readable and editable.
-4. **Quiet until it matters.** Few screens, few knobs, few messages. Boldness is spent in one place per screen and on the
-   signature moments, and everything around it stays calm.
+4. **Quiet until it matters.** Few screens, few knobs, few messages. The signature moments get the
+   most care.
 5. **For anyone, on their phone.** Nothing is hardcoded about one person. It works with no key, on iPhone and Android, in
    Danish and English, and at 120 fps on a sweaty hand at the gym.
 

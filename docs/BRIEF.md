@@ -6,7 +6,7 @@ I'm Omar. I'm not a programmer, I dictate (expect misheard words), and I judge e
 
 ## The reference
 - Old app, read-only: https://github.com/omaralawi1000-netizen/The-new-Claude-gym-app. Clone it into ./reference/aven and add reference/ to .gitignore. Never commit, push or open PRs there. It stays live as my daily app until Aven 2 beats it.
-- Read all of it before deciding anything: CLAUDE.md, docs/style-guide.md, docs/living-coach-plan.md, docs/coach-plan.md, docs/polish-plan.md, then every file in src/. README.md is 365 KB of design history: read the headings, and open any section whose lesson you need.
+- Read all of it before deciding anything (its style guide and screens for lessons only, never as design direction): CLAUDE.md, docs/style-guide.md, docs/living-coach-plan.md, docs/coach-plan.md, docs/polish-plan.md, then every file in src/. README.md is 365 KB of design history: read the headings, and open any section whose lesson you need.
 - Data model and import: src/lib/types.ts, persist.ts, backup.ts, beta.ts.
 - Its scripts/ folder shows how to test, screenshot and film the app headless, and scripts/exam shows how its Coach was scored. Reuse those approaches.
 
@@ -21,20 +21,22 @@ The Coach is the product. Everything else (workouts, food, health, progress) is 
 - Port Aven's Coach brain, memory and living-coach work (steps 1–2 shipped) as the starting point, then make them much better. AI keys stay optional: the app must work without paid services.
 
 ## Design: world-class, and unmistakably its own
-- The bar: a top Apple designer finds nothing to wince at, and someone seeing it for the first time asks "what app is that?" Premium and minimal, never generic "AI-looking".
+- The bar: a top Apple designer finds nothing to wince at, and someone seeing it for the first time asks "what app is that?" Never generic or template-looking.
 - Research before designing. Study the apps and studios most praised right now for motion, depth and detail, from current sources. Note what makes them great and what nobody has done yet in fitness or coaching.
-- Inspiration: docs/inspiration/ and notes.md hold what I like and what I never want. Study what makes each one work and use the principle, not the look. Never copy a screen. If you can beat a reference, beat it. Use them in your research and when building the Checkpoint 2 directions, and tell me which reference shaped which choice.
+- Blank page (1 Nov): the design starts from zero. Old Aven is a reference for features, data and lessons only. No colour, colour ban, material, glass recipe, orb rule, layout, navigation, typography or motion restriction carries over from it. site/lab/, docs/inspiration/old-aven-review.md and old Aven's style guide are history, not direction.
+- Inspiration: docs/inspiration/ and notes.md show what I like. Study what makes each one work. Never copy a screen. If you can beat a reference, beat it. Use them in your research and when building the Checkpoint 2 directions, and tell me which reference shaped which choice.
 - New must still be obvious. Every unusual idea passes a 5-second test: a stranger understands the screen and the next action. No gimmicks. Beautiful but confusing is a fail.
-- My taste:
-  - Frosted glass with real depth.
-  - Calm iOS-style motion: critically damped springs that ease out, no overshoot. A little bounce only after a flick or throw.
-  - Accent colour only on things you tap or that mean something.
-  - No orange or warm tint on surfaces, and no grey, navy or brown mud.
-  - Floating things (bars, sheets, the rest timer) are see-through frost, never a solid block.
-  - Anything moving can be caught and turned around mid-motion.
-  - Fewer knobs, done perfectly. Aven grew 8 palettes, per-tab hues and many backgrounds; find the few that matter.
+- What I want, in my own words (1 Nov):
+  - The best-looking blur that stays smooth on my phone.
+  - Zero banding.
+  - See-through materials where they're beautiful.
+  - Colours judged per screen by whether they look beautiful and alive. No global colour bans.
+  - Big thumb targets.
+  - Instant tap response.
+  - Calm but expressive motion that can be caught mid-gesture.
+- Fewer knobs, done perfectly. Aven grew 8 palettes, per-tab hues and many backgrounds; find the few that matter.
 - Signature moments get the most care, each with its own motion spec:
-  - the voice orb listening and answering
+  - the Coach listening and answering
   - ticking a set
   - the rest timer
   - finishing a workout
@@ -42,34 +44,33 @@ The Coach is the product. Everything else (workouts, food, health, progress) is 
   - a new record
   - opening the app in the morning
 - Every screen, including settings and rare flows, meets the full DESIGN.md standard. Nothing gets a lesser version.
-- The orb never changes shape: it moves, glows, breathes and reacts to my voice.
-- Gym reality: big targets near the thumb, for sweaty hands. Tapping is the only way to tick a set. Every tap shows a response on the very next frames.
+- Gym reality: ticking a set takes exactly one tap; no swipe or long-press ticks a set (a test, 1 Nov). The 5-second test and "no dead buttons" stay.
 - Danish and English for every string. Metric units, DKK, Danish foods first.
 - No placeholders or dead buttons. If it's in the UI, it works.
 
 ## Firm rules
 - My phone: Galaxy S26 Ultra, Chrome, installed as a PWA, 120 Hz, 384 css px wide, DPR 3.75. Target 120 fps. No flicker, black frames or layout jumps, ever.
-- Design around the phone's known problems from day one (Aven style guide sections 1 and 5). Soft gradients and blur show banding in its Chrome. Adding or dropping layers mid-animation causes black frames. Blur has a performance cost. Solve these by design, not with patches later.
+- Design around the phone's known problems from day one (the phone facts in docs/LESSONS.md 1–10). Soft gradients and blur show banding in its Chrome. Adding or dropping layers mid-animation causes black frames. Blur has a performance cost. Solve these by design, not with patches later. Noise or dither is allowed when the blur test shows it's needed.
 - Headless Chromium doesn't show blur and banding the way my phone does. Only my phone judges those, so label them "needs phone" and send them to Beta.
 - My data is precious. Aven 2 runs on the same github.io origin as Aven, so give it its own storage namespace: prefix every localStorage key and IndexedDB name with `a2` (decided 27 Oct: not `aven2`, because Aven's "Delete everything" wipes every key starting with `aven`). Never write to Aven's keys or databases.
 - Bring my data over with a one-way, read-only import: Aven's backup file, plus a one-tap "copy my Aven data in" like Aven Beta has. Build the import test from Aven's backup format in the code. Never commit my real data: this repo is public.
 - API keys are typed into Settings and stay on the phone: never in code, commits, logs or backups.
 - For the Coach exam, a free Gemini key is injected automatically as the `x-goog-api-key` header on requests to generativelanguage.googleapis.com. There is no GEMINI_API_KEY variable: send Gemini requests without a key and the environment adds it. Use it only for tests. Never put a key in code, commits or logs. It is the free tier, which has rate limits: pace the Coach exam calls and retry on rate-limit errors (HTTP 429) with a wait. Use gemini-3.8-flash (gemini-2.5-flash is closed to new users). My own key, used on my phone and by friends at the start, has billing, so the free-tier limit only slows the exam, not daily use.
 - Stack. Default: React + TypeScript + Vite PWA on GitHub Pages, plus Aven's Android wrapper for background coaching and notifications. This keeps the loop where you can see and judge every screen with Playwright. If you find a concrete, measured reason that another stack gives clearly better motion or coaching, make the case at checkpoint 1 with evidence and one recommendation.
-- Port the logic, rebuild the UI. Copy domain logic that is clean and tested, together with its tests: the data model, parsers, nutrition maths, food and exercise data, AI clients and the Coach brain. Rewrite whatever is tangled. Build every screen, component and style from zero. Don't bring over the glow/dither machinery unless you prove the new design needs it.
+- Port the logic, rebuild the UI. Copy domain logic that is clean and tested, together with its tests: the data model, parsers, nutrition maths, food and exercise data, AI clients and the Coach brain. Rewrite whatever is tangled. Build every screen, component and style from zero. Don't port old Aven's glow/dither code; new noise or dither is fine when the blur test needs it.
 - Playwright: use the npm package through scripts, like Aven does. Don't depend on the Playwright MCP, which may not load in cloud sessions.
 - Once DESIGN.md is approved, changes to it come as a proposal with the reason, a before/after, and my yes. Improving it is always welcome; changing it silently is not.
 - Batch your questions: at most one message of questions per phase, unless something blocks you.
 
 ## Skills and judges (in .claude/skills and .claude/agents)
 - frontend-design and emil-design-eng: taste for every screen. Spend boldness in one place, and keep everything around it quiet.
-- apple-design: the default for all motion, materials, sheets and gestures.
+- apple-design: a reference for motion, materials, sheets and gestures, not a house style.
 - animation-performance: check every animation against the 120 fps budget and the cost of blur.
 - mobile-native: the PWA must feel installed, never like a website.
 - prototype and review-animations only run when invoked by name, so read their SKILL.md files (and PICKER.md / STANDARDS.md) and follow them directly. prototype is for every design exploration; review-animations is the motion-judge's rulebook.
 - verification-before-completion: before saying anything is done.
 - Judges: design-judge, motion-judge, coach-judge. Use fresh ones each round, and iterate until they stop finding real defects. I only see work that already passed.
-- If a skill and docs/TASTE.md disagree, TASTE.md wins.
+- My latest words win over older docs and over any skill. docs/TASTE.md is the list of tests the judges check.
 
 ## Phase 0: vision and design (no app code)
 Take as many sessions as it needs. End every session by updating docs/PROGRESS.md with what's done and the exact next step.
@@ -91,15 +92,15 @@ Take as many sessions as it needs. End every session by updating docs/PROGRESS.m
 ### Checkpoint 2: how it looks and moves
 7. First set up the GitHub Pages deploy workflow. If it needs a click from me, tell me exactly what to click.
 8. Build at least 4 genuinely different directions, each on a named axis. At least 2 must be bold: a new way to interact or a new way to see my training that no fitness app has, not a reskin. All of them still pass the 5-second test. Each direction shows:
-   - the same key screens: Today, a live workout mid-set with the rest timer, the Coach with the orb and memory
+   - the same key screens: Today, a live workout mid-set with the rest timer, the Coach and its memory
    - at least 2 signature moments in motion
    Use the prototype skill's divergence rules, craft bar and picker. Where it says "one piece per run", treat each direction's set of key screens as the piece, and run it separately for each signature moment.
-9. Deploy the picker to GitHub Pages under /lab/, with its own storage prefix, so I can flip through the directions on my own phone. Also film each direction at real speed and half speed (384×832, dark theme) and put the clips on the lab page.
+9. Deploy the picker to GitHub Pages under /lab/, with its own storage prefix, so I can flip through the directions on my own phone. Also film each direction at real speed and half speed (384×832, in each direction's own theme) and put the clips on the lab page.
 10. Judge with fresh design-judges and motion-judges, and iterate until they stop finding real defects. Then show me your pick first, with your main reason and the main trade-off, and the runners-up after it.
 11. After my yes, write DESIGN.md: the chosen direction as rules.
-    - colour and type tokens, spacing, radii, glass, depth
+    - colour and type tokens, spacing, radii, materials, depth
     - one shared set of springs
-    - the orb
+    - how the Coach is present
     - navigation
     - a motion spec for every signature moment
     Delete the losing prototypes.
