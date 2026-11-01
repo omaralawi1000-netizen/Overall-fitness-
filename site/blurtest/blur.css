@@ -1,0 +1,109 @@
+/* Aven 2 blur test. Shared by index.html (compare) and perf.html (speed test). */
+:root { color-scheme: dark; --ink: #eef0f5; --dim: #a3a9b8; --bg: rgb(7, 8, 18); --W: 100vw; --H: 100vh; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--bg); color: var(--ink); }
+body { font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; -webkit-font-smoothing: antialiased; }
+button, a { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+
+/* The sky: drawn once in script, sits still unless "Sky" is on. */
+#sky { position: fixed; inset: 0; z-index: 0; overflow: hidden; background: var(--bg); }
+.sky-art { position: absolute; left: 0; top: 0; width: var(--W); height: var(--H); display: block; transform-origin: 50% 50%; }
+
+/* The page that scrolls under the glass. The root never scrolls, so the address bar stays put. */
+.scroller { position: fixed; inset: 0; z-index: 1; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; }
+.feed { padding: calc(136px + env(safe-area-inset-top)) 16px calc(170px + env(safe-area-inset-bottom)); }
+.feed h1 { font-size: 34px; line-height: 1.08; letter-spacing: -0.02em; font-weight: 700; margin: 4px 0 12px; }
+.feed h2 { font-size: 20px; margin: 0 0 10px; font-weight: 650; }
+.kicker { margin: 0; font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--dim); }
+.lead { margin: 0 0 16px; font-size: 16px; }
+.methods { margin: 0 0 16px; padding: 0; list-style: none; display: grid; gap: 10px; }
+.methods li { display: grid; grid-template-columns: 34px 1fr; gap: 10px; align-items: start; font-size: 14px; }
+.methods b { display: grid; place-items: center; height: 30px; border-radius: 10px; background: rgba(255, 255, 255, .12); font-size: 15px; }
+.methods em { font-style: normal; font-weight: 650; }
+.t13, .cap { font-size: 13px; color: var(--dim); margin: 8px 0 0; }
+.speed { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
+.speed a { display: grid; place-items: center; height: 52px; border-radius: 16px; background: rgba(255, 255, 255, .12); text-decoration: none; font-weight: 650; font-size: 17px; }
+.speed a:active { background: rgba(255, 255, 255, .26); }
+.photo { display: block; width: 100%; aspect-ratio: 3 / 2; border-radius: 20px; margin: 28px 0; }
+.numbers { margin: 28px 0; }
+.big { font-size: 76px; line-height: 1; font-weight: 750; letter-spacing: -0.03em; font-variant-numeric: tabular-nums; }
+.big small { font-size: 34px; font-weight: 650; color: var(--dim); }
+.log ol { margin: 0; padding: 0; list-style: none; }
+.log li { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid rgba(255, 255, 255, .1); font-size: 13px; }
+.log li span { color: var(--dim); font-variant-numeric: tabular-nums; text-align: right; }
+.band { height: var(--H); margin: 28px -16px; padding: 24px 16px; display: flex; align-items: flex-end; font-size: 13px; }
+.band.dark { background: linear-gradient(180deg, #090b13 0%, #10172a 40%, #1a1030 75%, #0b0a14 100%); color: var(--dim); }
+.band.bright { background: linear-gradient(165deg, #ff3d6e 0%, #ff9a1f 30%, #ffe03d 50%, #2ad0ff 75%, #6a3dff 100%); color: #10121a; font-weight: 600; }
+.detail { margin: 28px 0; display: grid; gap: 12px; }
+.stripes { height: 120px; border-radius: 16px; background: repeating-linear-gradient(90deg, #fff 0 2px, #000 2px 4px); }
+.checks { height: 120px; border-radius: 16px; background: conic-gradient(#ff3d6e 25%, #0c0e16 0 50%, #2ad0ff 0 75%, #f4f5f8 0) 0 0 / 24px 24px; }
+.chars { font-size: 44px; font-weight: 750; letter-spacing: -0.01em; }
+.end { text-align: center; color: var(--dim); font-size: 13px; padding: 40px 0; }
+
+/* Glass surfaces. Each one is built in script from one pane (one method) or five strips (split). */
+.surface { position: fixed; }
+.panes { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; }
+.split .panes { overflow: hidden; }
+.pane { position: absolute; top: 0; bottom: 0; }
+.solo > .panes > .pane { border-radius: inherit; }
+.pane.clip { overflow: hidden; }
+.pane > div { position: absolute; inset: 0; border-radius: inherit; }
+.pane > .pos { inset: auto; left: 0; top: 0; width: var(--W); height: var(--H); }
+.copy-scroll { position: absolute; left: 0; top: 0; }
+.fade { -webkit-mask-image: linear-gradient(#000 0%, #000 45%, transparent 100%); mask-image: linear-gradient(#000 0%, #000 45%, transparent 100%); }
+.grain { background-image: var(--noise); background-size: var(--grain) var(--grain); pointer-events: none; }
+.edge { position: absolute; inset: 0; border-radius: inherit; pointer-events: none; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .10), inset 0 1px 0 rgba(255, 255, 255, .16); }
+.labels { position: absolute; inset: 0; pointer-events: none; border-radius: inherit; overflow: hidden; }
+.labels i { position: absolute; top: 0; bottom: 0; border-left: 1px solid rgba(255, 255, 255, .28); font-style: normal; }
+.labels i:first-child { border-left: 0; }
+.labels i b { position: absolute; left: 6px; top: 8px; font-size: 11px; font-weight: 700; padding: 1px 6px; border-radius: 6px; background: rgba(0, 0, 0, .45); }
+
+.top { left: 0; right: 0; top: 0; height: calc(128px + env(safe-area-inset-top)); z-index: 10; pointer-events: none; }
+.top .labels { top: calc(62px + env(safe-area-inset-top)); }
+.top .labels i b { top: 4px; }
+.controls { position: fixed; z-index: 11; left: 0; right: 0; top: calc(10px + env(safe-area-inset-top)); display: grid; grid-template-columns: repeat(5, 1fr); }
+.controls .pill { margin: 0 6px; }
+.pill { display: grid; place-items: center; height: 48px; border-radius: 16px; border: 1px solid rgba(255, 255, 255, .14); background: rgba(255, 255, 255, .10); font-weight: 650; font-size: 16px; text-decoration: none; padding: 0; cursor: pointer; }
+.pill.wide { font-size: 14px; }
+.pill:active { background: rgba(255, 255, 255, .26); }
+.pill.on { background: #f2f4f8; color: #0b0c12; border-color: #f2f4f8; }
+
+.bar { left: 12px; right: 12px; bottom: calc(12px + env(safe-area-inset-bottom)); height: 68px; border-radius: 24px; z-index: 30; }
+.bar .content { position: absolute; inset: 0; display: flex; align-items: center; gap: 6px; padding: 0 10px 0 16px; }
+.label { flex: 1; min-width: 0; line-height: 1.2; align-self: stretch; display: flex; flex-direction: column; justify-content: center; text-align: left; padding: 0; border: 0; background: none; cursor: pointer; }
+.label b { display: block; font-size: 15px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.label span { display: block; font-size: 12px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.btn { height: 48px; min-width: 56px; padding: 0 14px; border-radius: 16px; border: 0; background: rgba(255, 255, 255, .13); font-weight: 650; font-size: 15px; cursor: pointer; }
+.btn:active { background: rgba(255, 255, 255, .28); }
+.btn.on { background: #f2f4f8; color: #0b0c12; }
+.fps { min-width: 56px; text-align: right; font-size: 13px; font-weight: 650; color: var(--dim); font-variant-numeric: tabular-nums; }
+
+.sheet { left: 8px; right: 8px; bottom: -100px; height: calc(var(--sheetH) + 100px); border-radius: 28px 28px 0 0; z-index: 20; touch-action: none; visibility: hidden; user-select: none; -webkit-user-select: none; }
+.sheet .labels i b { top: 82px; }
+.sheet .content { position: absolute; inset: 0; padding: 10px 20px 0; }
+.grabber { width: 40px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .38); margin: 0 auto 10px; }
+.sheet header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.sheet h2 { margin: 0; font-size: 22px; font-weight: 700; }
+.close { width: 48px; height: 48px; border-radius: 24px; border: 0; background: rgba(255, 255, 255, .14); font-size: 22px; line-height: 1; cursor: pointer; }
+.close:active { background: rgba(255, 255, 255, .3); }
+.sheet .rows { margin: 0; padding: 0; list-style: none; }
+.sheet .rows li { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid rgba(255, 255, 255, .12); font-size: 15px; }
+.sheet .rows li span { color: var(--dim); font-variant-numeric: tabular-nums; }
+.chart { display: flex; align-items: flex-end; gap: 8px; height: 120px; margin: 36px 0 8px; }
+.chart i { flex: 1; border-radius: 8px 8px 4px 4px; background: linear-gradient(#7fe3ff, #6a5bff); }
+.chart i:last-child { background: linear-gradient(#ffd36e, #ff6a3d); }
+
+/* Speed test result card: solid on purpose, so it never adds blur of its own. */
+.card { position: fixed; z-index: 50; left: 16px; right: 16px; top: 50%; transform: translateY(-50%); max-height: calc(100% - 48px); overflow: auto; padding: 20px; border-radius: 24px; background: #0e1018; border: 1px solid rgba(255, 255, 255, .12); box-shadow: 0 20px 60px rgba(0, 0, 0, .5); }
+.card h2 { margin: 0 0 8px; font-size: 22px; }
+.card p { margin: 0 0 12px; font-size: 15px; }
+.card .dim { color: var(--dim); font-size: 13px; }
+.card .warn { color: #ffd36e; font-size: 14px; }
+.card table { width: 100%; border-collapse: collapse; margin: 6px 0 12px; font-variant-numeric: tabular-nums; }
+.card th { text-align: right; font-size: 12px; font-weight: 600; color: var(--dim); padding: 4px 0 6px 8px; }
+.card td { text-align: right; font-size: 15px; padding: 9px 0 9px 8px; border-top: 1px solid rgba(255, 255, 255, .1); }
+.card th:first-child, .card td:first-child { text-align: left; padding-left: 0; }
+.card .row { display: flex; gap: 8px; margin: 14px 0 12px; }
+.card .row .btn { flex: 1; height: 52px; }
+.card nav { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }

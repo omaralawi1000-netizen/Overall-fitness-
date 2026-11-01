@@ -85,6 +85,11 @@ Done:
 - Still Omar's call: other real details in INTERVIEW, VISION, COACH (listed for him, not changed). COACH.md §8's persona
   line still describes the old numbers.
 
+- Merged to main (PR #5); the first "Deploy web app" run was green and the site shows the new placeholder.
+- Blur test built at site/blurtest/ (BRIEF step 10): compare view with split strips A–E and flip view, and perf.html
+  per method. What was built: docs/blur-test-plan.md, "As built". Judged by design-judge and motion-judge before Omar.
+
 ## Next step
-Build the blur test page at /blurtest/ (BRIEF step 10; plan in docs/blur-test-plan.md, facts from the tech scan's
-section A). Omar judges it on his phone. Concept UI for Living Notebook and Conversation Workspace only after that.
+Omar judges the blur test on his phone: https://omaralawi1000-netizen.github.io/Overall-fitness-/blurtest/ (typed in
+Chrome, not installed). Write his verdict (which method, any banding, the speed numbers he sends) into
+docs/blur-test-plan.md. Then concept UI for Living Notebook and Conversation Workspace (BRIEF step 11).

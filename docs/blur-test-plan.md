@@ -21,11 +21,12 @@ The goal is to find the best-looking blur that stays smooth on Omar's phone, wit
 - **Flip view:** one method fills the screen. Tap A–E to flip instantly while scrolling and moving the sheet.
 
 ## Performance (one method at a time)
-`perf.html?m=A`, and the same for B–E, loads only that method. A fixed 20-second run plays: a scroll fling, the sheet opening, a catch mid-way, then closing. It shows:
+`perf.html?m=A`, and the same for B–E, loads only that method. A fixed 20-second run plays: a scroll fling, the sheet opening, a catch mid-way, then closing, scrolling with the sheet half open, and the sky moving. For each part it shows:
 - average fps
-- the share of frames slower than 8.3 ms
+- slow: the share of frames over 12.5 ms (a missed 120 Hz frame; 8.3 ms exactly would count normal jitter)
+- hitches: frames over 25 ms, a visible stutter
 - the longest frame
-- the number of frames slower than 16.7 ms
+If most frames take about 16.7 ms it warns that either the screen ran at 60 Hz or the method is too heavy, and says to compare with E.
 
 Then a "your turn" round. The meter only sees frames the page makes, so Omar's eye counts too.
 
@@ -39,3 +40,13 @@ Then a "your turn" round. The meter only sees frames the page makes, so Omar's e
 - Battery saver off, because it caps the screen at 60 Hz. Motion smoothness on Adaptive. Full brightness for banding.
 - The page uses no storage at all, because it shares an origin with old Aven. A check fails the build if it ever does.
 - Old Aven's service worker and Android app only cover `/The-new-Claude-gym-app/`.
+
+## As built (1 Nov 2026)
+- `site/blurtest/index.html` (compare), `perf.html` (speed test), shared `blur.js` and `blur.css`. No files to load: the sky and the three photos are drawn by the page.
+- Opens in split view. The top edge, the bar and the sheet each have five strips, A to E left to right. Tap a letter for flip view (the address becomes `?m=B`, so a reload keeps it). Split goes back.
+- Same tint and edge on every method; only the blur mechanism differs. E has a stronger tint because it has no blur.
+- The sky is computed in full precision and dithered once. D's pre-blurred sky is exact (a blurred gaussian is a wider gaussian), so D can't band from its own picture.
+- C's copy follows the scroll on the compositor (a scroll timeline), so it shouldn't trail on Chrome 115 or newer.
+- The page scrolls inside a full-screen box, not the page itself, so Chrome's address bar stays put and nothing jumps.
+- "Sky" makes the background drift slowly (the Atmosphere material test). The bar sits above the sheet, so Sheet and Sky are always reachable.
+- The deploy fails if anything in `site/` touches browser storage (`.github/workflows/pages.yml`).

@@ -37,6 +37,13 @@ jobs:
           npx tsc --noEmit
           npx vitest run
           npm run build
+      - name: Check the test pages keep nothing on the phone
+        # site/ shares an address with old Aven, so its pages must never touch browser storage.
+        run: |
+          if grep -rnE 'localStorage|sessionStorage|indexedDB|document\.cookie|caches\.|serviceWorker|navigator\.storage' site/; then
+            echo "::error::A page in site/ uses browser storage. It shares an origin with old Aven, so that is not allowed."
+            exit 1
+          fi
       - name: Put the site together
         run: |
           mkdir -p dist
