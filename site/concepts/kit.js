@@ -25,6 +25,7 @@ export function spring({ response = 0.42, damping = 1, v0 = 0 } = {}) {
 }
 export const SPRING = { response: 0.42, damping: 1 }; // the default: calm, no overshoot
 export const SPRING_LIVELY = { response: 0.38, damping: 0.82 }; // after a flick, or a moment that should feel alive
+export const SPRING_EXIT = { response: 0.3, damping: 1 }; // leaving: a little quicker than arriving
 
 /* Reduced motion: no travel, only a short fade. */
 const RM = matchMedia('(prefers-reduced-motion: reduce)');
@@ -60,23 +61,27 @@ export function enter(el, { y = 14, delay = 0, opts = SPRING, scale = 1 } = {}) 
 /** When content above the fold shrinks, keep the scroll still: pad the bottom for now, then glide back. */
 function holdScroll(scroller, mutate) {
   if (!scroller) return mutate();
+  // A hold still pending from a moment ago ends first, so a quick Undo never scrolls on its own.
+  if (scroller._hold) { cancelAnimationFrame(scroller._hold); scroller._hold = 0; }
   const top = scroller.scrollTop, h0 = scroller.scrollHeight;
+  scroller.style.paddingBottom = '';
   mutate();
   const lost = h0 - scroller.scrollHeight;
-  if (lost > 0 && top > 0) {
-    const pad = parseFloat(scroller.style.paddingBottom) || 0;
-    const base = pad ? pad : parseFloat(getComputedStyle(scroller).paddingBottom);
-    scroller.style.paddingBottom = base + lost + 'px';
-    scroller.scrollTop = top;
-    setTimeout(() => {
-      const done = () => { scroller.style.paddingBottom = ''; };
-      if (scroller.scrollTop + scroller.clientHeight > scroller.scrollHeight - lost - 1) {
-        scroller.addEventListener('scrollend', done, { once: true });
-        setTimeout(done, 900);
-        scroller.scrollBy({ top: -lost, behavior: RM.matches ? 'instant' : 'smooth' });
-      } else done();
-    }, 450);
-  }
+  if (lost <= 0 || top <= 0) return;
+  const base = parseFloat(getComputedStyle(scroller).paddingBottom);
+  scroller.style.paddingBottom = base + lost + 'px';
+  scroller.scrollTop = top;
+  // Next frame, glide back only by what the padding is really holding up, together with the FLIP.
+  scroller._hold = requestAnimationFrame(() => {
+    scroller._hold = 0;
+    const over = scroller.scrollTop + scroller.clientHeight - (scroller.scrollHeight - lost);
+    const done = () => { if (!scroller._hold) scroller.style.paddingBottom = ''; };
+    if (over > 1) {
+      scroller.addEventListener('scrollend', done, { once: true });
+      setTimeout(done, 900);
+      scroller.scrollBy({ top: -over, behavior: RM.matches ? 'instant' : 'smooth' });
+    } else done();
+  });
 }
 
 /** FLIP: measure, change the layout, then slide every element from where it was to where it is now. */
@@ -110,7 +115,7 @@ export function foldAway(els, neighbours, opts = SPRING, mutate = () => {}) {
     const host = el.offsetParent || el.parentElement;
     const r = el.getBoundingClientRect(), h = host.getBoundingClientRect();
     const g = el.cloneNode(true);
-    Object.assign(g.style, { position: 'absolute', left: r.left - h.left + 'px', top: r.top - h.top + 'px', width: r.width + 'px', margin: 0, pointerEvents: 'none' });
+    Object.assign(g.style, { position: 'absolute', left: r.left - h.left - host.clientLeft + host.scrollLeft + 'px', top: r.top - h.top - host.clientTop + host.scrollTop + 'px', width: r.width + 'px', margin: 0, pointerEvents: 'none' });
     return { el, host, g };
   });
   flip(neighbours.filter((n) => !list.includes(n)), () => {
@@ -118,7 +123,7 @@ export function foldAway(els, neighbours, opts = SPRING, mutate = () => {}) {
     ghosts.forEach(({ el, host, g }) => { el.hidden = true; host.append(g); });
   }, opts);
   return ghosts.map(({ g }) => {
-    const a = play(g, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(0.96)' }], { response: 0.3, damping: 1 }, { fill: 'forwards' });
+    const a = play(g, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(0.96)' }], SPRING_EXIT, { fill: 'forwards' });
     a.finished.then(() => g.remove(), () => g.remove());
     return a;
   });
@@ -313,16 +318,18 @@ export function benchChart(data, { theme = 'light' } = {}) {
   }));
 
   /* The assumption you can change: a next top set. The hollow dot moves there with a spring (transform only). */
-  const proj = root.querySelector('.proj'), wiW = root.querySelector('.wi-w'), wiR = root.querySelector('.wi-r');
+  const proj = root.querySelector('.proj'), projLbl = proj.querySelector('span'), wiW = root.querySelector('.wi-w'), wiR = root.querySelector('.wi-r');
   const outB = root.querySelector('.wi-out b'), outS = root.querySelector('.wi-out span');
   const last = S[n - 1];
   let tw = last.w, tr = 8, at = null;
   const place = (animate) => {
     const v = e1rm(tw, tr);
+    const clamped = Y(v) < top - 6 || Y(v) > H - bottom;
     const px = (X(n) / W) * plot.clientWidth, py = Math.min(Math.max(Y(v), top - 6), H - bottom) / H * plot.clientHeight;
+    projLbl.textContent = clamped ? `${v.toFixed(0)} ${Y(v) < top ? '↑' : '↓'}` : 'next?';
     const to = `translate3d(${px}px, ${py}px, 0)`;
-    if (animate && at) play(proj, [{ transform: at }, { transform: to }], SPRING);
-    proj.style.transform = to;
+    if (animate && at) playFromHere(proj, 'transform', to); // from where the dot is now, so quick taps never jump
+    else proj.style.transform = to;
     at = to;
     wiW.textContent = `${tw} kg`;
     wiR.textContent = tr;

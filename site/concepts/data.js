@@ -17,7 +17,7 @@ export const BENCH = {
     { date: '2026-10-20', w: 80, r: 7, kcal: 2440, sleep: 6.4, sets: 4 },
     { date: '2026-10-24', w: 80, r: 8, kcal: 2470, sleep: 6.7, sets: 4 },
     { date: '2026-10-27', w: 80, r: 7, kcal: 2430, sleep: 6.3, sets: 4 },
-    { date: '2026-10-31', w: 80, r: 7, kcal: 2450, sleep: 6.5, sets: 4 },
+    { date: '2026-11-01', w: 80, r: 8, kcal: 2450, sleep: 6.3, sets: 4 },
   ],
 };
 

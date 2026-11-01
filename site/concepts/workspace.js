@@ -1,5 +1,5 @@
 /* B3 · The Conversation Workspace. One request line; the answer changes the objects themselves (workout, week, a new bench panel). */
-import { enter, flip, foldAway, play, playFromHere, benchChart, makeSky, SPRING, SPRING_LIVELY } from './kit.js';
+import { enter, flip, foldAway, play, playFromHere, benchChart, makeSky, SPRING, SPRING_LIVELY, SPRING_EXIT } from './kit.js';
 import { BENCH, benchFacts, PLAN, CUT25, minutes } from './data.js';
 
 const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -47,7 +47,7 @@ export function workspace(stage, { sky = false } = {}) {
           ${PLAN.todo.map(exRow).join('')}
           <div class="timebar">
             <div class="lbl"><span class="lt">About ${total} min of sets left</span><span class="rt"></span></div>
-            <div class="track"><div class="bar"><div class="fill" style="transform:translate3d(${(total / SCALE - 1) * 100}%, 0, 0)"></div></div><div class="mark" hidden style="left:${(25 / SCALE) * 100}%"><span>25:00</span></div></div>
+            <div class="track"><div class="bar"><div class="fill" style="transform:translate3d(${(total / SCALE - 1) * 100}%, 0, 0)"></div></div><div class="mark" hidden style="left:${(25 / SCALE) * 100}%"></div></div>
           </div>
           <div class="edit-slot"></div>
         </div>
@@ -120,15 +120,16 @@ export function workspace(stage, { sky = false } = {}) {
   let sayT = null;
   function answer(you, text) {
     clearTimeout(sayT);
-    say.getAnimations().forEach((a) => a.cancel());
+    const wasHidden = say.hidden;
     say.hidden = false;
     say.innerHTML = `<q>${esc(you)}</q><p>${text}</p>`;
     say.className = 'ws-say' + g;
-    enter(say, { y: 10 });
+    if (wasHidden) enter(say, { y: 10 });
+    else { say.style.transform = 'none'; playFromHere(say, 'opacity', '1'); }
     // It steps aside after a few seconds so the objects get the room; the change stays on the objects.
     sayT = later(() => {
-      const a = play(say, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translate3d(0, 8px, 0)' }], { response: 0.3, damping: 1 }, { fill: 'forwards' });
-      a.finished.then(() => { say.hidden = true; a.cancel(); }, () => {});
+      const a = play(say, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translate3d(0, 8px, 0)' }], SPRING_EXIT, { fill: 'forwards' });
+      a.finished.then(() => { say.hidden = true; a.cancel(); say.style.opacity = ''; }, () => {});
     }, 5000);
   }
 
@@ -161,7 +162,7 @@ export function workspace(stage, { sky = false } = {}) {
     mark.hidden = false;
     enter(mark, { y: -4 });
     lt.textContent = `${total} → ${after} min of sets`;
-    rt.textContent = `fits ${mins}:00`;
+    rt.textContent = `fits ${mins} min`;
     setFill(after, total);
     slot.innerHTML = `<div class="edit-note"><b>Coach’s edit</b>${CUT25.reason}
       <div class="btns"><button class="btn" type="button" data-a="accept">Accept</button><button class="btn ghost" type="button" data-a="no">Not now</button></div></div>`;
@@ -189,18 +190,20 @@ export function workspace(stage, { sky = false } = {}) {
   }
   function accept() {
     state = 'applied';
-    const removed = Object.entries(CUT25.changes).filter(([, c]) => c.cut).map(([id]) => wk.querySelector(`.ex[data-id="${id}"]`));
+    const removed = Object.entries(CUT25.changes).flatMap(([id, c]) => {
+      const ex = wk.querySelector(`.ex[data-id="${id}"]`);
+      return c.cut ? [ex] : [...ex.querySelectorAll('.tick')].slice(c.sets); // whole rows, and the extra set circles
+    });
     // Every change of this moment happens inside one FLIP, so nothing jumps.
     foldAway(removed, movers(), SPRING, () => {
       for (const [id, c] of Object.entries(CUT25.changes)) {
         if (c.cut) continue;
         const ex = wk.querySelector(`.ex[data-id="${id}"]`);
         ex.querySelector('.n').textContent = c.sets;
-        [...ex.querySelectorAll('.tick')].slice(c.sets).forEach((t) => { t.hidden = true; });
       }
       clearEdit();
       lt.textContent = `About ${after} min of sets left`;
-      rt.textContent = 'fits 25:00';
+      rt.textContent = 'fits 25 min';
       slot.innerHTML = '<div class="undo">Workout changed <button type="button">Undo</button></div>';
     });
     enter(slot.firstChild, { y: 6, opts: SPRING_LIVELY });
