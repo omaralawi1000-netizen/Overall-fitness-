@@ -28,10 +28,10 @@
 .heat .scroll { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; padding: calc(env(safe-area-inset-top) + 74px) 16px calc(env(safe-area-inset-bottom) + 130px); }
 .heat .scroll::-webkit-scrollbar { display: none; }
 
-.heat .h-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; min-height: 44px; font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); padding: 0 4px; }
+.heat .h-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; min-height: 44px; font-family: 'Unbounded', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase; color: var(--dim); padding: 0 4px; }
 .heat .h-top > :last-child { justify-self: end; }
 .heat .h-today .h-top { grid-template-columns: 1fr auto; }
-.heat .back { min-height: 44px; justify-self: start; font-family: 'Unbounded', sans-serif; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--white); }
+.heat .back { min-height: 44px; justify-self: start; font-family: 'Unbounded', sans-serif; font-size: 12px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--white); }
 
 /* ---------- Today ---------- */
 .heat .h-say { font-family: 'Unbounded', sans-serif; font-size: 30px; line-height: 1.12; font-weight: 600; letter-spacing: -0.02em; margin: 14px 4px 8px; text-wrap: balance; }
@@ -49,7 +49,7 @@
 .heat .card { position: relative; border-radius: 30px; padding: 16px 18px; background: var(--card);
   -webkit-backdrop-filter: blur(26px) saturate(1.7); backdrop-filter: blur(26px) saturate(1.7);
   box-shadow: inset 0 1px 0 var(--card-edge), inset 0 0 0 0.5px rgba(255, 255, 255, 0.16), 0 30px 60px -30px rgba(0, 0, 0, 0.6); }
-.heat .cap { display: flex; justify-content: space-between; align-items: baseline; font-family: 'Unbounded', sans-serif; font-size: 10.5px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+.heat .cap { display: flex; justify-content: space-between; align-items: baseline; font-family: 'Archivo', sans-serif; font-size: 14px; font-weight: 600; letter-spacing: 0; color: var(--dim); }
 .heat .cap .num { font-size: 13px; letter-spacing: 0; color: var(--white); margin-right: 4px; }
 .heat .plan-card { margin-top: 22px; padding-bottom: 6px; }
 .heat .h-plan { list-style: none; margin: 8px 0 0; padding: 0; }
@@ -59,11 +59,10 @@
 .heat .dots i { width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(255, 240, 230, 0.55); }
 .heat .dots i.d { background: var(--white); box-shadow: none; }
 .heat .dots i.x { box-shadow: inset 0 0 0 1.5px rgba(255, 240, 230, 0.55); opacity: 0.3; }
-.heat[data-trim='open'] .h-plan li.cut .nm { text-decoration: line-through; text-decoration-thickness: 1.5px; color: var(--dim); }
+.heat:is([data-trim='open'], [data-trim='applied']) .h-plan li.cut .nm { text-decoration: line-through; text-decoration-thickness: 1.5px; color: var(--dim); }
 .heat[data-trim='open'] .h-plan li.cut .st { color: var(--white); }
 .heat[data-trim='open'] .h-plan li.changed .st { color: var(--white); }
 /* Grammar: a proposed number is hollow; applied, it fills with light. */
-.heat .prop { transition: color 300ms cubic-bezier(.2, .8, .2, 1); }
 .heat[data-trim='open'] .prop { color: transparent; -webkit-text-stroke: 1.2px var(--white); font-family: 'Unbounded Hollow', 'Unbounded', sans-serif; font-weight: 700; }
 .heat .was-min { display: none; }
 .heat[data-trim='open'] .was-min { display: inline; text-decoration: line-through; color: var(--dim); margin-right: 6px; }
@@ -95,14 +94,19 @@
 .heat .chip-undo { position: relative; }
 
 .heat .slab-wrap { position: relative; }
+/* The light band only shows through the glass: clipped to the slab's own shape. */
+.heat .sweep-clip { position: absolute; inset: 0; border-radius: 38px; overflow: clip; pointer-events: none; }
+/* Buttons and their Undo line share one slot of one height, so nothing below moves when they swap. */
+.heat .trim-slot { min-height: 74px; }
+.heat .work-face .bump-undo { margin-top: 18px; min-height: 48px; }
 .heat .sweep { position: absolute; top: -10%; bottom: -10%; left: 0; width: 46%; pointer-events: none; opacity: 0; transform: translateX(-120%) skewX(-18deg);
   background: linear-gradient(90deg, rgba(255, 236, 200, 0), rgba(255, 236, 200, 0.55) 50%, rgba(255, 236, 200, 0)); }
 .heat .slab { position: relative; border-radius: 38px; padding: 20px 22px 18px; min-height: 252px;
   background: rgba(255, 248, 240, 0.08); -webkit-backdrop-filter: blur(30px) saturate(1.8); backdrop-filter: blur(30px) saturate(1.8);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), inset 0 0 0 0.5px rgba(255, 255, 255, 0.2), 0 44px 80px -34px rgba(0, 0, 0, 0.7); }
 .heat .face { position: relative; }
-.heat .cols { display: flex; justify-content: space-between; font-family: 'Unbounded', sans-serif; font-size: 10.5px; font-weight: 500; letter-spacing: 0.16em; text-transform: uppercase; color: var(--dim); }
-.heat .cols .num { letter-spacing: 0; font-size: 12px; color: var(--white); }
+.heat .cols { display: flex; justify-content: space-between; font-family: 'Archivo', sans-serif; font-size: 15px; font-weight: 600; letter-spacing: 0; color: var(--soft); }
+.heat .cols .num { letter-spacing: 0; font-size: 14px; color: var(--white); }
 .heat .nums { display: flex; justify-content: space-between; align-items: baseline; margin: 10px 0 6px; }
 .heat .nb { position: relative; display: inline-flex; align-items: baseline; gap: 6px; font-family: 'Unbounded', sans-serif; font-size: 76px; line-height: 1.02; font-weight: 700; letter-spacing: -0.04em; min-height: 88px; }
 .heat .nb small { font-family: 'Archivo', sans-serif; font-size: 17px; margin-right: 14px; font-weight: 600; letter-spacing: 0; color: var(--soft); }
@@ -124,8 +128,11 @@
 .heat .h-next .num { font-size: 13px; margin-left: 4px; }
 
 /* ---------- The one big button ---------- */
-.heat .h-dock { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; padding: 12px 16px calc(env(safe-area-inset-bottom) + 16px);
-  background: rgba(14, 6, 4, 0.2); -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5); }
+.heat .h-dock { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; padding: 12px 16px calc(env(safe-area-inset-bottom) + 16px); }
+/* No hard top edge: the blur fades in over 28 px, so the glow and the text behind it are never sliced. */
+.heat .h-dock::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; top: -28px; z-index: -1; pointer-events: none;
+  background: rgba(14, 6, 4, 0.2); -webkit-backdrop-filter: blur(18px) saturate(1.5); backdrop-filter: blur(18px) saturate(1.5);
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 28px); mask-image: linear-gradient(180deg, transparent, #000 28px); }
 .heat .go { position: relative; isolation: isolate; display: flex; align-items: center; justify-content: space-between; width: 100%; height: 84px; padding: 0 30px; border-radius: 42px; color: #1C0A04; transition: color 220ms cubic-bezier(.2, .8, .2, 1); }
 .heat .go-fill { position: absolute; inset: 0; border-radius: inherit; background: var(--white); z-index: -1; transition: opacity 260ms cubic-bezier(.2, .8, .2, 1); box-shadow: 0 18px 40px -16px rgba(255, 120, 60, 0.6); }
 .heat .go::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1.5px rgba(235, 255, 250, 0.5); z-index: -2; }
@@ -133,7 +140,7 @@
 .heat .go-r { font-size: 15px; font-weight: 650; opacity: 0.75; }
 .heat.resting .go { color: #EFFFFA; }
 .heat.resting .go-fill { opacity: 0; }
-.heat .roll { position: relative; display: inline-grid; }
+.heat .roll, .heat .nb .v.roll { position: relative; display: inline-grid; overflow: clip; overflow-clip-margin: 4px; }
 .heat .roll > span { grid-area: 1 / 1; }
 
 /* ---------- Tray ---------- */
@@ -142,10 +149,11 @@
   background: rgba(40, 18, 12, 0.6); -webkit-backdrop-filter: blur(28px) saturate(1.7); backdrop-filter: blur(28px) saturate(1.7);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 30px 60px -20px rgba(0, 0, 0, 0.6); }
 .heat .grip { width: 40px; height: 5px; border-radius: 3px; background: rgba(255, 240, 230, 0.35); margin: 0 auto 10px; }
-.heat .tray-row { display: grid; grid-template-columns: 1fr 64px 120px 64px; align-items: center; min-height: 80px; border-bottom: 0.5px solid var(--line); }
-.heat .tray-row .lbl { font-family: 'Unbounded', sans-serif; font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+.heat .tray-row { display: grid; grid-template-columns: 1fr 64px 96px 30px 64px; align-items: center; min-height: 80px; border-bottom: 0.5px solid var(--line); }
+.heat .tray-row .lbl { font-size: 17px; font-weight: 600; color: var(--soft); }
+.heat .tray-row .tu { font-size: 15px; font-weight: 600; color: var(--soft); }
 .heat .tray-row .num { font-size: 34px; font-weight: 600; text-align: center; }
 .heat .step { width: 64px; height: 64px; border-radius: 32px; font-size: 28px; box-shadow: inset 0 0 0 1.5px rgba(255, 240, 230, 0.35); }
 .heat .tray-done { margin-top: 14px; width: 100%; height: 64px; border-radius: 32px; }
 /* Grain on every blurred surface, so the blur never shows rings (see bg.js grain). */
-.heat .card, .heat .slab, .heat .h-dock, .heat .tray { background-image: var(--grain); background-size: var(--grain-size); }
+.heat .card, .heat .slab, .heat .h-dock::before, .heat .tray { background-image: var(--grain); background-size: var(--grain-size); }

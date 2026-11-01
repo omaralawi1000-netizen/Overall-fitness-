@@ -2,7 +2,7 @@
    The Coach's words lean (italic), your numbers stand (upright, condensed, heavy). Blue is the Coach's pencil: a
    proposal stays blue until you tap Apply, then the ink dries. Rich = the same grammar on a living field of our own
    colours, with frosted panes and depth. */
-import { SPRINGS, Channel, play, fade, flip, fold, travel, roll, pressable, timers, reduced } from './motion.js';
+import { SPRINGS, EXIT, Channel, play, fade, flip, fold, ghost, fadeGhost, swap, travel, roll, pressable, timers, reduced } from './motion.js';
 import { paintField, fieldLayer, drift } from './bg.js';
 import * as S from './state.js';
 
@@ -12,12 +12,11 @@ const fig = (t, cls = '') => `<span class="fig ${cls}">${esc(t)}</span>`;
 function richBackground(root, dark) {
   const bg = document.createElement('div');
   bg.className = 'bg';
-  // Our own colours only: ink, chalk, the Coach's ultramarine pencil, and (by day) a little of the record's marker
-  // yellow. At night yellow is left out: dimmed yellow turns olive, so it stays reserved for the record itself.
-  // Blues lean cobalt, never violet, so the field can't drift towards the purple "AI" look.
-  const blue = [30, 72, 240], deep = [16, 30, 150], wash = [90, 150, 255], warm = [255, 222, 70];
-  // Two layers drift against each other: the ground and a see-through layer of washes on top, so the shapes slowly
-  // change, not just slide.
+  // Our own colours only: ink, chalk, a slate made from the Coach's blue, and (by day) a little of the record's marker
+  // yellow. The field is kept well below the pencil's saturation, so the pencil stays the bluest thing on screen and
+  // "blue = the Coach's proposal" still reads. At night yellow is left out: dimmed yellow turns olive.
+  const blue = dark ? [34, 52, 128] : [110, 140, 196], deep = dark ? [14, 18, 52] : [74, 98, 150];
+  const wash = dark ? [72, 92, 150] : [150, 178, 222], warm = [255, 222, 70];
   const a = dark
     ? paintField([
       { x: 0.1, y: 0.3, sx: 0.55, sy: 0.42, c: blue, a: 0.95 },
@@ -72,13 +71,13 @@ export function ink(stage, { rich = false } = {}) {
       <div class="pane day-pane">
         <div class="row">${fig('96 g', 'col')}<span class="w">protein of 180</span><i class="meter" style="--p:.53"><b></b></i></div>
         <div class="row">${fig('6 h 05', 'col')}<span class="w">sleep last night</span></div>
-        <div class="row">${fig('3', 'col')}<span class="w">sessions this week · wrestling tonight</span></div>
+        <div class="row">${fig('3', 'col')}<span class="w">sessions this week</span></div>
       </div>
     </div>
   </section>
   <section class="screen workout" aria-label="Workout" aria-hidden="true">
     <div class="scroll">
-      <header class="w-head"><button type="button" class="back" data-act="close" aria-label="Back to Today">‹ Today</button><span class="w-title">Push · ${fig(S.minutesIn(s), 'w-clock')} min</span><span class="w-count"></span></header>
+      <header class="w-head"><button type="button" class="back" data-act="close" aria-label="Back to Today">‹ Today</button><span class="w-title">Push · ${fig(S.minutesIn(s), 'w-clock')} min in</span><span class="w-count"></span></header>
       <div class="pane ex-pane">
         <div class="ex-block">
           <h2 class="ex-name"></h2>
@@ -86,8 +85,6 @@ export function ink(stage, { rich = false } = {}) {
           <ol class="done-rows"></ol>
         </div>
         <div class="now-rule"><i class="drain"></i></div>
-      </div>
-      <div class="pane now-pane">
         <div class="now">
           <div class="now-label"></div>
           <div class="figure">
@@ -103,11 +100,11 @@ export function ink(stage, { rich = false } = {}) {
           <div class="undo-line bump-undo" hidden><span class="u-text"></span><button type="button" class="undo" data-act="bump-undo">Undo</button></div>
           <div class="undo-line set-undo" hidden><span class="u-text"></span><button type="button" class="undo" data-act="untick">Undo</button></div>
         </div>
+        <div class="next-pane"><ol class="up-rows"></ol><div class="next-ex"></div></div>
       </div>
-      <div class="pane next-pane"><ol class="up-rows"></ol><div class="next-ex"></div></div>
     </div>
   </section>
-  <div class="dock"><button type="button" class="slab" data-act="slab"><span class="slab-lt"><span class="slab-l"></span> <span class="fig slab-t"></span></span><span class="slab-r"></span></button></div>
+  <div class="dock"><button type="button" class="slab" data-act="slab"><span class="slab-lt"><span class="slab-l"></span> <span class="fig slab-t"></span></span><span class="slab-rg"><span class="slab-r"></span> <span class="fig slab-rt"></span></span></button></div>
   <div class="scrim" hidden></div>
   <div class="tray" role="dialog" aria-label="Change this set" hidden>
     <div class="grip" aria-hidden="true"></div>
@@ -118,6 +115,7 @@ export function ink(stage, { rich = false } = {}) {
   stage.append(root);
   const $ = (q) => root.querySelector(q);
   const stopBg = rich ? richBackground(root, dark) : () => {};
+  const boxes = (...q) => (rich ? q.map((x) => $(x)) : []);
 
   /* ---------- Today ---------- */
   const plan = $('.plan');
@@ -162,28 +160,29 @@ export function ink(stage, { rich = false } = {}) {
     root.dataset.trim = 'applied'; // blue dries to ink (CSS, 320 ms)
     const acts = $('.trim-acts'), line = $('.trim-undo');
     const cutRows = [...plan.querySelectorAll('li.cut')];
-    const after = [...plan.querySelectorAll('li:not(.cut)'), $('.day-pane')];
+    // The ink dries first (blue to ink), then the cut rows fold away and everything below closes up.
     T.after(200, () => {
-      fold(cutRows, after, true);
+      const after = [...plan.querySelectorAll('li:not(.cut)'), $('.day-pane')];
+      fold(cutRows.filter((r) => r.isConnected), after, true, SPRINGS.set, boxes('.plan-pane'));
       $('.was-min').hidden = true; $('.was-by').hidden = true;
+      plan.querySelectorAll('.plan s.was').forEach((x) => fold([x], [x.nextElementSibling], true));
     });
-    acts.hidden = true;
-    line.hidden = false;
-    $('.t-coach').innerHTML = `Done by ${fig(S.doneBy(s))}, in time for wrestling at ${fig('17:15')}.`;
-    T.after(200, () => plan.querySelectorAll('.plan s.was').forEach((x) => fold([x], [x.nextElementSibling], true)));
     undoAfter(line, `Trimmed to ${S.minutesLeft(s)} min.`);
-    play(line, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set);
+    swap(acts, line); // same slot, same height: nothing below moves
+    $('.t-coach').innerHTML = `Done by ${fig(S.doneBy(s))}, in time for wrestling at ${fig('17:15')}.`;
     syncWorkout();
   }
   function trimUndo() {
     if (s.trim.state === 'applied') {
       s.trim.state = 'open';
-      const cutRows = [...plan.querySelectorAll('li.cut')];
-      const after = [...plan.querySelectorAll('li:not(.cut)'), $('.day-pane')];
-      fold(cutRows, after, false);
-      $('.was-min').hidden = false; $('.was-by').hidden = false;
       root.dataset.trim = 'open';
       renderPlan();
+      const cutRows = [...plan.querySelectorAll('li.cut')];
+      cutRows.forEach((r) => { r.hidden = true; });
+      const after = [...plan.querySelectorAll('li:not(.cut)'), $('.day-pane')];
+      fold(cutRows, after, false, SPRINGS.set, boxes('.plan-pane'));
+      drawStrikes(1);
+      $('.was-min').hidden = false; $('.was-by').hidden = false;
       $('.t-coach').innerHTML = `Leave by ${fig('16:50')} for wrestling. Trim the rest to fit?`;
     } else if (s.trim.state === 'kept') {
       s.trim.state = 'open';
@@ -193,10 +192,7 @@ export function ink(stage, { rich = false } = {}) {
       drawStrikes(1);
     }
     trimUI();
-    $('.trim-undo').hidden = true;
-    const acts = $('.trim-acts');
-    acts.hidden = false;
-    play(acts, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set);
+    swap($('.trim-undo'), $('.trim-acts'));
     syncWorkout();
   }
   function trimKeep() {
@@ -205,20 +201,19 @@ export function ink(stage, { rich = false } = {}) {
     s.trim.state = 'kept';
     root.dataset.trim = 'kept';
     trimUI();
-    $('.trim-acts').hidden = true;
+    const line = $('.trim-undo');
+    undoAfter(line, 'Kept the full plan.');
+    swap($('.trim-acts'), line);
     const coach = $('.t-coach');
     coach.innerHTML = `Full plan it is. Done by ${fig(S.doneBy(s))}, so leave straight after.`;
     play(coach, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set);
     T.after(260, renderPlan);
-    const line = $('.trim-undo');
-    line.hidden = false;
-    undoAfter(line, 'Kept the full plan.');
   }
 
   /* ---------- Workout ---------- */
   const doneRows = $('.done-rows'), upRows = $('.up-rows');
   const fw = $('.fw .v'), fr = $('.fr .v'), was = $('.fw .was');
-  const slabL = $('.slab-l'), slabR = $('.slab-r'), slabT = $('.slab-t');
+  const slabL = $('.slab-l'), slabR = $('.slab-r'), slabT = $('.slab-t'), slabRT = $('.slab-rt');
   let restInfo = null, lastTick = null, tickLock = 0, selfBack = 0;
 
   const row = (set, i, cls = '') => `<li class="${cls}">${fig(`${S.fmtKg(set.w)} × ${set.r}`, 'col')}<span class="w">Set ${i + 1}</span>${set.at ? fig(set.at, 'at') : ''}${set.record ? '<i class="marker" aria-hidden="true"></i>' : ''}</li>`;
@@ -261,16 +256,25 @@ export function ink(stage, { rich = false } = {}) {
   }
   function renderSlab() {
     const n = S.nowSet(s), open = root.dataset.screen === 'workout';
-    if (restInfo) {
-      const label = open ? 'Rest' : 'Resting';
-      if (slabL.dataset.text !== label) roll(slabL, label);
+    // In the workout the slab always says Done, even while resting (the rest counts down on its right), so the next
+    // set is one tap however early you finish it. Away on Today it says you're resting and takes you back.
+    if (restInfo && !open) {
+      if (slabL.dataset.text !== 'Resting') roll(slabL, 'Resting');
       slabT.textContent = S.mmss(restInfo.left);
-      roll(slabR, open ? 'Skip' : 'Back to workout');
+      slabRT.textContent = '';
+      roll(slabR, 'Back to workout');
       root.classList.add('resting');
       return;
     }
     slabT.textContent = '';
     root.classList.remove('resting');
+    if (restInfo) {
+      roll(slabL, 'Done');
+      roll(slabR, 'Rest');
+      slabRT.textContent = S.mmss(restInfo.left);
+      return;
+    }
+    slabRT.textContent = '';
     if (s.finished) { roll(slabL, 'Finish workout'); roll(slabR, ''); return; }
     roll(slabL, open ? 'Done' : 'Back to workout');
     roll(slabR, `Set ${n.n} of ${n.of}`);
@@ -320,20 +324,20 @@ export function ink(stage, { rich = false } = {}) {
 
   function doTick() {
     if (Date.now() < tickLock) return;
-    tickLock = Date.now() + 350; // a double tap can't skip the rest
+    tickLock = Date.now() + 1500; // a double tap can't tick the next set too (no real set is that short)
     const from = $('.figure').getBoundingClientRect();
-    const others = [$('.now-rule'), $('.now-pane'), $('.next-pane')];
+    const others = [$('.now-rule'), $('.now'), $('.next-pane')];
     let info, newRow;
     // Measure first, change everything in one go, then slide each thing from where it was (FLIP).
     flip(others, () => {
       info = S.tick(s);
-      doneRows.insertAdjacentHTML('beforeend', row(info.rec, info.ex.done.length - 1, 'done just' + (info.rec.record ? ' rec' : '')));
+      doneRows.insertAdjacentHTML('beforeend', row(info.rec, info.ex.done.length - 1, 'done just' + (info.rec.record ? ' rec-pending' : '')));
       newRow = doneRows.lastElementChild;
       newRow.insertAdjacentHTML('beforeend', `<button type="button" class="undo row-undo" data-act="untick" disabled>Undo</button>`);
       if (info.exDone && !S.advance(s)) s.finished = true;
       if (!s.finished) startRest(info);
       renderNow({ waiting: !s.finished });
-    }, SPRINGS.set);
+    }, SPRINGS.set, boxes('.ex-pane', '.now'));
     T.after(400, () => { const b = newRow.querySelector('.row-undo'); if (b) b.disabled = false; });
     // 1. The figure shrinks into the list as a row (scaling down only, so it stays sharp).
     travel(newRow.querySelector('.col'), from, SPRINGS.type);
@@ -342,8 +346,12 @@ export function ink(stage, { rich = false } = {}) {
     play($('.now'), [{ opacity: 0, transform: 'translateY(22px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set, { delay: 40 });
     let note = '';
     if (info.rec.record) note = `Best bench yet: about ${info.rec.est.toFixed(1)} kg estimated, up from ${info.rec.prevBest.toFixed(1)}.`;
-    else if (info.last != null && info.rec.r > info.last) note = `+${info.rec.r - info.last} rep on last time.`;
-    if (info.rec.record) T.after(120, () => { const m = newRow.querySelector('.marker'); if (m) play(m, [{ scale: '0 1' }, { scale: '1 1' }], { damping: 1, response: 0.3 }); });
+    else if (info.last != null && info.rec.r > info.last) { const d = info.rec.r - info.last; note = `+${d} rep${d > 1 ? 's' : ''} on last time.`; }
+    if (info.rec.record) T.after(120, () => {
+      const m = newRow.querySelector('.marker');
+      newRow.classList.replace('rec-pending', 'rec');
+      if (m) play(m, [{ scale: '0 1' }, { scale: '1 1' }], SPRINGS.press);
+    });
     const coach = $('.w-coach');
     coach.innerHTML = s.finished ? 'That’s the session. Tap Finish when you’re ready.' : esc(note);
     if (coach.innerHTML) play(coach, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set, { delay: 200 });
@@ -353,12 +361,13 @@ export function ink(stage, { rich = false } = {}) {
       const blk = $('.ex-block');
       T.after(900, () => {
         if (info.undone) return;
-        const a = blk.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-10px)' }], { duration: 160, easing: 'cubic-bezier(.3,0,.8,.2)', fill: 'forwards' });
+        const a = blk.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-10px)' }], { ...EXIT, fill: 'forwards' });
         a.finished.then(() => {
-          renderExercise();
+          flip([$('.now-rule'), $('.now'), $('.next-pane')], renderExercise, SPRINGS.set, boxes('.ex-pane'));
           a.cancel();
           play(blk, [{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set);
           // The finished exercise's rows are gone, so its Undo moves to the Now pane for the rest of its 8 s.
+          $('.w-coach').innerHTML = ''; // the note was about the finished exercise
           if (lastTick?.info === info) {
             const line = $('.set-undo');
             line.querySelector('.u-text').textContent = `${info.ex.name} done, ${info.ex.done.length} sets.`;
@@ -392,8 +401,7 @@ export function ink(stage, { rich = false } = {}) {
     drain.getAnimations().forEach((a) => a.cancel());
     drain.style.scale = '1 1';
     root.classList.remove('waiting');
-    renderExercise();
-    renderNow();
+    flip([$('.now-rule'), $('.now'), $('.next-pane')], () => { renderExercise(); renderNow(); }, SPRINGS.set, boxes('.ex-pane', '.now'));
     renderSlab();
     renderPlan();
     // The figure travels back up from the row it became.
@@ -405,36 +413,51 @@ export function ink(stage, { rich = false } = {}) {
   }
 
   /* Proposal on the set: 82.5 in blue until you take it. */
+  // Everything in the figure that can shift sideways when the struck 80 comes or goes.
+  const figParts = () => [fw, $('.fw .bar'), $('.unit'), $('.x'), $('.fr')];
+  function dropWas() {
+    const w = $('.fw .was');
+    if (getComputedStyle(w).display === 'none') return;
+    const { host, g } = ghost(w, ['display', 'color']);
+    host.append(g);
+    fadeGhost(g, [{ opacity: 1 }, { opacity: 0 }]);
+  }
   function bumpApply() {
     if (!S.bumpOpen(s)) return;
     s.bump.state = 'applied';
-    root.dataset.bump = 'applied'; // the blue dries to ink
-    $('.bump-acts').hidden = true;
     const line = $('.bump-undo');
-    line.hidden = false;
     undoAfter(line, 'Bench is now 82.5 kg.');
-    play(line, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set);
-    $('.w-coach').innerHTML = '';
-    renderNow();
+    dropWas();
+    flip([...figParts(), $('.next-pane')], () => {
+      root.dataset.bump = 'applied'; // the blue dries to ink
+      swap($('.bump-acts'), line);
+      renderNow();
+    }, SPRINGS.set, boxes('.ex-pane', '.now'));
     renderSlab();
   }
   function bumpKeep() {
     if (!S.bumpOpen(s)) return;
     s.bump.state = 'kept';
-    root.dataset.bump = 'none';
-    roll(fw, '80', { dir: -1 });
-    $('.bump-acts').hidden = true;
-    $('.w-coach').innerHTML = 'Staying at 80.';
     const line = $('.bump-undo');
-    line.hidden = false;
-    undoAfter(line, '');
+    undoAfter(line, 'Staying at 80.');
+    dropWas();
+    flip([...figParts(), $('.next-pane')], () => {
+      root.dataset.bump = 'none';
+      roll(fw, '80', { dir: -1 });
+      swap($('.bump-acts'), line);
+      renderNow();
+    }, SPRINGS.set, boxes('.ex-pane', '.now'));
   }
   function bumpUndo() {
     if (s.bump.state === 'applied' || s.bump.state === 'kept') {
       if (S.current(s).id !== 'bench' || S.current(s).done.length !== 2) return;
       s.bump.state = 'open';
-      $('.bump-undo').hidden = true;
-      renderNow();
+      flip([...figParts(), $('.next-pane')], () => {
+        swap($('.bump-undo'), null);
+        renderNow();
+      }, SPRINGS.set, boxes('.ex-pane', '.now'));
+      play($('.fw .was'), [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set, { delay: 60 });
+      play($('.bump-acts'), [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set, { delay: 40 });
       renderSlab();
     }
   }
@@ -442,15 +465,16 @@ export function ink(stage, { rich = false } = {}) {
   /* ---------- Opening and closing the workout: catchable, keeps its speed ---------- */
   const today = $('.today'), work = $('.workout');
   const H = () => innerHeight;
-  const wy = new Channel(work, 'translate', (v) => `0 ${v}px`, H());
-  const tOp = new Channel(today, 'opacity', (v) => String(v), 1);
+  const wy = new Channel(work, 'translate', (v) => `0 ${v}px`, H(), { hideAt: H() });
+  const tOp = new Channel(today, 'opacity', (v) => String(v), 1, { hideAt: 0 });
   root.dataset.screen = 'today';
   function openWorkout(push = true) {
     root.dataset.screen = 'workout';
     work.setAttribute('aria-hidden', 'false');
     today.setAttribute('aria-hidden', 'true');
     wy.to(0, SPRINGS.lift);
-    tOp.to(0, SPRINGS.set);
+    // Rich panes are see-through, so Today must be gone before the workout's panes pass over it (no doubled text).
+    tOp.to(0, rich ? SPRINGS.type : SPRINGS.set);
     renderSlab();
     if (push) history.pushState({ looks: 'workout' }, '');
   }
@@ -459,7 +483,8 @@ export function ink(stage, { rich = false } = {}) {
     work.setAttribute('aria-hidden', 'true');
     today.setAttribute('aria-hidden', 'false');
     wy.to(H(), SPRINGS.set);
-    tOp.to(1, SPRINGS.set);
+    if (rich) T.after(170, () => { if (root.dataset.screen === 'today') tOp.to(1, SPRINGS.set); });
+    else tOp.to(1, SPRINGS.set);
     renderPlan();
     trimUI();
     renderSlab();
@@ -484,8 +509,7 @@ export function ink(stage, { rich = false } = {}) {
     $('.tray-done').textContent = `Use for set ${n.n}`;
   }
   function openTray() {
-    if (restInfo) return;
-    trayOpen = true;
+    trayOpen = true; // also while resting: changing the next set is a natural thing to do between sets
     tray.hidden = false; scrim.hidden = false;
     trayVals();
     if (ty.value > tH()) ty.set(tH());
@@ -496,7 +520,9 @@ export function ink(stage, { rich = false } = {}) {
   function closeTray(v, fromPop) {
     if (!trayOpen) return;
     trayOpen = false;
-    ty.to(tH(), SPRINGS.lift, v != null ? { v } : {})?.finished.then(() => { if (!trayOpen) { tray.hidden = true; scrim.hidden = true; } }, () => {});
+    const hide = () => { if (!trayOpen) { tray.hidden = true; scrim.hidden = true; } };
+    const a = ty.to(tH(), SPRINGS.lift, v != null ? { v } : {});
+    if (a) a.finished.then(hide, () => {}); else hide(); // reduced motion: no animation, hide at once
     sOp.to(0, SPRINGS.set);
     if (!fromPop && history.state?.looks === 'tray') { selfBack++; history.back(); }
   }
@@ -553,7 +579,8 @@ export function ink(stage, { rich = false } = {}) {
     if (act === 'slab') {
       if (root.dataset.screen !== 'workout') return openWorkout();
       if (s.finished && !restInfo) { closeWorkout(); return; }
-      if (restInfo) { if (Date.now() >= tickLock) endRest(true); return; }
+      if (Date.now() < tickLock) return;
+      if (restInfo) endRest(false); // finished early: one tap ends the rest and ticks the set
       doTick();
     }
     if (act === 'close') closeWorkout();

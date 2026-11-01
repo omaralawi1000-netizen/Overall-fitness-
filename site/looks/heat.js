@@ -2,7 +2,7 @@
    embers on Today, full heat while you work, a cool sea-green while you rest that warms back up as the rest runs out.
    Everything you act on sits on one big pane of frosted glass in that light. The Coach's proposals are hollow
    (outlined) numbers; Apply fills them with light, Undo drains them. */
-import { SPRINGS, Channel, play, fade, flip, travel, roll, pressable, timers, reduced } from './motion.js';
+import { SPRINGS, EXIT, LIGHT, Channel, play, fade, flip, ghost, fadeGhost, swap, travel, roll, pressable, timers, reduced } from './motion.js';
 import { paintField, fieldLayer } from './bg.js';
 import * as S from './state.js';
 
@@ -40,11 +40,11 @@ export function heat(stage) {
       <header class="h-top"><span>Sunday 1 Nov</span><span class="num h-clock">16:24</span></header>
       <h1 class="h-say">Leave by <span class="num">16:50</span> for wrestling.</h1>
       <p class="h-ask">Trim the rest of Push to fit?</p>
-      <div class="h-acts trim-acts">
+      <div class="trim-slot"><div class="h-acts trim-acts">
         <button type="button" class="pill solid" data-act="trim-apply">Trim to <span class="num tmins">22</span> min</button>
         <button type="button" class="pill ghost" data-act="trim-keep">Keep it all</button>
       </div>
-      <div class="h-undo trim-undo" hidden><span class="u-text"></span><button type="button" class="undo" data-act="trim-undo">Undo</button></div>
+      <div class="h-undo trim-undo" hidden><span class="u-text"></span><button type="button" class="undo" data-act="trim-undo">Undo</button></div></div>
       <div class="card plan-card">
         <div class="cap"><span>Push · in progress</span><span><span class="num was-min">40</span><span class="num prop mins">22</span> min left</span></div>
         <ol class="h-plan"></ol>
@@ -57,11 +57,11 @@ export function heat(stage) {
   </section>
   <section class="screen h-work" aria-label="Workout" aria-hidden="true">
     <div class="scroll">
-      <header class="h-top"><button type="button" class="back" data-act="close" aria-label="Back to Today">‹ Today</button><span>Push · <span class="num h-mins"></span> min</span><span class="h-count"></span></header>
+      <header class="h-top"><button type="button" class="back" data-act="close" aria-label="Back to Today">‹ Today</button><span>Push · <span class="num h-mins"></span> min in</span><span class="h-count"></span></header>
       <div class="ex-head"><h2 class="ex-name"></h2><div class="ex-sub"></div></div>
       <ol class="chips" aria-label="Sets done"></ol>
       <div class="slab-wrap">
-        <i class="sweep" aria-hidden="true"></i>
+        <div class="sweep-clip" aria-hidden="true"><i class="sweep"></i></div>
         <div class="slab">
           <div class="face work-face">
             <div class="cols"><span>Weight</span><span>Reps</span></div>
@@ -91,8 +91,8 @@ export function heat(stage) {
   <div class="scrim" hidden></div>
   <div class="tray" role="dialog" aria-label="Change this set" hidden>
     <div class="grip" aria-hidden="true"></div>
-    <div class="tray-row"><span class="lbl">Weight</span><button type="button" class="step" data-d="w-" aria-label="Less weight">−</button><b class="num tw"></b><button type="button" class="step" data-d="w+" aria-label="More weight">+</button></div>
-    <div class="tray-row"><span class="lbl">Reps</span><button type="button" class="step" data-d="r-" aria-label="Fewer reps">−</button><b class="num tr"></b><button type="button" class="step" data-d="r+" aria-label="More reps">+</button></div>
+    <div class="tray-row"><span class="lbl">Weight</span><button type="button" class="step" data-d="w-" aria-label="Less weight">−</button><b class="num tw"></b><span class="tu">kg</span><button type="button" class="step" data-d="w+" aria-label="More weight">+</button></div>
+    <div class="tray-row"><span class="lbl">Reps</span><button type="button" class="step" data-d="r-" aria-label="Fewer reps">−</button><b class="num tr"></b><span class="tu"></span><button type="button" class="step" data-d="r+" aria-label="More reps">+</button></div>
     <button type="button" class="pill solid tray-done" data-act="tray-done">Done</button>
   </div>`;
   stage.append(root);
@@ -116,23 +116,33 @@ export function heat(stage) {
   const flare = fieldLayer(paintField([{ x: 0.5, y: 0.78, sx: 0.5, sy: 0.4, c: [255, 214, 140], a: 0.9 }], [0, 0, 0], { w: innerWidth / 3, h: innerHeight / 3, over: 1.12, seed: 9 }), 'f-flare');
   flare.style.opacity = '0';
   hbg.append(flare);
-  let breath = null;
-  function light(state, { ms } = {}) {
-    // One light at a time. Changing it dims the old one quickly and brings the new one up just after, through the
-    // dark ground, so ember and sea-green never mix into mud. Slow springs: light changes, nothing moves.
+  let breath = null, lightT = 0, lightLater = 0;
+  function light(state, { ms, after = 0 } = {}) {
+    T.clear(lightLater); // any new light call replaces one that was waiting
+    if (after && !reduced()) { lightLater = T.after(after, () => light(state, { ms })); return; }
+    // One light at a time. The old one goes out first (fast) and the new one only starts 140 ms later, so the change
+    // passes through the dark ground and ember and sea-green never mix into mud. Slow springs: light changes, nothing
+    // moves.
     if (state === lit) return;
     const old = lit;
     lit = state;
-    op[old].to(0, { damping: 1, response: 0.32 });
+    op[old].to(0, LIGHT.out);
+    T.clear(lightT);
     if (reduced()) { op[state].to(1); return; }
-    op[state].to(1, { damping: 1, response: ms ?? 0.8 });
+    lightT = T.after(140, () => { if (lit === state) op[state].to(1, ms ? { damping: 1, response: ms } : LIGHT.in); });
   }
   function startBreath() {
     if (reduced() || breath) return;
     // A calm breath while you rest: 5 s in, 5 s out, on the compositor. Paused when the page is hidden.
     breath = layers.rest.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.07)' }], { duration: 5000, iterations: Infinity, direction: 'alternate', easing: 'ease-in-out' });
   }
-  function stopBreath() { if (breath) { breath.cancel(); breath = null; } }
+  function stopBreath() {
+    if (!breath) return;
+    const b = breath;
+    breath = null;
+    b.pause(); // holds its size while the rest light fades out; reset once it's dark
+    T.after(900, () => { if (breath !== b) b.cancel(); });
+  }
   const vis = () => { if (breath) (document.hidden ? breath.pause() : breath.play()); };
   document.addEventListener('visibilitychange', vis);
 
@@ -173,45 +183,51 @@ export function heat(stage) {
     if (s.trim.state !== 'open') return;
     const cut = [...hplan.querySelectorAll('li.cut')];
     const rest = [...hplan.querySelectorAll('li:not(.cut)'), $('.tiles')];
+    const mins = $('.plan-card .mins'), wasMin = $('.plan-card .was-min');
+    const hollow = ghost(mins, ['color', '-webkit-text-stroke', 'font-family', 'font-weight']);
+    const struck = ghost(wasMin, ['display', 'text-decoration', 'color']);
     s.trim.state = 'applied';
-    root.dataset.trim = 'applied'; // hollow fills with light (CSS), cut rows fold away
-    T.after(180, () => { flip(rest, () => cut.forEach((li) => { li.hidden = true; })); });
-    cut.forEach((li) => li.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, easing: 'ease-out', fill: 'forwards' }));
-    $('.trim-acts').hidden = true;
-    $('.h-say').innerHTML = `Done by <span class="num">${S.doneBy(s)}</span>, in time for wrestling.`;
-    $('.h-ask').textContent = `Cable fly and pushdowns are off; incline is two sets.`;
     const line = $('.trim-undo');
-    line.hidden = false;
     undoAfter(line, `Trimmed to ${S.minutesLeft(s)} min.`);
-    play(line, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }]);
+    flip([$('.trim-slot'), $('.plan-card'), $('.tiles'), mins], () => {
+      root.dataset.trim = 'applied'; // the hollow number fills, cut rows fold away
+      $('.h-say').innerHTML = `Done by <span class="num">${S.doneBy(s)}</span>, in time for wrestling.`;
+      $('.h-ask').textContent = `Cable fly and pushdowns are off; incline is two sets.`;
+      swap($('.trim-acts'), line);
+    });
+    for (const x of [hollow, struck]) { x.host.append(x.g); fadeGhost(x.g, [{ opacity: 1 }, { opacity: 0 }]); }
+    play(mins, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set);
+    cut.forEach((li) => li.animate([{ opacity: 1 }, { opacity: 0 }], { ...EXIT, fill: 'forwards' }));
+    T.after(180, () => { flip(rest, () => cut.forEach((li) => { li.hidden = true; })); });
     sync();
   }
   function trimKeep() {
     if (s.trim.state !== 'open') return;
     s.trim.state = 'kept';
     root.dataset.trim = 'kept';
-    renderPlan();
-    $('.trim-acts').hidden = true;
-    $('.h-say').innerHTML = `Full plan. Done by <span class="num">${S.doneBy(s)}</span>.`;
-    $('.h-ask').textContent = 'Leave straight after for wrestling.';
     const line = $('.trim-undo');
-    line.hidden = false;
     undoAfter(line, 'Kept the full plan.');
-    trimUI();
+    flip([$('.trim-slot'), $('.plan-card'), $('.tiles')], () => {
+      renderPlan();
+      $('.h-say').innerHTML = `Full plan. Done by <span class="num">${S.doneBy(s)}</span>.`;
+      $('.h-ask').textContent = 'Leave straight after for wrestling.';
+      swap($('.trim-acts'), line);
+      trimUI();
+    });
   }
   function trimUndo() {
     const was = s.trim.state;
     if (was !== 'applied' && was !== 'kept') return;
     s.trim.state = 'open';
-    const before = [...hplan.querySelectorAll('li:not(.cut)'), $('.tiles')];
-    flip(before, () => { renderPlan(); trimUI(); });
-    hplan.querySelectorAll('li.cut').forEach((li) => play(li, [{ opacity: 0 }, { opacity: 1 }]));
-    $('.h-say').innerHTML = `Leave by <span class="num">16:50</span> for wrestling.`;
-    $('.h-ask').textContent = 'Trim the rest of Push to fit?';
-    $('.trim-undo').hidden = true;
-    const acts = $('.trim-acts');
-    acts.hidden = false;
-    play(acts, [{ opacity: 0 }, { opacity: 1 }]);
+    const before = [...hplan.querySelectorAll('li:not(.cut)'), $('.tiles'), $('.trim-slot'), $('.plan-card')];
+    flip(before, () => {
+      renderPlan(); trimUI();
+      $('.h-say').innerHTML = `Leave by <span class="num">16:50</span> for wrestling.`;
+      $('.h-ask').textContent = 'Trim the rest of Push to fit?';
+      swap($('.trim-undo'), $('.trim-acts'));
+    });
+    // The returning rows appear once the tiles below have made room, so nothing slides over them.
+    hplan.querySelectorAll('li.cut').forEach((li) => play(li, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set, { delay: reduced() ? 0 : 140 }));
     sync();
   }
 
@@ -244,17 +260,22 @@ export function heat(stage) {
       const lastR = n.ex.last[1][n.n - 1];
       coach.innerHTML = lastR != null ? `Set <span class="num">${n.n}</span> of <span class="num">${n.of}</span> · last time <span class="num">${lastR}</span> reps` : `Set <span class="num">${n.n}</span> of <span class="num">${n.of}</span>`;
     }
+    renderNext();
+  }
+  function renderNext() {
     const nx = S.nextExercise(s);
     $('.h-next').innerHTML = nx ? `Then <b>${esc(nx.name)}</b> <span class="num">${S.fmtKg(nx.w)}×${nx.r}</span>` : 'Last exercise';
   }
   function renderGo() {
     const n = S.nowSet(s), open = root.dataset.screen === 'workout';
-    root.classList.toggle('resting', !!restInfo);
-    if (restInfo) {
-      roll(goL, open ? 'Skip rest' : 'Resting');
-      roll(goR, open ? '' : S.mmss(restInfo.left));
+    root.classList.toggle('resting', !!restInfo && !open);
+    if (restInfo && !open) {
+      roll(goL, 'Resting');
+      roll(goR, S.mmss(restInfo.left));
       return;
     }
+    // In the workout the button always says Done, even while resting (the rest counts down in the card), so the next
+    // set is one tap however early you finish it.
     if (s.finished) { roll(goL, 'Finish'); roll(goR, ''); return; }
     roll(goL, open ? 'Done' : 'Back to workout');
     roll(goR, `Set ${n.n}/${n.of}`);
@@ -268,11 +289,24 @@ export function heat(stage) {
   const workFace = $('.work-face'), restFace = $('.rest-face');
   function showFace(rest) {
     const show = rest ? restFace : workFace, hide = rest ? workFace : restFace;
+    const slab = $('.slab');
+    slab.querySelectorAll('.face-ghost').forEach((g) => g.remove());
     if (!hide.hidden) {
+      // The outgoing face fades where it stands (a copy), so the card is never blank between the two.
+      const r = hide.getBoundingClientRect(), b = slab.getBoundingClientRect();
+      const g = hide.cloneNode(true);
+      g.classList.add('face-ghost');
+      g.setAttribute('aria-hidden', 'true');
+      Object.assign(g.style, { position: 'absolute', left: r.left - b.left + 'px', top: r.top - b.top + 'px', width: r.width + 'px', margin: 0, pointerEvents: 'none' });
+      // On a tick the big number has already flown into its chip: the fading copy leaves it out (no double image).
+      if (rest) g.querySelector('.nums')?.style.setProperty('visibility', 'hidden');
+      slab.append(g);
       hide.hidden = true;
+      fadeGhost(g, [{ opacity: 1 }, { opacity: 0, transform: 'translateY(-10px)' }]);
+      show.hidden = false;
+      play(show, [{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set, { delay: reduced() ? 0 : 80 });
     }
-    show.hidden = false;
-    play(show, [{ opacity: 0, transform: 'translateY(18px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set, { delay: rest ? 120 : 0 });
+    // Same face again (a new rest right after an early tick): the timer rolls back to the full rest; nothing dims.
   }
 
   T.every(1000, () => {
@@ -280,7 +314,8 @@ export function heat(stage) {
     $('.h-mins').textContent = S.minutesIn(s);
     if (restInfo) {
       restInfo.left = Math.max(0, restInfo.until - Math.round((Date.now() - restInfo.t) / 1000));
-      $('.rest-time').textContent = S.mmss(restInfo.left);
+      const rt = $('.rest-time');
+      rt.textContent = S.mmss(restInfo.left); delete rt.dataset.text;
       if (restInfo.left <= 0) endRest(); else if (root.dataset.screen !== 'workout') renderGo();
     }
   });
@@ -288,24 +323,27 @@ export function heat(stage) {
   function startRest(info) {
     restInfo = { t: Date.now(), until: s.restSecs, left: s.restSecs };
     const n = S.nowSet(s);
-    $('.rest-time').textContent = S.mmss(s.restSecs);
+    const rt = $('.rest-time');
+    if (restFace.hidden) { rt.textContent = S.mmss(s.restSecs); delete rt.dataset.text; } else roll(rt, S.mmss(s.restSecs), { dir: -1 });
     $('.rest-next').innerHTML = s.finished ? '' : `Next <span class="num">${S.fmtKg(n.w)}×${n.r}</span>`;
     const note = $('.rest-note');
     if (info.rec.record) note.innerHTML = `Best bench yet · about <span class="num">${info.rec.est.toFixed(1)}</span> kg est.`;
-    else if (info.last != null && info.rec.r > info.last) note.innerHTML = `<span class="num">+${info.rec.r - info.last}</span> rep on last time`;
+    else if (info.last != null && info.rec.r > info.last) { const d = info.rec.r - info.last; note.innerHTML = `<span class="num">+${d}</span> rep${d > 1 ? 's' : ''} on last time`; }
     else note.textContent = 'Breathe out slowly. Shoulders down.';
-    light('rest');
+    // A record keeps the heat while its flare burns, then cools to the rest light (the two never mix).
+    if (info.rec.record) { light('work'); light('rest', { after: 900 }); } else light('rest');
     startBreath();
     showFace(true);
   }
-  function endRest(skipped) {
+  function endRest(skipped, { quiet = false } = {}) {
     if (!restInfo) return;
     restInfo = null;
-    stopBreath();
-    light(root.dataset.screen === 'workout' ? 'work' : 'today', { ms: skipped ? 0.5 : 0.9 });
     if (lastTick) { lastTick = null; }
     $('.rest-undo').hidden = true;
     renderSet();
+    if (quiet) return; // a tick follows at once and starts the next rest: the light and the card stay as they are
+    stopBreath();
+    light(root.dataset.screen === 'workout' ? 'work' : 'today', { ms: skipped ? 0.5 : 0.9 });
     showFace(false);
     renderGo();
   }
@@ -318,7 +356,7 @@ export function heat(stage) {
 
   function doTick() {
     if (Date.now() < lock) return;
-    lock = Date.now() + 350;
+    lock = Date.now() + 1500; // a double tap can't tick the next set too (no real set is that short)
     const from = $('.nb.w').getBoundingClientRect();
     let info, el;
     flip([$('.slab-wrap'), $('.h-next')], () => {
@@ -331,7 +369,11 @@ export function heat(stage) {
     ub.disabled = true;
     ub.hidden = false;
     T.after(400, () => { ub.disabled = false; });
-    travel(el.querySelector('.num'), from, SPRINGS.type);
+    // The chips row clips its overflow; let the number fly in visibly, then clip again.
+    chips.style.overflow = 'visible';
+    const fl = travel(el.querySelector('.num'), from, SPRINGS.type);
+    const reclip = () => { chips.style.overflow = ''; };
+    if (fl) fl.finished.then(reclip, reclip); else reclip();
     play(el, [{ opacity: 0.2 }, { opacity: 1 }], SPRINGS.type);
     if (info.rec.record) T.after(160, () => {
       el.classList.add('flare');
@@ -346,8 +388,8 @@ export function heat(stage) {
       T.after(900, () => {
         if (info.undone) return;
         const head = $('.ex-head');
-        const a = head.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-10px)' }], { duration: 160, easing: 'ease-in', fill: 'forwards' });
-        a.finished.then(() => { renderExercise(); a.cancel(); play(head, [{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }]); }, () => {});
+        const a = head.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-10px)' }], { ...EXIT, fill: 'forwards' });
+        a.finished.then(() => { renderExercise(); renderNext(); a.cancel(); play(head, [{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }]); }, () => {});
       });
     }
     renderPlan();
@@ -364,39 +406,37 @@ export function heat(stage) {
     stopBreath();
     S.untick(s, info);
     const from = c.getBoundingClientRect();
-    flip([$('.slab-wrap'), $('.h-next')], () => { renderExercise(); });
+    flip([$('.slab-wrap'), $('.h-next')], () => { renderExercise(); renderNext(); });
     light('work', { ms: 0.5 });
     renderSet();
     showFace(false);
     renderGo();
     renderPlan();
     const to = $('.nb.w').getBoundingClientRect();
-    play($('.nums'), [{ transform: `translate(${from.left - to.left}px, ${from.top - to.top}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.type);
+    // From the chip it became, or (if the exercise already moved on and the chip is gone) from just above.
+    const d = c.isConnected ? `translate(${from.left - to.left}px, ${from.top - to.top}px)` : 'translateY(-14px)';
+    play($('.nums'), [{ transform: d, opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.type);
   }
 
   /* The proposal: 82.5 drawn hollow. Apply fills it with light from the left; Undo drains it back. */
   const fillwrap = $('.fillwrap'), fillEl = $('.fill');
+  // The window slides right while the solid number inside slides left by the same amount, so the number stays put and
+  // only the light moves through it.
+  const pourW = new Channel(fillwrap, 'translate', (v) => `${v}% 0`, -104);
+  const pourF = new Channel(fillEl, 'translate', (v) => `${-v}% 0`, -104);
   function pour(on) {
-    const off = (k) => `translateX(${k * 104}%)`;
-    fillwrap.style.transform = on ? 'none' : off(-1);
-    fillEl.style.transform = on ? 'none' : off(1);
-    if (reduced()) return;
-    const spec = { damping: 1, response: 0.5 };
-    play(fillwrap, [{ transform: on ? off(-1) : 'none' }, { transform: on ? 'none' : off(-1) }], spec);
-    play(fillEl, [{ transform: on ? off(1) : 'none' }, { transform: on ? 'none' : off(1) }], spec);
+    pourW.to(on ? 0 : -104, SPRINGS.set);
+    pourF.to(on ? 0 : -104, SPRINGS.set);
   }
-  pour(false);
   function bumpApply() {
     if (!S.bumpOpen(s)) return;
     s.bump.state = 'applied';
     root.dataset.bump = 'applied';
     pour(true);
-    $('.bump-acts').hidden = true;
     $('.work-face .h-coach').innerHTML = 'Filled in. Same 8 reps.';
     const line = $('.bump-undo');
-    line.hidden = false;
     undoAfter(line, 'Bench is now 82.5 kg.');
-    play(line, [{ opacity: 0 }, { opacity: 1 }]);
+    swap($('.bump-acts'), line);
     T.after(560, () => { if (root.dataset.bump === 'applied') { wv.dataset.text = ''; roll(wv, '82.5'); root.dataset.bump = 'set'; } });
     renderGo();
   }
@@ -404,27 +444,26 @@ export function heat(stage) {
     if (!S.bumpOpen(s)) return;
     s.bump.state = 'kept';
     root.dataset.bump = 'none';
-    $('.bump-acts').hidden = true;
-    renderSet();
-    $('.work-face .h-coach').innerHTML = 'Staying at <span class="num">80</span>.';
     const line = $('.bump-undo');
-    line.hidden = false;
-    undoAfter(line, '');
+    undoAfter(line, 'Staying at 80.');
+    swap($('.bump-acts'), line);
+    renderSet();
   }
   function bumpUndo() {
     if (!(s.bump.state === 'applied' || s.bump.state === 'kept')) return;
     if (S.current(s).id !== 'bench' || S.current(s).done.length !== 2) return;
     const wasApplied = s.bump.state === 'applied';
     s.bump.state = 'open';
-    $('.bump-undo').hidden = true;
+    swap($('.bump-undo'), null);
     renderSet();
-    if (wasApplied) { pour(true); T.after(10, () => pour(false)); }
+    play($('.bump-acts'), [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set, { delay: 40 });
+    if (wasApplied) pour(false); // drains from where the fill is now
   }
 
   /* ---------- Screens: the workout rises over Today as the heat comes up ---------- */
   const today = $('.h-today'), work = $('.h-work');
-  const wy = new Channel(work, 'translate', (v) => `0 ${v}px`, innerHeight);
-  const tOp = new Channel(today, 'opacity', String, 1);
+  const wy = new Channel(work, 'translate', (v) => `0 ${v}px`, innerHeight, { hideAt: innerHeight });
+  const tOp = new Channel(today, 'opacity', String, 1, { hideAt: 0 });
   function openWorkout() {
     root.dataset.screen = 'workout';
     work.setAttribute('aria-hidden', 'false'); today.setAttribute('aria-hidden', 'true');
@@ -457,6 +496,7 @@ export function heat(stage) {
     const n = S.nowSet(s);
     $('.tw').textContent = S.fmtKg(S.bumpOpen(s) ? 80 : n.w);
     $('.tr').textContent = n.r;
+    $('.tray-done').textContent = `Use for set ${n.n}`;
     if (ty.value > tH()) ty.set(tH());
     ty.to(0, SPRINGS.lift);
     sOp.to(1);
@@ -465,7 +505,9 @@ export function heat(stage) {
   function closeTray(v, fromPop) {
     if (!trayOpen) return;
     trayOpen = false;
-    ty.to(tH(), SPRINGS.lift, v != null ? { v } : {})?.finished.then(() => { if (!trayOpen) { tray.hidden = true; scrim.hidden = true; } }, () => {});
+    const hide = () => { if (!trayOpen) { tray.hidden = true; scrim.hidden = true; } };
+    const a = ty.to(tH(), SPRINGS.lift, v != null ? { v } : {});
+    if (a) a.finished.then(hide, () => {}); else hide(); // reduced motion: no animation, hide at once
     sOp.to(0);
     if (!fromPop && history.state?.looks === 'tray') { selfBack++; history.back(); }
   }
@@ -523,8 +565,9 @@ export function heat(stage) {
     const act = b.dataset.act;
     if (act === 'go') {
       if (root.dataset.screen !== 'workout') return openWorkout();
-      if (restInfo) { if (Date.now() >= lock) endRest(true); return; }
-      if (s.finished) return closeWorkout();
+      if (Date.now() < lock) return;
+      if (s.finished && !restInfo) return closeWorkout();
+      if (restInfo) endRest(true, { quiet: true }); // finished early: one tap ends the rest and ticks the set
       doTick();
     }
     if (act === 'close') closeWorkout();

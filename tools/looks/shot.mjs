@@ -15,15 +15,15 @@ await p.locator('[data-act="slab"], [data-act="go"]').first().tap(); await p.wai
 await shot('2-workout');
 await p.locator('[data-act="bump-apply"]').tap(); await p.waitForTimeout(900);
 await shot('3-applied');
-await p.locator('[data-act="slab"], [data-act="go"]').first().tap(); await p.waitForTimeout(250);
-await shot('4-tick-mid');
-await p.waitForTimeout(1200);
-await shot('5-rest');
-await p.locator('[data-act="slab"], [data-act="go"]').first().tap(); await p.waitForTimeout(1000);
-await shot('6-next');
 await p.locator('.fw, .nb.w').first().tap(); await p.waitForTimeout(900);
-await shot('7-tray');
+await shot('4-tray');
 await p.locator('.tray-done').tap(); await p.waitForTimeout(700);
+await p.locator('[data-act="slab"], [data-act="go"]').first().tap(); await p.waitForTimeout(250);
+await shot('5-tick-mid');
+await p.waitForTimeout(1300);
+await shot('6-rest');
+await p.locator('[data-act="slab"], [data-act="go"]').first().tap(); await p.waitForTimeout(1400); // set 4, done early: one tap
+await shot('7-early-tick');
 await p.locator('[data-act="close"]').tap(); await p.waitForTimeout(1000);
 await p.locator('[data-act="trim-apply"]').tap(); await p.waitForTimeout(1000);
 await shot('8-today-trimmed');

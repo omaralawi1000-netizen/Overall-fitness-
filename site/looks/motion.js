@@ -12,6 +12,10 @@ export const SPRINGS = {
   lift: { damping: 0.8, response: 0.42 }, // sheets and anything let go after a drag
   press: { damping: 0.68, response: 0.55 }, // only records and finishing
 };
+/** The one exit: things that leave (a ghost copy, a block making way) fade on this, short and fixed, no spring. */
+export const EXIT = { duration: 120, easing: 'cubic-bezier(.3, 0, .6, 1)' };
+/** Light (Heat only): a light goes out fast, the next comes up slowly. Light changes; nothing moves. */
+export const LIGHT = { out: { damping: 1, response: 0.2 }, in: { damping: 1, response: 0.8 } };
 
 const RM = matchMedia('(prefers-reduced-motion: reduce)');
 export const reduced = () => RM.matches;
@@ -50,9 +54,16 @@ export function curve(spec, v0 = 0) {
  * fmt turns the number into the CSS value. to() hands the current position and speed to the new spring.
  */
 export class Channel {
-  constructor(el, prop, fmt, initial) {
-    Object.assign(this, { el, prop, fmt, value: initial, anim: null });
+  constructor(el, prop, fmt, initial, { hideAt = null } = {}) {
+    Object.assign(this, { el, prop, fmt, value: initial, anim: null, hideAt });
     el.style[prop] = fmt(initial);
+    this.vis();
+  }
+  /** With hideAt, an element resting at that value (faded out, or moved off screen) is also made invisible, so it
+   *  costs nothing to draw (no glass blurred under the other screen). */
+  vis(done = true) {
+    if (this.hideAt == null) return;
+    this.el.style.visibility = this.value === this.hideAt && done ? 'hidden' : '';
   }
   /** Where it is and how fast it moves right now (units per second). */
   now() {
@@ -71,15 +82,15 @@ export class Channel {
     this.value = target;
     this.el.style[this.prop] = this.fmt(target);
     const d = target - cur.x;
-    if (Math.abs(d) < 1e-4 && Math.abs(vel) < 1e-3) return null;
-    if (RM.matches) return null;
+    if ((Math.abs(d) < 1e-4 && Math.abs(vel) < 1e-3) || RM.matches) { this.vis(); return null; }
+    this.vis(false);
     this.spec = spec;
     this.v0n = Math.abs(d) < 1e-4 ? 0 : vel / d;
     const c = curve(spec, this.v0n);
     this.v0n = Math.max(-40, Math.min(40, this.v0n));
     const a = this.el.animate([{ [this.prop]: this.fmt(cur.x) }, { [this.prop]: this.fmt(target) }], { duration: c.duration, easing: c.easing });
     this.anim = a;
-    a.finished.then(() => { if (this.anim === a) this.anim = null; }, () => {});
+    a.finished.then(() => { if (this.anim === a) { this.anim = null; this.vis(); } }, () => {});
     return a;
   }
   /** Jump with no motion (direct tracking under a finger). */
@@ -88,6 +99,7 @@ export class Channel {
     this.anim = null;
     this.value = x;
     this.el.style[this.prop] = this.fmt(x);
+    this.vis();
   }
 }
 
@@ -107,12 +119,24 @@ export function fade(el, from, to, ms = 240, extra = {}) {
   return el.animate([{ opacity: from }, { opacity: to }], { duration: RM.matches ? 120 : ms, easing: 'cubic-bezier(.2,.8,.2,1)', ...extra });
 }
 
-/** FLIP: measure, change the layout, then slide each element from where it was. Cancels older flips mid-flight. */
-export function flip(els, mutate, spec = SPRINGS.set) {
+/**
+ * FLIP: measure, change the layout, then slide each element from where it was. Cancels older flips mid-flight.
+ * boxes: panes whose glass is drawn by ::before. When a pane's height changes, its glass edge moves on the same
+ * spring instead of snapping (only the pseudo-element's own box changes, nothing else re-flows).
+ */
+export function flip(els, mutate, spec = SPRINGS.set, boxes = []) {
   const list = [...els].filter(Boolean);
+  const bx = [...boxes].filter(Boolean);
   const before = new Map(list.map((e) => [e, e.getBoundingClientRect()]));
+  const hb = new Map(bx.map((e) => [e, e.getBoundingClientRect().height]));
   for (const e of list) for (const a of e.getAnimations()) if (a.id === 'flip') a.cancel();
   mutate();
+  for (const e of bx) {
+    const dh = e.getBoundingClientRect().height - hb.get(e);
+    if (Math.abs(dh) < 0.5 || RM.matches) continue;
+    const c = curve(spec);
+    e.animate([{ bottom: `${dh}px` }, { bottom: '0px' }], { duration: c.duration, easing: c.easing, pseudoElement: '::before' });
+  }
   const out = [];
   for (const e of list) {
     if (!e.isConnected) continue;
@@ -150,7 +174,7 @@ export function roll(el, text, { dir = 1 } = {}) {
   o.textContent = old; n.textContent = text;
   const h = Math.max(el.getBoundingClientRect().height, 12) * 0.7 * dir;
   play(n, [{ opacity: 0, transform: `translateY(${h}px)` }, { opacity: 1, transform: 'none' }], SPRINGS.type);
-  const out = o.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: `translateY(${-h}px)` }], { duration: 180, easing: 'cubic-bezier(.3,0,.8,.2)', fill: 'forwards' });
+  const out = play(o, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: `translateY(${-h}px)` }], SPRINGS.type, { fill: 'forwards' });
   out.finished.then(() => { if (o.isConnected) o.remove(); }, () => {});
 }
 
@@ -158,25 +182,53 @@ export function roll(el, text, { dir = 1 } = {}) {
  * Fold elements out of the flow: each fades where it stands (a ghost copy) while the neighbours close the gap (FLIP).
  * Unfold is the same in reverse: the element comes back, neighbours slide down, it fades in where it lands.
  */
-export function fold(els, neighbours, hide, spec = SPRINGS.set) {
+export function fold(els, neighbours, hide, spec = SPRINGS.set, boxes = []) {
   const list = els.filter(Boolean);
   if (hide) {
-    const ghosts = list.map((el) => {
-      const host = el.offsetParent || el.parentElement, r = el.getBoundingClientRect(), h = host.getBoundingClientRect();
-      const g = el.cloneNode(true);
-      g.removeAttribute('id');
-      g.setAttribute('aria-hidden', 'true');
-      Object.assign(g.style, { position: 'absolute', left: r.left - h.left + host.scrollLeft + 'px', top: r.top - h.top + host.scrollTop + 'px', width: r.width + 'px', margin: 0, pointerEvents: 'none' });
-      return { el, host, g };
-    });
-    flip(neighbours, () => ghosts.forEach(({ el, host, g }) => { el.hidden = true; host.append(g); }), spec);
-    ghosts.forEach(({ g }) => {
-      const a = g.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(0.97)' }], { duration: RM.matches ? 120 : 220, easing: 'cubic-bezier(.3,0,.6,1)', fill: 'forwards' });
-      a.finished.then(() => g.remove(), () => g.remove());
-    });
+    const ghosts = list.map((el) => ghost(el));
+    flip(neighbours, () => ghosts.forEach(({ el, host, g }) => { el.hidden = true; host.append(g); }), spec, boxes);
+    ghosts.forEach(({ g }) => fadeGhost(g));
   } else {
-    flip(neighbours, () => list.forEach((el) => { el.hidden = false; }), spec);
-    list.forEach((el) => play(el, [{ opacity: 0, transform: 'scale(0.97)' }, { opacity: 1, transform: 'none' }], spec));
+    flip(neighbours, () => list.forEach((el) => { el.hidden = false; }), spec, boxes);
+    // They fade in once the neighbours have mostly made room, so nothing slides over them.
+    list.forEach((el) => play(el, [{ opacity: 0, transform: 'scale(0.97)' }, { opacity: 1, transform: 'none' }], spec, { delay: RM.matches ? 0 : 140 }));
+  }
+}
+
+/** A copy of el, absolutely placed where el is, inside el's own parent (so it keeps its styling). Not yet added. */
+export function ghost(el, keep = []) {
+  const host = el.parentElement;
+  if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+  const r = el.getBoundingClientRect(), h = host.getBoundingClientRect(), cs = getComputedStyle(host);
+  const g = el.cloneNode(true);
+  g.removeAttribute('id');
+  g.removeAttribute('data-act');
+  g.setAttribute('aria-hidden', 'true');
+  g.classList.add('ghost');
+  const own = getComputedStyle(el);
+  keep.forEach((k) => { g.style.setProperty(k, own.getPropertyValue(k)); }); // freeze looks the state change would alter
+  Object.assign(g.style, { position: 'absolute', left: r.left - h.left - parseFloat(cs.borderLeftWidth) + host.scrollLeft + 'px', top: r.top - h.top - parseFloat(cs.borderTopWidth) + host.scrollTop + 'px', width: r.width + 'px', height: r.height + 'px', margin: 0, pointerEvents: 'none', boxSizing: 'border-box' });
+  return { el, host, g };
+}
+export function fadeGhost(g, frames = [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(0.97)' }]) {
+  const a = g.animate(frames, { ...EXIT, fill: 'forwards' });
+  a.finished.then(() => g.remove(), () => g.remove());
+  return a;
+}
+/**
+ * Swap two things that share one slot (Apply/Keep buttons and the Undo line, two faces of a card): the old one fades
+ * where it stands as a copy, the new one rises at once. Never a blank slot, never both readable for long.
+ */
+export function swap(out, inn, spec = SPRINGS.set) {
+  if (out && !out.hidden) {
+    const { host, g } = ghost(out);
+    host.append(g);
+    out.hidden = true;
+    fadeGhost(g, [{ opacity: 1 }, { opacity: 0 }]);
+  }
+  if (inn) {
+    inn.hidden = false;
+    play(inn, [{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], spec, { delay: RM.matches ? 0 : 80 });
   }
 }
 

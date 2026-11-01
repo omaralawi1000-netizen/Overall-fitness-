@@ -25,8 +25,7 @@ await tap('[data-act="bump-apply"]'); await wait(1200);           // Apply the C
 await tap('[data-act="bump-undo"]'); await wait(1200);
 await tap('[data-act="bump-apply"]'); await wait(1000);
 await tap('[data-act="slab"], [data-act="go"]'); await wait(2600); // tick set 3 (a record), rest runs
-await tap('[data-act="slab"], [data-act="go"]'); await wait(1600); // skip rest: next set
-await tap('[data-act="slab"], [data-act="go"]'); await wait(1600); // tick set 4
+await tap('[data-act="slab"], [data-act="go"]'); await wait(1600); // tick set 4 during the rest: one tap
 await tap('[data-act="untick"]'); await wait(1600); // undo it
 const path = await p.video().path();
 await ctx.close(); await b.close();

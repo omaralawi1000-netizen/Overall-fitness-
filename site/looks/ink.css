@@ -39,7 +39,7 @@
 @media (prefers-color-scheme: dark) { .ink .btn-apply { color: #0F1012; } }
 .ink .btn-apply .fig { font-weight: 800; }
 .ink .btn-keep { box-shadow: inset 0 0 0 1.5px var(--hair), inset 0 0 0 1.5px color-mix(in srgb, var(--graphite) 35%, transparent); }
-.ink .undo-line { display: flex; align-items: center; gap: 4px; margin-top: 12px; min-height: 48px; color: var(--graphite); font-size: 15px; }
+.ink .undo-line { display: flex; align-items: center; gap: 4px; margin-top: 18px; min-height: 56px; color: var(--graphite); font-size: 15px; }
 .ink .undo { min-height: 44px; padding: 0 10px; font-weight: 700; color: var(--ink); text-decoration: underline; text-decoration-thickness: 2px; text-underline-offset: 4px; }
 .ink .undo:disabled { opacity: 0.5; }
 
@@ -55,7 +55,7 @@
 .ink .plan .aside { color: var(--graphite); font-size: 15px; }
 .ink .plan li.complete .nm, .ink .plan li.complete .col { color: var(--graphite); }
 .ink .strike { position: absolute; left: -2px; right: -2px; top: 54%; height: 2px; background: var(--pencil); transform-origin: 0 50%; scale: 0 1; border-radius: 1px; }
-.ink[data-trim='open'] li.cut .strike { scale: 1 1; }
+.ink:is([data-trim='open'], [data-trim='applied']) li.cut .strike { scale: 1 1; }
 .ink .plan li.cut .nm, .ink .plan li.cut .col, .ink .plan li.cut .aside { color: color-mix(in srgb, var(--ink) 50%, var(--ground)); }
 
 /* Tracked changes: old values struck, new ones in the Coach's blue until applied, then the ink dries. */
@@ -91,7 +91,8 @@
 .ink .up-rows li { color: var(--graphite); }
 /* A record: a yellow marker stroke behind the figures, swept in from the left. Ink stays on top. */
 .ink .marker { position: absolute; left: 0; top: 7px; width: 98px; height: 26px; background: var(--marker); border-radius: 3px 6px 4px 7px; transform-origin: 0 50%; z-index: 0; }
-.ink .done-rows li.rec .col { color: #121317; }
+.ink .done-rows li.rec .col { color: #121317; transition: color 160ms 90ms; }
+.ink .done-rows li.rec-pending .marker { scale: 0 1; }
 .ink .now-rule { position: relative; height: 2px; margin: 14px 0 16px; background: var(--hair); }
 .ink .drain { position: absolute; inset: 0; background: var(--ink); transform-origin: 0 50%; }
 .ink .now-label { font-size: 15px; font-weight: 650; }
@@ -106,9 +107,9 @@
 .ink .fw .v, .ink .fw .bar { transition: color 320ms cubic-bezier(.2, .8, .2, 1), background-color 320ms cubic-bezier(.2, .8, .2, 1); }
 .ink[data-bump='open'] .fw .v { color: var(--pencil); }
 .ink[data-bump='open'] .fw .bar { background: var(--pencil); }
-.ink .w-coach { font-size: 22px; line-height: 1.22; min-height: 0; }
+.ink .w-coach { font-size: 22px; line-height: 1.22; min-height: 0; text-wrap: pretty; }
 .ink .w-coach:empty { display: none; }
-.ink .bump-acts { margin-top: 14px; }
+.ink .bump-acts { margin-top: 18px; }
 .ink .next-pane { margin-top: 8px; }
 .ink .next-ex { margin-top: 10px; color: var(--graphite); font-size: 15px; }
 .ink .next-ex .fig { font-weight: 600; }
@@ -118,18 +119,23 @@
 .ink.waiting .fv .bar { opacity: 0; }
 
 /* ---------- The dock and the slab (one object, two states) ---------- */
-.ink .dock { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; padding: 12px 20px calc(env(safe-area-inset-bottom) + 16px);
+.ink .dock { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; padding: 12px 20px calc(env(safe-area-inset-bottom) + 16px); }
+/* The glass under the slab has no hard top edge: the blur fades in over 28 px, so nothing behind it is cut in half. */
+.ink .dock::before { content: ''; position: absolute; left: 0; right: 0; bottom: 0; top: -28px; z-index: -1; pointer-events: none;
   background: var(--glass); -webkit-backdrop-filter: blur(22px) saturate(1.5); backdrop-filter: blur(22px) saturate(1.5);
-  box-shadow: inset 0 1px 0 var(--glass-edge), 0 -1px 0 var(--hair); }
+  -webkit-mask-image: linear-gradient(180deg, transparent, #000 28px); mask-image: linear-gradient(180deg, transparent, #000 28px); }
 .ink .slab { position: relative; isolation: isolate; display: flex; align-items: center; justify-content: space-between; width: 100%; height: 88px; padding: 0 26px; border-radius: 20px; color: var(--on-ink); font-size: 22px; font-weight: 700; transition: color 220ms cubic-bezier(.2, .8, .2, 1); }
 .ink .slab::before { content: ''; position: absolute; inset: 0; border-radius: inherit; background: var(--ink); z-index: -1; transition: opacity 220ms cubic-bezier(.2, .8, .2, 1); }
 .ink .slab::after { content: ''; position: absolute; inset: 0; border-radius: inherit; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--graphite) 45%, transparent); z-index: -2; }
 .ink .slab.down::before { opacity: 0.82; }
 .ink .slab-r { font-size: 17px; font-weight: 600; opacity: 0.8; }
+.ink .slab-rg { display: inline-flex; align-items: baseline; gap: 6px; }
+.ink .slab-rt { font-size: 20px; font-weight: 750; opacity: 0.8; font-variant-numeric: tabular-nums; }
+.ink .slab-rt:empty { display: none; }
 .ink .slab-t { font-size: 24px; font-weight: 750; }
 .ink.resting .slab { color: var(--graphite); }
 .ink.resting .slab::before { opacity: 0; }
-.ink .roll { position: relative; display: inline-grid; }
+.ink .roll, .ink .fv .v.roll { position: relative; display: inline-grid; overflow: clip; overflow-clip-margin: 2px; }
 .ink .roll > span { grid-area: 1 / 1; }
 
 /* ---------- The edit tray ---------- */
@@ -155,32 +161,42 @@
 .ink.rich .scroll { padding-left: 12px; padding-right: 12px; }
 .ink.rich .t-head { padding: 0 8px; }
 .ink.rich .w-head { padding: 0 6px; }
-.rich { --pane: rgba(255, 255, 255, 0.62); --pane-edge: rgba(255, 255, 255, 0.95); --graphite: #464A52;
+.rich { --lens: rgba(255, 255, 255, 0.55); --lens-shadow: 0 18px 36px -18px rgba(30, 40, 90, 0.4), 0 2px 6px -2px rgba(30, 40, 90, 0.12);
+  --pane: rgba(255, 255, 255, 0.62); --pane-edge: rgba(255, 255, 255, 0.95); --graphite: #464A52;
   --pane-shadow: 0 24px 48px -22px rgba(16, 28, 120, 0.45), 0 2px 6px -2px rgba(16, 28, 120, 0.12);
   --glass: rgba(246, 247, 255, 0.42); --glass-edge: rgba(255, 255, 255, 0.85); --hair: rgba(18, 19, 23, 0.12); }
 @media (prefers-color-scheme: dark) {
-  .rich { --pane: rgba(14, 16, 28, 0.42); --pane-edge: rgba(255, 255, 255, 0.14); --graphite: #A9AEB8;
+  .rich { --lens: rgba(255, 255, 255, 0.06); --lens-shadow: 0 22px 44px -16px rgba(0, 0, 0, 0.75), 0 2px 6px -2px rgba(0, 0, 0, 0.4);
+    --pane: rgba(14, 16, 28, 0.42); --pane-edge: rgba(255, 255, 255, 0.14); --graphite: #A9AEB8;
     --pane-shadow: 0 24px 50px -20px rgba(0, 0, 0, 0.7), 0 2px 6px -2px rgba(0, 0, 0, 0.4);
     --glass: rgba(12, 14, 26, 0.5); --glass-edge: rgba(255, 255, 255, 0.12); --hair: rgba(236, 237, 231, 0.12); }
 }
 /* Panes are frosted by tint and edge light, not live blur: the field behind them is already soft, so blur would look
    the same and cost a full redraw every frame while it drifts. Live blur is kept for the dock and the tray, where
    sharp text slides underneath. */
-.rich .pane { padding: 18px 18px 16px; border-radius: 28px; background: linear-gradient(180deg, color-mix(in srgb, var(--pane-edge) 18%, transparent), transparent 120px), var(--pane); box-shadow: inset 0 1px 0 var(--pane-edge), inset 0 0 0 0.5px color-mix(in srgb, var(--pane-edge) 60%, transparent), var(--pane-shadow); }
+.rich .pane { padding: 18px 18px 16px; border-radius: 28px; isolation: isolate; }
+/* The glass is drawn by ::before, so when a pane grows or shrinks its edge can follow the content on the same spring
+   (motion.js flip boxes) instead of snapping. */
+.rich .pane::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--pane-edge) 18%, transparent), transparent 120px), var(--pane); box-shadow: inset 0 1px 0 var(--pane-edge), inset 0 0 0 0.5px color-mix(in srgb, var(--pane-edge) 60%, transparent), var(--pane-shadow); }
 .rich .coach-pane { padding: 20px 20px 18px; }
 .rich .plan-pane, .rich .day-pane { margin-top: 12px; }
-.rich .ex-pane { padding-bottom: 6px; }
-.rich .now-pane { margin-top: 12px; padding: 20px 20px 18px; background: color-mix(in srgb, var(--pane) 100%, transparent);
-  box-shadow: inset 0 1px 0 var(--pane-edge), inset 0 0 0 0.5px color-mix(in srgb, var(--pane-edge) 60%, transparent), 0 34px 60px -26px rgba(26, 34, 110, 0.45), 0 4px 10px -4px rgba(26, 34, 110, 0.12); }
-@media (prefers-color-scheme: dark) { .rich .now-pane { box-shadow: inset 0 1px 0 var(--pane-edge), 0 34px 70px -24px rgba(0, 0, 0, 0.85), 0 4px 10px -4px rgba(0, 0, 0, 0.5); } }
-.rich .next-pane { margin-top: 12px; }
+.rich .ex-pane { padding-bottom: 8px; }
+/* The workout is one sheet of glass; the set you're on is a raised lens inside it (depth, not a stack of equal cards).
+   It moves with its content, so ticking never makes two panes overlap. */
+.rich .now { position: relative; isolation: isolate; margin: 12px -8px 0; padding: 18px 16px 16px; border-radius: 22px; }
+.rich .now::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: linear-gradient(180deg, color-mix(in srgb, var(--pane-edge) 22%, transparent), transparent 90px), var(--lens);
+  box-shadow: inset 0 1px 0 var(--pane-edge), inset 0 0 0 0.5px color-mix(in srgb, var(--pane-edge) 60%, transparent), var(--lens-shadow); }
+.rich .next-pane { margin-top: 10px; }
 .rich .now-rule { margin: 12px 0 2px; }
 .rich .plan li:first-child, .rich .day-pane .row:first-child { border-top: 0; }
-.rich .dock { background: var(--glass); -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8); box-shadow: inset 0 1px 0 var(--glass-edge); }
+.rich .dock::before { -webkit-backdrop-filter: blur(24px) saturate(1.8); backdrop-filter: blur(24px) saturate(1.8); }
 .rich .slab { box-shadow: 0 16px 34px -14px rgba(18, 24, 90, 0.55); }
 .rich .slab::before { background: linear-gradient(180deg, color-mix(in srgb, var(--ink) 86%, #3a46ff), var(--ink) 60%); }
 @media (prefers-color-scheme: dark) { .rich .slab { box-shadow: 0 16px 34px -14px rgba(0, 0, 0, 0.8); } .rich .slab::before { background: linear-gradient(180deg, #fff, var(--ink) 70%); } }
 .rich.resting .slab { box-shadow: none; }
 .rich .tray { background: var(--glass); -webkit-backdrop-filter: blur(28px) saturate(1.8); backdrop-filter: blur(28px) saturate(1.8); }
-/* Grain on every blurred surface, so the blur never shows rings (see bg.js grain). */
-.ink .dock, .ink .tray { background-image: var(--grain); background-size: var(--grain-size); }
+/* Grain on the blurred glass: the banding check (tools/looks/banding.py) found faint rings under the tray and in the
+   dock's soft top edge in every look, so it's there by TASTE §4b, not by default (see bg.js grain). */
+.ink .dock::before, .ink .tray { background-image: var(--grain); background-size: var(--grain-size); }
