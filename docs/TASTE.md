@@ -31,6 +31,15 @@ Omar judges everything on his phone. Anything only the phone can show (blur, ban
 - One shared set of springs, defined in DESIGN.md once it exists. The springs themselves are new. New one-off timings are a defect unless DESIGN.md allows them.
 - Off-screen animation is paused.
 - Seamless settle: the last moving frame and the first still frame are the same picture.
+- Browser-driven motion (Omar, 1 Nov): everything that moves on its own runs in the browser's compositor, through CSS transitions, the Web Animations API (springs sampled into keyframes or `linear()`), or Motion's hardware-accelerated springs, so it reaches 120 Hz. Never a script loop that sets a style every frame (`requestAnimationFrame`) for anything that moves: on his phone, Chrome runs those at about 60 fps (LESSONS 6). The only exception is direct tracking: while a finger drags something, it follows the finger, and the moment the finger lets go, a browser-driven spring takes over with the finger's speed. An interrupted animation hands its current position and speed to the next one.
+
+## 4b. Materials (Omar, 1 Nov: decided by the blur test)
+- **Glass is A: plain live blur.** `backdrop-filter: blur() saturate(1.5)` with a tint and an edge highlight, no grain. Omar chose it on his phone (1 Nov, final.html): next to B (the same plus about 5% grain) A keeps the colour richer and cleaner, and the grain made dark glass look grey without removing the faint rings he saw on both. Measured: live blur cost nothing over the no-blur baseline (A 64, B 65, E 65 script fps with a finger on screen; the screen showed 120 Hz). Details: docs/blur-test-plan.md.
+- **Banding is checked per screen.** The risk case is a dark, slow gradient behind glass: Chrome on his phone draws in 8 bits, so such gradients can show rings. Fix the source first (draw the background dithered, like the Atmosphere sky in site/concepts/kit.js `paintSky`). Grain on the glass (B's tile, about 5%) is allowed only if a screen still shows rings after that.
+- **D (a picture blurred in advance) is allowed only over a background that doesn't scroll**, such as a fixed sky, never over content that moves under it, because the page doesn't show through.
+- **E (no blur: tint and an edge highlight) is allowed where blur isn't beautiful**, and as the fallback for battery saver or reduced transparency.
+- **C (a blurred copy of the page) is not used**: it was the heaviest method and the only one that stuttered (4 hitches, worst frame 67 ms).
+- Judges flag rings behind glass (→ needs phone), backgrounds drawn without dithering behind glass, and D over moving content.
 
 ## 5. Signature moments
 These get the most care, and each has its own motion spec in DESIGN.md:
