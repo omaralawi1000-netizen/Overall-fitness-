@@ -31,7 +31,7 @@ Done:
 - Found: old Aven's "Delete everything" wipes every localStorage key starting with `aven`, so an `aven2` prefix is at
   risk (INTERVIEW.md). Omar chose `a2`.
 
-- Old Aven seen running at 384 px (docs/inspiration/old-aven-review.md).
+- Old Aven seen running at 384 px (docs/history/old-aven-review.md).
 - Exam v1 harness committed (exam/v1/, fake people only).
 
 Blocked:
