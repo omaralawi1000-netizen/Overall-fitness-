@@ -29,12 +29,17 @@ Run them before Omar sees anything visual or any Coach change. Spawn fresh ones 
 - Change `The-new-Claude-gym-app` (the old app). Read-only reference, cloned into `reference/` (gitignored).
 - Commit real data or API keys. The Gemini key is injected as a header by the environment (no variable); never put it in code, commits or logs.
 
-## Working efficiently (Omar, 1 Nov)
-Model and effort are Omar's to switch. When the work calls for a different setting, tell him which one and why.
-- **Opus, high effort:** concept and design work, DESIGN.md, signature-moment motion, the Coach brain and exam judging, anything touching user data. Riskiest work (data import, backup, storage): Opus main with Opus as advisor.
-- **Normal build phases:** Sonnet on high as main model, Opus as advisor (`/advisor opus`; exists in Claude Code 2.1.316). Ask the advisor before committing to an approach, when an error repeats, and before calling a task done. Still stuck: tell Omar to switch to Opus.
+## Working efficiently (Omar, 1 Nov, updated after the model research)
+Default model is **Sonnet 5.5, high effort**. It costs half of Opus 5.5 per token and is close on coding. Model and effort are Omar's to switch. When the work calls for a different setting, tell him which one and why.
+- **Opus 5.5, high:** design direction and the key screens of the chosen look, DESIGN.md, signature-moment motion, the Coach brain and exam judging, anything touching user data. Riskiest work (data import, backup, storage): Opus main with Opus as advisor.
+- **Normal build phases:** Sonnet on high as main model, Opus as advisor (`/advisor opus`). Ask the advisor before committing to an approach, when an error repeats, and before calling a task done. Still stuck: tell Omar to switch to Opus.
 - **Small fixes, copy and doc edits:** Sonnet on low, alone.
+- **Never max effort** (overthinks, wastes tokens). Thinking is billed as output, the expensive part.
+- **Agents are the real drain.** Every subagent, judge or workflow agent is a full session on top of the main one (agent teams about 7x). No subagents or workflows unless Omar asks. Judges: **one round** per visual change, before Omar sees it, then fix and show him. No loops of fresh judges until they find nothing. Judges and subagents run on Sonnet unless the job is Coach-exam judging.
+- Keep sessions short and clear: one phase per session, `/clear` between unrelated tasks, `/compact` before a long break. Long context is re-sent on every message. 1M context costs no extra per token.
+- Check `/usage` now and then: it shows the share that went to subagents, skills and MCP.
+- If a Sonnet-built screen feels less polished on Omar's phone, send that screen to Opus. That is the accepted trade-off.
 - If the same fix fails twice, stop and tell Omar (stronger model or a new approach). If you skipped a file or didn't test, raise the effort.
-- One phase per session. On long tasks, commit, push and update PROGRESS.md after each working step, so a usage-limit cutoff loses nothing. Use /clear between unrelated tasks.
+- On long tasks, commit, push and update PROGRESS.md after each working step, so a usage-limit cutoff loses nothing.
 - Don't re-read large files already summarised in docs. Build concepts only to "judgeable"; polish only the winner.
 - Judges only for work Omar will see. Blur and banding are judged on his phone, never headless.

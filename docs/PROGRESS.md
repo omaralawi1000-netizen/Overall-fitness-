@@ -149,5 +149,8 @@ Done:
   blur, Heat's record moment (flare, light change, sweep, three glass layers).
 - Tools: tools/looks/shot.mjs (screens), clip.mjs (videos, real and half speed), banding.py.
 
+## Model setup (1 Nov 2026, evening)
+Researched model cost against Anthropic's docs. Opus 5.5 is 2x Sonnet 5.5 per token; 1M context costs no extra; subagents and agent teams multiply usage most. Omar approved: Sonnet 5.5 high is the default, Opus only for design and Coach, judges capped at one round. Written into CLAUDE.md "Working efficiently". No app changes.
+
 ## Next step
 Omar picks one look on his phone. Then the sprint continues with the winner, starting with the five held fixes above.
