@@ -95,6 +95,8 @@ product**, so many buttons and settings become "just tell the Coach".
 | Focus view: one exercise per page, dots, auto-advance | | keep, decided in Checkpoint 2 | |
 | List ↔ Focus card morph | | keep if Focus stays | |
 | Moving SVG figures / exercise clips | 6 figures, 2 clips | later | Big art job, not core; revisit after the core loop |
+| Exercise figures (Omar, 1 Nov) | 3 finished clips: barbell curl, EZ-bar curl, rope hammer curl (Z-Anatomy, CC BY-SA 4.0) | later | Parked until the design is picked |
+| Gemini Live voice orb (old Aven's unmerged `claude/live-orb` branch) | Live voice conversation with the Coach, spoken undo | later | Read that branch for the logic only, never the look (Omar, 1 Nov) |
 | Summary: medal, odometers, headline, records, next time, planned vs done, note, save as routine | | keep, redesigned | Signature moment: finishing a workout |
 | Post-workout check-in (energy, soreness, sleep) | | merge → Coach asks when it helps | Watch already knows sleep; a fixed form every time is noise |
 | Session detail: edit sets, delete, Repeat, Save as routine | | keep | |
