@@ -159,8 +159,16 @@ and they have no signature of their own. Scores: Heat 5.2, Ink 4.7, Ink rich 3.8
 ## Model setup (1 Nov 2026, evening)
 Researched model cost against Anthropic's docs. Opus 5.5 is 2x Sonnet 5.5 per token; 1M context costs no extra; subagents and agent teams multiply usage most. Omar approved: Sonnet 5.5 high is the default, Opus only for design and Coach, judges capped at one round. Written into CLAUDE.md "Working efficiently". No app changes.
 
+## Session 6: final design round, Part 1 (1 Nov 2026, night)
+Omar asked for a short written decision before the last build round. Result in docs/design-round-2026-11-01.md:
+the 16 design-bar rules triaged (dropped: exactly 4 tabs, the locked top 40%, fixed size ratios, the equal-card ban,
+"colour only for state", and the log tap that also accepts a Coach change), the Coach ladder (observation,
+recommendation, proposal, accepted, completed; accepting is its own deliberate action with Undo and history), the
+state map and navigation, two directions (A "Day line": Today · Plan · Progress + a Log key, orb allowed there;
+B "Rooms": Today · Train · Food · Progress + Ask, state colour fields, no orb), an ordinary control, and what a PWA
+can really do on Android and iPhone. Nothing built.
+
 ## Next step
-Omar decides: build one new round of the whole app shell to the 16 rules in two identity directions (A: orb plus day
-strip, B: numerals plus state field, no orb), judged by the crop test and the 5-second test against an ordinary
-Hevy-plus-MyFitnessPal control. The five held fixes (session 4) carry over to whichever wins. Open question for Omar:
-orb or non-orb as the signature.
+Waiting for Omar's go on Part 2: build A, B and the ordinary control as clickable shells at /round/ (no storage),
+as listed at the end of docs/design-round-2026-11-01.md. One Sonnet judge round, then Omar picks on his phone and
+the gym sprint starts with the winner.
