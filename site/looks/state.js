@@ -49,6 +49,8 @@ export function minutesLeft(s, opts) {
   return Math.round(s.exercises.reduce((t, ex) => t + Math.max(0, plannedSets(s, ex, opts) - ex.done.length) * ex.perSet, 0));
 }
 export const doneBy = (s, opts) => hhmm(s.now() + minutesLeft(s, opts) * 60);
+/** Minutes past the time he has to leave (0 or less: in time). */
+export const lateBy = (s, opts) => Math.round((s.now() + minutesLeft(s, opts) * 60 - s.trim.leaveBy) / 60);
 
 export const current = (s) => s.exercises[s.cur];
 /** The set waiting to be ticked: weight with the Coach's bump if applied, else the exercise's own. */

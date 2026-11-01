@@ -167,7 +167,7 @@ export function ink(stage, { rich = false } = {}) {
       fold(cutRows.filter((r) => r.isConnected), after, true, SPRINGS.set, boxes('.plan-pane'));
       $('.was-min').hidden = true; $('.was-by').hidden = true;
       plan.querySelectorAll('s.was').forEach((x) => { x.hidden = true; });
-      for (const o of olds) { o.host.append(o.g); fadeGhost(o.g, [{ opacity: 1 }, { opacity: 0 }]); play(o.el, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set, { delay: 60 }); }
+      for (const o of olds) { o.host.append(o.g); fadeGhost(o.g, [{ opacity: 1 }, { opacity: 0 }]); play(o.el, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set, { delay: reduced() ? 0 : 110 }); } // old line gone before the new one shows: never two readable at once
     });
     undoAfter(line, `Trimmed to ${S.minutesLeft(s)} min.`);
     swap(acts, line); // same slot, same height: nothing below moves
@@ -207,7 +207,8 @@ export function ink(stage, { rich = false } = {}) {
     swap($('.trim-acts'), line); // first, so the fading copy still reads what you tapped
     trimUI();
     const coach = $('.t-coach');
-    coach.innerHTML = `Full plan it is. Done by ${fig(S.doneBy(s))}, so leave straight after.`;
+    const late = S.lateBy(s);
+    coach.innerHTML = late > 0 ? `Full plan it is. Done by ${fig(S.doneBy(s))}, ${fig(late)} min after you need to leave.` : `Full plan it is. Done by ${fig(S.doneBy(s))}, in time to leave.`;
     play(coach, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set);
     T.after(260, renderPlan);
   }
@@ -219,7 +220,7 @@ export function ink(stage, { rich = false } = {}) {
   const slabL = $('.slab-l'), slabR = $('.slab-r'), slabT = $('.slab-t'), slabRT = $('.slab-rt');
   let restInfo = null, lastTick = null, tickLock = 0, selfBack = 0;
 
-  const row = (set, i, cls = '') => `<li class="${cls}">${fig(`${S.fmtKg(set.w)} × ${set.r}`, 'col')}<span class="w">Set ${i + 1}</span>${set.at ? fig(set.at, 'at') : ''}${set.record ? '<i class="marker" aria-hidden="true"></i>' : ''}</li>`;
+  const row = (set, i, cls = '') => `<li class="${cls}"><span class="fig col"><span class="cw">${S.fmtKg(set.w)}</span><span class="cx"> × </span><span class="cr">${set.r}</span></span><span class="w">Set ${i + 1}</span>${set.at ? fig(set.at, 'at') : ''}${set.record ? '<i class="marker" aria-hidden="true"></i>' : ''}</li>`;
 
   function renderExercise() {
     const ex = S.current(s);
@@ -274,7 +275,9 @@ export function ink(stage, { rich = false } = {}) {
     if (restInfo) {
       roll(slabL, 'Done');
       roll(slabR, 'Rest');
+      const fresh = !slabRT.textContent;
       slabRT.textContent = S.mmss(restInfo.left);
+      if (fresh) play(slabRT, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.type, { delay: reduced() ? 0 : 100 });
       return;
     }
     slabRT.textContent = '';
@@ -328,8 +331,11 @@ export function ink(stage, { rich = false } = {}) {
   function doTick() {
     if (Date.now() < tickLock) return;
     tickLock = Date.now() + 1500; // a double tap can't tick the next set too (no real set is that short)
-    const from = $('.figure').getBoundingClientRect();
+    const from = fw.getBoundingClientRect(), fromR = fr.getBoundingClientRect();
     const others = [$('.now-rule'), $('.now'), $('.next-pane')];
+    // What the Now pane said fades where it stands while the next set rises in (its numbers are flying to the row).
+    const olds = [...$('.now').children].filter((x) => !x.hidden).map((x) => ghost(x));
+    olds.forEach(({ g }) => g.querySelectorAll('.fw .v, .fr .v').forEach((v) => { v.style.visibility = 'hidden'; }));
     let info, newRow;
     // Measure first, change everything in one go, then slide each thing from where it was (FLIP).
     flip(others, () => {
@@ -340,14 +346,18 @@ export function ink(stage, { rich = false } = {}) {
       if (info.exDone && !S.advance(s)) s.finished = true;
       if (!s.finished) startRest(info);
       renderNow({ waiting: !s.finished });
+      olds.forEach(({ host, g }) => host.append(g));
     }, SPRINGS.set, boxes('.ex-pane', '.now'));
+    olds.forEach(({ g }) => fadeGhost(g, [{ opacity: 1 }, { opacity: 0 }]));
     T.after(400, () => { const b = newRow.querySelector('.row-undo'); if (b) b.disabled = false; });
     // 1. The figure shrinks into the list as a row (scaling down only, so it stays sharp).
-    travel(newRow.querySelector('.col'), from, SPRINGS.type);
+    travel(newRow.querySelector('.cw'), from, SPRINGS.type);
+    travel(newRow.querySelector('.cr'), fromR, SPRINGS.type);
+    play(newRow.querySelector('.cx'), [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set, { delay: 120 });
     newRow.querySelectorAll('.w, .at, .row-undo').forEach((x) => play(x, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set, { delay: 120 }));
     // 2. The next set rises into the Now slot, waiting in graphite; the slab's face becomes the rest. (Its content
     //    rises, not the lens around it, so the glass never blinks.)
-    [...$('.now').children].filter((x) => !x.hidden).forEach((x) => play(x, [{ opacity: 0, transform: 'translateY(22px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set, { delay: 40 }));
+    [...$('.now').children].filter((x) => !x.hidden && !x.classList.contains('ghost')).forEach((x) => play(x, [{ opacity: 0, transform: 'translateY(22px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set, { delay: 40 }));
     let note = '';
     if (info.rec.record) note = `Best bench yet: about ${info.rec.est.toFixed(1)} kg estimated, up from ${info.rec.prevBest.toFixed(1)}.`;
     else if (info.last != null && info.rec.r > info.last) { const d = info.rec.r - info.last; note = `+${d} rep${d > 1 ? 's' : ''} on last time.`; }

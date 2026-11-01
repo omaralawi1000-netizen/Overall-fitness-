@@ -77,7 +77,7 @@ export function heat(stage) {
             <div class="h-undo bump-undo" hidden><span class="u-text"></span><button type="button" class="undo" data-act="bump-undo">Undo</button></div>
           </div>
           <div class="face rest-face" aria-live="polite" hidden>
-            <div class="cols"><span>Rest</span><span class="rest-next"></span></div>
+            <div class="cols"><span>Rest</span><button type="button" class="rest-next" data-act="edit" aria-label="Change the next set"></button></div>
             <div class="rest-time num">1:30</div>
             <p class="h-coach rest-note"></p>
             <div class="h-undo"><button type="button" class="undo rest-undo" data-act="untick" hidden>Undo set</button></div>
@@ -226,7 +226,8 @@ export function heat(stage) {
     flip([$('.trim-slot'), $('.plan-card'), $('.tiles')], () => {
       renderPlan();
       $('.h-say').innerHTML = `Full plan. Done by <span class="num">${S.doneBy(s)}</span>.`;
-      $('.h-ask').textContent = 'Leave straight after for wrestling.';
+      const late = S.lateBy(s);
+      $('.h-ask').innerHTML = late > 0 ? `That's <span class="num">${late}</span> min late for wrestling.` : 'In time for wrestling.';
       swap($('.trim-acts'), line);
       trimUI();
     }, SPRINGS.set, planBox());
@@ -255,7 +256,7 @@ export function heat(stage) {
   const goL = $('.go-l'), goR = $('.go-r');
   let restInfo = null, lastTick = null, lock = 0, selfBack = 0;
 
-  const chip = (d, i, extra = '') => `<li class="chip${d.record ? ' rec' : ''}${extra}" aria-label="Set ${i + 1}: ${S.fmtKg(d.w)} kg × ${d.r}"><span class="num">${S.fmtKg(d.w)}×${d.r}</span></li>`;
+  const chip = (d, i, extra = '') => `<li class="chip${d.record ? ' rec' : ''}${extra}" aria-label="Set ${i + 1}: ${S.fmtKg(d.w)} kg × ${d.r}"><span class="num"><span class="cw">${S.fmtKg(d.w)}</span><span class="cx">×</span><span class="cr">${d.r}</span></span></li>`;
   function renderExercise() {
     const ex = S.current(s);
     $('.ex-name').textContent = ex.name;
@@ -328,7 +329,7 @@ export function heat(stage) {
       g.setAttribute('aria-hidden', 'true');
       Object.assign(g.style, { position: 'absolute', left: r.left - b.left + 'px', top: r.top - b.top + 'px', width: r.width + 'px', margin: 0, pointerEvents: 'none' });
       // On a tick the big number has already flown into its chip: the fading copy leaves it out (no double image).
-      if (rest) g.querySelector('.nb.w')?.style.setProperty('visibility', 'hidden');
+      if (rest) g.querySelectorAll('.nb .v, .hollow-wrap').forEach((x) => x.style.setProperty('visibility', 'hidden'));
       slab.append(g);
       hide.hidden = true;
       fadeGhost(g, [{ opacity: 1 }, { opacity: 0, transform: 'translateY(-10px)' }]);
@@ -349,12 +350,18 @@ export function heat(stage) {
     }
   });
 
+  /** The next set, on the rest card: tap it to change weight or reps before you start. */
+  function restNext(n = S.nowSet(s)) {
+    const b = $('.rest-next');
+    b.hidden = !!s.finished;
+    b.innerHTML = `Next <span class="num">${S.fmtKg(n.w)}×${n.r}</span>`;
+  }
   function startRest(info) {
     restInfo = { t: Date.now(), until: s.restSecs, left: s.restSecs };
     const n = S.nowSet(s);
     const rt = $('.rest-time');
     if (restFace.hidden) { rt.textContent = S.mmss(s.restSecs); delete rt.dataset.text; } else roll(rt, S.mmss(s.restSecs), { dir: -1 });
-    $('.rest-next').innerHTML = s.finished ? '' : `Next <span class="num">${S.fmtKg(n.w)}×${n.r}</span>`;
+    restNext(n);
     const note = $('.rest-note');
     if (info.rec.record) note.innerHTML = `Best bench yet · about <span class="num">${info.rec.est.toFixed(1)}</span> kg est.`;
     else if (info.exDone) note.innerHTML = `${esc(info.ex.name)} done, <span class="num">${info.ex.done.length}</span> sets. ${esc(S.current(s).name)} next.`;
@@ -388,7 +395,7 @@ export function heat(stage) {
     if (Date.now() < lock) return;
     lock = Date.now() + 1500; // a double tap can't tick the next set too (no real set is that short)
     // Ticked early from the rest card: the big number isn't on screen, so the chip just arrives (no flight from nowhere).
-    const from = workFace.hidden ? null : $('.nb.w').getBoundingClientRect();
+    const from = workFace.hidden ? null : wv.getBoundingClientRect(), fromR = workFace.hidden ? null : rv.getBoundingClientRect();
     let info, el;
     flip([$('.slab-wrap'), $('.h-next')], () => {
       info = S.tick(s);
@@ -402,7 +409,10 @@ export function heat(stage) {
     T.after(400, () => { ub.disabled = false; });
     // The chips row clips its overflow; let the number fly in visibly, then clip again.
     chips.style.overflow = 'visible';
-    const fl = travel(el.querySelector('.num'), from, SPRINGS.type);
+    // Weight and reps each fly from their own big number into the chip; the × arrives between them.
+    const fl = travel(el.querySelector('.cw'), from, SPRINGS.type);
+    travel(el.querySelector('.cr'), fromR, SPRINGS.type);
+    if (from) play(el.querySelector('.cx'), [{ opacity: 0 }, { opacity: 1 }], SPRINGS.type, { delay: reduced() ? 0 : 120 });
     const reclip = () => { chips.style.overflow = ''; };
     if (fl) fl.finished.then(reclip, reclip); else reclip();
     // Only the pill fades up around the number; the number itself stays solid all the way in.
@@ -536,7 +546,6 @@ export function heat(stage) {
   // The big white button would glow through the tray's glass: it dims while the tray is up.
   const gOp = new Channel($('.go'), 'opacity', String, 1);
   function openTray() {
-    if (restInfo) return;
     trayOpen = true;
     tray.hidden = false; scrim.hidden = false;
     const n = S.nowSet(s);
@@ -577,6 +586,7 @@ export function heat(stage) {
     roll($('.tw'), S.fmtKg(w), { dir }); roll($('.tr'), r, { dir });
     setW(S.fmtKg(w), { dir }); roll(rv, r, { dir });
     renderCoach(); // the Coach's "Try 82.5?" goes once you set the weight yourself
+    if (restInfo) restNext();
     renderGo();
   });
   let drag = null;
@@ -610,7 +620,7 @@ export function heat(stage) {
   addEventListener('popstate', onPop);
 
   /* ---------- Taps ---------- */
-  root.querySelectorAll('.go, .pill, .step, .back, .nb').forEach((b) => pressable(b, { scale: b.classList.contains('go') ? 0.97 : 0.95 }));
+  root.querySelectorAll('.go, .pill, .step, .back, .nb, .rest-next').forEach((b) => pressable(b, { scale: b.classList.contains('go') ? 0.97 : 0.95 }));
   root.addEventListener('click', (e) => {
     const b = e.target.closest('[data-act]');
     if (!b || b.disabled) return;

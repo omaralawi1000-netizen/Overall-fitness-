@@ -61,6 +61,7 @@
 .heat .dots i { width: 10px; height: 10px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px rgba(255, 240, 230, 0.55); }
 .heat .dots i.d { background: var(--white); box-shadow: none; }
 .heat .dots i.x { box-shadow: inset 0 0 0 1.5px rgba(255, 240, 230, 0.55); opacity: 0.3; }
+.heat[data-trim='applied'] .dots i.x { display: none; }
 .heat:is([data-trim='open'], [data-trim='applied']) .h-plan li.cut .nm { text-decoration: line-through; text-decoration-thickness: 1.5px; color: var(--dim); }
 .heat[data-trim='open'] .h-plan li.cut .st { color: var(--white); }
 .heat[data-trim='open'] .h-plan li.changed .st { color: var(--white); }
@@ -89,6 +90,7 @@
 .heat .chip { position: relative; isolation: isolate; display: inline-flex; align-items: center; gap: 8px; height: 40px; padding: 0 14px; border-radius: 20px; }
 .heat .chip::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; background: rgba(255, 246, 238, 0.1); box-shadow: inset 0 0 0 0.5px rgba(255, 255, 255, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.2); }
 .heat .chip .num { font-size: 14px; font-weight: 600; }
+.heat .chip .cw, .heat .chip .cr { display: inline-block; }
 .heat .chip small { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: rgba(255, 246, 238, 0.12); font-size: 12px; color: var(--soft); }
 .heat .chip.rec { color: var(--gold); }
 .heat .chip.rec::before { box-shadow: inset 0 0 0 1.5px var(--gold); }
@@ -127,6 +129,9 @@
 .heat .bump-acts { margin-top: 14px; }
 .heat .rest-face .rest-time { font-size: 96px; font-weight: 600; letter-spacing: -0.04em; line-height: 1.05; margin: 14px 0 4px; color: #EFFFFA; }
 .heat .rest-note { color: #CFF5EC; }
+/* The next set is a small outlined pill (tappable), sized so the rest card's top row keeps its height. */
+.heat .rest-next { position: relative; height: 32px; margin: -7px -4px -7px 0; padding: 0 12px; border-radius: 16px; font-weight: 600; color: var(--soft); box-shadow: inset 0 0 0 1px rgba(235, 255, 250, 0.35); }
+.heat .rest-next::before { content: ''; position: absolute; inset: -6px -4px; }
 .heat .rest-face .h-undo { margin: 10px 0 0; }
 .heat .h-next { margin: 14px 6px 0; color: var(--soft); font-size: 15px; }
 .heat .h-next b { color: var(--white); font-weight: 600; }

@@ -84,6 +84,7 @@
 .ink .ex-last .fig { font-weight: 600; }
 .ink .done-rows, .ink .up-rows { list-style: none; margin: 10px 0 0; padding: 0; }
 .ink .done-rows li, .ink .up-rows li { position: relative; display: grid; grid-template-columns: 92px auto 1fr auto; align-items: center; gap: 14px; min-height: 40px; }
+.ink .col .cw, .ink .col .cr { display: inline-block; }
 .ink .done-rows .col, .ink .up-rows .col { justify-self: end; text-align: right; font-size: 22px; position: relative; z-index: 1; white-space: nowrap; }
 .ink .done-rows .w, .ink .up-rows .w { color: var(--graphite); font-size: 15px; }
 .ink .done-rows .at { grid-column: 4; color: var(--graphite); font-size: 13px; font-weight: 500; }
@@ -91,7 +92,7 @@
 .ink .up-rows li { color: var(--graphite); }
 /* A record: a yellow marker stroke behind the figures, swept in from the left. Ink stays on top. */
 .ink .marker { position: absolute; left: 0; top: 7px; width: 98px; height: 26px; background: var(--marker); border-radius: 3px 6px 4px 7px; transform-origin: 0 50%; z-index: 0; }
-.ink .done-rows li.rec .col { color: #121317; transition: color 120ms 220ms; } /* darkens as the marker reaches it */
+.ink .done-rows li.rec .col { color: #121317; transition: color 160ms 60ms; } /* darkens as the marker reaches it (never white on yellow at night) */
 .ink .done-rows li.rec-pending .marker { scale: 0 1; }
 .ink .now-rule { position: relative; height: 2px; margin: 14px 0 16px; background: var(--hair); }
 .ink .drain { position: absolute; inset: 0; background: var(--ink); transform-origin: 0 50%; }

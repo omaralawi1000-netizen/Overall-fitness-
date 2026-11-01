@@ -143,6 +143,8 @@ export function flip(els, mutate, spec = SPRINGS.set, boxes = []) {
   const out = [];
   for (const e of list) {
     if (!e.isConnected) continue;
+    // A flip started inside mutate (a roll moving its neighbours) would make this one measure its start as the end.
+    for (const an of e.getAnimations()) if (an.id === 'flip') an.cancel();
     const a = before.get(e), b = e.getBoundingClientRect();
     const dx = a.left - b.left, dy = a.top - b.top;
     if (Math.abs(dx) < 0.5 && Math.abs(dy) < 0.5) continue;
@@ -175,6 +177,10 @@ export function roll(el, text, { dir = 1, move = [] } = {}) {
   const old = el.dataset.text ?? el.textContent;
   el.dataset.text = String(text);
   if (RM.matches || old === '') { el.textContent = text; return; }
+  // Tapped again mid-roll: the outgoing text leaves from where the incoming one is right now, so nothing snaps.
+  const prev = el.querySelector(':scope > .roll-new');
+  let start = { opacity: 1, transform: 'none' };
+  if (prev) { const cs = getComputedStyle(prev); start = { opacity: Number(cs.opacity), transform: cs.transform }; }
   let o, n;
   flip(move, () => {
     el.classList.add('roll');
@@ -184,7 +190,8 @@ export function roll(el, text, { dir = 1, move = [] } = {}) {
   }, SPRINGS.type);
   const h = Math.max(el.getBoundingClientRect().height, 12) * 0.7 * dir;
   play(n, [{ opacity: 0, transform: `translateY(${h}px)` }, { opacity: 1, transform: 'none' }], SPRINGS.type);
-  const out = play(o, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: `translateY(${-h}px)` }], SPRINGS.type, { fill: 'forwards' });
+  // The old text is gone before it's halfway out, so it never lies over the new one or over what slides beside it.
+  const out = play(o, [start, { opacity: 0, offset: 0.45 }, { opacity: 0, transform: `translateY(${-h}px)` }], SPRINGS.type, { fill: 'forwards' });
   out.finished.then(() => { if (o.isConnected) o.remove(); }, () => {});
 }
 
