@@ -44,8 +44,7 @@ Facts and taste learned the hard way (Oct 2026). Not old CSS rules: the new desi
 27. Mega-prompts patched round after round start contradicting themselves. Keep principles short; look the rest up.
 28. The cheap model's variance is most of what's left: test with the model friends will really use.
 29. "Never tell me to train lighter" was Omar's rule. For anyone else it's a preference the Coach learns.
-38. Undo must not be tappable the moment an action is applied (old Aven's double-tap Apply bug: the second tap of a
-    double tap landed on Undo). Omar, 1 Nov.
+38. Undo must not be tappable the moment an action is applied (old Aven's double-tap Apply bug). Omar, 1 Nov.
 
 ## Old taste (history, not rules: Omar, 1 Nov)
 Kept as background only. 35 (one tap ticks a set) and 36 (seamless settle) live on as tests in docs/TASTE.md.
