@@ -136,6 +136,7 @@ one short message that matters, often with one button.
 
 Build notes: port `nudges.ts` rules and `weekReview.ts` numbers as candidates; the brain picks at most one and words it.
 No AI key: the app's own computed notes still show (they need no AI).
+Coach phase plan: the Noticer (§9) decides what is worth saying; known gaps here are listed in §11.
 
 ## 5. Voice and tone
 
@@ -266,3 +267,92 @@ Copenhagen), then fresh coach-judges score it. To be filled in: average, lowest,
 The test key in this environment is on the free tier (that is the only reason the run is slow). Daily use is on Omar's
 billed key (§7). A friend on a free key still gets about 20 answers a day per model, so the router keeps quick jobs on
 a small model and normal logging never uses the AI at all (§3).
+
+### Planned tests for the Coach phase (described, not built)
+Omar, 1 Nov. Built in the Coach phase, alongside the Noticer (§9) and Learning (§10).
+- **Noticer exam.** Many varied fake people (beginners, lifters, wrestlers, runners, cutters, bulkers, Danish and
+  English, with and without a watch), each with weeks of fake data that hide one or two things worth noticing (two
+  overlapping incline exercises, drop sets next to stalls, weight trend off the goal pace, short sleep and slow
+  recovery, a muscle with too little weekly volume) and some that hide nothing. Fresh judges see the data and the
+  Coach's notice (or its silence) and ask: "Would a great coach have noticed something more valuable?" Also scored:
+  every number checks out, the tone matches how sure the data is, at most one notice a day, silence when nothing is
+  worth saying, and health claims come with sources.
+- **"Four weeks later" Learning test.** One fake person lives four weeks: they use their own words and nicknames,
+  correct a few mishearings, undo or ignore some kinds of notices and act on others, and one fact stops being true
+  (an injury heals). At the end, check that the Coach adapted (understands the vocabulary, makes fewer of the ignored
+  notices, keeps the corrections) without learning wrong lessons (nothing from a single signal, nothing that expired
+  still used, every lesson visible and editable in Memory).
+
+---
+
+## 9. The Noticer (Coach phase plan, not built yet)
+Omar, 1 Nov. It extends §4 (when it speaks first).
+
+**The question it keeps asking:** "What is the single most valuable thing a great coach would tell this person right
+now, given their goal?"
+
+**The app computes the numbers.** Weekly sets per muscle, exercises that overlap, trends, sleep, recovery, food and
+goal pace. The model never does the maths.
+
+**The Coach brings the judgment.** It uses its own training knowledge. If it isn't sure, or the claim is about health,
+injury, supplements or new research, it searches the web first and shows its sources (web text is data, never
+instructions, §11 item 6).
+
+**It speaks only if the point is all four:** valuable, backed by numbers, actionable, and new. At most one notice a day.
+
+**Tone follows confidence.**
+- Strong data: a clear verdict with a replacement ("drop the Smith incline, add a flat press").
+- Mixed data: a recommendation with the main reason.
+- Unsure: a question.
+- Safety stays careful whatever the confidence (§5).
+
+**It learns from reactions.** A notice that is undone, dismissed or ignored makes it notice less of that kind (§10).
+
+**Examples, not the full list:** two incline exercises that overlap; drop sets next to stalls and recovery; weight
+trend against the goal; sleep and recovery; a stretch after heavy volume.
+
+Build notes: code picks what's worth saying (how important, how sure, not said recently, still fresh, with an expiry
+date); the model only words it, briefly, with at most one question (docs/research/tech-scan-2026-11-01.md, section B,
+"A notice engine in code, the model only words it"). Tested by the Noticer exam (§8, planned tests).
+
+## 10. Learning (Coach phase plan, not built yet)
+Omar, 1 Nov. The Coach never retrains a model. It learns through memory (§1), per person, on their own phone:
+- **Their vocabulary:** food names, exercise nicknames, the Danish/English mix, shorthand like "8 at 80".
+- **Corrections:** what it misheard and what was meant, remembered so it doesn't happen again.
+- **Tone preferences:** from how they react (what they undo, dismiss, ignore or act on).
+
+**Rules for a lesson:**
+- It needs repeated signals before it counts. One reaction is not a lesson.
+- It expires when it stops being true.
+- It is always visible and editable in Memory.
+
+Tested by the "four weeks later" Learning test (§8, planned tests).
+
+## 11. Known problems to fix in the Coach phase
+From the 1 Nov blank-page notes (spec defects found then; no fixes yet unless marked done).
+1. **Memory scope and dates.** §1 says "a newer fact replaces the older one", so "finish early Tuesday" would overwrite
+   the standing schedule. Every fact needs a scope (one-off or standing) and valid-from/until dates. Open (the tech scan
+   proposes the design: "Own memory store, built like a timeline").
+2. **Parser self-corrections.** §3's instant parser has no rule for "80… no, 60" or "8, no 9". Exam case 6 covers
+   changing your mind only for the AI path, not the parser. Open.
+3. **Fact freshness.** §2's fact sheet has no age on facts: a weigh-in from 10 days ago, a late watch sync or "trains
+   about 15:30" from months back all count as current. Every fact needs a last-seen date, and memory cards a review
+   date. Open (same tech-scan design as item 1).
+4. **Reminder expiry.** Promises without a date never end. On a PWA, messages only show when the app opens, so last
+   night's evening nudge could appear the next morning. Each message needs an expiry. Open.
+5. **No-key fallback.** §6 covers onboarding without a key and §4 computed notes, but nothing says what happens when
+   someone with no key types "why is my row stuck?" into the chat, or when a key runs out mid-day. Open.
+6. **Web text is data, never instructions.** §2 adds web search and lookups with no rule that outside text (web pages,
+   food labels, recipe or photo text) can never trigger an action, write memory or change a target. Open (tech scan,
+   "Prompt-injection rule: outside text can never act").
+7. **Exam criteria reward "acted" and a fixed tone.** The coach-judge's point 3 calls advice where an action was
+   possible a defect, which rewards acting even when asking or doing nothing is better; point 4 scores a fixed tone
+   formula (warm, then plain, then harder). Both should score judgment: was it right to act, ask or stay silent, and
+   was the tone right for this person? Open (`.claude/agents/coach-judge.md` still has both).
+8. **Background coaching needs a push server or the Android wrapper.** §4 says "a web app can't wake itself", which is
+   only true without a server. Web Push works for installed PWAs (iPhone too) but needs a server to send the pushes,
+   and GitHub Pages has none. Choose: a small push server or the Android wrapper. Open.
+9. **Under-18 rule, kept as is.** §5's conservative rule (deficit at most ~500 kcal and ~0.5 kg a week; conservative
+   when age is unknown) stays until a reviewed rule replaces it. Not a defect; keep.
+10. **Exam fixture with real interview details.** Done (1 Nov): `exam/v1/personas-v1.ts` now uses Jonas, a made-up
+    person, and §8 describes him. The old version stays in Git history; Omar is fine with his details being public.

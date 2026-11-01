@@ -157,3 +157,12 @@ Places to study, not rules. Added 1 Nov 2026 from Omar's own research; nothing h
 - Apple Calendar button morph
 - Opal gem reveal
 - Bevel avatar
+
+## Visual explanations (the Coach shows instead of tells)
+Omar, 1 Nov. Links and notes only. Used for the visual explanation in both concept prototypes (site/concepts/).
+- ★ Explorable Explanations (worrydream.com/ExplorableExplanations): explanations with assumptions you can adjust. Model for "why has my bench stalled?".
+- ★ Google A2UI (developers.googleblog.com/fast-reliable-a2ui, and the A2UI + CopilotKit post): the agent picks from trusted components instead of writing UI.
+- AI SDK generative UI (ai-sdk.dev/docs/ai-sdk-ui/generative-user-interfaces): tool results rendered as typed components.
+- Google generative UI overview (cloud.google.com/discover/generative-ui).
+- Rive (rive.app): interactive, state-driven animation for explanations. The "mr-square-in-chat" link is dead.
+- Motion docs: layout animations and performance (motion.dev/docs/react-layout-animations, motion.dev/docs/performance).
