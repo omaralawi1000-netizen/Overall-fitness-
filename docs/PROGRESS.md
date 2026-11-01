@@ -31,7 +31,7 @@ Done:
 - Found: old Aven's "Delete everything" wipes every localStorage key starting with `aven`, so an `aven2` prefix is at
   risk (INTERVIEW.md). Omar chose `a2`.
 
-- Old Aven seen running at 384 px (docs/inspiration/old-aven-review.md).
+- Old Aven seen running at 384 px (docs/history/old-aven-review.md).
 - Exam v1 harness committed (exam/v1/, fake people only).
 
 Blocked:
@@ -155,6 +155,9 @@ Omar tried the three looks and said "They look like those": ordinary. He asked f
 including a harsh critic and a 5-second stranger) ended in 16 testable rules. Nothing was built.
 Result in docs/research/design-bar-2026-11-01.md: the looks are a screen, not an app (no tabs, food, week, finish, ask door),
 and they have no signature of their own. Scores: Heat 5.2, Ink 4.7, Ink rich 3.8 out of 10.
+
+## Model setup (1 Nov 2026, evening)
+Researched model cost against Anthropic's docs. Opus 5.5 is 2x Sonnet 5.5 per token; 1M context costs no extra; subagents and agent teams multiply usage most. Omar approved: Sonnet 5.5 high is the default, Opus only for design and Coach, judges capped at one round. Written into CLAUDE.md "Working efficiently". No app changes.
 
 ## Next step
 Omar decides: build one new round of the whole app shell to the 16 rules in two identity directions (A: orb plus day
