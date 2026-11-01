@@ -3,7 +3,7 @@
 #
 # What goes out, always from main:
 #   - the app at /        built with Vite once package.json exists; until then the placeholder in site/
-#   - everything in site/ on top (the design lab at /lab/ lives in site/lab/ during Phase 0)
+#   - everything in site/ on top (Phase 0 test pages, such as the blur test at /blurtest/)
 # Run it by hand: Actions → "Deploy web app" → Run workflow.
 name: Deploy web app
 on:

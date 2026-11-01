@@ -47,3 +47,44 @@ Health Connect right after the core loop). Real Gemini limits checked (COACH.md 
 ## Next step
 Checkpoint 2 step 7: the GitHub Pages deploy workflow. In parallel, the exam baseline when the test key's quota resets
 (~08:00 Copenhagen, 28 Oct), then fresh coach-judges and COACH.md §8.
+
+## Session 2, continued: Checkpoint 2 (27 Oct 2026)
+Done:
+- Step 7: Pages deploy workflow (.github/workflows/pages.yml), merged to main. Omar switched Source to "GitHub Actions"
+  (1 Nov); no deploy has run since, so the live site still shows the old page until the next push to main.
+- Steps 8–9: the lab in site/lab/ (picker, 4 directions: Frost, Thread, Timeline, Headline) and films/films.html. Corrected
+  1 Nov: these are only on branch claude/project-thread-84tdii, never merged to main (main has only a placeholder).
+
+Half-done (on branch claude/project-thread-84tdii, not merged):
+- Round-2 judge fixes: Frost, Thread and Timeline done (Timeline's rest now lives on the line under Bench).
+- Headline not yet: rest as part of the sentence ("Rest. Set 4 in 2:30" with a counting pill; Done turns into "Skip rest"
+  in the same button, no new glass), siblings slide by the height change (FLIP) instead of jumping, Record's new content
+  starts ~180 ms after the tap, glint on A2.slow, Finish as one sentence with count-up pills of fixed width.
+- Films in site/lab/films/ are still round 1.
+
+## Next step
+Finish the Headline fixes in site/lab/d4-headline.js/.css, re-shoot and re-film (tools/lab/shot.mjs and film.mjs, serve site/ on port 8765;
+Playwright at 384×832, 2x, ffmpeg real + half speed), run fresh design and motion judges until no real defects, then PR
+into main, check the deploy, and send Omar my pick first. In parallel: the exam baseline on 28 Oct after the quota reset.
+
+## Session 3: blank page (1 Nov 2026)
+Omar's decision: the design starts from a blank page. Old Aven is a reference for features, data and lessons only. The lab
+(site/lab/), old-aven-review.md and the old style guide are history, not direction; the Headline fixes above are dropped.
+Done:
+- Removal list applied: every inherited design rule removed from BRIEF, TASTE, VISION, INVENTORY, LESSONS, inspiration
+  notes, web references, the design and motion judges and CLAUDE.md. Replaced by Omar's seven statements (TASTE.md §3) and
+  phone test cases. Kept as tests (Omar agreed): one tap ticks a set, the 5-second test, no dead buttons; noise/dither allowed.
+- Concepts in words (no UI yet): /mnt/project-files/aven2/ (project files, not the repo).
+- The Coach exam job is off until the Coach phase (its criteria get fixed first).
+- Before merging (Omar's list): leftovers fixed, Checkpoint 2 steps rewritten for the new process (BRIEF steps 8–12),
+  site/lab/ removed (kept in Git history), the exam persona's real details replaced with a made-up person (jonas; a
+  dry run passes in a scratch copy of old Aven), docs/concepts.md (all 12 concepts + 25 seeds), more references in
+  web-references.md, "shows instead of tells" in VISION and COACH, docs/research/tech-scan-2026-11-01.md saved.
+- Omar's picks: prototype Living Notebook and Conversation Workspace (each with "why has my bench stalled?" as an
+  explorable chart and "25 minutes left" as a plan change); Atmosphere is tested as a material in the blur test.
+- Still Omar's call: other real details in INTERVIEW, VISION, COACH (listed for him, not changed). COACH.md §8's persona
+  line still describes the old numbers.
+
+## Next step
+Build the blur test page at /blurtest/ (BRIEF step 10; plan in docs/blur-test-plan.md, facts from the tech scan's
+section A). Omar judges it on his phone. Concept UI for Living Notebook and Conversation Workspace only after that.

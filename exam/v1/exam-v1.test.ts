@@ -165,9 +165,9 @@ async function runOne(q: Question) {
   vi.setSystemTime(now);
   const d = PERSONAS_V1[q.persona](now);
   q.tweak?.(d, now);
-  // (a clean phone each time; omar2 has the Drive backup on, so Today has no "no backup yet" note)
+  // (a clean phone each time; jonas has the Drive backup on, so Today has no "no backup yet" note)
   localStorage.clear();
-  if (q.persona === 'omar2') localStorage.setItem('aven.drive', JSON.stringify({ connected: true }));
+  if (q.persona === 'jonas') localStorage.setItem('aven.drive', JSON.stringify({ connected: true }));
   useStore.setState(d as any); // (fillFromReply and friends read the store, as on the phone)
   const lang = q.lang ?? (d.settings.language === 'da' ? 'da' : 'en');
   const today = dayKey(now.getTime(), d.settings.dayStartHour);

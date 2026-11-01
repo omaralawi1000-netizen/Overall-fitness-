@@ -3,7 +3,7 @@
 The 22 conversations of docs/COACH.md §8, as code. These files run inside a copy of old Aven (they import its
 `src/lib` and its old exam helpers), to get the "before" score of old Aven's Coach. Phase 1 ports them to Aven 2.
 
-- `personas-v1.ts`: fake people in old Aven's data format (omar2 is built from docs/INTERVIEW.md, no real data).
+- `personas-v1.ts`: fake people in old Aven's data format (jonas is made up; his week only has the shape of the interview, no real data).
 - `questions-v1.ts`: the conversations, each with what a great answer does and code checks where possible.
 - `exam-v1.test.ts`: runs old Aven's real Coach (agentSystem, lookups, validation, self-check) on Gemini, keyless
   (the test environment injects the key). One call at a time, 7 s apart; waits and retries on 429/5xx.

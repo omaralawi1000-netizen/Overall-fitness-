@@ -4,12 +4,12 @@ Facts and taste learned the hard way (Oct 2026). Not old CSS rules: the new desi
 
 ## The phone (Galaxy S26 Ultra, Chrome, installed PWA, 120 Hz, 384 px, DPR 3.75)
 1. Headless screenshots lie about blur and banding. Only the phone judges them: mark "needs phone", send to Beta.
-2. Chrome on the phone draws gradients and blur output in whole 8-bit steps: big soft glows show rings. Fix it by
-   design (fewer, smaller, busier gradients; noise in the picture), not with a dither engine bolted on later.
+2. Chrome on the phone draws gradients and blur output in whole 8-bit steps: big soft glows show rings. How to fix it
+   is open: the blur test decides, and noise or dither is allowed.
 3. Adding or dropping a compositor layer mid-animation gives black frames. Layers that move exist before the motion
    and stay after it. Entrance animations end on their neutral state, never on an explicit last keyframe.
 4. Live blur on many cards measured about half the frame rate (36 fps on 20 Oct). Blur is a budget: count blurred
-   layers per screen, keep them small and still, measure on Beta. Never solve lag by removing blur.
+   layers per screen and measure on Beta. Where blur is part of the design, fix lag with a better blur method, not by removing it.
 5. Animating `box-shadow`, `width`/`height`/`top`, or CSS variables on `<html>` restyles or repaints every frame.
    Transform and opacity are the cheap path; anything else is measured first.
 6. On the phone, a script count-up runs at about 60 fps; browser-driven (WAAPI/CSS) animation reaches 120.
@@ -45,7 +45,8 @@ Facts and taste learned the hard way (Oct 2026). Not old CSS rules: the new desi
 28. The cheap model's variance is most of what's left: test with the model friends will really use.
 29. "Never tell me to train lighter" was Omar's rule. For anyone else it's a preference the Coach learns.
 
-## Omar's taste (rejected looks, never bring back)
+## Old taste (history, not rules: Omar, 1 Nov)
+Kept as background only. 35 (one tap ticks a set) and 36 (seamless settle) live on as tests in docs/TASTE.md.
 30. Any warm or orange tint on a surface reads as orange. Colour goes on tappable or meaningful things only.
 31. Grey, navy and brown "mud" glass: rejected. Opaque charcoal "clean look": "ruined".
 32. Accent glow in a card corner reads as a stain. Accent-tinted glass reads brown.
