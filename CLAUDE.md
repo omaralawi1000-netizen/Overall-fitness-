@@ -46,3 +46,9 @@ Default model is **Sonnet 5.5, high effort**. It costs half of Opus 5.5 per toke
 
 ## References
 - Read only the reference file for the topic you're working on. Layout: `docs/README.md`.
+
+## Keep it clean
+- Prototypes live only under `site/_prototypes/`. After Omar picks, delete the losers in the same session.
+- No new doc if an existing one fits. Decisions go in BRIEF or the dated design doc.
+- No dead code, unused files, copied assets or commented-out blocks. Delete what you replace.
+- Before finishing, check `git status` and `docs/README.md` for strays and dead links.
