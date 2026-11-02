@@ -120,73 +120,99 @@ function nextPos() {
   for (let k = 0; k < W.ex.length; k++) { const e = (W.e + k) % W.ex.length, i = undone(e); if (i >= 0) return { e, s: i }; }
   return null;
 }
-function nextLine() {
-  const n = nextPos();
-  if (!n) return 'Last set of the workout';
-  // The next set of this exercise is already in the stack above, so this line looks one step further ahead.
-  if (n.e === W.e) { const after = W.ex[W.e + 1]; return after ? `After this · <b>${after.name}</b>` : 'Last exercise'; }
-  return `${W.superset === W.e && n.e === W.e + 1 ? 'Straight into' : 'Then'} <b>${W.ex[n.e].name}</b>`;
+/** The card at the bottom of the deck: the exercise that comes after this one. */
+function thenCard() {
+  const n = nextPos(), e = n && n.e !== W.e ? n.e : W.e + 1, x = W.ex[e];
+  if (!x || e === W.e) return null;
+  const straight = W.superset === W.e && e === W.e + 1;
+  return { k: `x${e}`, then: true, txt: `${straight ? 'Straight into' : 'Then'} ${x.name}`, n: x.sets.filter((p) => !p.done).length };
 }
-/* ---------- The set stack ---------- */
+/* ---------- The deck ---------- */
 const CK = '<svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg>';
+const PEEK = 50, STEP = 8; // two cards each side show a full row; deeper ones only an edge
+/** Where a card sits, by its place p relative to the set you're on. 0 is the current card. −1, −2… are filed above
+ *  it, so their top row shows. 1, 2… peek out below, so their bottom row shows. Transform only, so moves are cheap. */
+function deckPos(p) {
+  if (p === 0) return { t: 'none', o: 1, z: 10, origin: '50% 50%' };
+  const k = Math.abs(p), y = Math.sign(p) * (Math.min(k, 2) * PEEK + (k > 2 ? STEP : 0));
+  return { t: `translateY(${y}px) scale(${1 - 0.04 * Math.min(k, 3)})`, o: k > 3 ? 0 : k > 2 ? 0.5 : 1, z: 10 - k, origin: p < 0 ? '50% 0' : '50% 100%', deep: k > 2 };
+}
+/** The deck continues across exercises: the one before sits on top of the pile, the one after at the bottom. */
+function deck() {
+  const x = ex(), list = x.sets.map((set, i) => ({ k: `${W.e}-${i}`, p: i - W.s, set, i })), t = thenCard(), b = W.ex[W.e - 1];
+  if (t) list.push({ ...t, p: x.sets.length - W.s });
+  if (b) { const d = b.sets.filter((p) => p.done); list.unshift({ k: `x${W.e - 1}`, then: true, prev: true, txt: b.name, n: d.length, all: d.length === b.sets.length, rec: d.some((p) => p.rec), p: -W.s - 1 }); }
+  return list;
+}
+function place(el, p) {
+  const d = deckPos(p);
+  el.dataset.p = p; el.style.transform = d.t; el.style.zIndex = d.z; el.style.transformOrigin = d.origin;
+  if (!el.classList.contains('slab')) { el.style.opacity = d.o; el.classList.toggle('deep', !!d.deep); } // never on the glass: opacity there turns its blur off
+}
+let deckE = 0; // the exercise the deck is showing
 function renderStack() {
-  const x = ex(), st = $('.stack'), slab = $('.slab');
-  $$('.srow', st).forEach((r) => r.remove());
-  x.sets.forEach((p, i) => {
-    if (i === W.s) { st.append(slab); return; }
-    const d = document.createElement('div');
-    d.className = `srow ${p.done ? 'done' : 'next'}${p.rec ? ' rec' : ''}`; d.dataset.k = `${W.e}-${i}`;
-    d.innerHTML = `<span class="sk">${i + 1}</span><span class="sv num"><b class="rk">${fmtKg(p.kg)}</b><i>×</i><b class="rr">${p.r}</b></span>`
-      + (p.done ? `<span class="ck">${CK}</span>` : `<span class="sp">last ${p.prev}</span>`);
-    st.append(d);
+  const st = $('.stack'), slab = $('.slab'), H = slab.offsetHeight;
+  deckE = W.e;
+  $$('.gc', st).forEach((g) => g.remove());
+  deck().forEach((c) => {
+    if (c.p === 0) { slab.dataset.k = c.k; place(slab, 0); return; }
+    const d = document.createElement('div'), s = c.set;
+    d.className = `gc ${c.p < 0 ? 'past' : 'ahead'}${s?.rec || c.rec ? ' rec' : ''}${c.then ? ' then' : ''}`; d.dataset.k = c.k; d.style.height = `${H}px`;
+    const v = c.prev ? `<span class="sv">${c.txt}</span>${c.all ? `<span class="ck">${CK}</span>` : `<span class="sp">${c.n} sets done</span>`}`
+      : c.then ? `<span class="sv">${c.txt}</span><span class="sp">${c.n} sets</span>`
+      : `<span class="sk">SET ${c.i + 1}</span><span class="sv num">${fmtKg(s.kg)} × ${s.r}</span>` + (s.done ? `<span class="ck">${CK}</span>` : `<span class="sp">last ${s.prev}</span>`);
+    d.innerHTML = `<div class="gr gh">${v}</div><div class="gr gf">${v}</div>`;
+    st.insertBefore(d, slab); place(d, c.p);
   });
-  slab.dataset.k = `${W.e}-${W.s}`;
 }
 function renderProg() {
   $('.segs').innerHTML = W.ex.map((x, e) => `<span style="--n:${x.sets.length}">${x.sets.map((p, i) => `<i class="${e === W.e && i === W.s && !p.done ? 'c' : p.rec ? 'rec' : p.done ? 'd' : ''}"></i>`).join('')}</span>`).join('');
   const left = W.ex.reduce((t, x) => t + x.sets.filter((p) => !p.done).length, 0);
   $('.pl').innerHTML = left ? `Exercise <b>${W.e + 1} of ${W.ex.length}</b> · ${left} sets to go · about ${Math.max(1, Math.round(left * 2.2))} min` : `<b>All ${W.ex.length} exercises done</b>`;
 }
-/** Where every set and its numbers are now, so the next layout can start from here. */
+/** Where every card is on screen now, so each one can glide from there. */
 function captureStack() {
-  const m = new Map();
-  $$('.stack > *').forEach((el) => m.set(el.dataset.k, { r: el.getBoundingClientRect(), kg: $('.rk, .kg', el).getBoundingClientRect(), rp: $('.rr, .reps', el).getBoundingClientRect() }));
-  return m;
+  return { m: new Map($$('.stack > .gc, .stack > .slab').map((el) => [el.dataset.k, +el.dataset.p])) };
 }
-/** Every set glides from where it was. The one that changed size unfolds or folds, and its numbers travel between
- *  the big slab and the small row instead of being replaced. */
-/** While the stack moves, the slab keeps its colour lift but drops the blur (the glow behind it is smooth, so the
+/** The deck follows the workout: within an exercise every card glides one place; a new exercise is dealt in. */
+async function moveDeck(dir) {
+  if (deckE !== W.e) { nameTo(ex().name); await stackTo(); paint({ animate: true, instant: true, dir }); return; }
+  const before = captureStack(); renderStack(); paint({ animate: true, instant: true, dir }); animateStack(before);
+  await wait(reduced() ? 0 : 380);
+}
+/** While the deck moves, the slab keeps its colour lift but drops the blur (the glow behind it is smooth, so the
  *  difference is about 1%), because re-blurring a moving slab every frame cost a fifth of the frames. */
 function fly(anims) {
   const st = $('.stack'); st.classList.add('fly');
   Promise.allSettled(anims.map((a) => a.finished)).then(() => { if (!st.getAnimations({ subtree: true }).some((a) => a.playState === 'running')) st.classList.remove('fly'); });
 }
+/** Every card glides from where it was to its new place (Apple Wallet). The set you finished files up behind the
+ *  next one and the next set rises out of the deck into the middle, its glass settling with a little spring. */
 function animateStack(before) {
   if (reduced()) return;
-  const anims = [];
-  const play = (...a) => { const x = playSpring(...a); anims.push(x); return x; };
-  $$('.stack > *').forEach((el) => {
-    const b = before.get(el.dataset.k); if (!b) return;
-    const a = el.getBoundingClientRect(), dy = b.r.top - a.top, dh = a.height - b.r.height;
-    if (Math.abs(dh) < 2) { if (Math.abs(dy) > 0.5) play(el, [{ transform: `translateY(${dy}px)` }, { transform: 'none' }], SPRINGS.set); return; }
-    if (dh > 0) play(el, [{ transform: `translateY(${dy}px)`, clipPath: `inset(0 0 ${dh}px 0 round 24px)` }, { transform: 'none', clipPath: 'inset(0 0 0 0 round 34px)' }], SPRINGS.set);
-    else play(el, [{ transform: `translateY(${dy}px)`, opacity: 0.4 }, { transform: 'none', opacity: 1 }], SPRINGS.set);
-    [['.rk, .kg', b.kg], ['.rr, .reps', b.rp]].forEach(([q, f]) => {
-      const n = $(q, el), t = n.getBoundingClientRect(), k = f.height / t.height;
-      play(n, [{ transform: `translate(${f.left - t.left}px, ${f.top - t.top}px) scale(${k})` }, { transform: 'none' }], SPRINGS.set);
-    });
-  });  fly(anims);
+  const now = new Map(deck().map((c) => [c.k, c.p])), anims = [];
+  $$('.stack > .gc, .stack > .slab').forEach((el) => {
+    const to = now.get(el.dataset.k), from = before.m.get(el.dataset.k);
+    if (from === undefined || to === undefined || from === to) return;
+    const a = deckPos(from), b = deckPos(to), glass = el.classList.contains('slab');
+    el.style.transformOrigin = from !== 0 ? a.origin : b.origin;
+    // The card you finished appears behind the rising glass only once they've parted, so nothing shows doubled.
+    const kf = glass ? [{ transform: a.t }, { transform: b.t }] : from === 0 ? [{ transform: a.t, opacity: 0 }, { opacity: 0, offset: 0.3 }, { transform: b.t, opacity: b.o }] : [{ transform: a.t, opacity: a.o }, { transform: b.t, opacity: b.o }];
+    anims.push(playSpring(el, kf, glass ? SPRINGS.lift : SPRINGS.set));
+  });
+  fly(anims);
 }
-/** Next exercise: the old stack slides out and the new one in, with the name (Md Vinyl's next). */
+/** Next exercise: the deck is dealt away to the left and the new one dealt in from the right, card by card, with the
+ *  name (Md Vinyl's next). Transform only: an opacity fade on the deck would switch the glass's blur off. */
 async function stackTo() {
-  const st = $('.stack');
+  const st = $('.stack'), cardsOf = () => $$('.stack > .gc, .stack > .slab').sort((a, b) => parseFloat(b.style.zIndex) - parseFloat(a.style.zIndex));
   st.classList.add('fly');
-  if (!reduced()) await st.animate([{ transform: 'none', opacity: 1 }, { transform: 'translateX(-40px)', opacity: 0 }], { duration: 180, easing: 'ease-in', fill: 'forwards' }).finished;
+  if (!reduced()) await Promise.all(cardsOf().map((el, i) => el.animate([{ transform: el.style.transform }, { transform: `translateX(-120%) rotate(-5deg) ${el.style.transform.replace('none', '')}` }],
+    { duration: 240, delay: i * 22, easing: 'cubic-bezier(.5,0,.8,.3)', fill: 'forwards' }).finished.catch(() => {})));
+  $('.slab').getAnimations().forEach((a) => a.cancel());
   renderStack();
-  st.getAnimations().forEach((a) => a.cancel());
-  fly([play(st, [{ transform: 'translateX(48px)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.set)]);
+  fly(cardsOf().map((el, i) => playSpring(el, [{ transform: `translateX(120%) rotate(6deg) ${el.style.transform.replace('none', '')}` }, { transform: el.style.transform }], SPRINGS.set, { delay: i * 45 })));
 }
-
 function paint({ animate = false, dir = 1, instant = false } = {}) {
   const x = ex(), c = set();
   if (!animate) $('.nm').textContent = x.name;
@@ -198,7 +224,6 @@ function paint({ animate = false, dir = 1, instant = false } = {}) {
   const b = `Set ${W.s + 1} of ${x.sets.length}`;
   if (animate) swapText($('.bt'), b); else $('.bt').textContent = b;
   $('.lt').innerHTML = x.last ? `Last time <b class="num">${x.last.sets[W.s] ?? x.last.sets.at(-1)}</b>` : `Best <b class="num">${fmtKg(x.best.kg)} × ${x.best.r}</b>`;
-  $('.th').innerHTML = nextLine();
   $('.ds').textContent = `Set ${W.s + 1}`;
   $('.coach').classList.toggle('quiet', !coach().use && !W.used);
 }
@@ -233,7 +258,6 @@ $$('.field').forEach((f) => {
       W.used = null; navigator.vibrate?.(4);
       roll($('.kg'), fmtKg(c.kg), d); roll($('.reps'), c.r, d);
       $('.kg').classList.toggle('over', beats(c, ex().best));
-      $('.th').innerHTML = nextLine();
       $('.coach').classList.toggle('quiet', !coach().use);
       clearTimeout(editT); editT = setTimeout(closeEdit, 5000);
     });
@@ -320,10 +344,18 @@ function placeTray(kind, a) {
   if (r.top + r.height / 2 < innerHeight / 2) tray.style.top = `${Math.round(r.bottom + 8)}px`;
   else tray.style.bottom = `${Math.round(innerHeight - r.top + 8)}px`;
 }
+/** The glass grows out of what you tapped by its outline only: a clip on the frost layer itself. Scaling or fading
+ *  the tray instead made Chrome drop the blur until the motion ended, so sheets showed clear, then turned frosted. */
+const GLASS = { pseudoElement: '::before' };
 function grow(a, from = true) {
+  const r = a.getBoundingClientRect(), t = tray.getBoundingClientRect(), rad = Math.min(r.height / 2, 30);
+  const small = `inset(${r.top - t.top}px ${t.right - r.right}px ${t.bottom - r.bottom}px ${r.left - t.left}px round ${rad}px)`, full = 'inset(0px 0px 0px 0px round 30px)';
+  return from ? [{ clipPath: small }, { clipPath: full }] : [{ clipPath: full }, { clipPath: small }];
+}
+/** The contents travel with the glass from the side it grew from. */
+function contentFrom(a) {
   const r = a.getBoundingClientRect(), t = tray.getBoundingClientRect();
-  const k = `translate(${r.left - t.left}px, ${r.top - t.top}px) scale(${r.width / t.width}, ${r.height / t.height})`;
-  return from ? [{ transform: k, opacity: 0.6 }, { transform: 'none', opacity: 1 }] : [{ transform: 'none', opacity: 1 }, { transform: k, opacity: 0 }];
+  return `translateY(${Math.max(-40, Math.min(40, (r.top + r.height / 2) - (t.top + t.height / 2)) / 3)}px) scale(.97)`;
 }
 function openTray(kind, anchor) {
   if (busy) return;
@@ -334,8 +366,8 @@ function openTray(kind, anchor) {
   tray.hidden = scrim.hidden = false; $('#screen').inert = true;
   tin.tabIndex = -1; tin.focus({ preventScroll: true });
   placeTray(kind, anchor);
-  play(tray, grow(anchor), SPRINGS.lift);
-  tin.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, delay: reduced() ? 0 : 90, fill: 'backwards' });
+  play(tray, grow(anchor), SPRINGS.lift, GLASS);
+  if (!reduced()) play(tin, [{ transform: contentFrom(anchor), opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.set, { delay: 70 });
   scrim.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220 });
   const line = $('.chart .line', tin);
   if (line) line.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 900, delay: 260, easing: 'cubic-bezier(.3,.7,.2,1)', fill: 'forwards' });
@@ -345,7 +377,7 @@ function morph(kind) {
   const h0 = tray.getBoundingClientRect().height;
   tin.innerHTML = VIEWS[kind](); open.kind = kind;
   const h1 = tray.getBoundingClientRect().height;
-  if (!reduced() && Math.abs(h1 - h0) > 1) play(tray, [{ clipPath: `inset(0 0 ${Math.max(0, h1 - h0)}px 0 round 30px)` }, { clipPath: 'inset(0 0 0 0 round 30px)' }], SPRINGS.set);
+  if (!reduced() && Math.abs(h1 - h0) > 1) play(tray, [{ clipPath: `inset(0px 0px ${Math.max(0, h1 - h0)}px 0px round 30px)` }, { clipPath: 'inset(0px 0px 0px 0px round 30px)' }], SPRINGS.set, GLASS);
   tin.animate([{ opacity: 0, filter: 'blur(4px)' }, { opacity: 1, filter: 'blur(0)' }], { duration: 240, easing: 'ease-out' });
 }
 async function closeTray() {
@@ -353,9 +385,9 @@ async function closeTray() {
   const { anchor } = open; open = null;
   const note = $('.note', tin); if (note) ex().note = note.value;
   scrim.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, fill: 'forwards' });
-  tin.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 90, fill: 'forwards' });
-  await play(tray, grow(anchor, false), SPRINGS.set, { fill: 'forwards' }).finished.catch(() => {});
-  tray.getAnimations().forEach((a) => a.cancel()); scrim.getAnimations().forEach((a) => a.cancel()); tin.getAnimations().forEach((a) => a.cancel());
+  tin.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 110, fill: 'forwards' });
+  await play(tray, grow(anchor, false), SPRINGS.set, { fill: 'forwards', ...GLASS }).finished.catch(() => {});
+  tray.getAnimations({ subtree: true }).forEach((a) => a.cancel()); scrim.getAnimations().forEach((a) => a.cancel()); tin.getAnimations().forEach((a) => a.cancel());
   tray.hidden = scrim.hidden = true; $('#screen').inert = false;
   focus(anchor);
 }
@@ -382,7 +414,7 @@ tray.addEventListener('click', (e) => {
     x.sets = x.sets.map((p) => S(k.kg, p.r, '–')); W.s = 0; W.used = null;
     closeTray().then(() => { nameTo(n); stackTo(); paint({ animate: true, dir: -1, instant: true }); });
   }
-  if (a === 'superset') { W.superset = W.superset === W.e ? null : W.e; $('.ss', tin).innerHTML = W.superset === W.e ? CHECK : ''; $('.th').innerHTML = nextLine(); }
+  if (a === 'superset') { W.superset = W.superset === W.e ? null : W.e; $('.ss', tin).innerHTML = W.superset === W.e ? CHECK : ''; renderStack(); }
   if (a === 'rest-' || a === 'rest+') { W.rest = Math.max(30, Math.min(300, W.rest + (a === 'rest+' ? 15 : -15))); roll($('.rv', tin), mmss(W.rest), a === 'rest+' ? 1 : -1); }
 });
 tray.addEventListener('input', (e) => { if (e.target.classList.contains('note')) ex().note = e.target.value; });
@@ -419,7 +451,7 @@ function pearlOut() { [$('.ball', pearl), $('svg path', pearl)].forEach((e) => {
 /** Every set is done: a calm "complete" (Monument Valley), then the pill says Finished and stops taking taps. */
 function finish() {
   $('.dl').textContent = 'Finished'; $('.ds').textContent = ''; pill.disabled = true;
-  $('.th').textContent = `Workout done · ${W.ex.length} exercises`; $('.coach').classList.add('quiet');
+  $('.coach').classList.add('quiet');
   renderStack(); renderProg();
   const all = W.ex.flatMap((x) => x.sets.filter((p) => p.done)), kg = Math.round(all.reduce((t, p) => t + p.kg * p.r, 0));
   const fin = $('.fin'), fv = $('.fv');
@@ -455,7 +487,9 @@ async function tick() {
   if (!n) { finish(); return; }
   const straight = W.superset === W.e && n.e === W.e + 1; // first half of a superset: no rest, go straight on
   W.e = n.e; W.s = n.s;
-  if (straight) { undoTo = null; pearlOut(); nameTo(ex().name); await stackTo(); paint({ animate: true, instant: true }); busy = false; return; }
+  if (straight) { undoTo = null; pearlOut(); await moveDeck(1); busy = false; return; }
+  await moveDeck(1); // the set files away while you watch, then the pill opens into the rest
+  if (g !== gen) return;
   await startRest();
 }
 
@@ -463,14 +497,32 @@ async function tick() {
 const rest = $('.rest'), ring = $('.ring'), arc = $('.arc'), pill = $('.done');
 let iv = 0, endsAt = 0, arcAnim = null, levelAnim = null, total = 90;
 const level = $('.level');
+/** The Done pill's outline grows into the ring (clip on the frost layer, so it is frosted from the first frame), the
+ *  arc flies out of the pill, and the halo fades up. */
 function pillToRing(dir) {
-  const p = pill.getBoundingClientRect(), r = $('.ring-wrap').getBoundingClientRect();
-  const k = `translate(${p.left + p.width / 2 - (r.left + r.width / 2)}px, ${p.top + p.height / 2 - (r.top + r.height / 2)}px) scale(${p.width / r.width}, ${p.height / r.height})`;
-  const f = [{ transform: k, opacity: 0.4 }, { transform: 'none', opacity: 1 }];
-  return play(ring, dir > 0 ? f : f.reverse(), dir > 0 ? SPRINGS.lift : SPRINGS.set, { fill: 'forwards' });
+  const p = pill.getBoundingClientRect(), r = ring.getBoundingClientRect();
+  const small = `inset(${p.top - r.top}px ${r.right - p.right}px ${r.bottom - p.bottom}px ${p.left - r.left}px round 38px)`, full = 'inset(0px 0px 0px 0px round 140px)';
+  const k = `translate(${p.left + p.width / 2 - (r.left + r.width / 2)}px, ${p.top + p.height / 2 - (r.top + r.height / 2)}px) scale(.28)`;
+  const way = (f) => (dir > 0 ? f : [...f].reverse()), sp = dir > 0 ? SPRINGS.lift : SPRINGS.set, o = { fill: 'forwards' };
+  play($('.ring svg'), way([{ transform: `${k} rotate(-90deg)`, opacity: 0 }, { transform: 'rotate(-90deg)', opacity: 1 }]), sp, o);
+  play(ring, way([{ transform: k, opacity: 0 }, { transform: 'none', opacity: 1 }]), sp, { ...o, pseudoElement: '::after' });
+  return play(ring, way([{ clipPath: small }, { clipPath: full }]), sp, { ...o, ...GLASS });
+}
+let ribbonsOn = false;
+/** Six rings of light, offset like petals, pull into the one ring over the last seconds (Watch Breathe).
+ *  Transform and opacity only, above the blur, and only for these few seconds. */
+function ribbons(left) {
+  ribbonsOn = true; if (reduced()) return;
+  $$('.ribbons i').forEach((el, k) => {
+    const a = k * 60;
+    el.animate([{ transform: `rotate(${a}deg) translateX(30px) scale(1.12)`, opacity: 0 }, { opacity: 0.85, offset: 0.25 },
+      { transform: `rotate(${a + 40}deg) translateX(0) scale(1)`, opacity: 0.9, offset: 0.92 }, { transform: `rotate(${a + 40}deg) translateX(0) scale(1)`, opacity: 0 }],
+      { duration: left * 1000, easing: 'cubic-bezier(.45,0,.25,1)', fill: 'forwards' });
+  });
 }
 function runArc() {
   arcAnim?.cancel();
+  ribbonsOn = false; $$('.ribbons i').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
   const left = Math.max(0, endsAt - performance.now());
   arc.style.strokeDashoffset = 804.25;
   // The arc moves in small steps (5 a second, about 2 px each): it looks continuous, but the frost behind it is
@@ -490,19 +542,24 @@ function tickClock() {
     // The last five seconds are each their own beat (Push's countdown).
     if (left > 0 && left <= 5 && !reduced()) { rc.animate([{ transform: 'scale(1.22)', opacity: 0.4, filter: 'blur(3px)' }, { transform: 'none', opacity: 1, filter: 'blur(0)' }], { duration: 420, easing: 'cubic-bezier(.2,.8,.2,1)' }); navigator.vibrate?.(4); }
   }
+  if (left > 0.5 && left <= 6 && !ribbonsOn) ribbons(left);
   if (left <= 0) endRest(true);
 }
 async function startRest() {
   const n = set(), sameEx = undoTo && undoTo.e === W.e;
-  $('.rnext').innerHTML = sameEx ? `Next · set ${W.s + 1} · <b class="num">${fmtKg(n.kg)} × ${n.r}</b>` : `Next · <b>${ex().name}</b> · <span class="num">${fmtKg(n.kg)} × ${n.r}</span>`;
+  const was = undoTo && W.ex[undoTo.e].sets[undoTo.s], x = ex(), lt = x.last && (x.last.sets[W.s] ?? x.last.sets.at(-1));
+  $('.rdone').className = `rdone${was?.rec ? ' rec' : ''}`;
+  $('.rdone').innerHTML = was ? `<span class="ck">${CK}</span>${was.rec ? 'New best' : `Set ${undoTo.s + 1} done`} · <b class="num">${fmtKg(was.kg)} × ${was.r}</b>` : '';
+  $('.rc-v').innerHTML = `${fmtKg(n.kg)}<small>kg</small>× ${n.r}<small>reps</small>`;
+  $('.rc-s').innerHTML = sameEx ? `Set ${W.s + 1} of ${x.sets.length}${lt ? ` · last time <b class="num">${lt}</b>` : ''}` : `<b>${x.name}</b> · set 1 of ${x.sets.length}`;
   total = W.rest; endsAt = performance.now() + total * 1000; tickClock();
   rest.hidden = false; root.dataset.phase = 'rest';
   runArc();
   $('.rest-frost').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, easing: 'ease-out' }).finished.then(() => { if (!rest.hidden && !rest.dataset.closing) root.dataset.covered = ''; }, () => {});
-  pill.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' });
+  pill.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, delay: reduced() ? 0 : 80, fill: 'forwards' }); // the pill hands over to its glass outline
   pillToRing(1);
   $('.ring-in').animate([{ opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0)' }], { duration: 420, delay: reduced() ? 0 : 380, fill: 'backwards', easing: 'ease-out' });
-  $$('.rnext, .rctl, .undo', rest).forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 300, delay: reduced() ? 0 : 300 + i * 50, fill: 'backwards', easing: 'cubic-bezier(.2,.8,.2,1)' }));
+  $$('.rdone, .rctl, .rcard, .undo', rest).forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 300, delay: reduced() ? 0 : 300 + i * 50, fill: 'backwards', easing: 'cubic-bezier(.2,.8,.2,1)' }));
   iv = setInterval(tickClock, 200);
   $('#screen').inert = true; focus($('[data-a=skip]')); // nothing behind the rest can be pressed
   busy = false;
@@ -512,19 +569,16 @@ async function endRest(advance) {
   rest.dataset.closing = '1';
   const g = gen;
   clearInterval(iv); delete root.dataset.phase; delete root.dataset.covered;
-  const prevE = undoTo?.e;
   $('.rest-frost').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: 'forwards' });
-  $$('.rnext, .rctl, .undo, .ring-in, .level', rest).forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }));
+  $$('.rdone, .rctl, .rcard, .undo, .ring-in, .level, .ribbons i', rest).forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }));
   await pillToRing(-1).finished.catch(() => {});
   if (g !== gen) return; // the demo was reset while the ring closed
-  [ring, $('.rest-frost'), ...$$('.rnext, .rctl, .undo, .ring-in, .level', rest)].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
-  arcAnim?.cancel(); levelAnim?.cancel(); rest.hidden = true; delete rest.dataset.closing;
+  [$('.rest-frost'), ...$$('.rdone, .rctl, .rcard, .undo, .ring-in, .level, .ribbons i', rest)].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
+  arcAnim?.cancel(); levelAnim?.cancel(); ring.getAnimations({ subtree: true }).forEach((a) => a.cancel()); rest.hidden = true; delete rest.dataset.closing;
   pill.getAnimations().forEach((a) => a.cancel());
   pearlOut();
-  // The ring has gone back into the pill; now the stack moves: the finished set folds into a row and the next one
-  // opens in place (or, on undo, the other way round). A new exercise slides in instead.
-  if (W.e !== (prevE ?? W.e)) { nameTo(ex().name); await stackTo(); paint({ animate: true, instant: true }); }
-  else { const before = captureStack(); renderStack(); paint({ animate: true, instant: true, dir: advance ? 1 : -1 }); animateStack(before); }
+  // The deck already moved when you tapped Done. Undo takes the set back out of the pile.
+  if (!advance) await moveDeck(-1);
   undoTo = null;
   if (g !== gen) return;
   $('#screen').inert = false; focus(pill); // only once the next set is on screen
