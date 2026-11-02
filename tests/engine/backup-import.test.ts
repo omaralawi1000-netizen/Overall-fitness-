@@ -5,6 +5,8 @@ import type { Engine } from '../../src/engine/engine';
 import { dryRun, mapOld, readOldBackup, readOldLocal, runImport } from '../../src/engine/importOld';
 import { setsOf } from '../../src/engine/workout';
 import { MIGRATIONS, migrateRecord } from '../../src/engine/migrations';
+import { buildOn, isStale } from '../../src/engine/derived';
+import type { NewRecord } from '../../src/engine/plan';
 import { fresh, water, TZ } from './helpers';
 import { oldBackupText, oldData } from './fixtures/oldBackup';
 
@@ -86,6 +88,33 @@ describe('backup and restore', () => {
     expect((await restore(e, file, 'replace')).status).toBe('saved');
     await e.reload();
     expect(e.all('water')).toHaveLength(0);
+  });
+
+  it('a restored summary never looks fresh against a fact whose revision only matches by chance', async () => {
+    const { e } = await eng();
+    await e.commit({ type: 'x', label: 'x', ops: [water('w', 1)] });
+    await e.commit({ type: 'x', label: 'x', ops: [{ op: 'update', id: 'w', set: { ml: 2 } }] });
+    await e.commit({ type: 'x', label: 'x', ops: [{ op: 'create', record: { id: 'sum', kind: 'coachItem', stage: 'observation', text: '2 ml', ...buildOn((k) => e.get(k), ['w']) } as NewRecord }] });
+    for (const ml of [3, 4, 5]) await e.commit({ type: 'x', label: 'x', ops: [{ op: 'update', id: 'w', set: { ml } }] });
+    const file = await exportBackup(e); // w is at revision 5 with 5 ml; the summary saw revision 2 (2 ml)
+    const other = (await eng()).e;
+    await other.commit({ type: 'x', label: 'x', ops: [water('w', 9)] }); // revision 1 here
+    expect((await restore(other, file, 'replace')).status).toBe('saved');
+    expect(other.get<'water'>('w')!.ml).toBe(5);
+    expect(isStale(other.get('sum')!, (k) => other.get(k))).toBe(true);
+  });
+
+  it('two phones that edited the same fact: a merged summary from the other phone is stale, even with equal revisions', async () => {
+    const a = (await eng()).e, b = (await eng()).e;
+    for (const e of [a, b]) await e.commit({ type: 'x', label: 'x', ops: [water('w', 1)] });
+    await a.commit({ type: 'x', label: 'x', ops: [{ op: 'update', id: 'w', set: { ml: 2 } }] }); // revision 2 here: 2 ml
+    await a.commit({ type: 'x', label: 'x', ops: [{ op: 'create', record: { id: 'sum', kind: 'coachItem', stage: 'observation', text: '2 ml', ...buildOn((k) => a.get(k), ['w']) } as NewRecord }] });
+    const file = await exportBackup(a);
+    await b.commit({ type: 'x', label: 'x', ops: [{ op: 'update', id: 'w', set: { ml: 7 } }] }); // revision 2 there too: 7 ml, and newer
+    expect(b.get('w')!.rev).toBe(a.get('w')!.rev);
+    expect((await restore(b, file, 'merge')).status).toBe('saved');
+    expect(b.get<'water'>('w')!.ml).toBe(7); // the newer phone value stays
+    expect(isStale(b.get('sum')!, (k) => b.get(k))).toBe(true);
   });
 
   it('a restore that fails half-way leaves the phone exactly as it was', async () => {

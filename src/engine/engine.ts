@@ -4,14 +4,14 @@
  * - Every change is an action. The records and the action are written in ONE transaction: both land or neither does.
  * - Exactly once: the action id is made at the tap; the same id twice is a no-op (reload, retry, another tab).
  * - Undo reverses only its own change and stops on a conflict (plan.ts).
- * - Deleting or changing a fact marks everything built on it stale, in the same transaction.
+ * - Every write raises the record's revision, so anything built on it can tell it is out of date (`derived.ts`).
  * - The tap is never blocked: `run()` shows the change at once as pending, "saved" only after the database confirms,
  *   "failed" (kept, with Retry) if the write fails.
  *
  * Plain-words rules: docs/engine/DATA-MODEL.md §4–6.
  */
 import { SCHEMA, type Action, type AnyRecord, type Kind, type RecordOf, type Source } from './model';
-import { EngineError, planOps, planStale, planUndo, type Conflict, type Ctx, type Op } from './plan';
+import { EngineError, planOps, planUndo, type Conflict, type Ctx, type Op } from './plan';
 import { deviceTz } from './time';
 import { done, newId, req } from './util';
 import { MIGRATIONS, migrateRecord } from './migrations';
@@ -56,7 +56,6 @@ function openDb(idb: IDBFactory, name: string): Promise<IDBDatabase> {
       const db = r.result;
       const recs = db.createObjectStore('records', { keyPath: 'id' });
       recs.createIndex('kind', 'kind');
-      recs.createIndex('basedOn', 'basedOn', { multiEntry: true });
       db.createObjectStore('actions', { keyPath: 'id' }).createIndex('at', 'at');
       db.createObjectStore('meta');
       db.createObjectStore('snapshots', { keyPath: 'id' }).createIndex('at', 'at');
@@ -223,9 +222,8 @@ export class Engine {
         const planned = planOps(ops, cur as Map<string, never>, ctx);
         if (!planned.changes.length) outcome.r = { status: 'noop' };
         else {
-          const stale = await this.staleFor(recs, planned.changes.map((c) => c.id), planned.next as unknown as Map<string, Rec>, ctx);
-          const action: Action = { id, at: ctx.now, tz: ctx.tz, source, type: input.type, label: input.label, changes: [...planned.changes, ...stale.changes] };
-          const written = [...planned.next.values(), ...stale.next.values()] as unknown as Rec[];
+          const action: Action = { id, at: ctx.now, tz: ctx.tz, source, type: input.type, label: input.label, changes: planned.changes };
+          const written = [...planned.next.values()] as unknown as Rec[];
           for (const r of written) recs.put(r);
           acts.put(action);
           outcome.r = { status: 'saved', action };
@@ -241,24 +239,6 @@ export class Engine {
     if (outcome.r!.status === 'saved') this.afterWrite(outcome.r!.action!, outcome.written!);
     else if (outcome.r!.status === 'duplicate') await this.reload();
     return outcome.r!;
-  }
-
-  /** Records built on the changed ones (read inside the same transaction), marked stale. */
-  private async staleFor(recs: IDBObjectStore, changedIds: string[], next: Map<string, Rec>, ctx: Ctx) {
-    const found = new Map<string, Rec>();
-    const queue = [...changedIds];
-    const seen = new Set<string>();
-    while (queue.length) {
-      const id = queue.shift()!;
-      if (seen.has(id)) continue;
-      seen.add(id);
-      for (const r of (await req(recs.index('basedOn').getAll(id))) as Rec[]) {
-        if (!found.has(r.id)) { found.set(r.id, next.get(r.id) ?? r); queue.push(r.id); }
-      }
-    }
-    // a record that is itself part of this action is never marked stale by it
-    for (const id of changedIds) found.delete(id);
-    return planStale(changedIds, found.values() as Iterable<never>, ctx);
   }
 
   private afterWrite(action: Action, written: Rec[]) {
@@ -300,9 +280,8 @@ export class Engine {
         if (planned.conflicts.length && !skip) result = { status: 'conflict', conflicts: planned.conflicts };
         else if (!planned.changes.length) result = { status: 'noop', conflicts: planned.conflicts };
         else {
-          const stale = await this.staleFor(recs, planned.changes.map((c) => c.id), planned.next as unknown as Map<string, Rec>, ctx);
-          const undoAction: Action = { id, at: ctx.now, tz: ctx.tz, source, type: 'undo', label: `Undo: ${action.label}`, undoes: target, changes: [...planned.changes, ...stale.changes] };
-          for (const r of [...planned.next.values(), ...stale.next.values()]) recs.put(r);
+          const undoAction: Action = { id, at: ctx.now, tz: ctx.tz, source, type: 'undo', label: `Undo: ${action.label}`, undoes: target, changes: planned.changes };
+          for (const r of planned.next.values()) recs.put(r);
           acts.put(undoAction);
           acts.put({ ...action, undoneBy: id });
           // undoing an Undo is a redo: the original change is live again, so it can be undone from its own entry
