@@ -62,7 +62,7 @@ export function readSet(text: string): SetCommand | null {
   m = s.match(new RegExp(`^(?:(?:add|plus|tilføj|give me|giv mig) |\\+ ?)${NUM} ?(?:min|mins|minute|minutes|minut|minutter)(?: (?:more|extra|mere|ekstra))?(?: to (?:the )?rest| til hvilen| til pausen)?$`));
   if (m && n(m[1]) > 0) return { kind: 'rest', sec: Math.round(n(m[1]) * 60) };
   // "8 x 80" / "80 x 8": a multiplication sign does not say which number is the weight, only a unit does
-  m = s.match(new RegExp(`^${NUM} ?${KG}? (?:x|×) ${NUM} ?${KG}?$`));
+  m = s.match(new RegExp(`^${NUM} ?${KG}? (?:x|×|by) ${NUM} ?${KG}?$`));
   if (m) {
     const [, a, ua, b, ub] = m;
     if (ua && ub) return null; // two units: not a set
