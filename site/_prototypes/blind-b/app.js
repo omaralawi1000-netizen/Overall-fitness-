@@ -29,7 +29,7 @@ const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
 let plan = PLAN();
 let ex = 0, cur = 1, phase = 'lift', cast = null, records = 0;
 let rest = { end: 0, total: 0, shown: -1, then: 'set' };
-let armedAt = 0;   // the button ignores taps until then, so a double tap can't skip a rest or wipe a finished workout
+let armedAt = 0, doneText = '';   // the button ignores taps until then, so a double tap can't skip a rest or wipe a finished workout
 const startedAt = Date.now() - (18 * 60 + 42) * 1000;
 
 const E = () => plan.exercises[ex];
@@ -267,7 +267,8 @@ async function finish() {
   lift('reps', 0, 120, 14);
   mood('gold');
   if (cast) { cast.sweep(); cast.drop(...centre(hero), 2.6, 7); }
-  setHero(Math.round(vol).toLocaleString('en-US'), { stagger: 0.07, dur: 0.8 });
+  doneText = Math.round(vol).toLocaleString('en-US');
+  setHero(doneText, { stagger: 0.07, dur: 0.8 });
   swap($('name'), `${plan.name} done`);
   swap($('sub'), `${mins} min · ${sets} sets${records ? ` · ${records} new best` : ''}`);
   swap($('upnext'), '');
@@ -374,7 +375,11 @@ async function boot() {
   setInterval(tick, 200); tick();
 
   let rt = 0;
-  window.addEventListener('resize', () => { cancelAnimationFrame(rt); rt = requestAnimationFrame(() => { syncBeads(); beadTargets(); syncPill(); if (phase === 'rest') setHero(fmtT(rest.shown), { instant: true }); else if (phase !== 'done') showLift(true); }); });
+  window.addEventListener('resize', () => { cancelAnimationFrame(rt); rt = requestAnimationFrame(() => {
+    syncBeads(); syncPill();
+    if (phase === 'done') setHero(doneText, { instant: true });   // the finish row has one bead per exercise; keep them as they are
+    else { beadTargets(); if (phase === 'rest') setHero(fmtT(rest.shown), { instant: true }); else showLift(true); }
+  }); });
 
   if (q.has('fps') && cast) {
     const el = $('fps'); el.hidden = false;
