@@ -133,14 +133,20 @@ roll($('.clock'), mmss((Date.now() - W.start) / 1000));
 
 /* ---------- Numbers: tap one and its − and + unfold out of it ---------- */
 let editT = 0;
-function closeEdit() { $$('.field.edit').forEach((f) => f.classList.remove('edit')); $('.slab').classList.remove('editing'); }
+function closeEdit() { $$('.field.edit').forEach((f) => f.classList.remove('edit')); $$('.step').forEach((b) => { b.tabIndex = -1; }); $('.slab').classList.remove('editing'); }
 $$('.field').forEach((f) => {
   $('.val', f).addEventListener('click', () => {
     if (busy) return;
     const was = f.classList.contains('edit');
     closeEdit();
-    if (!was) { f.classList.add('edit'); $('.slab').classList.add('editing'); }
+    if (!was) { f.classList.add('edit'); $$('.step', f).forEach((b) => { b.tabIndex = 0; }); $('.slab').classList.add('editing'); }
     clearTimeout(editT); editT = setTimeout(closeEdit, 5000);
+  });
+  // Keyboard: arrow up/down on the number steps it, like the + and − buttons.
+  $('.val', f).addEventListener('keydown', (e) => {
+    const d = e.key === 'ArrowUp' ? 1 : e.key === 'ArrowDown' ? -1 : 0;
+    if (!d || busy) return;
+    e.preventDefault(); $(d > 0 ? '.plus' : '.minus', f).click();
   });
   $$('.step', f).forEach((b) => {
     press(b, 0.9);
@@ -316,7 +322,7 @@ async function nameTo(text) {
 }
 
 /* ---------- Tick: a dot swells into a pearl and settles into a check (Not Boring) ---------- */
-let busy = false, undoTo = null;
+let busy = false, undoTo = null, gen = 0;
 const pearl = $('.pearl');
 { const t = $('.ticks', pearl); for (let i = 0; i < 10; i++) { const b = document.createElement('b'); b.style.setProperty('--a', `${i * 36 + (i % 2) * 9}deg`); t.append(b); } }
 async function pearlIn(gold) {
@@ -337,11 +343,12 @@ function pearlOut() { [$('.ball', pearl), $('svg path', pearl)].forEach((e) => {
 
 async function tick() {
   if (busy) return; busy = true; closeEdit();
-  const x = ex(), c = set(), rec = beats(c, x.best);
+  const x = ex(), c = set(), rec = beats(c, x.best), g = gen;
   await pearlIn(rec);
+  if (g !== gen) return; // the demo was reset mid-tick
   undoTo = { e: W.e, s: W.s, best: { ...x.best } };
   c.done = true;
-  if (rec) { c.rec = true; await recordMoment(c); x.best = { kg: c.kg, r: c.r, date: 'today' }; }
+  if (rec) { c.rec = true; await recordMoment(c); if (g !== gen) return; x.best = { kg: c.kg, r: c.r, date: 'today' }; }
   W.used = null;
   if (W.s < x.sets.length - 1) W.s++; else if (W.e < W.ex.length - 1) { W.e++; W.s = 0; }
   await startRest();
@@ -388,11 +395,13 @@ async function startRest() {
 async function endRest(advance) {
   if (rest.hidden || rest.dataset.closing) return;
   rest.dataset.closing = '1';
+  const g = gen;
   clearInterval(iv); root.dataset.phase = '';
   const prevE = undoTo?.e;
   $('.rest-frost').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: 'forwards' });
   $$('.rnext, .rctl, .undo, .ring-in', rest).forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, fill: 'forwards' }));
   await pillToRing(-1).finished.catch(() => {});
+  if (g !== gen) return; // the demo was reset while the ring closed
   [ring, $('.rest-frost'), ...$$('.rnext, .rctl, .undo, .ring-in', rest)].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
   arcAnim?.cancel(); rest.hidden = true; delete rest.dataset.closing;
   pill.getAnimations().forEach((a) => a.cancel());
@@ -452,6 +461,7 @@ function recordMoment(c) {
 
 /* ---------- Demo controls from the page around it ---------- */
 function reset() {
+  gen++;
   clearInterval(iv); arcAnim?.cancel(); rest.hidden = true; delete rest.dataset.closing; $('.record').hidden = true;
   if (open) { open = null; tray.hidden = scrim.hidden = true; }
   [pill, ring, $('.rest-frost'), ...$$('.rest *, .record *')].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
