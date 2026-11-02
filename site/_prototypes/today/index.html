@@ -41,7 +41,12 @@ const T = [['heat', '#FF4816', '#FFAC3C', 'Heat'], ['glacier', '#2F6BFF', '#7FD3
 const q = new URLSearchParams(location.search);
 let cur = q.get('v') === '2' ? 1 : 0, theme = T.some((t) => t[0] === q.get('t')) ? q.get('t') : 'heat';
 const pager = document.getElementById('pager'), tabs = document.getElementById('tabs'), name = document.getElementById('name'), chips = document.getElementById('chips'), themes = document.getElementById('themes');
-const frames = P.map((p) => { const s = document.createElement('section'); s.innerHTML = `<iframe title="${p.n}" src="${p.f}?t=${theme}${p.m[0][0] && q.get('m') && p === P[cur] ? '&m=' + q.get('m') : ''}"></iframe>`; pager.append(s); return s.firstChild; });
+const frames = P.map((p) => {
+  const s = document.createElement('section'), f = document.createElement('iframe');
+  const m = p === P[cur] && p.m.find(([k]) => k === q.get('m')); // only a known moment ever reaches the URL
+  f.title = p.n; f.src = `${p.f}?t=${encodeURIComponent(theme)}${m ? '&m=' + encodeURIComponent(m[0]) : ''}`;
+  s.append(f); pager.append(s); return f;
+});
 const post = (f, msg) => f.contentWindow && f.contentWindow.postMessage(msg, '*');
 const go = (i) => pager.scrollTo({ left: i * pager.clientWidth, behavior: 'smooth' });
 P.forEach((p, i) => { const b = document.createElement('button'); b.textContent = p.n; b.onclick = () => go(i); tabs.append(b); });

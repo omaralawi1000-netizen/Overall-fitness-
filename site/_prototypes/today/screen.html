@@ -143,13 +143,13 @@ import { roll, press, play, SPRINGS, $, $$ } from '../frost/common.js';
 const M = {
   morning: { hcap: 'Ready', n: 84, hu: '+6 on your usual', say: 'Slept well, legs fresh. A good day to push.',
     pcap: 'Today', title: 'Push', meta: '<span class="num">52</span> min · 5 exercises', line: 'Bench press <b>85 × 6</b> would be a record.',
-    go: 'Start workout', gos: 'Bench first', food: [88, 170, 0.52], sleep: ['7:42', 0.86], weight: ['78.4', 0.7], phase: '', frac: 0.84, level: { ready: 0.84, sleep: 0.86, food: 0.52, train: 1 } },
+    go: 'Start workout', gos: 'Bench first', food: [88, 170, 0.52], sleep: ['7:42', 0.86], weight: ['78.4', 0.7], phase: '', frac: 0.84, why: [92, 78, 81, 88, 'Sleep and load are both on your side.'], macros: [88, 112, 31], kcal: '1 120', slnote: '23:18 to 07:00. Deep sleep was your best in two weeks.', stages: [["Deep", "1:46", 14], ["REM", "1:52", 15], ["Light", "3:51", 33], ["Awake", "0:13", 3]], coach: 'You have hit 85 kg for 5 twice. Today is the day for six.', coachsub: 'You slept well and the last two sessions were light on chest. I would keep the plan as it is, and add a 90 second longer rest before the top set.', level: { ready: 0.84, sleep: 0.86, food: 0.52, train: 1 } },
   rest: { hcap: 'Ready', n: 91, hu: 'fully charged', say: 'Nothing to prove today. Rest is part of the plan.',
     pcap: 'Today', title: 'Rest day', meta: 'Next: <span class="num">Pull</span><br>tomorrow, 17:30', line: 'A <b>20 minute walk</b> keeps you loose.',
-    go: 'Log a walk', gos: '', food: [124, 170, 0.73], sleep: ['8:05', 0.91], weight: ['78.4', 0.7], phase: '', frac: 0.91, level: { ready: 0.91, sleep: 0.92, food: 0.73, train: 0.2 } },
+    go: 'Log a walk', gos: '', food: [124, 170, 0.73], sleep: ['8:05', 0.91], weight: ['78.4', 0.7], phase: '', frac: 0.91, rest: true, why: [96, 86, 88, 94, 'Fully recharged. Nothing is in the way.'], macros: [124, 160, 48], kcal: '1 640', slnote: '22:50 to 07:15. A long night, and it shows.', stages: [["Deep", "2:02", 16], ["REM", "1:58", 15], ["Light", "3:53", 31], ["Awake", "0:12", 2]], coach: 'Rest is when the 85 kg gets built.', coachsub: 'Walk 20 minutes, eat your protein and sleep early. Pull is tomorrow at 17:30.', level: { ready: 0.91, sleep: 0.92, food: 0.73, train: 0.2 } },
   done: { hcap: 'Push', n: 5, hu: 'of 5 done', say: 'Heaviest six you have ever done. Eat well tonight.',
     pcap: 'Today · done', title: 'Push', meta: '<span class="num">54</span> min<br><span class="num">6 420</span> kg moved', line: 'New best: <b>Bench press 85 × 6</b>',
-    go: 'See summary', gos: '', food: [88, 170, 0.52], sleep: ['7:42', 0.86], weight: ['78.4', 0.7], phase: 'record', frac: 1, gold: true, level: { ready: 0.84, sleep: 0.86, food: 0.52, train: 1.5 } },
+    go: 'See summary', gos: '', food: [88, 170, 0.52], sleep: ['7:42', 0.86], weight: ['78.4', 0.7], phase: 'record', frac: 1, gold: true, why: [92, 78, 81, 88, 'A heavy day, done well.'], macros: [88, 112, 31], kcal: '1 120', slnote: '23:18 to 07:00. Deep sleep was your best in two weeks.', stages: [["Deep", "1:46", 14], ["REM", "1:52", 15], ["Light", "3:51", 33], ["Awake", "0:13", 3]], coach: 'That was your best bench ever, 85 kg for 6.', coachsub: 'Eat 40 g of protein in the next two hours and sleep before 23:00. Next bench is Thursday.', level: { ready: 0.84, sleep: 0.86, food: 0.52, train: 1.5 } },
 };
 
 /* ---------- The ring: 60 ticks over 270 degrees, open at the bottom. ---------- */
@@ -171,9 +171,11 @@ function setRing(frac) {
 
 /* ---------- Moment changes: only what differs moves. ---------- */
 const swap = (el, html) => {
+  const t = el._t = (el._t || 0) + 1; // a newer swap cancels any older one still fading
+  el.getAnimations().forEach((a) => a.cancel());
   if (el.innerHTML === html) return;
   const out = el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 110, easing: 'ease-in', fill: 'forwards' });
-  out.finished.then(() => { el.innerHTML = html; out.cancel(); play(el, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set); }, () => {});
+  out.finished.then(() => { if (el._t !== t) return; el.innerHTML = html; out.cancel(); play(el, [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set); }, () => {});
 };
 let first = true, cur = 'morning';
 function show(k) {
@@ -199,22 +201,23 @@ function show(k) {
 const sheet = $('#sheet'), sin = $('#sin');
 const bar = (n, v, s, val) => `<div class="li"><span class="n">${n}</span><span class="v num">${val}</span><span class="meter" style="--v:${v}"><i></i></span>${s ? `<span class="s">${s}</span>` : ''}</div>`;
 const curve = 'M0,22 C30,24 50,36 80,34 S130,46 160,54 S215,60 245,70 S290,72 320,80';
+const D = () => M[cur];
 const PAGES = {
-  ready: () => `<span class="cap">Readiness</span><h3 class="serif">Sleep and load are both on your side.</h3>
-    <p class="hn num">84<small>+6 on your usual</small></p><p class="sub">Four things set this number.</p>
-    <div class="card">${bar('Sleep', 92, '7 h 42 min, bed at 23:18', '92')}${bar('Heart rate recovery', 78, 'Resting 52, a little above your 50', '78')}${bar('Training load', 81, '3 sessions in the last 7 days', '81')}${bar('Soreness', 88, 'Chest and triceps feel fresh', '88')}</div>`,
-  food: () => `<span class="cap">Food · so far today</span><p class="hn num">88<small>of 170 g protein</small></p><p class="sub">1 120 of 2 600 kcal. Dinner closes the gap.</p>
-    <div class="card">${bar('Protein', 52, '', '88 <small>g</small>')}${bar('Carbs', 38, '', '112 <small>g</small>')}${bar('Fat', 44, '', '31 <small>g</small>')}</div>
+  ready: () => { const d = D(), n = Math.round(d.level.ready * 100); return `<span class="cap">Readiness</span><h3 class="serif">${d.why[4]}</h3>
+    <p class="hn num">${n}<small>${d.hu}</small></p><p class="sub">Four things set this number.</p>
+    <div class="card">${bar('Sleep', d.why[0], `${d.sleep[0]} h last night`, d.why[0])}${bar('Heart rate recovery', d.why[1], d.why[1] > 80 ? 'Resting 50, right on your usual' : 'Resting 52, a little above your 50', d.why[1])}${bar('Training load', d.why[2], d.rest ? 'Two days since your last session' : '3 sessions in the last 7 days', d.why[2])}${bar('Soreness', d.why[3], d.rest ? 'Everything feels fresh' : 'Chest and triceps feel fresh', d.why[3])}</div>`; },
+  food: () => { const d = D(), [p, c, f] = d.macros; return `<span class="cap">Food · so far today</span><p class="hn num">${p}<small>of 170 g protein</small></p><p class="sub">${d.kcal} of 2 600 kcal. Dinner closes the gap.</p>
+    <div class="card">${bar('Protein', Math.round(p / 1.7), '', `${p} <small>g</small>`)}${bar('Carbs', Math.round(c / 3), '', `${c} <small>g</small>`)}${bar('Fat', Math.round(f / 0.8), '', `${f} <small>g</small>`)}</div>
     <div class="card"><div class="li"><span class="n">Oats, skyr, berries</span><span class="v num">520<small> kcal</small></span><span class="s">08:10</span></div><div class="li"><span class="n">Chicken wrap</span><span class="v num">600<small> kcal</small></span><span class="s">12:40</span></div></div>
-    <button type="button" class="go"><span>Log food</span></button>`,
-  sleep: () => `<span class="cap">Sleep · last night</span><p class="hn num">7:42<small>h</small></p><p class="sub">23:18 to 07:00. Deep sleep was your best in two weeks.</p>
-    <div class="stages"><i style="--f:14;--c:var(--g3)"></i><i style="--f:33;--c:var(--g1)"></i><i style="--f:22;--c:var(--g2)"></i><i style="--f:5;--c:var(--hot)"></i><i style="--f:26;--c:var(--g1)"></i></div>
-    <div class="card"><div class="li"><span class="n">Deep</span><span class="v num">1:46</span></div><div class="li"><span class="n">REM</span><span class="v num">1:52</span></div><div class="li"><span class="n">Light</span><span class="v num">3:51</span></div><div class="li"><span class="n">Awake</span><span class="v num">0:13</span></div></div>`,
+    <button type="button" class="go"><span>Log food</span></button>`; },
+  sleep: () => { const d = D(); return `<span class="cap">Sleep · last night</span><p class="hn num">${d.sleep[0]}<small>h</small></p><p class="sub">${d.slnote}</p>
+    <div class="stages">${d.stages.map(([, , f], i) => `<i style="--f:${f};--c:var(${['--g3', '--g1', '--g2', '--hot'][i]})"></i>`).join('')}</div>
+    <div class="card">${d.stages.map(([n, t]) => `<div class="li"><span class="n">${n}</span><span class="v num">${t}</span></div>`).join('')}</div>`; },
   weight: () => `<span class="cap">Weight · 14 days</span><p class="hn num">78.4<small>kg</small></p><p class="sub">Down 0.3 this week. The trend is smooth, the days are noisy.</p>
     <div class="card"><svg class="chart" viewBox="0 0 320 100" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--g2)" stop-opacity=".55"/><stop offset="1" stop-color="var(--g2)" stop-opacity="0"/></linearGradient></defs><path d="${curve} L320,100 L0,100Z" fill="url(#wg)"/><path d="${curve}" fill="none" stroke="var(--hot)" stroke-width="2.4" stroke-linecap="round" vector-effect="non-scaling-stroke"/></svg></div>
     <div class="card"><div class="li"><span class="n">Goal</span><span class="v num">76.0<small> kg</small></span></div><div class="li"><span class="n">Pace</span><span class="v num">−0.3<small> kg / week</small></span></div></div>`,
-  coach: () => `<span class="cap">Coach</span><h3 class="serif">You have hit 85 kg for 5 twice. Today is the day for six.</h3>
-    <p class="sub" style="margin-top:14px">You slept well and the last two sessions were light on chest. I would keep the plan as it is, and add a 90 second longer rest before the top set.</p>
+  coach: () => `<span class="cap">Coach</span><h3 class="serif">${D().coach}</h3>
+    <p class="sub" style="margin-top:14px">${D().coachsub}</p>
     <div class="sug"><button type="button" class="frost">Why not 87.5?</button><button type="button" class="frost">Swap bench for incline</button><button type="button" class="frost">What should I eat before?</button></div>`,
 };
 /* The field: where each colour mass sits, and how big and bright it is for a given day. */
