@@ -12,7 +12,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 
 ## Design
 - `docs/inspiration/notes.md`: what Omar likes. `docs/inspiration/web-references.md`: his web links. The numbered images are screenshots.
-- `docs/inspiration/motion-library.md`: 66 watched animations sorted by motion job, top 3 per job, links and notes (clips and design stills in the shared folder).
+- `docs/inspiration/motion-library.md`: 117 watched animations in two rounds, sorted by motion job, top 3 per job, links and notes (clips and design stills in the shared folder).
 - `docs/design-round-2026-11-01.md`: the final design round's decision (rules triaged, Coach ladder, navigation, two directions, PWA limits). Wins over the design bar.
 - `docs/keepers.md`: ideas Omar explicitly approved after prototypes (only his yes adds one).
 - `docs/research/design-bar-2026-11-01.md`: the design bar.
