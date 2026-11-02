@@ -9,7 +9,7 @@ import { play, SPRINGS, reduced } from '../../round/motion.js';
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
 const fmtKg = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
-const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, Math.ceil(s)) % 60).padStart(2, '0')}`;
+const mmss = (s) => { const t = Math.max(0, Math.ceil(s)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
 const wait = (ms) => new Promise((r) => setTimeout(r, reduced() ? Math.min(ms, 60) : ms));
 const e1rm = (kg, r) => Math.round(kg * (1 + r / 30) * 10) / 10;
 const root = document.documentElement;
@@ -185,6 +185,14 @@ function tools() {
       <p class="cap lbl">Rest after a set</p>
       <div class="stepper"><button type="button" data-a="rest-" aria-label="Shorter rest">−</button><span class="num rv">${mmss(W.rest)}</span><button type="button" data-a="rest+" aria-label="Longer rest">+</button></div>`;
 }
+/** What a swap turns into (made-up numbers for the prototype). */
+const SWAPS = {
+  'Dumbbell bench press': { kit: 'Chest · Triceps · Dumbbells', kg: 30, best: 32 },
+  'Machine chest press': { kit: 'Chest · Triceps · Machine', kg: 60, best: 65 },
+  'Smith bench press': { kit: 'Chest · Triceps · Smith machine', kg: 70, best: 75 },
+  'Incline bench press': { kit: 'Upper chest · Barbell', kg: 60, best: 62.5 },
+  'Incline machine press': { kit: 'Upper chest · Machine', kg: 50, best: 55 },
+};
 const VIEWS = {
   coach() {
     const c = coach();
@@ -287,7 +295,12 @@ tray.addEventListener('click', (e) => {
     b.after(d);
     if (!reduced()) play(d, [{ clipPath: 'inset(0 0 100% 0)', opacity: 0 }, { clipPath: 'inset(0 0 0 0)', opacity: 1 }], SPRINGS.set);
   }
-  if (a === 'pick') { x.name = b.dataset.v; x.last = null; x.hist = null; x.how = null; closeTray().then(() => nameTo(x.name)); }
+  if (a === 'pick') { // a swap is a new exercise: its own kit, its own best, its sets start over
+    const n = b.dataset.v, k = SWAPS[n] || { kit: '', kg: x.sets[0].kg, best: x.best.kg };
+    Object.assign(x, { name: n, kit: k.kit, last: null, hist: null, how: null, alts: null, note: '', best: { kg: k.best, r: x.sets[0].r, date: 'earlier' } });
+    x.sets = x.sets.map((p) => S(k.kg, p.r, '–')); W.s = 0; W.used = null;
+    closeTray().then(() => { nameTo(n); paint({ animate: true, dir: -1 }); });
+  }
   if (a === 'superset') { W.superset = !W.superset; $('.ss', tin).innerHTML = W.superset ? CHECK : ''; $('.th').innerHTML = nextLine(); }
   if (a === 'rest-' || a === 'rest+') { W.rest = Math.max(30, Math.min(300, W.rest + (a === 'rest+' ? 15 : -15))); roll($('.rv', tin), mmss(W.rest), a === 'rest+' ? 1 : -1); }
 });
