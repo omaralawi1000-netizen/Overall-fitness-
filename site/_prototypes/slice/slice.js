@@ -30,7 +30,7 @@ const centre = (r) => ({ x: r.left + r.width / 2, y: r.top + r.height / 2 });
 
 /* ---------- Rolling numbers: only the characters that change move ---------- */
 class Roll {
-  constructor(el, text = '') { this.el = el; this.render(text); }
+  constructor(el, text = '', flat = false) { this.el = el; this.flat = flat; this.render(text); }
   render(text) {
     this.el.textContent = '';
     for (const ch of text) { const s = document.createElement('span'); s.className = 'ch'; s.textContent = ch; this.el.append(s); }
@@ -50,7 +50,7 @@ class Roll {
     const aOld = Roll.anchor(this.text), aNew = Roll.anchor(text);
     this.render(text);
     const n = el.getBoundingClientRect(), chars = [...el.children];
-    const h = n.height * 0.62;
+    const h = n.height * (this.flat ? 0.4 : 0.62); // the rest clock ticks every second: a short, unstretched roll
     const used = new Set();
     let dx = null;
     chars.forEach((c, j) => {
@@ -60,7 +60,7 @@ class Roll {
       if (prev && prev.t === c.textContent) return;
       if (prev) this.ghost(prev, -dir * h);
       // Push's roll (only this digit moves, stretched as it travels) + Family's landing (a tiny settle in scale).
-      spring(c, [{ transform: `translateY(${dir * h}px) scale(.86, 1.12)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { damping: 0.78, response: 0.3 });
+      spring(c, [{ transform: `translateY(${dir * h}px)${this.flat ? '' : ' scale(.86, 1.12)'}`, opacity: 0 }, { transform: 'none', opacity: 1 }], { damping: 0.78, response: 0.3 });
     });
     old.forEach((p, i) => { if (!used.has(i)) this.ghost(p, -dir * h * 0.5); });
     if (dx === null) dx = o.left - n.left;
@@ -82,7 +82,7 @@ const ringset = $('.ringset'), ribbons = $('.ribbons'), ribbonsIn = $('.ribbons-
 const sparks = [...document.querySelectorAll('.sparks i')];
 const segs = [...document.querySelectorAll('.arc .half')].map((h) => ({ el: h.firstElementChild, right: h.classList.contains('r') }));
 const lastEl = $('.last'), bestEl = $('.best'), summary = $('.summary');
-const rW = new Roll($('.big.w')), rR = new Roll($('.big.r')), rSet = new Roll($('.set-no')), rCount = new Roll($('.count'), fmtT(REST));
+const rW = new Roll($('.big.w')), rR = new Roll($('.big.r')), rSet = new Roll($('.set-no')), rCount = new Roll($('.count'), fmtT(REST), true);
 
 /* ---------- The room ---------- */
 /* ---------- The two looks (prototype switch) ---------- */
@@ -107,16 +107,19 @@ function setLook(k) {
   paintRoom();
   if (ribbonsReady) paintRibbons();
 }
+let wantLook = look;
 document.querySelectorAll('.look button').forEach((b) => b.addEventListener('click', () => {
-  if (b.dataset.look === look) return;
-  swapScreen(() => setLook(b.dataset.look));
+  if (b.dataset.look === wantLook) return;
+  wantLook = b.dataset.look;
+  document.querySelectorAll('.look button').forEach((x) => x.setAttribute('aria-pressed', x === b));
+  swapScreen(() => { if (wantLook !== look) setLook(wantLook); });
 }));
 setLook(look);
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(paintRoom, 200); });
 // The rest light (Apple Watch's breathing countdown): three soft ribbons drawn once per look, in the calm colour and
 // in the "go" colour. During rest they drift, warm from one colour to the other, and pull together into one line.
-const RIBBONS = [{ amp: 0.09, f: 0.9, ph: 0.3, w: 2.6 }, { amp: 0.06, f: 1.35, ph: 2.1, w: 2 }, { amp: 0.11, f: 0.7, ph: 4.2, w: 1.6 }];
-const RIB_Y = 0.72; // the light sits under the number, never behind it
+const RIBBONS = [{ amp: 0.09, f: 0.9, ph: 0.3, w: 4.2 }, { amp: 0.06, f: 1.35, ph: 2.1, w: 3.2 }, { amp: 0.11, f: 0.7, ph: 4.2, w: 2.6 }];
+const RIB_Y = 0.78; // the light sits under the number, never behind it
 function paintRibbons() {
   const D = tick.offsetWidth || 140, S = Math.min(window.devicePixelRatio || 1, 2), L = LOOKS[look];
   for (const [k, rib] of document.querySelectorAll('.rib').entries()) {
@@ -151,7 +154,9 @@ const PLAN = [
   { w: 85, r: 6, last: '82.5 × 5' },
 ];
 /** Timers that belong to one run: Start over bumps gen, so nothing from the old run fires into the new one. */
-let gen = 0, inFlight = 0;
+let gen = 0, inFlight = 0, queued = [];
+/** Taps made while numbers are still flying wait for them to land, so nothing is dropped and nothing jumps. */
+const whenLanded = (fn) => { if (inFlight) queued.push(fn); else fn(); };
 const later = (fn, t) => { const g = gen; setTimeout(() => { if (g === gen) fn(); }, t); };
 let sets, cur, best, medalShown, medalPending = false, phase, locked, restEnd, restTimer, restAnims = [];
 
@@ -165,7 +170,7 @@ function medalSlot(row) { const m = document.createElement('span'); m.className 
 
 function init() {
   sets = PLAN.map((s) => ({ ...s }));
-  gen++; inFlight = 0;
+  gen++; inFlight = 0; queued = [];
   cur = 1; best = e1(82.5, 6); medalShown = false; phase = 'ready'; locked = false;
   stopRest();
   doneZone.replaceChildren(rowEl(sets[0], 0, true));
@@ -217,10 +222,11 @@ function startRest() {
   // The button grows into the rest ring (Apple Watch's timer): the ring swells out from the button to its full size
   // and goes from "go" to the calm colour as it does. Then it empties, second by second.
   const grow = curve(SPRINGS.set).duration;
+  const rt = getComputedStyle(ringset).transform, fo = getComputedStyle(full).opacity;
   ringset.getAnimations().forEach((a) => a.cancel());
   ringset.style.transform = 'none';
-  spring(ringset, [{ transform: `scale(${rim()})` }, { transform: 'none' }], SPRINGS.set);
-  fadeTo(full, 1, 0, grow);
+  spring(ringset, [{ transform: rt === 'none' ? `scale(${rim()})` : rt }, { transform: 'none' }], SPRINGS.set);
+  fadeTo(full, fo, 0, grow);
   warm.style.opacity = 1; cool.style.opacity = 1;
   warm.animate([{ opacity: 0 }, { opacity: 1 }], { duration: grow });
   fadeTo(pearl, 1, 0, 260); spring(pearl, [{ transform: 'scale(1)' }, { transform: 'scale(.9)' }], SPRINGS.type, { fill: 'forwards' });
@@ -231,13 +237,13 @@ function startRest() {
     : [{ transform: 'rotate(225deg)' }, { transform: 'rotate(45deg)', offset: 0.5 }, { transform: 'rotate(45deg)' }],
   { duration: T, easing: 'linear', fill: 'forwards' }));
   // Colour follows the time left: calm for most of the rest, turning to "go" near the end (Apple's effort colour).
-  restAnims.push(cool.animate([{ opacity: 1 }, { opacity: 0.85, offset: 0.5 }, { opacity: 0 }], { duration: T, easing: 'cubic-bezier(.5,0,.75,.6)', fill: 'forwards' }));
+  restAnims.push(cool.animate([{ opacity: 1 }, { opacity: 0.85, offset: 0.5 }, { opacity: 0 }], { duration: T, easing: 'cubic-bezier(.3,0,.6,1)', fill: 'forwards' }));
   // The light inside: ribbons drift, warm up, and pull into one bright line as the rest runs out.
   ribbons.style.opacity = 1;
-  restAnims.push(ribbons.animate([{ opacity: 0 }, { opacity: 0.7, offset: 0.04 }, { opacity: 0.7, offset: 0.8 }, { opacity: 1 }], { duration: T, fill: 'forwards' }));
+  restAnims.push(ribbons.animate([{ opacity: 0 }, { opacity: 0.8, offset: 0.04 }, { opacity: 0.8, offset: 0.8 }, { opacity: 1 }], { duration: T, fill: 'forwards' }));
   restAnims.push(ribbonsIn.animate([{ transform: 'none' }, { transform: 'scaleY(.04)' }], { duration: T, easing: 'cubic-bezier(.55,0,.8,.45)', fill: 'forwards' }));
   for (const g of document.querySelectorAll('.rib canvas.go')) restAnims.push(g.animate([{ opacity: 0 }, { opacity: 0.2, offset: 0.5 }, { opacity: 1 }], { duration: T, easing: 'cubic-bezier(.5,0,.75,.6)', fill: 'forwards' }));
-  document.querySelectorAll('.rib').forEach((r, k) => restAnims.push(r.animate(
+  if (!reduced()) document.querySelectorAll('.rib').forEach((r, k) => restAnims.push(r.animate(
     [{ transform: 'translateX(-7px) rotate(-6deg)' }, { transform: 'translateX(7px) rotate(5deg)' }],
     { duration: [3100, 4300, 5300][k], iterations: Infinity, direction: 'alternate', easing: 'ease-in-out' })));
   fadeTo(hint, 1, 0, 140);
@@ -274,7 +280,7 @@ skipBtn.addEventListener('click', () => {
   if (phase !== 'rest') return;
   const left = restEnd - performance.now(), quick = 360;
   if (left <= quick) return;
-  restAnims.forEach((a) => a.updatePlaybackRate(left / quick));
+  restAnims.forEach((a) => { if (a.effect.getTiming().iterations !== Infinity) a.updatePlaybackRate(left / quick); });
   restEnd = performance.now() + quick;
 });
 
@@ -283,28 +289,39 @@ let pressAnim;
 tick.addEventListener('pointerdown', () => {
   if (phase === 'done') return;
   pressAnim?.cancel();
-  pressAnim = spring(tick, [{ transform: 'none' }, { transform: 'scale(1.07)' }], SPRINGS.type, { fill: 'forwards' });
+  pressAnim = spring(tick, [{ transform: 'none' }, { transform: 'scale(1.12, 1.05)' }], SPRINGS.type, { fill: 'forwards' });
 });
 const release = () => {
   if (!pressAnim) return;
   const p = pressAnim; pressAnim = null;
   const now = getComputedStyle(tick).transform;
   p.cancel();
-  spring(tick, [{ transform: now === 'none' ? 'scale(1.07)' : now }, { transform: 'none' }], SPRINGS.press);
+  spring(tick, [{ transform: now === 'none' ? 'scale(1.12, 1.05)' : now }, { transform: 'none' }], SPRINGS.press);
 };
 tick.addEventListener('pointerup', release);
 tick.addEventListener('pointercancel', release);
 tick.addEventListener('pointerleave', release);
-tick.addEventListener('click', doTick);
+tick.addEventListener('click', () => { if (inFlight && !queued.length) whenLanded(doTick); else if (!inFlight) doTick(); });
 
 function doTick() {
-  if (locked || inFlight || phase === 'done') return;
+  if (locked || phase === 'done') return;
   locked = true; later(() => { locked = false; }, 620);
   buzz(12);
   const i = cur, s = sets[i];
   const wasResting = phase === 'rest';
   phase = 'ticking';
-  if (wasResting) { stopRest(260); fadeTo(ribbons, 1, 0, 200); fadeTo(restFace, 1, 0, 120); fadeTo(warm, 1, 0, 240); fadeTo(cool, getComputedStyle(cool).opacity, 0, 240); hideSkip(true); }
+  if (wasResting) {
+    // Read where everything is first, then let go of the rest animations, so nothing pops.
+    const op = (el) => getComputedStyle(el).opacity;
+    const o = { rb: op(ribbons), rf: op(restFace), w: op(warm), c: op(cool), f: op(full) }, rt = getComputedStyle(ringset).transform;
+    stopRest(0);
+    fadeTo(ribbons, o.rb, 0, 200); fadeTo(restFace, o.rf, 0, 120); fadeTo(warm, o.w, 0, 240); fadeTo(cool, o.c, 0, 240); fadeTo(full, o.f, 1, 240);
+    // The ring closes round the button again before the next rest grows it back out.
+    ringset.getAnimations().forEach((a) => a.cancel());
+    ringset.style.transform = `scale(${rim()})`;
+    spring(ringset, [{ transform: rt === 'none' ? 'none' : rt }, { transform: `scale(${rim()})` }], SPRINGS.press);
+    hideSkip(true);
+  }
   else fadeTo(hint, 1, 0, 140);
   // The tick has a body: an orange pearl swells inside the button and settles into a check.
   pearl.getAnimations().forEach((a) => a.cancel());
@@ -362,7 +379,10 @@ function fly(text, big, small, toSmall, delay = 0, xSpring = { damping: 1, respo
   spring(outer, xs, xSpring, o);
   inFlight++;
   const g = gen;
-  return spring(inner, ys, ySpring, o).finished.then(() => outer.remove(), () => outer.remove()).then(() => { if (g === gen) inFlight--; });
+  return spring(inner, ys, ySpring, o).finished.then(() => outer.remove(), () => outer.remove()).then(() => {
+    if (g !== gen) return;
+    if (--inFlight === 0) { const q = queued; queued = []; q.forEach((f) => f()); }
+  });
 }
 
 /** The done set's numbers fly into a new row above; the next set's numbers fly up out of their row into the card. */
@@ -397,6 +417,9 @@ function conveyor(i, isRec) {
   // Sideways first, then up: X settles faster than Y, so the numbers swing round the dial instead of through it.
   const IN_X = { damping: 1, response: 0.26 }, IN_Y = { damping: 1, response: 0.46 };
   const pw = fly(fmtW(n.w), bigW, uw, false, 20, IN_X, IN_Y), pr = fly(String(n.r), bigR, urr, false, 50, IN_X, IN_Y);
+  // The numbers pass over the steppers on the way in: they step back while it happens.
+  const steps = $('.steps');
+  if (!reduced()) { fadeTo(steps, getComputedStyle(steps).opacity, 0.25, 120); Promise.all([pw, pr]).then(() => { if (sets[cur] === n) fadeTo(steps, getComputedStyle(steps).opacity, 1, 220); }); }
   uw.style.opacity = 0; urr.style.opacity = 0;
   Object.assign(up.style, { position: 'fixed', left: ur.left + 'px', top: ur.top + 'px', width: ur.width + 'px', margin: 0, pointerEvents: 'none' });
   document.body.append(up);
@@ -409,20 +432,20 @@ function conveyor(i, isRec) {
   pr.then(() => { if (sets[cur] === n) bigR.style.opacity = ''; });
   rSet.set(String(cur + 1), 1);
   lastEl.textContent = 'last time ' + n.last;
-  lastEl.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, delay: 120, fill: 'backwards' });
+  lastEl.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, delay: reduced() ? 0 : 560, fill: 'backwards' });
   return row;
 }
 
 /* ---------- Steppers: only the changed digit rolls ---------- */
-document.querySelectorAll('.step').forEach((b) => b.addEventListener('click', () => {
-  if (phase === 'done' || cur >= sets.length || inFlight) return;
+document.querySelectorAll('.step').forEach((b) => b.addEventListener('click', () => whenLanded(() => {
+  if (phase === 'done' || cur >= sets.length) return;
   const s = sets[cur], k = b.dataset.k, d = +b.dataset.d;
   const v = k === 'w' ? Math.max(0, Math.min(500, s.w + d)) : Math.max(1, Math.min(50, s.r + d));
   if (v === s[k]) return;
   s[k] = v;
   (k === 'w' ? rW : rR).set(k === 'w' ? fmtW(v) : String(v), Math.sign(d));
   buzz(6);
-}));
+})));
 
 /* ---------- The exercise is done: the card turns into its summary ---------- */
 function finish() {
@@ -437,10 +460,15 @@ function finish() {
   [...summary.children].forEach((el, k) => spring(el, [{ transform: 'translateY(12px)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.set, { delay: 160 + k * 60, fill: 'backwards' }));
 }
 /** Fade the screen's parts (not .screen itself: an ancestor with opacity would cut the card's frost off from the room). */
+let swapping = false;
+/** Fades the screen out, makes the change, fades it back. A second tap while it runs joins the same swap. */
 function swapScreen(change) {
-  const parts = [...$('.screen').children];
-  Promise.all(parts.map((p) => p.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 130, fill: 'forwards' }).finished)).then(() => {
+  if (swapping) return;
+  swapping = true;
+  const parts = [$('.glow'), ...$('.screen').children];
+  Promise.all(parts.map((p) => p.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 130, fill: 'forwards' }).finished)).catch(() => {}).then(() => {
     change();
+    swapping = false;
     for (const p of parts) { p.getAnimations().forEach((a) => a.cancel()); p.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220 }); }
   });
 }
