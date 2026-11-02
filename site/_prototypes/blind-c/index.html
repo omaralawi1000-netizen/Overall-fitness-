@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
+<meta name="theme-color" content="#05081f">
+<meta name="color-scheme" content="dark">
+<title>Sand: workout screen</title>
+<link rel="preload" href="fonts/archivo.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<canvas id="sand" aria-hidden="true"></canvas>
+
+<header class="top">
+  <div class="title">
+    <h1 class="swap" id="exName"></h1>
+    <p class="swap" id="sub"></p>
+  </div>
+  <p class="clock" id="clock"></p>
+</header>
+
+<button class="figure" id="figure" type="button"></button>
+<span class="cap" id="capW"></span>
+<span class="cap" id="capR"></span>
+<p class="note swap" id="note"></p>
+
+<div class="restbar" id="restbar">
+  <button class="chip glass" id="minus" type="button"></button>
+  <button class="chip glass" id="plus" type="button"></button>
+</div>
+
+<div class="best" id="best">
+  <p class="best-title" id="bestTitle"></p>
+  <p class="best-sub" id="bestSub"></p>
+</div>
+
+<div class="labels" id="labels" aria-hidden="true"></div>
+
+<section class="summary" id="summary" aria-live="polite">
+  <h2 id="sumTitle"></h2>
+  <dl id="sumList"></dl>
+</section>
+
+<button class="main glass" id="main" type="button"><span class="lbl"></span></button>
+
+<div class="scrim" id="scrim"></div>
+<section class="tray glass" id="tray" aria-hidden="true">
+  <div class="tray-row">
+    <span class="tray-label" id="lblW"></span>
+    <button class="step" type="button" data-k="w" data-d="-1" id="wMinus">−</button>
+    <span class="roll" id="rollW"></span>
+    <button class="step" type="button" data-k="w" data-d="1" id="wPlus">+</button>
+  </div>
+  <div class="tray-row">
+    <span class="tray-label" id="lblR"></span>
+    <button class="step" type="button" data-k="r" data-d="-1" id="rMinus">−</button>
+    <span class="roll" id="rollR"></span>
+    <button class="step" type="button" data-k="r" data-d="1" id="rPlus">+</button>
+  </div>
+  <button class="tray-done" type="button" id="trayDone"></button>
+</section>
+
+<p class="sr" id="live" aria-live="polite"></p>
+<p class="nogl" id="nogl" hidden>This screen needs WebGL 2, which this browser has switched off.</p>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>
