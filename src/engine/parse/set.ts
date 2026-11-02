@@ -47,6 +47,11 @@ const weight = (v: string, unit?: string): { kg: number; entered?: { value: numb
 
 /** One set-shaped phrase, with no correction in it. Null when it isn't one. */
 export function readSet(text: string): SetCommand | null {
+  const c = readSetRaw(text);
+  return c?.kind === 'set' && (c.kg === 0 || c.reps === 0) ? null : c; // 0 reps and 0 kilos are not a set
+}
+
+function readSetRaw(text: string): SetCommand | null {
   const s = normal(text);
   if (!s || s.split(' ').length > 9) return null; // a sentence, not a set
   // number words are digits by now: "the last one" is "the last 1"
@@ -55,12 +60,12 @@ export function readSet(text: string): SetCommand | null {
   if (/^(?:done|finished|got it|(?:the |that |this )?set (?:is )?(?:done|finished)|that set (?:is )?(?:done|finished)|next set|færdig(?: med (?:sættet|det|den))?|(?:så )?(?:jeg er|er jeg|jeg har) (?:færdig|klaret det)|klar|(?:i(?:'m| am) )?done with (?:the|that|this) set)$/.test(s)) return { kind: 'done' };
   if (/^(?:skip(?: (?:it|this|that|this 1|that 1|this set|that set|the set))?|spring (?:over|den over|det over|det sæt over|sættet over)(?: (?:det|den|det sæt|sættet))?|drop (?:it|this set))$/.test(s)) return { kind: 'skip' };
   let m = s.match(new RegExp(`^(?:(?:add|plus|tilføj|give me|giv mig) |\\+ ?)?${NUM} ?(?:s|sec|secs|seconds|sekunder)(?: (?:more|extra|mere|ekstra|rest|pause))?(?: to (?:the )?rest| til hvilen| til pausen)?$`));
-  if (m) return { kind: 'rest', sec: Math.round(n(m[1])) };
+  if (m && n(m[1]) > 0 && n(m[1]) <= 600) return { kind: 'rest', sec: Math.round(n(m[1])) };
   m = s.match(new RegExp(`^(?:(?:add|plus|tilføj|give me|giv mig) |\\+ ?)?(?:another |(?:a|1|et|en) (?:(?:more|extra|mere|ekstra) )?|\\+ ?1 ?)(?:minute|minut|min)(?: (?:more|extra|mere|ekstra))?(?: to (?:the )?rest| til hvilen| til pausen)?$`));
   if (m) return { kind: 'rest', sec: 60 };
   // "add 2 min", "plus two minutes": a number of minutes needs the "add"/"plus" (alone, "2 minutes" is talk)
   m = s.match(new RegExp(`^(?:(?:add|plus|tilføj|give me|giv mig) |\\+ ?)${NUM} ?(?:min|mins|minute|minutes|minut|minutter)(?: (?:more|extra|mere|ekstra))?(?: to (?:the )?rest| til hvilen| til pausen)?$`));
-  if (m && n(m[1]) > 0) return { kind: 'rest', sec: Math.round(n(m[1]) * 60) };
+  if (m && n(m[1]) > 0 && n(m[1]) <= 10) return { kind: 'rest', sec: Math.round(n(m[1]) * 60) };
   // "8 x 80" / "80 x 8": a multiplication sign does not say which number is the weight, only a unit does
   m = s.match(new RegExp(`^${NUM} ?${KG}? (?:x|×|by) ${NUM} ?${KG}?$`));
   if (m) {

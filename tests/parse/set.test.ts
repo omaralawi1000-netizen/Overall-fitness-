@@ -144,3 +144,16 @@ describe('Codex review of #51, round 7', () => {
     expect(fixMisheard({ reps: 100 }, { reps: 10 }).reps).toBe(10);
   });
 });
+
+describe('generated-phrase finds', () => {
+  it('a rest add has a sane size: seconds up to 10 minutes, never "+ 82,5 minutes"', () => {
+    expect(p('add 90 seconds')).toEqual({ kind: 'rest', sec: 90 });
+    expect(p('add 2 min')).toEqual({ kind: 'rest', sec: 120 });
+    expect(p('+ 82,5 minutes')).toBeNull();
+    expect(p('add 5000 seconds')).toBeNull();
+  });
+  it('0 reps or 0 kilos is not a set', () => {
+    expect(p('0')).toBeNull();
+    expect(p('0 kg')).toBeNull();
+  });
+});
