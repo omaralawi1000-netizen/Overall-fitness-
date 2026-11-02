@@ -16,7 +16,7 @@
 :root, html[data-look="a"] {
   --bg: #050607; --tx: #f3f5f6; --dim: rgba(243, 245, 246, .6); --faint: rgba(243, 245, 246, .44); --line: rgba(255, 255, 255, .07);
   --go: #c6ff3d; --go-lit: #ecffb3; --go-deep: #86cc00; --on-go: #102000; --go-glow: rgba(198, 255, 61, .28);
-  --cool: #7f9c3c;
+  --cool: #4fd1a5;
   --surface: #0f1113; --surface-edge: inset 0 1px 0 rgba(255, 255, 255, .06), inset 0 0 0 1px rgba(255, 255, 255, .055); --surface-blur: none; --surface-shadow: 0 0 0 transparent;
   --chip: rgba(255, 255, 255, .07); --chip-on: rgba(255, 255, 255, .13);
   --ring: 8px; --track: rgba(255, 255, 255, .07);
@@ -25,7 +25,7 @@
   --num-weight: 420; --num-track: -.05em;
   --tray: rgba(24, 27, 30, .96); --halo: #0f1113;
   --dim-bg: rgba(3, 4, 5, .95);
-  --m-face: radial-gradient(circle at 32% 24%, #f2f5f8 0%, #aab2bb 26%, #59616a 62%, #2b3036 100%);
+  --m-face: radial-gradient(circle at 32% 24%, #f6ffd6 0%, #b9c49a 26%, #5d6650 62%, #2b3029 100%);
   --m-rim: rgba(255, 255, 255, .85); --m-ring: #22272c; --m-ink: #10151a; --m-sub: rgba(16, 21, 26, .62); --m-edge: linear-gradient(90deg, #3a4047, #b9c1ca 50%, #3a4047);
   --m-num: 600 normal 72px/1 var(--sans); --m-num-track: -.05em;
   --sheen: rgba(236, 255, 179, .85);
@@ -34,7 +34,7 @@
 html[data-look="b"] {
   --bg: #edf0f5; --tx: #0f1320; --dim: rgba(15, 19, 32, .62); --faint: rgba(15, 19, 32, .56); --line: rgba(15, 19, 32, .08);
   --go: #2d58ff; --go-lit: #8fa6ff; --go-deep: #1a3ccc; --on-go: #ffffff; --go-glow: rgba(45, 88, 255, .25);
-  --cool: #8da2dd;
+  --cool: #5aa9f2;
   --surface: rgba(255, 255, 255, .62); --surface-edge: inset 0 1px 0 rgba(255, 255, 255, .95), inset 0 0 0 1px rgba(255, 255, 255, .7); --surface-blur: blur(24px) saturate(1.4); --surface-shadow: 0 18px 44px rgba(30, 44, 90, .09), 0 2px 6px rgba(30, 44, 90, .04);
   --chip: rgba(15, 19, 32, .055); --chip-on: rgba(15, 19, 32, .1);
   --ring: 6px; --track: rgba(15, 19, 32, .07);
@@ -158,7 +158,15 @@ html[data-look="b"] .c-hot { stroke: var(--go); }
 .skip { height: 40px; padding: 0 18px; border-radius: 20px; font-size: 14px; color: var(--dim); background: var(--chip); opacity: 0; visibility: hidden; transition: transform .16s cubic-bezier(.2, .8, .2, 1); }
 .skip:active { transform: scale(.94); transition-duration: .05s; }
 
-.summary { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; padding: 24px; }
+.summary { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; padding: 24px 22px; }
+.sum-big { display: flex; align-items: baseline; gap: 6px; margin-top: 6px; }
+.sum-kg { font-size: 64px; line-height: 1; font-weight: var(--num-weight); letter-spacing: var(--num-track); font-variant-numeric: tabular-nums; }
+.sum-sets { list-style: none; align-self: stretch; margin: 10px 0 2px; border-top: 1px solid var(--line); }
+.sum-sets li { display: flex; align-items: center; height: 38px; border-bottom: 1px solid var(--line); font-size: 15px; }
+.sum-sets li > span:first-child { color: var(--dim); }
+.sum-sets b { margin-left: auto; font-weight: var(--num-weight); letter-spacing: var(--num-track); font-variant-numeric: tabular-nums; }
+.sum-sets i { font-style: normal; color: var(--dim); font-size: 13px; }
+.sum-sets .medal-slot { width: 14px; height: 14px; border-radius: 50%; margin-left: 10px; background: var(--m-face); box-shadow: inset 0 0 0 1.5px var(--go-deep); }
 .summary[hidden] { display: none; }
 .sum-title { font: var(--name); font-size: 32px; letter-spacing: var(--name-track); }
 .sum-line { color: var(--dim); font-size: 15px; font-variant-numeric: tabular-nums; }
@@ -205,7 +213,7 @@ html[data-look="b"] .c-hot { stroke: var(--go); }
 .rib canvas.go { opacity: 0; }
 /* Sparks round the pearl as it swells (Not Boring). */
 .sparks { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
-.sparks i { position: absolute; left: -1.5px; top: -7px; width: 3px; height: 14px; border-radius: 1.5px; background: var(--go); opacity: 0; }
+.sparks i { position: absolute; left: -2px; top: -9px; width: 4px; height: 18px; border-radius: 2px; background: var(--go); opacity: 0; }
 .pearl::after { content: ''; position: absolute; left: 22%; top: 14%; width: 34%; height: 22%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 255, 255, .75), transparent); }
 .pearl { position: relative; }
 /* A number in flight between the card and a row (drawn at the big size, scaled down on the way). */

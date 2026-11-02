@@ -87,9 +87,9 @@ const rW = new Roll($('.big.w')), rR = new Roll($('.big.r')), rSet = new Roll($(
 /* ---------- The room ---------- */
 /* ---------- The two looks (prototype switch) ---------- */
 const LOOKS = {
-  a: { room: null, reward: [215, 228, 255], cool: '#55701f', go: '#c6ff3d', theme: '#050607' },
+  a: { room: null, reward: [215, 228, 255], cool: '#4fd1a5', go: '#c6ff3d', theme: '#050607' },
   b: { room: { blobs: [{ x: 0.95, y: 0.02, sx: 0.8, sy: 0.6, c: [176, 198, 255], a: 0.55 }, { x: 0.05, y: 0.95, sx: 0.7, sy: 0.5, c: [255, 255, 255], a: 0.7 }], base: [237, 240, 245] },
-       reward: [150, 175, 255], cool: '#b7c4e6', go: '#2d58ff', theme: '#edf0f5' },
+       reward: [150, 175, 255], cool: '#5aa9f2', go: '#2d58ff', theme: '#edf0f5' },
 };
 let ribbonsReady = false;
 let look = new URLSearchParams(location.search).get('look') === 'b' ? 'b' : 'a';
@@ -112,7 +112,7 @@ document.querySelectorAll('.look button').forEach((b) => b.addEventListener('cli
   if (b.dataset.look === wantLook) return;
   wantLook = b.dataset.look;
   document.querySelectorAll('.look button').forEach((x) => x.setAttribute('aria-pressed', x === b));
-  swapScreen(() => { if (wantLook !== look) setLook(wantLook); });
+  whenLanded(() => swapScreen(() => { if (wantLook !== look) setLook(wantLook); }));
 }));
 setLook(look);
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(paintRoom, 200); });
@@ -218,7 +218,7 @@ function startRest() {
   phase = 'rest';
   const T = ms(REST);
   restEnd = performance.now() + T;
-  rCount.render(fmtT(REST)); lastLeft = REST;
+  rCount.render(fmtT(REST)); lastLeft = REST; skipped = false;
   // The button grows into the rest ring (Apple Watch's timer): the ring swells out from the button to its full size
   // and goes from "go" to the calm colour as it does. Then it empties, second by second.
   const grow = curve(SPRINGS.set).duration;
@@ -252,12 +252,12 @@ function startRest() {
   clearInterval(restTimer);
   restTimer = setInterval(restTick, 100);
 }
-let lastLeft = 0;
+let lastLeft = 0, skipped = false;
 function restTick() {
   const left = Math.max(0, Math.ceil((restEnd - performance.now()) / 1000));
   rCount.set(fmtT(left), -1);
   // The last five seconds are each their own beat (Push's countdown).
-  if (left !== lastLeft && left <= 5 && left > 0 && !reduced()) {
+  if (left !== lastLeft && left <= 5 && left > 0 && !reduced() && !skipped) {
     spring($('.count'), [{ transform: 'scale(1.16)' }, { transform: 'none' }], SPRINGS.press);
     buzz(6);
   }
@@ -281,7 +281,7 @@ skipBtn.addEventListener('click', () => {
   const left = restEnd - performance.now(), quick = 360;
   if (left <= quick) return;
   restAnims.forEach((a) => { if (a.effect.getTiming().iterations !== Infinity) a.updatePlaybackRate(left / quick); });
-  restEnd = performance.now() + quick;
+  restEnd = performance.now() + quick; skipped = true;
 });
 
 /* ---------- Ticking a set ---------- */
@@ -315,7 +315,7 @@ function doTick() {
     const op = (el) => getComputedStyle(el).opacity;
     const o = { rb: op(ribbons), rf: op(restFace), w: op(warm), c: op(cool), f: op(full) }, rt = getComputedStyle(ringset).transform;
     stopRest(0);
-    fadeTo(ribbons, o.rb, 0, 200); fadeTo(restFace, o.rf, 0, 120); fadeTo(warm, o.w, 0, 240); fadeTo(cool, o.c, 0, 240); fadeTo(full, o.f, 1, 240);
+    fadeTo(ribbons, o.rb, 0, 200); fadeTo(restFace, o.rf, 0, 90); fadeTo(warm, o.w, 0, 240); fadeTo(cool, o.c, 0, 240); fadeTo(full, o.f, 1, 240);
     // The ring closes round the button again before the next rest grows it back out.
     ringset.getAnimations().forEach((a) => a.cancel());
     ringset.style.transform = `scale(${rim()})`;
@@ -326,14 +326,15 @@ function doTick() {
   // The tick has a body: an orange pearl swells inside the button and settles into a check.
   pearl.getAnimations().forEach((a) => a.cancel());
   pearl.style.transform = 'none'; pearl.style.opacity = 1;
-  spring(pearl, [{ transform: 'scale(.12)', opacity: 0.7 }, { transform: 'none', opacity: 1 }], SPRINGS.set);
+  spring(pearl, [{ transform: `scale(${wasResting ? 0.3 : 0.12})`, opacity: 0.7 }, { transform: 'none', opacity: 1 }], SPRINGS.set);
   // Not Boring's sparks: short marks flick outward round the swelling pearl, then they are gone.
   if (!reduced()) sparks.forEach((sp, k) => {
+    sp.getAnimations().forEach((a) => a.cancel());
     const a = k * 30 + (k % 2 ? 9 : -6), d = 60 + (k * 37) % 50;
     sp.animate([
       { transform: `rotate(${a}deg) translateY(-${tick.offsetWidth * 0.3}px) scaleY(.3)`, opacity: 0 },
-      { transform: `rotate(${a}deg) translateY(-${tick.offsetWidth * 0.5 + 6}px) scaleY(1)`, opacity: 1, offset: 0.45 },
-      { transform: `rotate(${a}deg) translateY(-${tick.offsetWidth * 0.5 + 22}px) scaleY(.5)`, opacity: 0 }],
+      { transform: `rotate(${a}deg) translateY(-${tick.offsetWidth * 0.5 + 12}px) scaleY(1)`, opacity: 1, offset: 0.45 },
+      { transform: `rotate(${a}deg) translateY(-${tick.offsetWidth * 0.5 + 34}px) scaleY(.5)`, opacity: 0 }],
     { duration: 420, delay: d, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'both' });
   });
   fadeTo(cHot, getComputedStyle(cHot).opacity, 0, 90);
@@ -342,6 +343,7 @@ function doTick() {
   if (!wasResting) fadeTo(full, 1, 1, 0);
 
   const isRec = e1(s.w, s.r) > best + 1e-6, oldBest = best;
+  s.rec = isRec;
   if (isRec) { best = e1(s.w, s.r); }
   later(() => {
     const row = conveyor(i, isRec);
@@ -419,7 +421,7 @@ function conveyor(i, isRec) {
   const pw = fly(fmtW(n.w), bigW, uw, false, 20, IN_X, IN_Y), pr = fly(String(n.r), bigR, urr, false, 50, IN_X, IN_Y);
   // The numbers pass over the steppers on the way in: they step back while it happens.
   const steps = $('.steps');
-  if (!reduced()) { fadeTo(steps, getComputedStyle(steps).opacity, 0.25, 120); Promise.all([pw, pr]).then(() => { if (sets[cur] === n) fadeTo(steps, getComputedStyle(steps).opacity, 1, 220); }); }
+  if (!reduced()) { fadeTo(steps, getComputedStyle(steps).opacity, 0, 120); Promise.all([pw, pr]).then(() => { if (sets[cur] === n) fadeTo(steps, getComputedStyle(steps).opacity, 1, 220); }); }
   uw.style.opacity = 0; urr.style.opacity = 0;
   Object.assign(up.style, { position: 'fixed', left: ur.left + 'px', top: ur.top + 'px', width: ur.width + 'px', margin: 0, pointerEvents: 'none' });
   document.body.append(up);
@@ -454,7 +456,15 @@ function finish() {
   const parts = [...card.children].filter((el) => !el.classList.contains('summary') && el !== summary);
   for (const el of parts) fadeTo(el, getComputedStyle(el).opacity, 0, 200).finished.then(() => { if (phase === 'done') el.style.visibility = 'hidden'; }, () => {});
   const kg = sets.reduce((a, s) => a + s.w * s.r, 0);
-  $('.sum-line').textContent = `${sets.length} sets · ${kg.toLocaleString('en')} kg moved`;
+  // Calm hero: one big number, the four sets under it, the record marked with its medal.
+  $('.sum-kg').textContent = kg.toLocaleString('en');
+  $('.sum-sets').replaceChildren(...sets.map((s, k) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span>Set ${k + 1}</span><b>${fmtW(s.w)}<i> kg × </i>${s.r}</b>`;
+    if (s.rec) li.append(Object.assign(document.createElement('span'), { className: 'medal-slot' }));
+    return li;
+  }));
+  $('.sum-line').textContent = `${sets.length} sets · best ${$('.best').textContent}`;
   summary.hidden = false;
   fadeTo($('.restart'), 1, 0, 200).finished.then(() => { if (phase === 'done') $('.restart').style.visibility = 'hidden'; }, () => {});
   [...summary.children].forEach((el, k) => spring(el, [{ transform: 'translateY(12px)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.set, { delay: 160 + k * 60, fill: 'backwards' }));
