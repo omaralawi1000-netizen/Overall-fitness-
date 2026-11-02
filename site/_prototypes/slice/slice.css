@@ -25,8 +25,8 @@
   --num-weight: 420; --num-track: -.05em;
   --tray: rgba(24, 27, 30, .96); --halo: #0f1113;
   --dim-bg: rgba(3, 4, 5, .95);
-  --m-face: radial-gradient(circle at 32% 24%, #f6ffd6 0%, #b9c49a 26%, #5d6650 62%, #2b3029 100%);
-  --m-rim: rgba(255, 255, 255, .85); --m-ring: #22272c; --m-ink: #10151a; --m-sub: rgba(16, 21, 26, .62); --m-edge: linear-gradient(90deg, #3a4047, #b9c1ca 50%, #3a4047);
+  --m-face: radial-gradient(circle at 32% 24%, #fbffc2 0%, #c6ff3d 30%, #7fb800 65%, #2f4a00 100%);
+  --m-rim: rgba(255, 255, 255, .85); --m-ring: #2a3d05; --m-ink: #102000; --m-sub: rgba(16, 32, 0, .62); --m-edge: linear-gradient(90deg, #3d5a00, #d8ff7a 50%, #3d5a00);
   --m-num: 600 normal 72px/1 var(--sans); --m-num-track: -.05em;
   --sheen: rgba(236, 255, 179, .85);
 }
@@ -43,7 +43,7 @@ html[data-look="b"] {
   --num-weight: 250; --num-track: -.045em;
   --tray: rgba(255, 255, 255, .9); --halo: #f7f8fb;
   --dim-bg: rgba(237, 240, 245, .96);
-  --m-face: radial-gradient(circle at 32% 24%, #ffffff 0%, #e3e8f0 30%, #a9b3c2 68%, #7c8798 100%);
+  --m-face: radial-gradient(circle at 32% 24%, #ffffff 0%, #e2e9f7 30%, #a3b3d6 68%, #6f86c4 100%);
   --m-rim: rgba(255, 255, 255, .9); --m-ring: #c9d1dc; --m-ink: #18213a; --m-sub: rgba(24, 33, 58, .6); --m-edge: linear-gradient(90deg, #8a94a3, #eef2f7 50%, #8a94a3);
   --m-num: italic 400 80px/1 var(--serif); --m-num-track: -.01em;
   --sheen: rgba(255, 255, 255, .9);
@@ -166,7 +166,7 @@ html[data-look="b"] .c-hot { stroke: var(--go); }
 .sum-sets li > span:first-child { color: var(--dim); }
 .sum-sets b { margin-left: auto; font-weight: var(--num-weight); letter-spacing: var(--num-track); font-variant-numeric: tabular-nums; }
 .sum-sets i { font-style: normal; color: var(--dim); font-size: 13px; }
-.sum-sets .medal-slot { width: 14px; height: 14px; border-radius: 50%; margin-left: 10px; background: var(--m-face); box-shadow: inset 0 0 0 1.5px var(--go-deep); }
+.sum-sets .medal-slot { width: 18px; height: 18px; border-radius: 50%; margin-left: 10px; background: var(--m-face); box-shadow: inset 0 0 0 1.5px var(--go-deep); }
 .summary[hidden] { display: none; }
 .sum-title { font: var(--name); font-size: 32px; letter-spacing: var(--name-track); }
 .sum-line { color: var(--dim); font-size: 15px; font-variant-numeric: tabular-nums; }
@@ -229,3 +229,5 @@ html[data-look="b"] .c-hot { stroke: var(--go); }
 
 @media (max-height: 700px) { :root { --dial: 168px; --disc: 120px; } .ex { font-size: 32px; } .big { font-size: 52px; } }
 html[data-look="b"] .row .medal-slot { box-shadow: inset 0 0 0 1.5px var(--go-deep), 0 1px 3px rgba(30, 44, 90, .3); }
+html[data-look="a"] .sum-kg { color: var(--go); }
+html[data-look="a"] .card { background: linear-gradient(180deg, rgba(198, 255, 61, .05), transparent 40%), var(--surface); }

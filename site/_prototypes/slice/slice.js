@@ -301,7 +301,7 @@ const release = () => {
 tick.addEventListener('pointerup', release);
 tick.addEventListener('pointercancel', release);
 tick.addEventListener('pointerleave', release);
-tick.addEventListener('click', () => { if (inFlight && !queued.length) whenLanded(doTick); else if (!inFlight) doTick(); });
+tick.addEventListener('click', () => whenLanded(doTick));
 
 function doTick() {
   if (locked || phase === 'done') return;
@@ -314,7 +314,7 @@ function doTick() {
     // Read where everything is first, then let go of the rest animations, so nothing pops.
     const op = (el) => getComputedStyle(el).opacity;
     const o = { rb: op(ribbons), rf: op(restFace), w: op(warm), c: op(cool), f: op(full) }, rt = getComputedStyle(ringset).transform;
-    stopRest(0);
+    stopRest(300); // held (paused) under the fades below, cancelled once they are done
     fadeTo(ribbons, o.rb, 0, 200); fadeTo(restFace, o.rf, 0, 90); fadeTo(warm, o.w, 0, 240); fadeTo(cool, o.c, 0, 240); fadeTo(full, o.f, 1, 240);
     // The ring closes round the button again before the next rest grows it back out.
     ringset.getAnimations().forEach((a) => a.cancel());
