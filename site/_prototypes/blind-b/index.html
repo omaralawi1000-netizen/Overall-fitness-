@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#030304">
+<meta name="robots" content="noindex">
+<title>Aven 2 · Cast</title>
+<link rel="preload" href="geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<canvas id="gl" aria-hidden="true"></canvas>
+<main id="app" class="is-lift is-intro">
+  <header class="top">
+    <span class="day">Push</span>
+    <span class="segs" id="segs" aria-hidden="true"></span>
+    <span class="clock" id="clock" aria-label="Workout time">18:42</span>
+  </header>
+
+  <section class="title">
+    <h1 class="swap" id="name">Bench press</h1>
+    <p class="sub swap" id="sub">Set 2 of 4</p>
+  </section>
+
+  <section class="hero" id="hero" aria-live="polite">
+    <p class="badge" id="badge">New best</p>
+    <span class="sr" id="heroText"></span>
+    <span class="unit" id="unit">kg</span>
+  </section>
+
+  <section class="mid">
+    <div class="adjust" id="adjust">
+      <div class="row">
+        <button class="step" data-step="w-1" aria-label="Less weight">−</button>
+        <div class="ruler" aria-hidden="true"><div class="tape" id="tape"></div><i class="mark"></i></div>
+        <button class="step" data-step="w1" aria-label="More weight">+</button>
+      </div>
+      <div class="row">
+        <button class="step" data-step="r-1" aria-label="One rep fewer">−</button>
+        <div class="reps" id="reps"><span class="sr" id="repsText"></span><span class="unit2" id="repsUnit">reps</span></div>
+        <button class="step" data-step="r1" aria-label="One rep more">+</button>
+      </div>
+    </div>
+    <p class="total" id="total">kg lifted</p>
+    <div class="restctl" id="restctl">
+      <p class="nextset swap" id="nextset">Next · 82.5 kg × 8</p>
+      <div class="chips">
+        <button class="chip" data-rest="-15">−15 s</button>
+        <button class="chip" data-rest="15">+15 s</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="sets" id="sets" aria-label="Sets"></section>
+
+  <div class="foot">
+    <button class="go" id="go"><span class="swap" id="goLabel">Log set</span></button>
+    <p class="upnext swap" id="upnext">Up next · Incline dumbbell press</p>
+  </div>
+</main>
+<div class="fps" id="fps" hidden></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
