@@ -183,6 +183,7 @@ const swap = (el, html) => {
 let first = true, cur = 'morning';
 function show(k) {
   const d = M[k]; cur = k;
+  close(); // an open page would show the old moment's numbers
   const root = document.documentElement;
   root.dataset.phase = d.phase;
   level = d.level; field(); lift(d.level.ready);
