@@ -7,7 +7,12 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 - **After every test, prototype or rejection:** add a dated entry. His words go in quotes. Our reading of them is marked "Reading".
 - **Rounds alternate:** a wide search (Sonnet), then one small polished slice (Opus).
 
-## What it suggests now (2 Nov 2026, before the Heat workout screen)
+## What it suggests now (2 Nov 2026, before the bar-picture workout screen)
+- **One seamless picture beats panels.** His Today notes ("seamless", "a blurred gradient … like Oura", "make it make sense") and now the picture that blurs at the bottom point the same way: one continuous image is the identity, and boxes on top of it break it.
+- **The picture has to mean something.** "Make it make sense": a pretty image that says nothing is decoration. So the picture is the equipment for this set, and it changes with what he does.
+- **He cleared the slate for this one.** "Ignore everything I said was good" means Heat, the keepers and the clips are not the brief this time. The constants still hold: minimal but impressive, the depth one tap away, never empty.
+
+## What it suggested before that (2 Nov 2026, before the Heat workout screen)
 - **Build on what he already approved, not new concepts.** Six fresh frost ideas got "not really my style". His hearted clips and Heat's light are the fundamentals; every moment on this screen comes from one named clip.
 - **Calm on top, depth one tap away.** "Empty" and "minimal but impressive" together mean that the main view stays quiet and the information lives behind small details that open in place.
 - **Copy nothing from the old app's structure.** He showed it for the depth it holds, then said we can do it "in a better way".
@@ -38,6 +43,11 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 - **After the Pick list (2 Nov):** he picks mechanics he can picture using (trays, rolling digits, card to page, records as objects) and leaves atmosphere (skies, light floods) at "maybe". Prove atmosphere inside a real moment before building on it.
 
 ## Entries
+
+### 2 Nov 2026: the bar is the picture (/_prototypes/workout/)
+Asked: "Look at how the picture gradually blurs at the bottom. Make it everything seamless and actually fit. Make it make sense. And also, with that, ignore everything I said was good and just make a very, very, very beautiful and good workout screen with Opus extra high."
+Built: the top half is a photo-real studio picture of this set's equipment, drawn live in 3D: the barbell with the exact plates for the weight on screen (82.5 kg = 25 + 5 + 1.25 a side), a pair of numbered dumbbells, or a cable stack with the pin at the weight. It is sharp at the top and goes softer lower down, like a lens, until it dissolves into a colour field where the numbers sit (crimson for barbells, bronze for dumbbells, green for cables). The picture follows the workout: a tick racks focus off the bar for the rest and it comes back into focus in the last 8 seconds; changing the weight slides plates on and off (or moves the pin); a new best turns the numbers gold while a soft light passes over the plates; the next exercise dissolves in. On top: the name in italic serif, set dashes, one big "82.5 kg × 6 reps", one Coach line, last time and best, a cream Done. One tap away: the name (today's sets, last time, an estimated-max chart, swap, rest, add a set, note), the numbers (a weight tray that loads the bar as you tap), the Coach line (why, and one suggestion), the clock chip and the Up next bar (the whole workout), Finish (a summary).
+Verdict: waiting for Omar.
 
 ### 2 Nov 2026: one Heat workout screen with frost (/_prototypes/heat/)
 Built: one workout screen in Heat with frosted glass and six themes, each moment taken from a hearted clip. The tick is Not Boring's (a dot swells into a pearl and a check draws). The number change is Push's (only the changed digit rolls, with motion blur), and the set label is the multi-state badge (it blurs across). Rest is Watch's (the Done button grows into the ring) with Peace Out's calm (the time fades in after the ring settles). A new record is Nike's takeover (gold floods out of the set) plus Any Distance's medal (it turns to face you with an edge light). The next exercise slides in like Md Vinyl's next track. The depth sits one tap away, with no ••• menu: the Coach dot opens its note (with "Use 85 kg" and Undo), "Last time" opens last session, the set dots open every set, the clock chip opens the whole workout, and the exercise name opens one page with everything about it. That page holds the target, stats, a chart, recent sessions and how-to, and at its bottom everything you can change today (swap, superset, note, rest time). Tapping a number unfolds − and + under it.
