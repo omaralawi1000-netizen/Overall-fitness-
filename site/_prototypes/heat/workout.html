@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Heat workout</title>
+<link rel="stylesheet" href="base.css">
+<link rel="stylesheet" href="workout.css">
+</head>
+<body>
+<div class="light"></div>
+<main class="screen" id="screen">
+  <header class="top">
+    <button type="button" class="chip frost" data-open="workout" aria-label="Whole workout"><span class="serif">Push</span><span class="num clock">41:12</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg></button>
+    <button type="button" class="coach" data-open="coach" aria-label="Coach"><i class="glowobj"></i></button>
+  </header>
+
+  <section class="ex">
+    <div class="name-row">
+      <button type="button" class="name serif" data-open="exercise"><span class="nm">Bench press</span></button>
+    </div>
+    <button type="button" class="sets-btn" data-open="sets" aria-label="All sets"><span class="dots"></span><span class="badge"><span class="bt">Set 3 of 4</span></span></button>
+  </section>
+
+  <section class="slab frost">
+    <div class="fields">
+      <div class="field" data-f="kg">
+        <button type="button" class="step minus" data-d="-1" aria-label="Less weight" tabindex="-1">−</button>
+        <button type="button" class="val" aria-label="Change weight"><span class="num big kg"></span><small>kg</small></button>
+        <button type="button" class="step plus" data-d="1" aria-label="More weight" tabindex="-1">+</button>
+      </div>
+      <span class="x num" aria-hidden="true">×</span>
+      <div class="field" data-f="r">
+        <button type="button" class="step minus" data-d="-1" aria-label="Fewer reps" tabindex="-1">−</button>
+        <button type="button" class="val" aria-label="Change reps"><span class="num big reps"></span><small>reps</small></button>
+        <button type="button" class="step plus" data-d="1" aria-label="More reps" tabindex="-1">+</button>
+      </div>
+    </div>
+    <button type="button" class="last" data-open="last"><span class="lt">Last time <b class="num">82.5 × 5</b></span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 3l3 3-3 3"/></svg></button>
+  </section>
+
+  <button type="button" class="then" data-open="workout"><span class="th"></span></button>
+
+  <button type="button" class="go done" data-a="tick">
+    <span class="pearl" aria-hidden="true"><i class="ticks"></i><i class="ball"></i><svg viewBox="0 0 24 24"><path d="M6.5 12.5l3.6 3.6 7.4-8"/></svg></span>
+    <span class="dl">Done</span><small class="ds">Set 3</small>
+  </button>
+</main>
+
+<!-- Trays: one surface that grows out of the detail you tapped and shrinks back into it. -->
+<div class="scrim" hidden></div>
+<div class="tray frost" role="dialog" hidden><div class="tray-in"></div></div>
+
+<!-- Rest: the Done pill grows into the ring. -->
+<div class="rest" hidden aria-live="polite">
+  <div class="rest-frost"></div>
+  <div class="ring-wrap">
+    <div class="ring frost"><svg viewBox="0 0 280 280" aria-hidden="true"><circle class="track" cx="140" cy="140" r="128"/><circle class="arc glowobj" cx="140" cy="140" r="128"/></svg>
+      <div class="ring-in"><span class="cap">Rest</span><span class="num rclock">1:30</span></div>
+    </div>
+  </div>
+  <p class="rnext"></p>
+  <div class="rctl"><button type="button" class="pillbtn frost" data-a="less">−15</button><button type="button" class="pillbtn solid" data-a="skip">Skip</button><button type="button" class="pillbtn frost" data-a="more">+15</button></div>
+  <button type="button" class="undo" data-a="undo">Undo set</button>
+</div>
+
+<!-- Record: the set floods the screen, then a medal turns to face you. -->
+<div class="record" hidden>
+  <div class="medal-stage"><div class="medal"><span class="num mv">85</span><i class="sheen"></i></div></div>
+  <p class="cap rk">New best</p>
+  <h2 class="serif rh">Strongest bench yet</h2>
+  <p class="rs"></p>
+  <button type="button" class="go rgo" data-a="continue"><span>Continue</span><small>to rest</small></button>
+</div>
+<div class="grain"></div>
+<script type="module" src="workout.js"></script>
+</body>
+</html>
