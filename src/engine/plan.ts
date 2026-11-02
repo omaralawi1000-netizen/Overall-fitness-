@@ -15,7 +15,9 @@ export type Op =
   /** set fields; `null` removes a field */
   | { op: 'update'; id: string; set: Record<string, unknown> }
   /** soft delete */
-  | { op: 'delete'; id: string };
+  | { op: 'delete'; id: string }
+  /** restore and import only: write a whole record as given (checked), keeping its own times; the revision goes up */
+  | { op: 'put'; record: AnyRecord };
 
 export interface Ctx { actionId: string; now: number; tz: string; source: Source }
 type Rec = Record<string, unknown> & { id: string; kind: Kind; rev: number };
@@ -70,6 +72,27 @@ export function planOps(ops: Op[], current: Map<string, Rec | undefined>, ctx: C
   };
 
   for (const op of ops) {
+    if (op.op === 'put') {
+      const r = structuredClone(op.record) as unknown as Rec;
+      for (const k of Object.keys(r)) if (r[k] === undefined) delete r[k];
+      const cur = get(r.id);
+      const rec = { ...r, rev: (cur?.rev ?? 0) + 1 } as Rec;
+      const bad = checkRecord(rec);
+      if (bad) throw new EngineError('invalid', `${r.id}: ${bad}`);
+      if (cur && cur.kind !== rec.kind) throw new EngineError('invalid', `${r.id}: kind changes`);
+      const before: Record<string, unknown> = {}, after: Record<string, unknown> = {};
+      for (const k of new Set([...Object.keys(rec), ...Object.keys(cur ?? {})])) {
+        if (BOOK.includes(k)) continue;
+        if (cur && deepEqual(cur[k] ?? null, rec[k] ?? null)) continue;
+        if (cur) before[k] = cur[k] === undefined ? null : structuredClone(cur[k]);
+        after[k] = rec[k] === undefined ? null : structuredClone(rec[k]);
+      }
+      if (cur && !Object.keys(after).length) continue;
+
+      next.set(rec.id, rec);
+      note(rec.id, rec.kind, cur ? before : undefined, after);
+      continue;
+    }
     if (op.op === 'create') {
       const r = op.record as Record<string, unknown>;
       for (const f of ENGINE_FIELDS) if (f !== 'id' && f !== 'kind' && r[f] !== undefined) throw new EngineError('engineField', `create sets ${f}`);

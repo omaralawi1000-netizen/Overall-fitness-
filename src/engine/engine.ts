@@ -156,8 +156,8 @@ export class Engine {
     try {
       const cur = new Map<string, Rec | undefined>();
       for (const op of input.ops) {
-        if (op.op === 'create') cur.set((op.record as { id: string }).id, this.records.get((op.record as { id: string }).id));
-        else cur.set(op.id, this.records.get(op.id));
+        const k = op.op === 'create' || op.op === 'put' ? (op.record as { id: string }).id : op.id;
+        cur.set(k, this.records.get(k));
       }
       const { next } = planOps(input.ops, cur as Map<string, never>, this.ctx(id, input.source ?? 'tap'));
       for (const [k, r] of next) this.records.set(k, r as unknown as Rec);
@@ -196,7 +196,7 @@ export class Engine {
       if (await req(acts.get(id))) { outcome.r = { status: 'duplicate' }; }
       else {
         const ctx = this.ctx(id, source);
-        const ids = input.ops.map((op) => (op.op === 'create' ? (op.record as { id: string }).id : op.id));
+        const ids = input.ops.map((op) => (op.op === 'create' || op.op === 'put' ? (op.record as { id: string }).id : op.id));
         const cur = new Map<string, Rec | undefined>();
         for (const k of new Set(ids)) cur.set(k, (await req(recs.get(k))) as Rec | undefined);
         const planned = planOps(input.ops, cur as Map<string, never>, ctx);
@@ -337,6 +337,9 @@ export class Engine {
     tx.objectStore('meta').put(SCHEMA, 'schema');
     await finished;
   }
+
+  /** Every action ever written, oldest first (for backups). */
+  async allActions(): Promise<Action[]> { return (await req(this.db.transaction('actions').objectStore('actions').index('at').getAll())) as Action[]; }
 
   async meta<T>(key: string): Promise<T | undefined> { return (await req(this.db.transaction('meta').objectStore('meta').get(key))) as T | undefined; }
   async setMeta(key: string, value: unknown) { const tx = this.db.transaction('meta', 'readwrite'); tx.objectStore('meta').put(value, key); await done(tx); }
