@@ -235,8 +235,8 @@ const VIEWS = {
     const mins = Math.round((Date.now() - W.start) / 60000);
     return `<p class="cap">Push · ${mins} min in · about 24 min left</p>
       <div class="wk" style="margin-top:8px">${W.ex.map((x, i) => {
-        const d = x.sets.filter((p) => p.done).length, st = i < W.e ? 'done' : i === W.e ? 'cur' : '';
-        return `<div class="row ${st}"><i class="pt"></i><span class="serif">${x.name}${W.superset !== null && i === W.superset + 1 ? ' <span class="tag">SUPERSET</span>' : ''}</span><span class="p num">${st === 'done' ? `${x.sets.length} sets` : st === 'cur' ? `${d} of ${x.sets.length}` : `${x.sets.length} × ${x.sets[0].r} · ${fmtKg(x.sets[0].kg)}`}</span></div>`;
+        const d = x.sets.filter((p) => p.done).length, st = i === W.e ? 'cur' : d === x.sets.length ? 'done' : '';
+        return `<div class="row ${st}"><i class="pt"></i><span class="serif">${x.name}${W.superset !== null && i === W.superset + 1 ? ' <span class="tag">SUPERSET</span>' : ''}</span><span class="p num">${st === 'done' ? `${x.sets.length} sets` : st === 'cur' || d ? `${d} of ${x.sets.length}` : `${x.sets.length} × ${x.sets[0].r} · ${fmtKg(x.sets[0].kg)}`}</span></div>`;
       }).join('')}</div>`;
   },
   exercise() {
@@ -359,9 +359,10 @@ function pearlOut() { [$('.ball', pearl), $('svg path', pearl)].forEach((e) => {
 function finish() {
   $('.dl').textContent = 'Finished'; $('.ds').textContent = ''; pill.disabled = true;
   $('.th').textContent = `Workout done · ${W.ex.length} exercises`; $('.coach').classList.add('quiet');
+  busy = false; // the details stay open to look back at
 }
 async function tick() {
-  if (busy) return; busy = true; closeEdit();
+  if (busy || !rest.hidden || pill.disabled) return; busy = true; closeEdit();
   const x = ex(), c = set(), rec = beats(c, x.best), g = gen;
   await pearlIn(rec);
   if (g !== gen) return; // the demo was reset mid-tick
@@ -413,6 +414,7 @@ async function startRest() {
   $('.ring-in').animate([{ opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0)' }], { duration: 420, delay: reduced() ? 0 : 380, fill: 'backwards', easing: 'ease-out' });
   $$('.rnext, .rctl, .undo', rest).forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 300, delay: reduced() ? 0 : 300 + i * 50, fill: 'backwards', easing: 'cubic-bezier(.2,.8,.2,1)' }));
   iv = setInterval(tickClock, 200);
+  $('#screen').inert = true; $('[data-a=skip]').focus({ preventScroll: true }); // nothing behind the rest can be pressed
   busy = false;
 }
 async function endRest(advance) {
@@ -427,6 +429,7 @@ async function endRest(advance) {
   if (g !== gen) return; // the demo was reset while the ring closed
   [ring, $('.rest-frost'), ...$$('.rnext, .rctl, .undo, .ring-in', rest)].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
   arcAnim?.cancel(); rest.hidden = true; delete rest.dataset.closing;
+  $('#screen').inert = false; pill.focus({ preventScroll: true });
   pill.getAnimations().forEach((a) => a.cancel());
   pearlOut();
   if (advance) {
@@ -485,7 +488,7 @@ function recordMoment(c) {
 /* ---------- Demo controls from the page around it ---------- */
 function reset() {
   gen++;
-  clearInterval(iv); arcAnim?.cancel(); rest.hidden = true; delete rest.dataset.closing; $('.record').hidden = true;
+  clearInterval(iv); arcAnim?.cancel(); rest.hidden = true; delete rest.dataset.closing; $('.record').hidden = true; $('#screen').inert = false;
   if (open) { open = null; tray.hidden = scrim.hidden = true; $('#screen').inert = false; }
   [pill, ring, $('.rest-frost'), ...$$('.rest *, .record *')].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
   root.dataset.phase = ''; busy = false; undoTo = null; pearlOut(); pill.disabled = false; $('.dl').textContent = 'Done';
