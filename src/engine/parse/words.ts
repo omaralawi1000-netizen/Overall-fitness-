@@ -59,9 +59,11 @@ function readNumber(words: string[], j: number, loose: boolean): { val: number; 
   }
   const t = tok(words[p], loose || tok(words[p + 1], true)?.k === 'h'), t2 = tok(words[p + 1], loose); // "to hundrede" is 200 even when "to" is usually a word
   if (!t) return null;
-  const rest = () => { // tens and ones after a hundred, or after nothing: "fifty", "twenty five", "fifteen", "five"
-    const r = tok(words[p], loose);
-    if (r?.k === 'd') { val += r.v; p++; const u = tok(words[p], loose); if (u?.k === 'u') { val += u.v; p++; } }
+  const rest = (lz = false) => { // tens and ones after a hundred, or after nothing: "fifty", "twenty five", "fifteen", "five", Danish "fem og tyve"
+    const L = loose || lz, r = tok(words[p], L);
+    if (r?.k === 'u' && /^(?:halv|halvt|half)[.,!?]*$/i.test(words[p + 1] ?? '')) return; // "hundrede og en halv": the "en" belongs to the half
+    if (r?.k === 'u' && /^og$/i.test(words[p + 1] ?? '') && tok(words[p + 2], L)?.k === 'd') { val += r.v + tok(words[p + 2], L)!.v; p += 3; }
+    else if (r?.k === 'd') { val += r.v; p++; const u = tok(words[p], L); if (u?.k === 'u') { val += u.v; p++; } }
     else if (r && (r.k === 't' || r.k === 'u')) { val += r.v; p++; }
   };
   if (t.k === 'u' && t2?.k === 'h') { val = t.v * 100; p += 2; hundred = true; }
@@ -74,7 +76,7 @@ function readNumber(words: string[], j: number, loose: boolean): { val: number; 
   } else rest();
   if (hundred) {
     const andWord = /^(?:and|og)$/i.test(words[p] ?? '');
-    if (andWord) { const keep = p; p++; const before = val; rest(); if (val === before) p = keep; } else rest();
+    if (andWord) { const keep = p; p++; const before = val; rest(true); if (val === before) p = keep; } else rest();
   }
   return { val, used: p - j, hundred };
 }
@@ -102,6 +104,9 @@ export function mergeNumberWords(input: string[], loose = false): string[] {
       const digit = /^\d+$/.test(d) ? d : DIGIT_WORDS[d];
       if (digit) { text += `.${digit}`; j += 2; used += 2; }
     }
+    // "eighty and a half", "tres og en halv"
+    const half = words.slice(j, j + 3).map((x) => x.toLowerCase().replace(/[.,!?]+$/, '')).join(' ');
+    if (!text.includes('.') && /^(?:and a half|og en halv|og et halvt)$/.test(half)) { text = String(Number(text) + 0.5); j += 3; used += 3; }
     if (used < 2 && !n.hundred) { out.push(words[i]); continue; } // a single number word stays as it was said
     out.push(text + (words[j - 1].match(/[.,!?]+$/)?.[0] ?? ''));
     i = j - 1;
@@ -111,5 +116,6 @@ export function mergeNumberWords(input: string[], loose = false): string[] {
 
 /** "82 komma 5", "82 point 5" with digits already: one decimal number. */
 export function mergeDecimals(text: string): string {
+  text = text.replace(/\b(\d+(?:\.\d+)?)\s+(?:and a half|og en halv|og et halvt)\b/gi, (_, a: string) => String(Number(a) + 0.5)); // "82 and a half"
   return text.replace(/\b(\d+)\s+(?:point|komma|comma)\s+(\d+|zero|nul|one|two|three|four|five|six|seven|eight|nine|tre|fire|fem|seks|syv|otte|ni)\b/gi, (_, a: string, b: string) => `${a}.${/^\d+$/.test(b) ? b : DIGIT_WORDS[b.toLowerCase()]}`);
 }

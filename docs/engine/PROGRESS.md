@@ -61,7 +61,7 @@ Tests live in `tests/engine/`. "untested" is said plainly.
 | Reading a phrase saves nothing | `e2e` phrase box ("nothing was saved by reading") | tested in Chromium |
 | Memory cards (scope, valid-from/until, last-seen) and the Coach ladder | model types, import of old memory notes | shape only: used in the Coach phase |
 
-## Test inventory (793 tests: 82 engine, 711 parser)
+## Test inventory (796 tests: 82 engine, 714 parser)
 Fewer tests than rules looks thin, but each property test runs 25 to 200 random cases, so the real count of checked cases is in the thousands.
 
 **Property tests (12):**
@@ -161,3 +161,15 @@ Speech-to-text often turns 80 into 18 (or 50 into 15). If the person's usual wei
 - Tapping the chip only edits the weight of that same set. The set stays logged with the same reps and position. It is never an Undo or a delete (Omar: when I undo, it just doesn't count the set, I don't want that).
 - It needs history, so it belongs with the Coach / history phase, not the parser. The parser stays text-only. The existing `guardSet` and `fixMisheard` helpers are the starting point (they already know the 18/80 slip).
 - Not in the parser tests: it needs a user's real past sets.
+
+## Generated phrases: millions of combinations (2 Nov 2026, Omar)
+`tests/parse/gen/grammar.ts` is a seeded phrase grammar. It builds spoken phrases with the answer known in advance: sets in 9 orders, corrections ("no", "nej vent", "sorry"), same/done/skip/undo, rest time, water, body weight, food rows with meals, plain talk that must never log, half-said phrases, and random word soup. Numbers come as digits, English words, Danish words ("et hundrede og fem og tyve"), decimals ("82,5", "82 point five", "62 og en halv"), mixed languages, filler and lead-ins. `tests/parse/generated.test.ts` runs it and checks four things: the known answer, talk and half-said phrases never log, no impossible number is ever logged (a 0-rep set, 5 tonnes of food, a 12 kg body), and nothing freezes (250 ms limit per phrase).
+
+- Every normal test run checks 30 000 phrases (seed 1, a few seconds). A deep run: `GEN_N=1000000 GEN_SEED=<n> npx vitest run tests/parse/generated.test.ts`.
+- First run, before fixes: 100 000 phrases, 1 186 wrong (1.19%). Worst: half-said phrases 7.9%, talk 2.9%, body weight 1.7%.
+- After fixes: 3 000 000 phrases in three deep runs plus 1 000 000 in smaller runs, 1 wrong in 4 million (a rest of "+ 82,5 minutes"), now fixed and tested. 0 impossible numbers, 0 freezes.
+- What it found: Danish "hundrede og fem og tyve", "and a half" after a number word, a bare "0" logging a 0-rep set, "27 people are in the gym" read as food, "83 x" read as food, rests of hours.
+- Limit: it can only find what its grammar can say. It proves the parser is consistent on those shapes, not that Omar never says something else. Real misses still go in as rows of `dictation.corpus.ts`.
+
+## Proposed, not built: personal phrase memory (Omar, 2 Nov 2026)
+When Omar corrects a misread, or the app says it did not get something, store his exact phrase and what he meant. After the same correction has happened 2 or 3 times, apply it automatically, with the visible "heard X" tag from the history check above. Stored on his phone with the rest of his data, readable by the Coach. No model training: it is a small lookup of his own phrases.
