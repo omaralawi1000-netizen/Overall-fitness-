@@ -22,6 +22,10 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 
 ## Entries
 
+### 2 Nov 2026: the premium still, and a new plan
+Verdict: no, for the job. His words: "This doesn't really look like a workout screen. This is much more for a Today screen or something. I have a better idea. Give me pictures that I rejected and give me a prompt that I can give different AIs and show them. Maybe they can come up with things that I like. I will talk to them and find out what I like. Maybe they can come up with and show me something actually good."
+Reading: the still was beautiful but wrong in kind: scenery and a ring say "Today", not "log sets, rest, records". Taste can't be settled by us guessing again. Pack and prompt: `docs/ai-pack.md`. Results come back as screenshots plus his likes and dislikes.
+
 ### 2 Nov 2026: the workout slice (round 2, Volt and Daylight)
 Verdict: no. His words: "I'm just saying, I don't like the design. It feels very plain."
 Reading: round 1 was "very in my old style", and round 2 is "plain". Taking out the glow and the atmosphere overcorrected. The answer is somewhere between: a new look that still has richness and light, not old Aven's paint and not a flat page. On the motion: "Yes, the motion felt better, but it still needs a lot of work. It doesn't feel premium, but maybe that's because it's not a part of a premium design. I want it to feel like wowing, like references."
