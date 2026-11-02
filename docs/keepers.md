@@ -24,6 +24,17 @@ He hearted these on the motion-library page (https://claude.ai/artifact/5qeq9tDy
 - **Reward:** many small taps, then one clean reveal of a glowing object on black (`web-opal-gem-reveal`).
 - **Stills:** Oura's thin number on a photo glow, its serif insight and its "Almost there" (stills 01–03), WHOOP's particle orb (07), Sleep Cycle's glass ring and serif-on-night-sky (18, 19), MacroFactor's smooth trend curve (22), Copilot's answer with a chart inside it (28). Files: `aven2/design-inspiration-2026-11-02/`.
 
+### Round 2 hearts (2 Nov 2026)
+He hearted 35 of the 51 round-2 clips (ids in the page store `loves`, starting `r2`). By theme:
+- **Next set / tick:** the done step shrinks to a check row and the next opens in place (`r2-tick-games-google-setup-steps`); the Liquid Glass toggle swelling under the thumb (`r2-apple-glass-toggle`); the next record slides in and the room changes colour (`r2-md-vinyl-next`).
+- **Rest:** a light ring closing to black around a quiet clock (`r2-tick-games-peaceout-conic-rest`).
+- **Numbers and colour that follow a value:** `r2-family-continue-confirm`, `r2n-runmo-days-stepper`, `r2n-outsiders-sleep-goal-colour`, `r2n-health-emotion-bloom-slider`, `r2n-revolut-glow-graph-scrub`, `r2n-world-live-digit-trail`.
+- **Proposals and undo:** the Family approval tray unfolding and folding back (`r2-family-approval-unfolds`), the recover-later bin (`r2-family-trash-bin`), Delete turning into Confirm in place (`r2-fivecents-delete-sheet`), a card moving from the sheet into the list (`r2-eimi-card-sheet-to-list`).
+- **Sheets:** Family trays re-fitting their height (`r2-family-tray-heights`, `r2-family-menu-to-speedup`), card to page (`r2-days-card-to-page`), the + opening its menu (`r2-vibes-menu-fab`).
+- **Coach light:** the orb whose light floods the room (`r2-ultrahuman-light-orb-floods-room`), a glass sphere on a dusk sky (`r2-wabi-glass-sphere-dusk-sky`), a ring blooming into the sheet's colour (`r2-appleintel-ring-blooms-to-gradient`), a glass bubble with light on its rim (`r2-playground-glass-bubble`), a persona whose glow colours the room (`r2-bevel-coach-persona-glow`).
+- **Records:** CRED's dark room with a metal badge and its own glow (`r2-tick-games-cred-milestone-glow`), the edge-lit medal (`r2-tick-games-anydistance-medal`), Apple's badge flip, Not Boring's gold piece, Supersonic's card lift, Opal's gem crack, Monument Valley's calm COMPLETE.
+- **Today through the day:** the sky and labels following time (`r2n-solar-dial-day-scrub`, `r2n-good-air-sky-scrub`, `r2n-lumy-sunrise-scrub`, `r2n-tides-sky-follows-scrub`), and a pill whose colour takes over the room (`r2-moods-pills-expand`).
+
 ### Ideas Omar approved from the motion library (2 Nov 2026, his words)
 The idea, not the reference's look.
 - **The screen's glow changes colour with the state, and the number flips at the same moment** (`60fps-ultrahuman-score-colour-shift`). Colour by type of day (training, rest, wrestling), never as a judgment score.
