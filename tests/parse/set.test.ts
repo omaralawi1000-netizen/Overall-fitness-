@@ -109,3 +109,21 @@ describe('a misheard number is fixed only for the slips speech really makes', ()
     expect(fixMisheard({ reps: 80 }, { reps: 8 })).toMatchObject({ reps: 8, heard: { reps: 80 } });
   });
 });
+
+describe('Codex review of #51: one notation, one meaning', () => {
+  it('"80 x 8" with no unit asks which; a unit settles it', () => {
+    expect(p('80 x 8')).toMatchObject({ kind: 'ask', why: 'which', options: [{ kind: 'set', kg: 80, reps: 8 }, { kind: 'set', reps: 80, kg: 8 }] });
+    expect(p('80.5 x 8')).toMatchObject({ kind: 'ask', why: 'which' });
+    expect(p('80 kg x 8')).toEqual({ kind: 'set', kg: 80, reps: 8 });
+    expect(p('8 x 80 kg')).toEqual({ kind: 'set', reps: 8, kg: 80 });
+  });
+  it('an undo inside a correction never undoes', () => {
+    expect(p('8 at 80, no undo')).toEqual({ kind: 'ask', why: 'correction' });
+    expect(p('undo')).toEqual({ kind: 'undo' });
+  });
+  it('fractional reps are refused in the labelled forms too', () => {
+    expect(p('80 kg 8.5 reps')).toBeNull();
+    expect(p('8.5 reps 80 kg')).toBeNull();
+    expect(p('80 kg 8 reps')).toEqual({ kind: 'set', kg: 80, reps: 8 });
+  });
+});

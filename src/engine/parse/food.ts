@@ -155,6 +155,8 @@ export function rowQuantity(row: FoodRow, food: FoodShape): RowQuantity {
   if (!food.portions.length) return { qty: null, estimated: false, problem: 'needsGrams' };
   const w = row.countWord;
   const named = w ? food.portions.find((x) => fold(x.label).includes(w)) : undefined;
+  // a named unit with no portion of that kind ("2 cups" on a food with only a scoop) is not swapped for another portion
+  if (w && !named) return { qty: null, estimated: false, problem: 'needsGrams' };
   const p = named || food.portions[0];
   // a database's stand-in "serving (100 g)" is not one of the thing: "10 corn cakes" must not become 10 × 100 g
   if (!named && placeholderPortion(p, food.basis)) return { qty: null, estimated: false, problem: 'needsGrams' };

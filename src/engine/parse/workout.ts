@@ -47,11 +47,14 @@ export function parseWorkoutSegment(seg: string): WorkoutRow | null {
   // "80 kg x 8 x 3" / "80 for 8, 8 and 6"
   if (!sets.length) {
     m = rest.match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(${UNIT})?\\s*(?:x|for|by|gange)\\s*(\\d+)(?:\\s*x\\s*(\\d+))?(?!\\s*(?:min|sec|s\\b))`));
+    // "80 x 8" with no unit cannot say which is the weight (3-term "80 x 8 x 3" is weight x reps x sets)
+    if (m && !m[2] && !m[4] && /\s(?:x|by)\s/.test(m[0])) m = null;
     if (m) {
       const times = m[4] ? Math.min(Number(m[4]), MAX_SETS) : 1;
       for (let i = 0; i < times; i++) sets.push({ ...load(Number(m[1]), m[2]), reps: Number(m[3]) });
       rest = rest.replace(m[0], ' ');
-      const more = m.index !== undefined ? s.slice(m.index + m[0].length).match(/^\s*(?:(?:,|&|and|og)\s*\d+\s*)+/) : null;
+      // "80 for 8, 8 and 6": bare numbers are more reps, unless a new set starts ("and 60 for 10")
+      const more = m.index !== undefined ? s.slice(m.index + m[0].length).match(/^\s*(?:(?:,|&|and|og)\s*\d+(?!\.?\d*\s*(?:kg|kilos?|lbs?|pounds?|x|for|by|at|@|gange|reps?|sets?))\s*)+/) : null;
       if (more) {
         for (const r of more[0].match(/\d+/g) ?? []) sets.push({ ...sets[0], reps: Number(r) });
         rest = rest.replace(more[0], ' ');
@@ -68,7 +71,7 @@ export function parseWorkoutSegment(seg: string): WorkoutRow | null {
   }
   // time and distance: "plank 60 seconds", "run 5 km in 25 minutes"
   if (!sets.length) {
-    const dist = rest.match(/(\d+(?:\.\d+)?)\s*(km|kilometers?|kilometres?|mi|miles?|m\b|meters?|metres?)/);
+    const dist = rest.match(/(\d+(?:\.\d+)?)\s*(km|kilometers?|kilometres?|miles?|mi|meters?|metres?|m)\b/);
     const dur = rest.match(/(\d+(?:\.\d+)?)\s*(seconds?|secs?|sek|minutes?|mins?|min|hours?|timer?|h\b)/);
     if (dist || dur) {
       const set: WorkoutSet = {};
@@ -91,7 +94,10 @@ export function parseWorkoutSegment(seg: string): WorkoutRow | null {
     m = rest.match(/(\d+)\s*(?:reps?|gange)/);
     if (m) { sets.push({ reps: Number(m[1]) }); rest = rest.replace(m[0], ' '); }
   }
-  const query = rest.replace(/\b(at|with|for|of|did|i did|log|add|a|an|the|reps?|sets?|in|i|og|and|på|paa)\b/g, ' ').replace(/[\d.,&@x]+/g, ' ').replace(/\s+/g, ' ').trim();
+  const words = rest.replace(/\b(at|with|for|of|did|i did|log|add|a|an|the|reps?|sets?|in|i|og|and|på|paa|x)\b/g, ' ').replace(/[,&@]+/g, ' ').replace(/\s+/g, ' ').trim();
+  // a number left over was not understood (a second set, a stray amount): do not drop it silently
+  if (/\d/.test(words)) return null;
+  const query = words.replace(/\./g, ' ').replace(/\s+/g, ' ').trim();
   if (!query || !sets.length) return null; // an exercise with no sets, or sets with no exercise, is not a workout phrase
   return { raw: seg, query, sets };
 }

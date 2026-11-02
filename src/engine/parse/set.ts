@@ -57,17 +57,29 @@ export function readSet(text: string): SetCommand | null {
   if (m) return { kind: 'rest', sec: Math.round(n(m[1])) };
   m = s.match(new RegExp(`^(?:add |plus |\\+ ?)?(?:a|1|one|et) ?(?:minute|minut)(?: (?:more|extra|mere|ekstra))?$`));
   if (m) return { kind: 'rest', sec: 60 };
+  // "8 x 80" / "80 x 8": a multiplication sign does not say which number is the weight, only a unit does
+  m = s.match(new RegExp(`^${NUM} ?${KG}? (?:x|×) ${NUM} ?${KG}?$`));
+  if (m) {
+    const [, a, ua, b, ub] = m;
+    if (ua && ub) return null; // two units: not a set
+    if (ua) return Number.isInteger(n(b)) ? { kind: 'set', ...weight(a, ua), reps: n(b) } : null;
+    if (ub) return Number.isInteger(n(a)) ? { kind: 'set', reps: n(a), ...weight(b, ub) } : null;
+    const asWeightFirst = Number.isInteger(n(b)) ? ({ kind: 'set', ...weight(a), reps: n(b) } as const) : null;
+    const asRepsFirst = Number.isInteger(n(a)) ? ({ kind: 'set', reps: n(a), ...weight(b) } as const) : null;
+    const options = [asWeightFirst, asRepsFirst].filter((x): x is NonNullable<typeof x> => !!x);
+    return options.length ? { kind: 'ask', why: 'which', options } : null;
+  }
   // reps at/for weight
-  m = s.match(new RegExp(`^${NUM} ?${REPS}? (?:at|@|with|på|med|x|×) ${NUM} ?${KG}?$`));
+  m = s.match(new RegExp(`^${NUM} ?${REPS}? (?:at|@|with|på|med) ${NUM} ?${KG}?$`));
   if (m && Number.isInteger(n(m[1]))) return { kind: 'set', reps: n(m[1]), ...weight(m[2], m[3]) };
   // weight for reps
-  m = s.match(new RegExp(`^${NUM} ?${KG}? (?:for|times|x|×|til|i) ${NUM} ?${REPS}?$`));
+  m = s.match(new RegExp(`^${NUM} ?${KG}? (?:for|times|til|i) ${NUM} ?${REPS}?$`));
   if (m && Number.isInteger(n(m[3]))) return { kind: 'set', ...weight(m[1], m[2]), reps: n(m[3]) };
   // "80 kg 8 reps" / "8 reps 80 kg"
   m = s.match(new RegExp(`^${NUM} ?${KG} ${NUM} ?${REPS}$`));
-  if (m) return { kind: 'set', ...weight(m[1], m[2]), reps: n(m[3]) };
+  if (m && Number.isInteger(n(m[3]))) return { kind: 'set', ...weight(m[1], m[2]), reps: n(m[3]) };
   m = s.match(new RegExp(`^${NUM} ?${REPS} ${NUM} ?${KG}$`));
-  if (m) return { kind: 'set', reps: n(m[1]), ...weight(m[2], m[3]) };
+  if (m && Number.isInteger(n(m[1]))) return { kind: 'set', reps: n(m[1]), ...weight(m[2], m[3]) };
   // one number: reps ("8", "8 reps"), or a weight when a unit says so ("82.5 kilos")
   m = s.match(new RegExp(`^${NUM} ?${KG}$`));
   if (m) return { kind: 'set', ...weight(m[1], m[2]) };
@@ -90,6 +102,7 @@ export function parseSetCommand(text: string): SetCommand | null {
   if (!a && !b) return null; // "no problem", "no thanks": talk, not a set
   // nothing to take back, or what came before is not a set-shaped phrase: never log, ask
   if (!before || !after || !b || !a) return { kind: 'ask', why: 'correction', ...(a ? { options: [a] } : {}) };
+  if (a.kind === 'undo') return { kind: 'ask', why: 'correction' }; // only a whole "undo" undoes, never one inside a correction
   if (a.kind !== 'set') return a; // "8 at 80, no, skip" is skip
   if (b.kind !== 'set') return { kind: 'ask', why: 'correction', options: [a] };
   // both are sets: the new part replaces what it names, and keeps the rest

@@ -95,3 +95,12 @@ describe('bodyweight', () => {
     expect(readBodyweight('weight 900')).toEqual({ ask: 'range', value: 900, unit: 'kg' });
   });
 });
+
+describe('Codex review of #51', () => {
+  it('a counted unit with no matching portion is not swapped for another portion', () => {
+    const powder: FoodShape = { name: 'Protein powder', basis: 'g', portions: [{ id: 's', label: '1 scoop (30 g)', amount: 30, verified: true }] };
+    expect(rowQuantity(parseFood('2 cups protein powder').rows[0], powder)).toEqual({ qty: null, estimated: false, problem: 'needsGrams' });
+    expect(rowQuantity(parseFood('2 scoops protein powder').rows[0], powder).qty).toEqual({ amount: 2, unit: 'portion', portionId: 's' });
+    expect(rowQuantity(parseFood('2 protein powder').rows[0], powder).qty).toMatchObject({ unit: 'portion' }); // no unit named: the usual portion
+  });
+});

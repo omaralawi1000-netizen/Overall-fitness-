@@ -43,3 +43,23 @@ describe('finding the exercise', () => {
     expect(matchExercises('quantum banana')).toEqual([]);
   });
 });
+
+describe('Codex review of #51', () => {
+  it('a second set with its own weight is not read as more reps', () => {
+    expect(parseWorkoutText('bench press 80 for 8 and 60 for 10').rows).toEqual([]);
+    expect(sets('bench press 80 for 8, 8 and 6')).toEqual([[80, 8], [80, 8], [80, 6]]);
+  });
+  it('durations and distances use whole units', () => {
+    expect(parseWorkoutText('plank 1 minute').rows[0]).toMatchObject({ query: 'plank', sets: [{ durationSec: 60 }] });
+    expect(parseWorkoutText('run 1 mile').rows[0]).toMatchObject({ query: 'run', sets: [{ distanceM: 1609.344 }] });
+    expect(parseWorkoutText('run 400 m').rows[0].sets[0].distanceM).toBe(400);
+  });
+  it('letters in an exercise name stay: "extension" keeps its x', () => {
+    expect(parseWorkoutText('leg extension 40 for 10').rows[0].query).toBe('leg extension');
+    expect(parseWorkoutText('back extension 10 reps').rows[0].query).toBe('back extension');
+  });
+  it('"bench 80 x 8" with no unit is not guessed', () => {
+    expect(parseWorkoutText('bench 80 x 8').rows).toEqual([]);
+    expect(sets('bench 80 kg x 8')).toEqual([[80, 8]]);
+  });
+});
