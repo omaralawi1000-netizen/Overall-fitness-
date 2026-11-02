@@ -12,7 +12,7 @@ Each entry: **what it is** · **where it came from** (round, direction, screen) 
 ## The list
 
 ### The premium still as the starting point for Today (2 Nov 2026)
-His words: "the aura screen is could actually be somewhat what I want on the today screen, and of course tweaked to my liking." The Oura-style still (`site/_prototypes/premium/`: painted landscape, thin big number in an arc of ticks, serif line, glass cards) is roughly what he wants for **Today**, not for the workout. A direction to tweak with him, not a finished design.
+His words: "the aura screen is could actually be somewhat what I want on the today screen, and of course tweaked to my liking." The Oura-style still (`site/_prototypes/premium/`: painted landscape, thin big number in an arc of ticks, serif line, glass cards) is roughly what he wants for **Today**, not for the workout. A direction to tweak with him, not a finished design. His follow-up: "This is just a starting point. Maybe we'll get a whole different design direction, just so you know." So it is provisional and may be replaced.
 
 ### Omar's motion language (2 Nov 2026, from his 48 picks)
 This is the strongest signal so far. Where it disagrees with anything below (the motion map included), it wins.
