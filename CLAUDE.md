@@ -52,3 +52,10 @@ Default model is **Sonnet 5.5, high effort**. It costs half of Opus 5.5 per toke
 - No new doc if an existing one fits. Decisions go in BRIEF or the dated design doc.
 - No dead code, unused files, copied assets or commented-out blocks. Delete what you replace.
 - Before finishing, check `git status` and `docs/README.md` for strays and dead links.
+
+## Efficient, never lazy
+Efficient = the same result with less code, time and usage. Lazy = less work done. Aim for the first.
+- Build the simplest thing that fully works. State your assumptions in one line.
+- Never trade away the result: finish the whole task, test it, and keep backups, data safety and the Coach checks solid.
+- Ask only when a wrong guess would touch user data, money or something public. Otherwise pick, say what you picked, and go on.
+- Read before you write: reuse what exists instead of building a second copy.
