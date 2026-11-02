@@ -222,6 +222,12 @@ async function tick() {
   startRest(e, s, rec);
 }
 
+/* During rest: what comes after it, under the timer and on the button. */
+function restNext(e) {
+  const n = nextSet(e), nx = W[S.i + 1];
+  el.then.textContent = n >= 0 ? `then ${fmt(e.sets[n].kg)} kg × ${e.sets[n].reps}` : nx ? `then ${nx.name.toLowerCase()}` : 'then you’re done';
+  setGo(n >= 0 ? `Start set ${n + 1}` : nx ? 'Next exercise' : 'Finish workout', false);
+}
 function startRest(e, s, rec) {
   S.phase = 'rest';
   S.restTotal = e.rest;
@@ -229,9 +235,7 @@ function startRest(e, s, rec) {
   S.pulled = false;
   S.buzzed = false;
   segs(e);
-  const n = nextSet(e), nx = W[S.i + 1];
-  el.then.textContent = n >= 0 ? `then ${fmt(e.sets[n].kg)} kg × ${e.sets[n].reps}` : nx ? `then ${nx.name.toLowerCase()}` : 'then you’re done';
-  setGo(n >= 0 ? `Start set ${n + 1}` : nx ? 'Next exercise' : 'Finish workout', false);
+  restNext(e);
   rest(true);
   updateTimer(true);
   setText(el.meta, `Set ${e.sets.indexOf(s) + 1} · ${fmt(s.kg)} × ${s.reps} logged <button class="undo" id="undo">Undo</button>`);
@@ -472,6 +476,7 @@ function sheetExercise() {
         segs(e, { animate: true });
         if (S.phase === 'set' && nextSet(e) === e.sets.length - 1) showSet();
         else if (S.phase === 'set') setText(el.label, `Set ${nextSet(e) + 1} of ${e.sets.length}`);
+        else showSetOrRest();
         sheetExercise();
         toast(`Set ${e.sets.length} added`, () => { e.sets.pop(); segs(e, { animate: true }); showSetOrRest(); });
       });
@@ -481,7 +486,11 @@ function sheetExercise() {
     },
   });
 }
-function showSetOrRest() { if (S.phase === 'set') showSet(); }
+function showSetOrRest() {
+  if (S.phase === 'set') return showSet();
+  restNext(cur());
+  if (el.label.textContent === 'Rest') setText(el.coach, esc(restLine(cur()))); // not during the new-best moment
+}
 
 function sheetSwap() {
   const e = cur(), base = W[S.i].baseId || e.id, alts = ALTS[base] || [];
