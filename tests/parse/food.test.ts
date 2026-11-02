@@ -121,3 +121,18 @@ describe('Codex review of #51, round 2', () => {
     expect(rowQuantity(parseFood('120 ml oats').rows[0], oats).qty).toEqual({ amount: 1, unit: 'portion', portionId: 'c' });
   });
 });
+
+describe('Codex review of #51, round 3', () => {
+  it('plural spoon and volume units keep their volume', () => {
+    expect(parseFood('2 teaspoons peanut butter').rows[0]).toMatchObject({ amount: 10, dim: 'ml', query: 'peanut butter' });
+    expect(parseFood('2 tablespoons honey').rows[0]).toMatchObject({ amount: 30, dim: 'ml', query: 'honey' });
+    expect(parseFood('3 deciliters milk').rows[0]).toMatchObject({ amount: 300, dim: 'ml' });
+    expect(parseFood('2 tsp sugar').rows[0]).toMatchObject({ amount: 10, dim: 'ml' });
+  });
+  it('a drink measured in ml is not weighed like dry oats', () => {
+    const oatMilk: FoodShape = { name: 'Oat milk', basis: 'ml', portions: [] };
+    expect(rowQuantity(parseFood('100 g oat milk').rows[0], oatMilk).qty).toEqual({ amount: 97, unit: 'ml' });
+    const oats: FoodShape = { name: 'Oats', basis: 'g', portions: [] };
+    expect(rowQuantity(parseFood('1 dl oats').rows[0], oats).qty).toEqual({ amount: 40, unit: 'g' });
+  });
+});

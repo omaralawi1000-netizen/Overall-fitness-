@@ -34,6 +34,9 @@ const UNITS: Record<string, Dim> = {
   serving: { kind: 'count' }, servings: { kind: 'count' }, portion: { kind: 'count' }, portioner: { kind: 'count' },
 };
 
+/** A unit word, also in the plural ("teaspoons", "tablespoons", "deciliters"). */
+const unitOf = (w: string): Dim | undefined => UNITS[w] ?? (w.length > 2 && w.endsWith('s') ? UNITS[w.slice(0, -1)] : undefined);
+
 export interface FoodRow {
   /** the words this row was read from */
   raw: string;
@@ -74,7 +77,7 @@ function readRow(seg: string): FoodRow | null {
   let dim: FoodRow['dim'] = 'count';
   let factor = 1;
   let countWord: string | undefined;
-  const u = UNITS[words[i] ? fold(words[i]) : ''];
+  const u = unitOf(words[i] ? fold(words[i]) : '');
   const weak = !u && /^(a|an|en|et)$/.test(numTok);
   if (u) {
     i++;
@@ -136,7 +139,14 @@ const DENSITY: [RegExp, number][] = [
   [/\b(honey|honning|syrup|sirup)\b/, 1.4], [/\b(oil|olie)\b/, 0.92], [/\b(peanut ?butter|peanutbutter|jordnoddesmor)\b/, 1.05], [/\b(butter|smor)\b/, 0.95],
   [/\b(milk|maelk|maelken|yogurt|yoghurt|skyr|kefir|ymer|cream|flode|juice|water|vand)\b/, 1.03], [/\b(cottage|hytteost|quark|kvark)\b/, 1.0],
 ];
-const densityOf = (food: FoodShape) => (food.density && food.density > 0 ? food.density : DENSITY.find(([re]) => re.test(fold(food.name)))?.[1]);
+/** A food measured in ml is a liquid: oil and syrup are told apart, everything else is about as heavy as water (never a dry ingredient's bulk density: oat milk is not oats). */
+const LIQUID: [RegExp, number][] = [[/\b(honey|honning|syrup|sirup)\b/, 1.4], [/\b(oil|olie)\b/, 0.92]];
+const densityOf = (food: FoodShape) => {
+  if (food.density && food.density > 0) return food.density;
+  const n = fold(food.name);
+  if (food.basis === 'ml') return LIQUID.find(([re]) => re.test(n))?.[1] ?? 1.03;
+  return DENSITY.find(([re]) => re.test(n))?.[1];
+};
 
 /** A portion that only stands for "100 g of it" (a database's default serving), not a piece someone would count. */
 export function placeholderPortion(p: { label: string; amount: number }, basis: string): boolean {
