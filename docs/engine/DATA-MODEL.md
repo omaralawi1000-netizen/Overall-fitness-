@@ -145,10 +145,12 @@ Monday), display units (`kg`/`lb`, `km`/`mi`, `cm`/`in`), `restDefaultSec`, food
   nothing and records nothing. Creating a record whose id already exists is refused.
 - **Undo reverses only its own change.** Undo checks that every field it would put back still holds the action's
   `after` value. If anything newer changed one of them, Undo stops and lists what changed ("set 2 was edited after
-  this"), instead of overwriting newer work. Undo is itself an action, so it can be undone too. Nothing ever restores an
+  this"), instead of overwriting newer work. Undoing a creation also stops if a field was added since (a set created by
+  "start workout" and then ticked). Undo is itself an action, so it can be undone too. Nothing ever restores an
   old whole-state copy over newer edits.
 - **Deleting a fact invalidates what was built on it.** In the same transaction, every live record whose `basedOn`
-  includes the deleted (or changed) record is marked `stale`.
+  includes the deleted (or changed) record is marked `stale`. Undo never clears `stale`: another change may also have
+  made it stale, so it stays stale until it is worked out again.
 - **Saving shows its true state.** A change is shown at once as **pending** (the tap is never blocked), becomes
   **saved** only after the database confirms the transaction, and becomes **failed** (kept, with Retry) if the write
   fails, for example a full disk. "Saved" is never shown early.

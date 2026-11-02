@@ -158,7 +158,7 @@ describe('Undo', () => {
 });
 
 describe('derived facts', () => {
-  it('deleting or correcting a fact marks what was built on it stale, through chains, and undo clears it', async () => {
+  it('deleting or correcting a fact marks what was built on it stale, through chains; Undo never makes it fresh again', async () => {
     const { e } = await eng();
     await e.commit({ type: 'x', label: 'x', ops: [water('w1', 250), water('w2', 500)] });
     await e.commit({ type: 'x', label: 'x', ops: [
@@ -168,15 +168,37 @@ describe('derived facts', () => {
     const d = await e.commit({ type: 'x', label: 'x', ops: [{ op: 'delete', id: 'w1' }] });
     expect(e.get('sum')!.stale).toBe(true);
     expect(e.get('nudge')!.stale).toBe(true);
-    await e.undo(d.action!.id);
-    expect(e.get('sum')!.stale).toBeUndefined();
-    expect(e.get('nudge')!.stale).toBeUndefined();
-    await e.commit({ type: 'x', label: 'x', ops: [{ op: 'update', id: 'w2', set: { ml: 400 } }] });
+    await e.commit({ type: 'x', label: 'x', ops: [{ op: 'update', id: 'w2', set: { ml: 400 } }] }); // the second fact changes too
+    expect((await e.undo(d.action!.id)).status).toBe('saved');
+    expect(e.get('w1')!.deleted).toBeUndefined();
+    expect(e.get('sum')!.stale).toBe(true); // w2 is still changed: the summary must not look fresh
+    expect(e.get('nudge')!.stale).toBe(true);
+  });
+});
+
+describe('derived facts and Undo', () => {
+  it('undoing a change that touched a summary and its stale flag keeps a newer stale mark', async () => {
+    const { e } = await eng();
+    await e.commit({ type: 'x', label: 'x', ops: [water('w1', 250), { op: 'create', record: { id: 'sum', kind: 'coachItem', stage: 'observation', text: 'v1', basedOn: ['w1'] } as NewRecord }] });
+    const r = await e.commit({ type: 'x', label: 'x', ops: [{ op: 'update', id: 'sum', set: { text: 'v2', stale: false } }] });
+    await e.commit({ type: 'x', label: 'x', ops: [{ op: 'update', id: 'w1', set: { ml: 300 } }] });
+    expect(e.get('sum')!.stale).toBe(true);
+    expect((await e.undo(r.action!.id)).status).toBe('saved');
+    expect(e.get<'coachItem'>('sum')!.text).toBe('v1');
     expect(e.get('sum')!.stale).toBe(true);
   });
 });
 
 describe('saving states', () => {
+  it('a tap repeated after a newer change shows the database, not the old tap', async () => {
+    const { e } = await eng();
+    await e.commit({ id: 'tap1', type: 'x', label: 'x', ops: [water('w1', 250)] });
+    await e.commit({ type: 'x', label: 'x', ops: [{ op: 'update', id: 'w1', set: { ml: 500 } }] });
+    const again = e.run({ id: 'tap1', type: 'x', label: 'x', ops: [{ op: 'update', id: 'w1', set: { ml: 250 } }] });
+    expect((await again.result).status).toBe('duplicate');
+    expect(e.get<'water'>('w1')!.ml).toBe(500);
+  });
+
   it('the tap shows at once as pending, saved only after the database confirms', async () => {
     const { e } = await eng();
     const { id, result } = e.run({ type: 'x', label: 'x', ops: [water('w1', 250)] });

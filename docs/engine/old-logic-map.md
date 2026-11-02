@@ -90,8 +90,8 @@ with them. The screen text is rewritten with the new screens; only its mechanism
 ## Old tests ported in E1
 | Old test | What it proves | Part |
 |---|---|---|
-| `core.test.ts` "dates & units" (7 tests) | day start shifts late-night logging back a day, DST and month ends, week starts, both decimal separators, kg/lb round trip | E1a |
-| `beta.test.ts` (4 tests) | old Beta writes only `beta:` keys and copies only `aven…` keys; replayed with `a2` data present to prove it is never touched | E1a |
+| `core.test.ts` "dates & units" (6 tests; the 7th is screen text) and "elapsed excludes paused time" | day start shifts late-night logging back a day, DST and month ends, week starts, both decimal separators, kg/lb round trip | E1a |
+| `beta.test.ts` (its 4 tests' rules, replayed in 2 isolation tests) | old Beta writes only `beta:` keys and copies only `aven…` keys; replayed with `a2` data present to prove it is never touched | E1a |
 | `handsfree.test.ts` (4 tests) | reading a set in both languages; same, done, skip, rest, undo; anything else ignored; a dropped digit is asked about | E1b |
 | `train2.test.ts` `fixMisheard` (1 test, 7 checks) | 18 → 80 when 80 is the usual; a real lighter day stays | E1b |
 | `core.test.ts` "dictation: food / workout" (word-side only) and "quantities" (ml ≠ g, density, estimates) | E1b |

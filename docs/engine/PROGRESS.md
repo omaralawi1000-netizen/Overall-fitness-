@@ -3,6 +3,9 @@
 Spec and review: `SPEC.md`. Data model: `DATA-MODEL.md`. Old code map: `old-logic-map.md`.
 Branch: `claude/project-thread-dkkklx`. The main `docs/PROGRESS.md` is for design; engine progress lives here only.
 
+## Merge rule
+Merge an engine PR only when `npm run verify` is green **and** Codex's review of it has finished. Fix or answer every finding first. Codex (the `chatgpt-codex-connector` bot on GitHub) reviews only when a PR is opened, so a push after that is checked by `verify` and our own review. If it hasn't finished within about 15 minutes, merge on a green `verify`. PR #44 was merged while Codex was still reviewing, and it found 4 real bugs afterwards (fixed in #45).
+
 ## Plan
 | Part | What | Model | Phone check |
 |---|---|---|---|
@@ -28,7 +31,7 @@ Tests live in `tests/engine/`. "untested" is said plainly.
 | Undo reverses only its own change; stops on conflict; never restores a whole old state | `engine` Undo block, `workout` "undoing set 1 never touches set 2" | tested |
 | apply → undo sequences return to the start | `engine` property test (40 random runs) | tested |
 | Deletes are soft | `engine` | tested |
-| Deleting or correcting a fact marks what was built on it stale (chains), Undo clears it | `engine` "derived facts" | tested with a stand-in summary; real summaries come with the Coach |
+| Deleting or correcting a fact marks what was built on it stale (chains); Undo never makes it fresh again | `engine` "derived facts" | tested with a stand-in summary; real summaries come with the Coach |
 | Never "saved" while pending or failed; full disk rolls back and waits with Retry | `engine` "saving states" (quota error injected) | tested in Node; a real full phone untested |
 | Session states planned/active/paused/resumed/abandoned/discarded/deleted; discarded never comes back on reload | `workout` | tested |
 | Planned vs done kept apart; unticked never counted as done (also on import) | `workout`, `backup-import` | tested |
@@ -42,13 +45,33 @@ Tests live in `tests/engine/`. "untested" is said plainly.
 | Data from a newer version opens read-only | `engine` "schema and snapshots" | tested |
 | Migrations deterministic and repeatable; last-known-good copy before migration, restore, import | `backup-import` "migrations", `engine` snapshots | tested (no real migration exists yet: schema 1) |
 | Backup: versioned, checksum; damaged, cut-off, edited, wrong, newer files refused | `backup-import` | tested |
-| Restore: preview, merge (newer wins, phone deletes stay), replace, one Undo | `backup-import` | tested |
+| Restore: preview, merge (newer wins, phone deletes stay), replace (also removes what another tab just added), one Undo | `backup-import` | tested |
 | Import from old Aven: file and one-tap copy, read only, dry-run report, skipped with reasons, damaged items counted | `backup-import`; page check in headless Chrome with a made-up old Aven on the same site (`aven.v1` unchanged) | tested |
 | Re-import never duplicates; deleted here stays deleted; one Undo takes the import back | `backup-import` | tested |
 | Missing is never zero (food nutrients, watch numbers) | `backup-import` (import), model types | tested on import; sums come with the Food phase |
 | A logged day isn't assumed complete | `dayNote.foodComplete` in the model | shape only: averages come with the Food phase |
 | Exercise variations are separate exercises | catalogue keeps one id per variation | shape only: records and plateaus come with the Workout phase |
 | Memory cards (scope, valid-from/until, last-seen) and the Coach ladder | model types, import of old memory notes | shape only: used in the Coach phase |
+
+## Test inventory (77 tests)
+Fewer tests than rules looks thin, but each property test runs 25 to 200 random cases, so the real count of checked cases is in the thousands.
+
+**Property tests (11):**
+- Dedupe: any mix of repeated taps logs each action once (`engine`).
+- apply → undo: 40 random histories, then Undo all, ends where it started (`engine`).
+- Rest timer: any reload or ±15 pattern never jumps back (`workout`).
+- Day keys and `addDays`/`diffDays`; every moment maps to a real day; kg ↔ lb; `parseNum` with comma or point (`time-units`).
+- Backup: export → read → replace on another phone gives the same data for any history; restoring the same file twice changes nothing; any edited number fails the checksum (`backup-import`).
+- Old import: half-broken or hand-edited old data never crashes the import (`backup-import`, 200 cases).
+
+**Old tests ported as regressions (9 tests):**
+- `core.test.ts` "dates & units", 6 tests (`time-units`). Its 7th, "percentages follow the language", is screen text and was not ported.
+- `core.test.ts` "elapsed excludes paused time" (`workout`).
+- `beta.test.ts`: its rules (writes only `beta:` keys, copies only `aven…` keys, deletes only its own) are replayed with old Beta's real code next to `a2` data, in 2 tests (`isolation`).
+- `behaviour2.test.ts` "a hand-edited backup never crashes" becomes the import property test above.
+- E1b ports: listed in `old-logic-map.md`.
+
+**Still untested:** see below.
 
 ## What's still untested or open
 - Real phone: persistent-storage grant, a truly full disk, IndexedDB under memory pressure, Chrome killing the tab mid-write.
@@ -61,6 +84,8 @@ Tests live in `tests/engine/`. "untested" is said plainly.
 - E1a-1 (2 Nov): `DATA-MODEL.md`, `src/engine/` model, plan (pure action logic), engine (IndexedDB, action log, Undo), workout and timers, isolation tests.
 - E1a-2 (2 Nov): backup, restore, migrations, import from old Aven, exercise catalogue ported.
 - E1a-3 (2 Nov): debug page at `/engine/` (`src/debug/`), checked in headless Chrome at 384 px.
+- Code review (2 Nov): 10 fixes, 68 tests green. Merged to main in PR #44 and deployed to `/engine/`.
+- Codex review of PR #44 (2 Nov, after the merge): 4 real findings, all reproduced by a failing test, then fixed: undoing a creation now stops if a field was added since; Undo never makes a stale summary look fresh; a repeated tap after a newer change shows the database; replace also removes records another tab just added. Codex's look at #45 found a 5th: Undo also restored an old `stale` value when the change touched other fields too; fixed the same way. Plus 5 property tests and 1 ported test (77 tests).
 
 ## Next step
 E1b on **Sonnet** (Omar switches the model): the parser and `docs/parser-examples.md`, then a phrase box on `/engine/`.

@@ -24,7 +24,11 @@ const SNAPSHOTS_KEPT = 3;
 
 type Rec = AnyRecord & Record<string, unknown>;
 
-export interface ActionInput { id?: string; type: string; label: string; source?: Source; ops: Op[] }
+export interface ActionInput {
+  id?: string; type: string; label: string; source?: Source; ops: Op[];
+  /** restore's "replace": also soft-delete every live record the ops don't name, decided inside the write's transaction */
+  deleteOthers?: boolean;
+}
 export type SaveState = 'pending' | 'saved' | 'failed';
 export interface Result {
   /** saved: written; noop: nothing to change; duplicate: this action id was already written; conflict: Undo stopped */
@@ -172,6 +176,8 @@ export class Engine {
     this.emit();
     const result = this.commit(full).then(async (r) => {
       this.pendingInputs.delete(id);
+      // already written before: the change shown at once may be older than the database, so show the database
+      if (r.status === 'duplicate') await this.reload();
       if (r.status === 'failed') {
         this.states.set(id, 'failed');
         this.failed.set(id, { input: full, error: r.error! });
@@ -204,10 +210,17 @@ export class Engine {
       if (await req(acts.get(id))) { outcome.r = { status: 'duplicate' }; }
       else {
         const ctx = this.ctx(id, source);
-        const ids = input.ops.map((op) => (op.op === 'create' || op.op === 'put' ? (op.record as { id: string }).id : op.id));
+        let ops = input.ops;
+        const ids = ops.map((op) => (op.op === 'create' || op.op === 'put' ? (op.record as { id: string }).id : op.id));
         const cur = new Map<string, Rec | undefined>();
         for (const k of new Set(ids)) cur.set(k, (await req(recs.get(k))) as Rec | undefined);
-        const planned = planOps(input.ops, cur as Map<string, never>, ctx);
+        if (input.deleteOthers) {
+          const named = new Set(ids);
+          const others = ((await req(recs.getAll())) as Rec[]).filter((r) => !named.has(r.id) && !r.deleted);
+          for (const r of others) cur.set(r.id, r);
+          ops = [...ops, ...others.map((r): Op => ({ op: 'delete', id: r.id, ifExists: true }))];
+        }
+        const planned = planOps(ops, cur as Map<string, never>, ctx);
         if (!planned.changes.length) outcome.r = { status: 'noop' };
         else {
           const stale = await this.staleFor(recs, planned.changes.map((c) => c.id), planned.next as unknown as Map<string, Rec>, ctx);

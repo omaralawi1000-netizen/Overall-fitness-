@@ -116,21 +116,17 @@ export function previewRestore(e: Engine, b: BackupFile): Preview {
 
 /**
  * The operations a restore writes. Each one is decided again inside the write's transaction against the database (not
- * this screen's copy): merge writes what is new or newer and keeps phone deletes; replace makes the phone the file.
+ * this screen's copy): merge writes what is new or newer and keeps phone deletes; replace makes the phone the file (the engine
+ * deletes everything else, read from the database in the same transaction, so a record another tab just added goes too).
  */
-export function restoreOps(e: Engine, b: BackupFile, mode: 'merge' | 'replace'): Op[] {
-  const ops: Op[] = b.records.map((record) => ({ op: 'put', record, when: mode === 'merge' ? 'newer' : 'always' }));
-  if (mode === 'replace') {
-    const inFile = new Set(b.records.map((r) => r.id));
-    for (const r of e.allRecords()) if (!inFile.has(r.id) && !r.deleted) ops.push({ op: 'delete', id: r.id, ifExists: true });
-  }
-  return ops;
+export function restoreOps(b: BackupFile, mode: 'merge' | 'replace'): Op[] {
+  return b.records.map((record) => ({ op: 'put', record, when: mode === 'merge' ? 'newer' : 'always' }));
 }
 
 /** Restore as one action, after a last-known-good copy. Returns the engine's result (one Undo takes it all back). */
 export async function restore(e: Engine, b: BackupFile, mode: 'merge' | 'replace', actionId = newId('r')): Promise<Result> {
-  const ops = restoreOps(e, b, mode);
+  const ops = restoreOps(b, mode);
   await e.snapshot(`before restoring a backup from ${b.exportedAt} (${mode})`);
-  return e.commit({ id: actionId, type: `restore.${mode}`, label: `Restored a backup from ${b.exportedAt.slice(0, 10)} (${mode === 'merge' ? 'merged' : 'replaced'}): ${summarise(countKinds(b.records))}`, source: 'import', ops });
+  return e.commit({ id: actionId, type: `restore.${mode}`, label: `Restored a backup from ${b.exportedAt.slice(0, 10)} (${mode === 'merge' ? 'merged' : 'replaced'}): ${summarise(countKinds(b.records))}`, source: 'import', ops, deleteOthers: mode === 'replace' });
 }
 
