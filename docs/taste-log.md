@@ -34,6 +34,11 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 
 ## Entries
 
+### 2 Nov 2026: Today in the Heat language (/_prototypes/today/)
+Asked: "If you would fit the today screen from the aura, let's just imagine that with this screen, how would it be?" (the frost-round workout screen).
+Built: Today beside the Fluted workout screen (swipe between them, same six themes). From the Oura still it keeps only a calm thin number in a ring of ticks, a serif sentence and detail one tap away; everything else is Heat (light from below, Unbounded numbers, frosted panes, cream pill). Tiles and the readiness number grow into pages. Three moments: Morning, Rest day, After lifting (the light turns gold on a record).
+Verdict: waiting.
+
 ### 2 Nov 2026: frost round, six workout screens from Heat (/_prototypes/frost/)
 Ask (Omar): "I think maybe I want to have multiple themes, so it's going to be another color if I want anyways. And I also want more frosty glass blur. Can we have more variations of that on Opus, so it actually be creative and have maybe different layouts? … Give Opus the full creative control. Think of outside the box."
 Built, one swipe page, same session in all six (Bench press, set 3 of 4; set 4 at 85 kg beats the record), each with set, rest and record, a one-tap Done, Undo and Skip, and six themes (Heat, Glacier, Volt, Violet, Rose, Chrome) with a switch under the page. All keep Heat's hot light from below, Unbounded numbers and the cream pill; exercise names are italic serif (his taste-test pick).
