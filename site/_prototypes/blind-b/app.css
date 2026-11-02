@@ -1,0 +1,154 @@
+@font-face { font-family: 'Geist'; src: url('geist.woff2') format('woff2'); font-weight: 100 900; font-display: block; }
+
+:root {
+  color-scheme: dark;
+  --ink: #030304;
+  --text: #eef0f4;
+  --dim: rgba(238, 240, 244, 0.62);
+  --faint: rgba(238, 240, 244, 0.46);
+  --hair: rgba(238, 240, 244, 0.14);
+  --gold: #f2c477;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; background: var(--ink); color: var(--text); overflow: hidden; overscroll-behavior: none; }
+body { font: 400 15px/1.35 'Geist', system-ui, sans-serif; font-feature-settings: 'tnum' 1, 'ss01' 1; -webkit-font-smoothing: antialiased; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; touch-action: manipulation; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+
+#gl { position: fixed; inset: 0; width: 100%; height: 100%; display: block; }
+
+#app {
+  position: fixed; inset: 0; z-index: 1;
+  display: grid;
+  grid-template-rows: auto auto minmax(8px, 0.7fr) clamp(168px, 26svh, 224px) auto minmax(8px, 1fr) auto auto;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) 16px calc(env(safe-area-inset-bottom, 0px) + 10px);
+}
+
+/* header */
+.top { display: flex; align-items: center; gap: 12px; height: 28px; font-size: 13px; letter-spacing: 0.02em; color: var(--dim); }
+.day { font-weight: 560; color: var(--text); letter-spacing: 0.08em; text-transform: uppercase; font-size: 11.5px; }
+.segs { display: flex; gap: 4px; flex: 1; justify-content: center; }
+.segs i { width: 18px; height: 3px; border-radius: 2px; background: var(--hair); transition: background-color 0.5s var(--ease-out), width 0.5s var(--ease-out); }
+.segs i.on { background: var(--text); width: 26px; }
+.segs i.done { background: rgba(238, 240, 244, 0.5); }
+.clock { font-variant-numeric: tabular-nums; min-width: 44px; text-align: right; }
+
+/* title */
+.title { padding-top: 22px; position: relative; text-align: center; }
+h1 { font-size: 30px; line-height: 1.1; font-weight: 600; letter-spacing: -0.025em; }
+.sub { margin-top: 7px; color: var(--dim); font-size: 14.5px; }
+.badge {
+  position: absolute; left: 0; right: 0; top: 0; text-align: center;
+  font-size: 13px; font-weight: 660; letter-spacing: 0.26em; text-transform: uppercase; color: var(--gold);
+  opacity: 0; transform: translateY(8px) scale(0.96);
+  transition: opacity 0.35s var(--ease-out), transform 0.6s var(--ease-out);
+}
+.is-record .badge { opacity: 1; transform: none; }
+
+/* hero: the canvas draws the number into this box */
+.hero { grid-row: 4; position: relative; touch-action: none; cursor: ew-resize; margin: 0 -4px; }
+.mid { grid-row: 5; }
+.sets { grid-row: 7; }
+.foot { grid-row: 8; }
+.unit {
+  position: absolute; left: 0; top: 0; font-size: 17px; font-weight: 500; color: var(--dim); letter-spacing: 0.01em;
+  transition: transform 0.55s var(--ease-out), opacity 0.3s var(--ease-out);
+  will-change: transform;
+}
+.is-lift .unit { transition-delay: 0s, 0.28s; }   /* "kg" waits for the digits */
+.is-rest .unit, .is-done .unit, .is-sunk .unit, .is-sunk .unit2 { opacity: 0; }
+.total { align-self: start; text-align: center; color: var(--gold); font-size: 15px; letter-spacing: 0.02em; opacity: 0; transform: translateY(10px); }
+.is-done .total { opacity: 1; transform: none; transition-delay: 0.5s; }
+
+/* the controls under the number: steppers (lift) and rest chips (rest) share one place */
+.mid { display: grid; margin-top: 2px; }
+.adjust, .restctl, .total { grid-area: 1 / 1; transition: opacity 0.32s var(--ease-out), transform 0.5s var(--ease-out); }
+.adjust { display: grid; gap: 6px; }
+.restctl { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; opacity: 0; transform: translateY(10px); pointer-events: none; transition-duration: 0.18s; }
+.is-rest .adjust, .is-done .adjust { opacity: 0; transform: translateY(-8px); pointer-events: none; transition-duration: 0.18s; }
+.is-lift .adjust { transition-delay: 0.14s; transition-duration: 0.32s, 0.5s; }
+.is-rest .restctl { opacity: 1; transform: none; pointer-events: auto; transition-delay: 0.18s; transition-duration: 0.32s, 0.5s; }
+.row { display: grid; grid-template-columns: 56px 1fr 56px; align-items: center; height: 60px; }
+.step {
+  width: 56px; height: 56px; border-radius: 50%; font-size: 26px; font-weight: 300; line-height: 1; color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--hair); background: rgba(255, 255, 255, 0.025);
+  transition: transform 0.4s var(--ease-out), background-color 0.2s;
+}
+.step:active { transform: scale(0.9); background: rgba(255, 255, 255, 0.07); transition-duration: 0.08s; }
+.ruler { position: relative; height: 34px; margin: 0 14px; overflow: hidden; -webkit-mask-image: linear-gradient(90deg, transparent, #000 28%, #000 72%, transparent); mask-image: linear-gradient(90deg, transparent, #000 28%, #000 72%, transparent); }
+.tape {
+  position: absolute; top: 8px; left: 50%; width: 4800px; height: 18px; margin-left: -2400px;
+  background:
+    repeating-linear-gradient(90deg, rgba(238, 240, 244, 0.5) 0 1px, transparent 1px 48px) 0 0 / 48px 18px,
+    repeating-linear-gradient(90deg, rgba(238, 240, 244, 0.2) 0 1px, transparent 1px 12px) 0 6px / 12px 12px no-repeat;
+  background-repeat: repeat-x;
+  transition: transform 0.6s var(--ease-out);
+  will-change: transform;
+}
+.mark { position: absolute; left: 50%; top: 2px; width: 2px; height: 30px; margin-left: -1px; border-radius: 1px; background: var(--text); }
+.reps { position: relative; height: 60px; }
+.unit2 { position: absolute; left: 0; top: 0; font-size: 14px; color: var(--dim); transition: transform 0.55s var(--ease-out), opacity 0.3s; will-change: transform; }
+
+.nextset { color: var(--dim); font-size: 15px; }
+.nextset b { color: var(--text); font-weight: 560; }
+.chips { display: flex; gap: 10px; }
+.chip {
+  height: 48px; min-width: 96px; padding: 0 18px; border-radius: 24px; font-size: 15px; font-weight: 520; font-variant-numeric: tabular-nums;
+  box-shadow: inset 0 0 0 1px rgba(255, 236, 220, 0.2); background: rgba(20, 8, 4, 0.28);
+  transition: transform 0.4s var(--ease-out), background-color 0.2s;
+}
+.chip:active { transform: scale(0.94); background: rgba(255, 255, 255, 0.1); transition-duration: 0.08s; }
+
+/* sets: the canvas draws a bead into each .bead */
+.sets { display: flex; justify-content: center; gap: 6px; padding: 18px 0 6px; }
+.set { min-width: 76px; padding: 0 4px; display: flex; flex-direction: column; align-items: center; gap: 9px; }
+.bead { width: 24px; height: 24px; }
+.set span { font-size: 12.5px; color: var(--faint); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.set.done span { color: var(--dim); }
+.set.now span { color: var(--text); font-weight: 520; }
+
+/* the button: the canvas draws the glass under it */
+.foot { padding-top: 16px; display: flex; flex-direction: column; align-items: stretch; }
+.go { height: 68px; border-radius: 34px; font-size: 18px; font-weight: 560; letter-spacing: -0.005em; position: relative; }
+.go span { display: inline-block; text-shadow: 0 1px 8px rgba(40, 16, 4, 0.55); }
+.upnext { text-align: center; color: var(--faint); font-size: 13px; padding: 12px 0 2px; min-height: 40px; }
+
+/* text that changes: out up, in from below */
+.swap { will-change: transform, opacity; }
+
+/* first frame: the canvas raises everything; the words follow */
+.is-intro .title, .is-intro .top, .is-intro .mid, .is-intro .sets span, .is-intro .go span, .is-intro .upnext { opacity: 0; transform: translateY(10px); }
+.is-intro .unit { opacity: 0; }
+.title, .top, .mid, .go span, .upnext { transition: opacity 0.5s var(--ease-out), transform 0.7s var(--ease-out); }
+.sets span { transition: opacity 0.5s var(--ease-out), transform 0.7s var(--ease-out), color 0.4s var(--ease-out); }
+
+/* between exercises: words wait under the surface until the metal is back */
+.is-sunk .restctl, .is-sunk .sets span { opacity: 0; pointer-events: none; transition-duration: 0.18s; transition-delay: 0s; }
+
+/* no WebGL2: plain text numbers */
+.flat .hero::after { content: attr(data-text); position: absolute; inset: 0; display: grid; place-items: center; font-size: 120px; font-weight: 640; letter-spacing: -0.04em; }
+.flat .reps::after { content: attr(data-text); position: absolute; inset: 0; display: grid; place-items: center; font-size: 44px; font-weight: 600; }
+.flat .bead { border-radius: 50%; box-shadow: inset 0 0 0 2px var(--dim); }
+.flat .set.done .bead { background: var(--text); }
+.flat .go { background: #1a1b1f; }
+
+.fps { position: fixed; z-index: 9; right: 8px; top: calc(env(safe-area-inset-top, 0px) + 44px); font: 11px/1.3 ui-monospace, monospace; color: #9f9; background: rgba(0, 0, 0, 0.6); padding: 4px 6px; border-radius: 6px; pointer-events: none; white-space: pre; }
+
+@media (max-height: 740px) {
+  .title { padding-top: 12px; }
+  h1 { font-size: 26px; }
+  .row { height: 54px; }
+  .sets { padding-top: 10px; }
+  .go { height: 62px; }
+}
+/* a phone on its side has no room for the stack: ask for portrait (the screen is built for one hand, upright) */
+.upright { display: none; }
+@media (orientation: landscape) and (max-height: 540px) {
+  #app, #gl { visibility: hidden; }
+  .upright { display: grid; place-items: center; position: fixed; inset: 0; color: var(--dim); font-size: 16px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition-duration: 0.01ms !important; }
+}
