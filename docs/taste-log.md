@@ -17,6 +17,10 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 
 ## Entries
 
+### 2 Nov 2026: the Coach clips
+His words: "I haven't ticked many of them. It's because I'm still a little confused about those, like what they do, or maybe I can do a combination or anything, I don't know."
+Reading: the Coach clips are parts of one conversation, not alternatives, so judging them one by one didn't work. We proposed one combined moment (Ask bar → one breathing light → answer in a tray with a chart → Apply with Undo → the change lands in the plan). Judge it as a whole, on his phone.
+
 ### 2 Nov 2026: motion library, round 3 and the Pick list
 Round 3 (32 clips, 29 design screens): hearted 2 clips, `r3-next-cred-swipe-to-pay` (a slide whose light rises and floods the room, then a check) and `r3-warm-replay-orange-mesh-digits` (a giant number locking in on a warm field). No design screens hearted.
 His words: "Many of round three … I'm a little confused about … mostly I'm a little uncertain on, I need like a better explanation or a better use case … I think some of them could be good. I don't know."
