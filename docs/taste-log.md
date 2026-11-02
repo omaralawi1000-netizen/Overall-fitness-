@@ -7,7 +7,12 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 - **After every test, prototype or rejection:** add a dated entry. His words go in quotes. Our reading of them is marked "Reading".
 - **Rounds alternate:** a wide search (Sonnet), then one small polished slice (Opus).
 
-## What it suggests now (2 Nov 2026, before the frost round)
+## What it suggests now (2 Nov 2026, before the Heat workout screen)
+- **Build on what he already approved, not new concepts.** Six fresh frost ideas got "not really my style". His hearted clips and Heat's light are the fundamentals; every moment on this screen comes from one named clip.
+- **Calm on top, depth one tap away.** "Empty" and "minimal but impressive" together mean that the main view stays quiet and the information lives behind small details that open in place.
+- **Copy nothing from the old app's structure.** He showed it for the depth it holds, then said we can do it "in a better way".
+
+## What it suggested before that (2 Nov 2026, before the frost round)
 - **Plain is the sin, and Heat is the only workout look that escaped it.** Every flat or tidy round died ("plain", "ordinary", "like those"). Heat's one hot light from below survived. So this round keeps Heat's light and type and changes the material and the idea, not the palette.
 - **He wants frost he can see.** Frost only shows when something bright and shaped sits behind it. Smooth gradients behind glass read as a tinted card. Every screen this round puts something bold behind the glass (a giant number, a sun, molten blobs, stacked panes).
 - **Colour is a theme, not the identity.** He wants themes ("it's going to be another color if I want anyways"), so the idea has to hold in every colour. Each screen ships with six themes and a switch.
@@ -34,6 +39,10 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 
 ## Entries
 
+### 2 Nov 2026: one Heat workout screen with frost (/_prototypes/heat/)
+Built: one workout screen in Heat with frosted glass and six themes, each moment taken from a hearted clip. The tick is Not Boring's (a dot swells into a pearl and a check draws). The number change is Push's (only the changed digit rolls, with motion blur), and the set label is the multi-state badge (it blurs across). Rest is Watch's (the Done button grows into the ring) with Peace Out's calm (the time fades in after the ring settles). A new record is Nike's takeover (gold floods out of the set) plus Any Distance's medal (it turns to face you with an edge light). The next exercise slides in like Md Vinyl's next track. The depth sits one tap away, with no ••• menu: the Coach dot opens its note (with "Use 85 kg" and Undo), "Last time" opens last session, the set dots open every set, the clock chip opens the whole workout, and the exercise name opens one page with everything about it. That page holds the target, stats, a chart, recent sessions and how-to, and at its bottom everything you can change today (swap, superset, note, rest time). Tapping a number unfolds − and + under it.
+Verdict: waiting for Omar.
+
 ### 2 Nov 2026: frost round, six workout screens from Heat (/_prototypes/frost/)
 Ask (Omar): "I think maybe I want to have multiple themes, so it's going to be another color if I want anyways. And I also want more frosty glass blur. Can we have more variations of that on Opus, so it actually be creative and have maybe different layouts? … Give Opus the full creative control. Think of outside the box."
 Built, one swipe page, same session in all six (Bench press, set 3 of 4; set 4 at 85 kg beats the record), each with set, rest and record, a one-tap Done, Undo and Skip, and six themes (Heat, Glacier, Volt, Violet, Rose, Chrome) with a switch under the page. All keep Heat's hot light from below, Unbounded numbers and the cream pill; exercise names are italic serif (his taste-test pick).
@@ -44,7 +53,15 @@ Built, one swipe page, same session in all six (Bench press, set 3 of 4; set 4 a
 5. **Lava:** the exercise is a frosted lava-lamp capsule. Each set drops into the pool at the bottom. Rest slows and cools the lava.
 6. **Poster:** the weight is giant lit type behind frosted slats. Rest turns the slats open and the giant countdown takes over.
 A record turns the light gold for a moment in all six.
-Verdict: waiting for Omar.
+Verdict: no. His words: "Not really my style. I want it built on the fundamentals we already like. The animations, you know what I mean?" And: "It feels empty, or is it supposed to be?"
+Reading: new gimmick concepts (fog, lava, blinds) are the wrong direction; he wants the fundamentals he already approved, above all his hearted animations, matched closely. "Empty" is the second lesson: one big number on a glowing void is not a workout screen. The next screen must be full and alive with the real workout (exercise list, sets done and to go, last time, the Coach note). Next: one workout screen in the Heat look with frosted glass and themes, each moment (tick, numbers, next set, rest, record) built from its hearted clip.
+Correction, same minute: "I wanted to be minimal but like impressive at the same time. You know what I mean? Like it's a good starting point. It just doesn't show much. Like if I want extra information from the coach, or you know, there's gonna be extra information like when my last set was, if I want to click on something. I mean, we could all do it, but like Apple finds the smallest details to hide and click on to make everything look good and minimal and just look good without being cluttered."
+Reading: not "full". The calm, minimal surface of the frost screens was a good start; what was missing is depth one tap away. Keep the main view uncluttered and put the extra information (the Coach's detail, last time, earlier sets, the rest of the workout) behind small, well-placed details that expand in place, the way Apple hides things.
+Then, with three screenshots of old Aven (shared folder `aven2/omar-examples-2026-11-02/`): "I mean, some of it is beautiful, don't get me wrong, but like if there were to be extra info, I'm just gonna give you an example on my app right now. This is just an example, don't follow it at all."
+Reading: the screenshots show what depth a workout needs, not how it should look: an exercise page (muscles, today's target, last time, heaviest, estimated 1RM, how-to, a progress chart, recent sessions), exercise options (replace, superset, move, note, rest time, remove), and the live set table (previous, kg, reps, a Coach suggestion with "Use it", up next). All of that belongs one tap away from the calm screen.
+
+Then, on how old Aven hides things (three dots open the options, the name opens the details): "Bro, I just gave you for context, you don't have to copy it at all. We can do it in a different way. In a better way also."
+Reading: the old app's two doors (a ••• menu and a name page) are context, not a pattern to copy. Find our own, better way to hide the same depth.
 
 ### 2 Nov 2026: Heat, for the workout screen
 His words: "You know heat and rooms? Not rooms, that is for the UI, but you know the heat. I think right now we're only focusing on the workout screen. That was actually the closest thing I liked. It was not just Evan, old Evan." (Dictated; "Evan" is probably Aven, kept as he said it.)

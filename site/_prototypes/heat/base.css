@@ -1,6 +1,5 @@
-/* Frost round: shared tokens. Heat's DNA (one hot light from below, Unbounded numbers, a cream pill) in six themes,
-   with much more frost: every pane is live blur plus a white veil and a fine grain, over something bright enough
-   to be blurred. */
+/* Heat workout: shared tokens. Heat's light from below, Unbounded numbers, the cream pill and italic serif names,
+   in six themes. Frost = live blur + a white veil + grain. */
 @font-face { font-family: 'Unbounded'; font-weight: 200 900; font-display: block; src: url(../../round/fonts/unbounded.woff2) format('woff2'); }
 @font-face { font-family: 'Archivo'; font-weight: 100 900; font-display: block; src: url(../../round/fonts/archivo.woff2) format('woff2'); }
 @font-face { font-family: 'Newsreader'; font-style: italic; font-weight: 200 800; font-display: block; src: url(../slice/fonts/newsreader-italic.woff2) format('woff2'); }
@@ -21,8 +20,9 @@
   --dim: color-mix(in srgb, var(--ink) 56%, transparent);
   --line: color-mix(in srgb, var(--ink) 16%, transparent);
   --bg: var(--base); --g1: var(--w1); --g2: var(--w2); --g3: var(--w3); --hot: var(--wh);
-  transition: --bg 1.1s ease, --g1 1.1s ease, --g2 1.1s ease, --g3 1.1s ease, --hot 1.1s ease;
 }
+/* Only the lit objects glide to the new colours. Animating these on :root re-styles every element each frame. */
+.glowobj { transition: --g1 1.1s ease, --g2 1.1s ease, --g3 1.1s ease, --hot 1.1s ease; }
 :root[data-phase='rest'] { --g1: var(--r1); --g2: var(--r2); --g3: var(--r3); --hot: var(--rh); }
 :root[data-phase='record'] { --g1: #E07A12; --g2: var(--gold); --hot: #FFF6DA; }
 :root[data-theme='glacier'] { --w1: #2F6BFF; --w2: #7FD3FF; --w3: #1B1F6B; --wh: #EAFBFF; --r1: #7A3CFF; --r2: #C9A8FF; --r3: #20104A; --rh: #F3EAFF; --base: #03060E; --ink: #F2F8FF; --solid-ink: #06112A; }
@@ -42,13 +42,20 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 .cap { font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
 
 /* The light: Heat's field, recoloured by the theme. Grain on top so the soft falloff never rings. */
-.light { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: clip;
+.light { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: clip; --l1: var(--w1); --l2: var(--w2); --l3: var(--w3); --lh: var(--wh); }
+.light, .light::before, .light::after {
   background:
-    radial-gradient(60% 34% at 50% 104%, var(--hot) 0%, transparent 70%),
-    radial-gradient(90% 56% at 50% 92%, var(--g2) 0%, transparent 72%),
-    radial-gradient(130% 80% at 50% 88%, var(--g1) 0%, transparent 74%),
-    radial-gradient(70% 40% at 8% 0%, var(--g3) 0%, transparent 80%),
-    var(--bg); }
+    radial-gradient(60% 34% at 50% 104%, var(--lh) 0%, transparent 70%),
+    radial-gradient(90% 56% at 50% 92%, var(--l2) 0%, transparent 72%),
+    radial-gradient(130% 80% at 50% 88%, var(--l1) 0%, transparent 74%),
+    radial-gradient(70% 40% at 8% 0%, var(--l3) 0%, transparent 80%),
+    var(--base); }
+/* Rest and record lights are their own painted layers, cross-faded with opacity: changing the gradient's colours
+   instead repaints the whole screen every frame under every frosted pane (measured: ~38 fps at 4x slower CPU). */
+.light::before, .light::after { content: ''; position: absolute; inset: 0; opacity: 0; will-change: opacity; transition: opacity 1.1s ease; }
+.light::before { --l1: var(--r1); --l2: var(--r2); --l3: var(--r3); --lh: var(--rh); }
+.light::after { --l1: #E07A12; --l2: var(--gold); --l3: var(--w3); --lh: #FFF6DA; }
+:root[data-phase='rest'] .light::before, :root[data-phase='record'] .light::after { opacity: 1; }
 .grain { position: fixed; inset: 0; z-index: 50; pointer-events: none; background-image: var(--grain); background-size: 128px; opacity: 0.5; }
 
 /* The frost. Heavier than Heat's: more blur, a white veil, a lit top edge, grain inside the pane. */
@@ -72,8 +79,6 @@ button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
 .roll .d { display: inline-block; }
 .roll .d.out { position: absolute; left: 0; top: 0; }
 
-.medal-flash { position: fixed; inset: 0; z-index: 40; pointer-events: none; opacity: 0;
-  background: radial-gradient(60% 40% at 50% 60%, color-mix(in srgb, var(--gold) 70%, transparent), transparent 70%); }
 
-@media (prefers-reduced-motion: reduce) { :root { transition: none; } }
+@media (prefers-reduced-motion: reduce) { .glowobj { transition: none; } }
 :root[data-idle] *, :root[data-idle] *::before, :root[data-idle] *::after { animation-play-state: paused !important; }

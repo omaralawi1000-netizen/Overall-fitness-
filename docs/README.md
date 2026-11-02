@@ -32,7 +32,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 
 ## Live pages (`site/`, published by `.github/workflows/pages.yml`)
 Base: https://omaralawi1000-netizen.github.io/Overall-fitness-/
-- `/_prototypes/frost/` (`site/_prototypes/frost/`): six workout screens from Heat with heavy frost and six colour themes, on one swipe page (Steam, Fluted, Deck, Thermo, Lava, Poster). `/_prototypes/slice/` and `/_prototypes/premium/` are the earlier workout prototypes; the rejected wide round (Dial, Bar, Path, Keypad) is in Git history.
+- `/_prototypes/heat/` (`site/_prototypes/heat/`): one workout screen in the Heat look with frosted glass and six colour themes; every moment is built from a hearted clip, and the depth (Coach, last time, all sets, whole workout, the exercise page) sits one tap away. `/_prototypes/slice/` and `/_prototypes/premium/` are the earlier workout prototypes; the rejected frost and wide rounds are in Git history.
 - `/round/` (`site/round/`): the final design round: Day line, Rooms and the Ordinary control.
 - `/looks/` (`site/looks/`): three clickable looks, Ink, Ink rich, Heat (history: superseded by /round/).
 - `/concepts/` (`site/concepts/`): the concept prototypes.

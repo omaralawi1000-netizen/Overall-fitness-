@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0b">
+<meta name="robots" content="noindex">
+<title>Aven 2 · Heat workout</title>
+<style>
+  :root { --bar: 96px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: #0a0a0b; color: #f2f3f5; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; overflow: hidden; }
+  .pager { position: fixed; left: 0; right: 0; top: 0; bottom: calc(var(--bar) + env(safe-area-inset-bottom, 0px)); display: flex; }
+  .pager section { flex: none; width: 100%; height: 100%; }
+  iframe { width: 100%; height: 100%; border: 0; display: block; background: #0a0a0b; }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--bar) + env(safe-area-inset-bottom, 0px)); padding: 10px 12px calc(env(safe-area-inset-bottom, 0px) + 10px); background: #0a0a0b; border-top: 1px solid rgba(255, 255, 255, .08); display: flex; flex-direction: column; gap: 10px; }
+  .row { display: flex; align-items: center; gap: 10px; min-height: 30px; }
+  .name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .name span { font-weight: 400; color: rgba(255, 255, 255, .55); font-size: 13px; margin-left: 6px; }
+  .chips { display: flex; gap: 6px; flex: 1; } .chips button { flex: 1; height: 38px; border-radius: 19px; border: 0; background: rgba(255, 255, 255, .1); color: #f2f3f5; font-size: 13px; font-weight: 500; }
+  .themes { display: flex; gap: 6px; } .themes button { width: 28px; height: 28px; border-radius: 50%; border: 0; background: linear-gradient(135deg, var(--a), var(--b)); box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+  .themes button.on { box-shadow: 0 0 0 2px #0a0a0b, 0 0 0 4px #fff; }
+</style>
+</head>
+<body>
+<main class="pager" id="pager"><section><iframe id="f" title="Heat workout"></iframe></section></main>
+<footer class="bar">
+  <div class="row"><div class="name">Heat workout<span>tap anything small to see more</span></div></div>
+  <div class="row"><div class="chips" id="chips"></div><div class="themes" id="themes"></div></div>
+</footer>
+<script>
+const M = [['set', 'Set'], ['rest', 'Rest'], ['record', 'Record'], ['next', 'Next']];
+const T = [['heat', '#FF4816', '#FFAC3C', 'Heat'], ['glacier', '#2F6BFF', '#7FD3FF', 'Glacier'], ['volt', '#2FA51A', '#C8FF3A', 'Volt'], ['violet', '#8A2BFF', '#FF4FD8', 'Violet'], ['rose', '#FF3D63', '#FFB38A', 'Rose'], ['chrome', '#5E6672', '#DCE3EC', 'Chrome']];
+const q = new URLSearchParams(location.search);
+let theme = T.some((t) => t[0] === q.get('t')) ? q.get('t') : 'heat';
+const f = document.getElementById('f'), chips = document.getElementById('chips'), themes = document.getElementById('themes');
+f.src = `workout.html?t=${theme}`;
+const post = (msg) => f.contentWindow && f.contentWindow.postMessage(msg, '*');
+M.forEach(([k, l]) => { const b = document.createElement('button'); b.textContent = l; b.onclick = () => post({ type: 'moment', m: k }); chips.append(b); });
+T.forEach(([k, a, b, l]) => { const e = document.createElement('button'); e.style.setProperty('--a', a); e.style.setProperty('--b', b); e.dataset.t = k; e.setAttribute('aria-label', l + ' theme'); e.onclick = () => { theme = k; post({ type: 'theme', t: k }); paint(); }; themes.append(e); });
+function paint() { [...themes.children].forEach((b) => b.classList.toggle('on', b.dataset.t === theme)); }
+paint();
+</script>
+</body>
+</html>
