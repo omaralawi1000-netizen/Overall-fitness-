@@ -11,6 +11,20 @@ Each entry: **what it is** · **where it came from** (round, direction, screen) 
 
 ## The list
 
+### Omar's motion language (2 Nov 2026, from his 48 picks)
+This is the strongest signal so far. Where it disagrees with anything below (the motion map included), it wins.
+His words: "My narrowing in the Motion Library ("picks3", 48 kept) is my real taste." The language is **physical and continuous**:
+1. **Numbers have weight:** they roll, count and turn like dials.
+2. **Things transform instead of being replaced:** trays, approvals that unfold, cards that become pages, controls that turn into choices.
+3. **Big decisions are committed with the hand** (hold, slide, toggle). One tap still ticks a set.
+4. **Colour lives in controls and follows their value.** It doesn't flood the room.
+5. **The Coach is quiet:** a dot, an Ask bar that becomes the conversation.
+6. **Calm hero screens with one big number** (Oura, MacroFactor, Copilot).
+
+- **Reward style: a medal that flips and catches the light** (`r2-tick-games-apple-badge-flip`, `r2-tick-games-anydistance-medal`). Provisional: he left the choice open and this is our recommendation; it's tested in the workout slice.
+- **Rare milestones only: an object you tap to crack open** (`r2-tick-games-opal-gem-crack`, `web-opal-gem-reveal`). Omar (2 Nov): "That's actually fun … We can implement that in another way. The badges or medals or something else." For big, rare moments (100 workouts, a year), never an everyday reward.
+- **Not signatures any more:** "time is a sky" (Today's sky through the day) and "light owns the room" (the Coach's light flooding the screen). He dropped every sky clip and almost every room flood from his picks. They stay listed below as keepers that might serve a small, specific job, but nothing is built around them.
+
 ### Motion references Omar loved (2 Nov 2026)
 He hearted these on the motion-library page (https://claude.ai/artifact/5qeq9tDy2qe2fmJsyWVNHg, store `loves`). They are references he loves, not prototypes yet; each still has to prove itself in Aven. Ids, links and notes are in `docs/inspiration/motion-library.md`.
 
