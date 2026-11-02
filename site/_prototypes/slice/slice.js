@@ -43,7 +43,8 @@ class Roll {
     const el = this.el;
     if (reduced() || !el.isConnected) { this.render(text); return; }
     const o = el.getBoundingClientRect();
-    const old = [...el.querySelectorAll(':scope > .ch')].map((c) => ({ t: c.textContent, x: c.getBoundingClientRect().left - o.left }));
+    // Read where each character is right now (mid-roll too), so an interrupted roll hands over without a jump.
+    const old = [...el.querySelectorAll(':scope > .ch')].map((c) => { const cs = getComputedStyle(c); return { t: c.textContent, x: c.offsetLeft, tf: cs.transform, op: +cs.opacity }; });
     for (const a of el.getAnimations({ subtree: true })) a.cancel();
     el.querySelectorAll(':scope > .gh').forEach((g) => g.remove());
     const aOld = Roll.anchor(this.text), aNew = Roll.anchor(text);
@@ -68,7 +69,7 @@ class Roll {
     const g = document.createElement('span');
     g.className = 'gh'; g.textContent = p.t; g.style.left = p.x + 'px';
     this.el.append(g);
-    spring(g, [{ transform: 'none', opacity: 1 }, { transform: `translateY(${toY}px)`, opacity: 0 }], SPRINGS.type).finished.then(() => g.remove(), () => {});
+    spring(g, [{ transform: p.tf || 'none', opacity: p.op ?? 1 }, { transform: `translateY(${toY}px)`, opacity: 0 }], SPRINGS.type).finished.then(() => g.remove(), () => {});
   }
 }
 
@@ -135,6 +136,7 @@ function init() {
   bestEl.textContent = '82.5 kg × 6';
   for (const el of card.children) { el.getAnimations().forEach((a) => a.cancel()); el.style.opacity = ''; el.style.visibility = ''; }
   summary.hidden = true;
+  Object.assign($('.restart').style, { opacity: '', visibility: '' });
   readyLook(false);
 }
 
@@ -186,12 +188,15 @@ function restTick() {
   rCount.set(fmtT(left), -1);
   if (performance.now() >= restEnd) { endRest(); }
 }
-function stopRest() {
+/** Stops the clock. The ring's animations are kept (held where they are) until it has faded, so it never snaps empty. */
+function stopRest(after = 0) {
   clearInterval(restTimer); restTimer = null;
-  restAnims.forEach((a) => a.cancel()); restAnims = [];
+  const list = restAnims; restAnims = [];
+  list.forEach((a) => a.pause());
+  if (after) setTimeout(() => list.forEach((a) => a.cancel()), after); else list.forEach((a) => a.cancel());
 }
 function endRest() {
-  stopRest();
+  stopRest(300);
   buzz(30);
   readyLook(true);
 }
@@ -229,12 +234,13 @@ function doTick() {
   const i = cur, s = sets[i];
   const wasResting = phase === 'rest';
   phase = 'ticking';
-  if (wasResting) { stopRest(); fadeTo(restFace, 1, 0, 120); fadeTo(warm, 1, 0, 160); fadeTo(cool, getComputedStyle(cool).opacity, 0, 160); hideSkip(true); }
+  if (wasResting) { stopRest(200); fadeTo(restFace, 1, 0, 120); fadeTo(warm, 1, 0, 160); fadeTo(cool, getComputedStyle(cool).opacity, 0, 160); hideSkip(true); }
   else fadeTo(hint, 1, 0, 140);
   // The tick has a body: an orange pearl swells inside the button and settles into a check.
+  pearl.getAnimations().forEach((a) => a.cancel());
   pearl.style.transform = 'none'; pearl.style.opacity = 1;
   spring(pearl, [{ transform: 'scale(.15)', opacity: 0.6 }, { transform: 'none', opacity: 1 }], SPRINGS.type);
-  fadeTo(cHot, 1, 0, 90);
+  fadeTo(cHot, getComputedStyle(cHot).opacity, 0, 90);
   cDark.style.opacity = 1;
   spring(cDark, [{ transform: 'scale(.55)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.press, { delay: 70, fill: 'backwards' });
   if (!wasResting) fadeTo(full, 1, 1, 0);
@@ -291,7 +297,7 @@ function conveyor(i, isRec) {
   spring(ug, [{ transform: 'none', opacity: 1 }, { transform: 'translateY(-30px)', opacity: 0 }], SPRINGS.type, { fill: 'forwards' }).finished.then(() => ug.remove(), () => ug.remove());
   for (const [r, top] of rb) {
     const dy = top - r.getBoundingClientRect().top;
-    if (Math.abs(dy) > 0.5) spring(r, [{ transform: `translateY(${dy}px)` }, { transform: 'none' }], SPRINGS.set, { delay: 40 });
+    if (Math.abs(dy) > 0.5) spring(r, [{ transform: `translateY(${dy}px)` }, { transform: 'none' }], SPRINGS.set, { delay: 40, fill: 'backwards' });
   }
   rW.render(fmtW(n.w)); rR.render(String(n.r));
   // A short rise, not the whole way: the full path would cross the dial.
@@ -322,6 +328,7 @@ function finish() {
   const kg = sets.reduce((a, s) => a + s.w * s.r, 0);
   $('.sum-line').textContent = `${sets.length} sets · ${kg.toLocaleString('en')} kg moved`;
   summary.hidden = false;
+  fadeTo($('.restart'), 1, 0, 200).finished.then(() => { if (phase === 'done') $('.restart').style.visibility = 'hidden'; }, () => {});
   [...summary.children].forEach((el, k) => spring(el, [{ transform: 'translateY(12px)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.set, { delay: 160 + k * 60, fill: 'backwards' }));
 }
 function restart() {
@@ -344,7 +351,7 @@ function showMedal(row, s, oldE, newE) {
   slotEl = medalSlot(row); slotEl.style.opacity = 0;
   $('.m-num').textContent = fmtW(s.w);
   $('.m-sub').textContent = `kg × ${s.r}`;
-  $('.r-line').textContent = `${fmtW(s.w)} kg × ${s.r}, your heaviest ${s.r} yet`;
+  $('.r-line').textContent = `${fmtW(s.w)} kg × ${s.r} · heaviest ${s.r} reps yet`;
   rEst.render(String(Math.round(oldE)));
   reward.hidden = false; rewardOpenAt = performance.now();
   for (const el of reward.querySelectorAll('*')) el.getAnimations().forEach((a) => a.cancel());
@@ -369,9 +376,11 @@ function closeMedal() {
   rewardOpenAt = Infinity;
   for (const el of $('.reward-text').children) fadeTo(el, 1, 0, 140);
   const sr = centre(slotEl.getBoundingClientRect()), mr = centre(mPos.getBoundingClientRect());
-  const a = spring(mPos, [{ transform: 'none' }, { transform: `translate(${sr.x - mr.x}px, ${sr.y - mr.y}px) scale(.09)` }], SPRINGS.set, { fill: 'forwards' });
+  const here = getComputedStyle(mPos).transform;
+  mPos.getAnimations().forEach((x) => x.cancel());
+  const a = spring(mPos, [{ transform: here === 'none' ? 'none' : here }, { transform: `translate(${sr.x - mr.x}px, ${sr.y - mr.y}px) scale(.09)` }], SPRINGS.set, { fill: 'forwards' });
   fadeTo($('.reward-glow'), 1, 0, 220);
-  fadeTo($('.reward-dim'), 1, 0, 300, { delay: 60 });
+  fadeTo($('.reward-dim'), 1, 0, 300, { delay: 60, fill: 'backwards' });
   a.finished.then(() => {
     slotEl.style.opacity = 1;
     reward.hidden = true;
@@ -388,15 +397,20 @@ function setTray(open) {
   if (open === trayOpen) return;
   trayOpen = open;
   coachBtn.setAttribute('aria-expanded', open);
+  // Start from wherever the tray is now, so a quick open-close-open never restarts from zero.
+  const bs = getComputedStyle(trayBg), ts = getComputedStyle(trayText);
+  const bFrom = { transform: tray.hidden ? 'scale(.05, .2)' : bs.transform, opacity: tray.hidden ? 0 : bs.opacity };
+  const tFrom = { transform: tray.hidden ? 'translateY(-6px)' : ts.transform, opacity: tray.hidden ? 0 : ts.opacity };
   trayBg.getAnimations().forEach((a) => a.cancel());
   trayText.getAnimations().forEach((a) => a.cancel());
   if (open) {
     tray.hidden = false;
-    spring(trayBg, [{ transform: 'scale(.05, .2)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.set);
-    spring(trayText, [{ transform: 'translateY(-6px)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.set, { delay: 70, fill: 'backwards' });
+    trayText.style.opacity = '';
+    spring(trayBg, [bFrom, { transform: 'none', opacity: 1 }], SPRINGS.set);
+    spring(trayText, [tFrom, { transform: 'none', opacity: 1 }], SPRINGS.set, { delay: tFrom.opacity > 0 ? 0 : 70, fill: 'backwards' });
   } else {
-    fadeTo(trayText, 1, 0, 100);
-    spring(trayBg, [{ transform: 'none', opacity: 1 }, { transform: 'scale(.05, .2)', opacity: 0 }], SPRINGS.type, { fill: 'forwards' })
+    fadeTo(trayText, tFrom.opacity, 0, 100);
+    spring(trayBg, [bFrom, { transform: 'scale(.05, .2)', opacity: 0 }], SPRINGS.type, { fill: 'forwards' })
       .finished.then(() => { if (!trayOpen) tray.hidden = true; }, () => {});
   }
 }

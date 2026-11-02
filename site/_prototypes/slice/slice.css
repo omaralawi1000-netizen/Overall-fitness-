@@ -9,7 +9,7 @@
   --bg: #0a0809;
   --tx: #f5efe8;
   --dim: rgba(245, 239, 232, .56);
-  --faint: rgba(245, 239, 232, .3);
+  --faint: rgba(245, 239, 232, .45);
   --line: rgba(255, 255, 255, .08);
   --hot: #ff6b2c;
   --hot-lit: #ffae86;
@@ -46,11 +46,11 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; }
 .coach { width: 48px; height: 48px; margin-right: -12px; display: grid; place-items: center; }
 .coach-dot { width: 10px; height: 10px; border-radius: 50%; background: #fff3ea; box-shadow: 0 0 0 4px rgba(255, 243, 234, .06), 0 0 14px rgba(255, 180, 140, .55); }
 .coach-tray { position: absolute; z-index: 5; top: calc(env(safe-area-inset-top) + 58px); left: 16px; right: 16px; padding: 14px 18px 15px; transform-origin: calc(100% - 12px) -22px; }
-.coach-bg { position: absolute; inset: 0; border-radius: 20px; background: rgba(28, 22, 22, .72); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), inset 0 0 0 1px var(--line); backdrop-filter: blur(24px) saturate(1.5); -webkit-backdrop-filter: blur(24px) saturate(1.5); transform-origin: inherit; }
+.coach-bg { position: absolute; inset: 0; border-radius: 20px; background: rgba(28, 22, 22, .88); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .1), inset 0 0 0 1px var(--line); backdrop-filter: blur(24px) saturate(1.5); -webkit-backdrop-filter: blur(24px) saturate(1.5); transform-origin: inherit; }
 .coach-text { position: relative; font-family: var(--serif); font-style: italic; font-size: 17px; line-height: 1.32; color: var(--tx); }
 
 .ex { font-family: var(--serif); font-style: italic; font-weight: 400; font-size: 38px; letter-spacing: -.015em; line-height: 1.05; margin-top: 10px; }
-.ex-sub { color: var(--dim); font-size: 14px; margin-top: 6px; font-variant-numeric: tabular-nums; }
+.ex-sub { color: var(--dim); font-size: 14px; margin: 6px 0 8px; font-variant-numeric: tabular-nums; }
 .ex-sub .best { color: var(--tx); }
 
 /* Sets above and below the card: slim rows. Done ones stack upward from the card; next ones wait below. */
@@ -66,7 +66,7 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; }
 .row.up .mk::before { content: ''; width: 8px; height: 8px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--faint); }
 .row.up { color: var(--dim); }
 .row.up .rl { color: var(--faint); }
-.row .medal-slot { width: 18px; height: 18px; border-radius: 50%; flex: none; margin-left: 10px; background: radial-gradient(circle at 35% 30%, #5a514c, #24201e 70%); box-shadow: inset 0 0 0 1.5px rgba(255, 174, 134, .75), 0 0 10px rgba(255, 107, 44, .35); }
+.row .medal-slot { width: 18px; height: 18px; border-radius: 50%; flex: none; margin-left: 10px; background: radial-gradient(circle at 34% 28%, #fff1e6 0, #c9a58e 18%, #4d403a 52%, #1f1b19 80%); box-shadow: inset 0 0 0 1.5px var(--hot), 0 0 12px rgba(255, 107, 44, .5); }
 
 /* The lit card: clear glass over the glow. It never moves; sets travel through it. */
 .card {
@@ -87,7 +87,7 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; }
 .unit { color: var(--dim); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
 .steps { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 4px; }
 .pair { display: flex; justify-content: center; gap: 10px; }
-.step { width: 56px; height: 40px; border-radius: 20px; background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .05); font-size: 22px; font-weight: 300; line-height: 1; color: var(--dim); transition: transform .16s cubic-bezier(.2, .8, .2, 1), background-color .16s; }
+.step { width: 56px; height: 44px; border-radius: 22px; background: rgba(255, 255, 255, .06); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .05); font-size: 22px; font-weight: 300; line-height: 1; color: var(--dim); transition: transform .16s cubic-bezier(.2, .8, .2, 1), background-color .16s; }
 .step:active { transform: scale(.92); background-color: rgba(255, 255, 255, .1); transition-duration: .05s; }
 
 /* Rolling numbers: each character its own box, so only the changed one moves. */
@@ -124,7 +124,7 @@ em { font-family: var(--serif); font-style: italic; font-weight: 400; }
 .rest-face { display: flex; flex-direction: column; align-items: center; opacity: 0; }
 .rest-word { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
 .count { font-size: 40px; font-weight: 200; letter-spacing: -.035em; line-height: 46px; font-variant-numeric: tabular-nums; }
-.c-small { width: 20px; height: 20px; stroke: var(--dim); stroke-width: 2.6; margin-top: 1px; }
+.rest-tap { font-size: 10px; letter-spacing: .08em; color: var(--faint); margin-top: 2px; }
 
 .foot { height: 44px; margin-top: 8px; display: grid; place-items: center; }
 .foot > * { grid-area: 1 / 1; }

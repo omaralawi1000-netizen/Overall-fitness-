@@ -217,7 +217,13 @@ Build plan, one screen, prototype only (`site/_prototypes/slice/`, live at /_pro
 - **Coach:** a quiet dot; tapping it unfolds one line and folds back.
 - Motion: compositor only (transform, opacity), springs from `site/round/motion.js`.
 
+- Built and live at /_prototypes/slice/ (no storage). Judges, one round (Sonnet): design 7/10, motion 6/10. Fixed after:
+  the summary hiding the record, faint small text, thumb-size steppers, a clearer medal in the row, "tap when done"
+  on the rest disc, plain copy, and the motion bugs (Coach line vanishing on reopen, tray and medal restarting from
+  zero when interrupted, a dim-layer flash, rows jumping back, the rest ring snapping empty, interrupted digit rolls).
+- Needs phone: smoothness of the ring under the glass card at 120 Hz, the medal flip edges, tick feel and haptics, banding.
+
 ## Next step
-Omar's hearts are all in docs/keepers.md, and "Motion map" there assigns them to moments across the app. He doesn't
-want to pick one per job in the abstract. Next design round: build the prototype from the keepers, using the motion map
-for its moments, and let him react on his phone. Recipe: docs/research/taste-2026-11-01.md.
+Omar tries /_prototypes/slice/ on his phone and answers "Is this better than anything so far?" plus the one thing that
+bugs him most. Log it in docs/taste-log.md, then change one design thing per round (bugs and jank freely). Two yeses
+in a row: propose writing DESIGN.md.
