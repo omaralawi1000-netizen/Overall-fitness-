@@ -163,7 +163,7 @@ describe('Codex review of #51, round 8', () => {
   it('half a glass of water', () => {
     expect(readWater('I drank half a glass of water')).toMatchObject({ ml: 125 });
     expect(readWater('half a bottle of water')).toMatchObject({ ml: 250 });
-    expect(readWater('halvt glas vand')).toBeNull(); // not a supported Danish form: ignored, never guessed
+    expect(readWater('halvt glas vand')).toMatchObject({ ml: 125 });
     expect(readWater('half glass of water')).toMatchObject({ ml: 125 });
   });
   it('a mixed fraction in a portion label is one quantity', () => {
@@ -174,11 +174,10 @@ describe('Codex review of #51, round 8', () => {
 });
 
 describe('Codex review of #51, round 9', () => {
-  it('a second amount inside a food name is handed back unread, not swallowed', () => {
-    const r = parseFood('200 grams skyr 60 grams oats');
-    expect(r.rows).toEqual([]);
-    expect(r.unread).toEqual(['200 grams skyr 60 grams oats']);
-    expect(parseFood('200 grams skyr 60g oats').rows).toEqual([]);
+  it('a second amount after a first row starts a new row, never swallowed into the name', () => {
+    expect(parseFood('200 grams skyr 60 grams oats').rows.map((r) => [r.amount, r.query])).toEqual([[200, 'skyr'], [60, 'oats']]);
+    expect(parseFood('200 grams skyr 60g oats').rows.map((r) => [r.amount, r.query])).toEqual([[200, 'skyr'], [60, 'oats']]);
+    expect(parseFood('skyr 60 grams oats').rows).toEqual([]); // the first thing has no amount: not understood, handed back
     expect(parseFood('2 eggs 5 spice').rows[0]).toMatchObject({ amount: 2, query: 'eggs 5 spice' }); // a number that is not an amount stays in the name
   });
 });

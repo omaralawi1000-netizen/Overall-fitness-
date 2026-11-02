@@ -61,7 +61,7 @@ Tests live in `tests/engine/`. "untested" is said plainly.
 | Reading a phrase saves nothing | `e2e` phrase box ("nothing was saved by reading") | tested in Chromium |
 | Memory cards (scope, valid-from/until, last-seen) and the Coach ladder | model types, import of old memory notes | shape only: used in the Coach phase |
 
-## Test inventory (262 tests: 82 engine, 180 parser)
+## Test inventory (702 tests: 82 engine, 620 parser)
 Fewer tests than rules looks thin, but each property test runs 25 to 200 random cases, so the real count of checked cases is in the thousands.
 
 **Property tests (12):**
@@ -142,3 +142,14 @@ Codex's eleventh look at #51 (2 findings, reproduced, fixed): "80x8" and "8 x80"
 Codex's twelfth look at #51 (1 finding, reproduced, fixed): spoken compound numbers in food rows ("two hundred grams oats", "to hundrede gram havregryn") are one quantity, not a count of 2; "two thousand grams" is refused and listed as unread. Also fixed a flaky property test ("5 at 5, no 5" has one reading, so there is nothing to choose).
 
 Codex's thirteenth look at #51 (1 new finding, fixed; the other was already covered by the twelfth fix and now has a test): a counted unit in a portion label matches whole words only, so "2 cans" no longer lands on "1 cup canned tomatoes" and asks for grams instead.
+
+## Dictation test (2 Nov 2026, Omar: "but you can test that???")
+`tests/parse/dictation.corpus.ts` holds 424 made-up phrases written the way Omar dictates: no punctuation, filler ("uh", "like", "altså"), Danish and English mixed, decimal commas and "komma/point", numbers as words ("one forty", "to og firs"), run-ons, half-said phrases and plain talk that must never log. Each row says what a careful person would log, or that nothing may be logged. `dictation.test.ts` runs every row.
+
+| Batch | Phrases | Read right before fixing | After |
+|---|---|---|---|
+| 1 (written first) | 243 | 158 (65%) | all |
+| 2 (written after round 1, measured blind) | 128 | 120 (94%) | all |
+| 3 (written last, measured blind) | 55 | 53 (96%) | all |
+
+What the batches found: filler and lead-ins ("uh", "i did"), number words that are more than one word, decimal words ("point", "komma"), "no wait" as a correction, many ways to say same/done/skip/undo/add time, "80 kg and 8 reps", several sets in one phrase ("80 for 8, 80 for 7, 75 for 6"), runs ("ran 5 km in 25 minutes"), food rows run together ("200 gram kylling 150 gram ris"), Danish halves ("et halvt kilo"), and junk food rows from set talk ("8 reps at", "30 seconds", "one hundred kilos" read as 100 000 g). Weakness: the phrases are still my guesses at how Omar talks, and batch 1 was tuned against. Real dictation will find more; each miss becomes a row.

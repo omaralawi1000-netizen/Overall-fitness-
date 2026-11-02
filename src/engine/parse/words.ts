@@ -34,3 +34,82 @@ export const NUMBER_WORDS: Record<string, number> = {
   tretten: 13, fjorten: 14, femten: 15, seksten: 16, sytten: 17, atten: 18, nitten: 19, tyve: 20, tredive: 30,
   fyrre: 40, halvtreds: 50, tres: 60, halvfjerds: 70, firs: 80, halvfems: 90, hundrede: 100,
 };
+
+// ── Spoken numbers that are more than one word ──────────────
+
+type Tok = { k: 'u' | 't' | 'd' | 'h'; v: number };
+const LOOSE = new Set(['en', 'et', 'én', 'to']); // ordinary words too: a number only where the caller says so
+/** One number word, by size: u 1-9, t 10-19, d 20-90, h hundred. Digits and everything else are null. */
+function tok(raw: string | undefined, loose: boolean): Tok | null {
+  if (!raw) return null;
+  const w = raw.toLowerCase().replace(/[.,!?]+$/, '');
+  const v = NUMBER_WORDS[w];
+  if (v === undefined || (!loose && LOOSE.has(w))) return null;
+  return v === 100 ? { k: 'h', v } : v >= 20 ? { k: 'd', v } : v >= 10 ? { k: 't', v } : { k: 'u', v };
+}
+const DIGIT_WORDS: Record<string, string> = { zero: '0', nul: '0', ...Object.fromEntries(Object.entries(NUMBER_WORDS).filter(([, v]) => v >= 1 && v <= 9 && v !== undefined).map(([k, v]) => [k, String(v)])) };
+
+/** One spoken number starting at `j`: its value and how many words it took. Null when no number word is there. */
+function readNumber(words: string[], j: number, loose: boolean): { val: number; used: number; hundred: boolean } | null {
+  let p = j, val = 0, hundred = false;
+  if (/^(?:a|an)$/i.test(words[p] ?? '') && tok(words[p + 1], loose)?.k === 'h') p++; // "a hundred"
+  // Danish "to og firs" (82): the "og" and the tens word make "to" a number even when the caller did not ask for loose ones
+  if (tok(words[p], true)?.k === 'u' && /^og$/i.test(words[p + 1] ?? '') && tok(words[p + 2], true)?.k === 'd') {
+    return { val: tok(words[p], true)!.v + tok(words[p + 2], true)!.v, used: p + 3 - j, hundred: false };
+  }
+  const t = tok(words[p], loose || tok(words[p + 1], true)?.k === 'h'), t2 = tok(words[p + 1], loose); // "to hundrede" is 200 even when "to" is usually a word
+  if (!t) return null;
+  const rest = () => { // tens and ones after a hundred, or after nothing: "fifty", "twenty five", "fifteen", "five"
+    const r = tok(words[p], loose);
+    if (r?.k === 'd') { val += r.v; p++; const u = tok(words[p], loose); if (u?.k === 'u') { val += u.v; p++; } }
+    else if (r && (r.k === 't' || r.k === 'u')) { val += r.v; p++; }
+  };
+  if (t.k === 'u' && t2?.k === 'h') { val = t.v * 100; p += 2; hundred = true; }
+  else if (t.k === 'h') { val = 100; p++; hundred = true; }
+  else if (t.k === 'u' && t2?.k === 'd') { // "two fifty" is 250, "one forty five" is 145
+    val = t.v * 100 + t2.v; p += 2;
+    const u = tok(words[p], loose); if (u?.k === 'u') { val += u.v; p++; }
+  } else if (t.k === 'u' && /^og$/i.test(words[p + 1] ?? '') && tok(words[p + 2], loose)?.k === 'd') { // "to og firs" is 82
+    val = t.v + tok(words[p + 2], loose)!.v; p += 3;
+  } else rest();
+  if (hundred) {
+    const andWord = /^(?:and|og)$/i.test(words[p] ?? '');
+    if (andWord) { const keep = p; p++; const before = val; rest(); if (val === before) p = keep; } else rest();
+  }
+  return { val, used: p - j, hundred };
+}
+
+/**
+ * "two hundred and fifty" → 250, "twenty five" → 25, "a hundred" → 100, "eighty two point five" → 82.5, the colloquial
+ * "one forty" → 140, and Danish "to og firs" → 82. A single number word is left alone (the readers treat those
+ * themselves: "One-arm Row" must keep its "one"); `loose` also counts to/en/et as numbers (food: "to hundrede gram").
+ */
+export function mergeNumberWords(input: string[], loose = false): string[] {
+  // Danish dictation writes "femoghalvfjerds" as one word: split it into "fem og halvfjerds"
+  const words = input.flatMap((x) => {
+    const m = x.toLowerCase().match(/^(en|et|to|tre|fire|fem|seks|syv|otte|ni)og(tyve|tredive|fyrre|halvtreds|tres|halvfjerds|firs|halvfems)([.,!?]*)$/);
+    return m ? [m[1], 'og', m[2] + m[3]] : [x];
+  });
+  const out: string[] = [];
+  for (let i = 0; i < words.length; i++) {
+    const n = readNumber(words, i, loose);
+    if (!n) { out.push(words[i]); continue; }
+    let j = i + n.used, text = String(n.val), used = n.used;
+    // a decimal point or comma, then digits: "eighty two point five", "82 komma 5"
+    const sep = words[j]?.toLowerCase().replace(/[.,!?]+$/, '');
+    if ((sep === 'point' || sep === 'komma' || sep === 'comma') && words[j + 1]) {
+      const d = words[j + 1].toLowerCase().replace(/[.,!?]+$/, '');
+      const digit = /^\d+$/.test(d) ? d : DIGIT_WORDS[d];
+      if (digit) { text += `.${digit}`; j += 2; used += 2; }
+    }
+    if (used < 2 && !n.hundred) { out.push(words[i]); continue; } // a single number word stays as it was said
+    out.push(text + (words[j - 1].match(/[.,!?]+$/)?.[0] ?? ''));
+    i = j - 1;
+  }
+  return out;
+}
+
+/** "82 komma 5", "82 point 5" with digits already: one decimal number. */
+export function mergeDecimals(text: string): string {
+  return text.replace(/\b(\d+)\s+(?:point|komma|comma)\s+(\d+|zero|nul|one|two|three|four|five|six|seven|eight|nine|tre|fire|fem|seks|syv|otte|ni)\b/gi, (_, a: string, b: string) => `${a}.${/^\d+$/.test(b) ? b : DIGIT_WORDS[b.toLowerCase()]}`);
+}
