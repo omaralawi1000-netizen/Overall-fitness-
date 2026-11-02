@@ -47,18 +47,27 @@ const weight = (v: string, unit?: string): { kg: number; entered?: { value: numb
 
 /** One set-shaped phrase, with no correction in it. Null when it isn't one. */
 export function readSet(text: string): SetCommand | null {
+  const c = readSetRaw(text);
+  return c?.kind === 'set' && (c.kg === 0 || c.reps === 0) ? null : c; // 0 reps and 0 kilos are not a set
+}
+
+function readSetRaw(text: string): SetCommand | null {
   const s = normal(text);
   if (!s || s.split(' ').length > 9) return null; // a sentence, not a set
-  if (/^(?:undo|undo (?:that|it|the last(?: one)?)|fortryd|fortryd (?:det|den)|annuller)$/.test(s)) return { kind: 'undo' };
-  if (/^(?:same(?: again| as before| as last)?|again|det samme|samme(?: igen| som før)?|igen)$/.test(s)) return { kind: 'same' };
-  if (/^(?:done|finished|got it|set done|færdig|klar|done with (?:the|that) set)$/.test(s)) return { kind: 'done' };
-  if (/^(?:skip(?: (?:it|this|this set|the set))?|spring over|spring den over|drop (?:it|this set))$/.test(s)) return { kind: 'skip' };
-  let m = s.match(new RegExp(`^(?:add |plus |\\+ ?)?${NUM} ?(?:s|sec|secs|seconds|sekunder)(?: (?:more|extra|mere|ekstra|rest|pause))?$`));
-  if (m) return { kind: 'rest', sec: Math.round(n(m[1])) };
-  m = s.match(new RegExp(`^(?:add |plus |\\+ ?)?(?:a|1|one|et) ?(?:minute|minut)(?: (?:more|extra|mere|ekstra))?$`));
+  // number words are digits by now: "the last one" is "the last 1"
+  if (/^(?:undo|undo (?:that|it|the last(?: (?:1|one|set|thing))?)|fortryd|fortryd (?:det|den|den sidste|det sidste|sidste)|annuller)$/.test(s)) return { kind: 'undo' };
+  if (/^(?:same(?: (?:same|thing|weight|reps|set|again|as|before|last|time|the|1|and|igen))*|again|(?:det )?samme(?: (?:igen|som|før|sidst|sæt|vægt|og|reps?|gentagelser))*|igen)$/.test(s)) return { kind: 'same' };
+  if (/^(?:done|finished|got it|(?:the |that |this )?set (?:is )?(?:done|finished)|that set (?:is )?(?:done|finished)|next set|færdig(?: med (?:sættet|det|den))?|(?:så )?(?:jeg er|er jeg|jeg har) (?:færdig|klaret det)|klar|(?:i(?:'m| am) )?done with (?:the|that|this) set)$/.test(s)) return { kind: 'done' };
+  if (/^(?:skip(?: (?:it|this|that|this 1|that 1|this set|that set|the set))?|spring (?:over|den over|det over|det sæt over|sættet over)(?: (?:det|den|det sæt|sættet))?|drop (?:it|this set))$/.test(s)) return { kind: 'skip' };
+  let m = s.match(new RegExp(`^(?:(?:add|plus|tilføj|give me|giv mig) |\\+ ?)?${NUM} ?(?:s|sec|secs|seconds|sekunder)(?: (?:more|extra|mere|ekstra|rest|pause))?(?: to (?:the )?rest| til hvilen| til pausen)?$`));
+  if (m && n(m[1]) > 0 && n(m[1]) <= 600) return { kind: 'rest', sec: Math.round(n(m[1])) };
+  m = s.match(new RegExp(`^(?:(?:add|plus|tilføj|give me|giv mig) |\\+ ?)?(?:another |(?:a|1|et|en) (?:(?:more|extra|mere|ekstra) )?|\\+ ?1 ?)(?:minute|minut|min)(?: (?:more|extra|mere|ekstra))?(?: to (?:the )?rest| til hvilen| til pausen)?$`));
   if (m) return { kind: 'rest', sec: 60 };
+  // "add 2 min", "plus two minutes": a number of minutes needs the "add"/"plus" (alone, "2 minutes" is talk)
+  m = s.match(new RegExp(`^(?:(?:add|plus|tilføj|give me|giv mig) |\\+ ?)${NUM} ?(?:min|mins|minute|minutes|minut|minutter)(?: (?:more|extra|mere|ekstra))?(?: to (?:the )?rest| til hvilen| til pausen)?$`));
+  if (m && n(m[1]) > 0 && n(m[1]) <= 10) return { kind: 'rest', sec: Math.round(n(m[1]) * 60) };
   // "8 x 80" / "80 x 8": a multiplication sign does not say which number is the weight, only a unit does
-  m = s.match(new RegExp(`^${NUM} ?${KG}? (?:x|×) ${NUM} ?${KG}?$`));
+  m = s.match(new RegExp(`^${NUM} ?${KG}? (?:x|×|by) ${NUM} ?${KG}?$`));
   if (m) {
     const [, a, ua, b, ub] = m;
     if (ua && ub) return null; // two units: not a set
@@ -76,29 +85,45 @@ export function readSet(text: string): SetCommand | null {
   m = s.match(new RegExp(`^${NUM} ?${KG}? (?:for|times|til|i) ${NUM} ?${REPS}?$`));
   if (m && Number.isInteger(n(m[3]))) return { kind: 'set', ...weight(m[1], m[2]), reps: n(m[3]) };
   // "80 kg 8 reps" / "8 reps 80 kg"
-  m = s.match(new RegExp(`^${NUM} ?${KG} ${NUM} ?${REPS}$`));
+  m = s.match(new RegExp(`^${NUM} ?${KG} (?:and |og |with |med |, )?${NUM} ?${REPS}$`));
   if (m && Number.isInteger(n(m[3]))) return { kind: 'set', ...weight(m[1], m[2]), reps: n(m[3]) };
-  m = s.match(new RegExp(`^${NUM} ?${REPS} ${NUM} ?${KG}$`));
+  m = s.match(new RegExp(`^${NUM} ?${REPS} (?:of |af |and |og |with |med )?${NUM} ?${KG}$`));
   if (m && Number.isInteger(n(m[1]))) return { kind: 'set', reps: n(m[1]), ...weight(m[2], m[3]) };
   // one number: reps ("8", "8 reps"), or a weight when a unit says so ("82.5 kilos")
   m = s.match(new RegExp(`^${NUM} ?${KG}$`));
   if (m) return { kind: 'set', ...weight(m[1], m[2]) };
   m = s.match(new RegExp(`^${NUM}(?: ?${REPS})?$`));
-  if (m && Number.isInteger(n(m[1]))) return { kind: 'set', reps: n(m[1]) };
+  if (m && Number.isInteger(n(m[1]))) {
+    return { kind: 'set', reps: n(m[1]) };
+  }
   return null;
 }
 
 // "no" inside a phrase takes back what came before it
-const CORRECTION = /(?:^|[\s,.…–-]+)(?:no i mean|nej jeg mener|i mean|make that|jeg mener|actually|sorry|nope|nej|no)(?=[\s,.…–!?-]|$)[\s,.…–!?-]*/gi;
+const CORRECTION = /(?:^|[\s,.…–-]+)(?:no wait|nej vent|wait no|vent nej|no sorry|nej undskyld|no i mean|nej jeg mener|i mean|make that|jeg mener|actually|sorry|undskyld|nope|nej|no)(?=[\s,.…–!?-]|$)[\s,.…–!?-]*/gi;
+
+const HAS_CORRECTION = new RegExp(CORRECTION.source, 'i');
 
 export function parseSetCommand(text: string): SetCommand | null {
+  const c = parseCorrected(text);
+  // a bare "80" on its own is more likely kilos than 80 reps: no one counts that far, so ask rather than log
+  if (c?.kind === 'set' && c.kg === undefined && c.reps! > 50 && !HAS_CORRECTION.test(text) && !/[a-zæøå]/i.test(normal(text))) {
+    return { kind: 'ask', why: 'which', options: [{ kind: 'set', reps: c.reps }, { kind: 'set', kg: c.reps }] };
+  }
+  return c;
+}
+
+function parseCorrected(text: string): SetCommand | null {
   const marks = [...text.matchAll(CORRECTION)];
   if (!marks.length) return readSet(text);
   const last = marks[marks.length - 1];
   const before = text.slice(0, last.index).trim();
   const after = text.slice(last.index! + last[0].length).trim();
   if (!before && !after) return { kind: 'ask', why: 'bareNo' }; // "no" alone: undo it, or no to what?
-  const a = readSet(after), b = before ? parseSetCommand(before) : null; // an earlier "no" has already been settled
+  const a = readSet(after), b = before ? parseCorrected(before) : null; // an earlier "no" has already been settled
+  // "…, no 87.5": a bare number with a decimal point can only be kilos (reps are whole), so it is not a guess
+  const bareDecimal = normal(after).match(/^(\d+\.\d+)$/);
+  if (!a && bareDecimal && b?.kind === 'set' && b.kg !== undefined) return { kind: 'set', kg: n(bareDecimal[1]), ...(b.reps !== undefined ? { reps: b.reps } : {}) };
   if (!a && !b) return null; // "no problem", "no thanks": talk, not a set
   // nothing to take back, or what came before is not a set-shaped phrase: never log, ask
   if (!before || !after || !b || !a) return { kind: 'ask', why: 'correction', ...(a ? { options: [a] } : {}) };

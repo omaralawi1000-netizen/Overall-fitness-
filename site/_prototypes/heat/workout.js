@@ -1,10 +1,14 @@
 // Heat workout: a calm surface with the depth one tap away. Each moment is built from one of Omar's hearted clips:
-// tick = Not Boring's dot that swells into a pearl and settles into a check; rest = Apple Watch's button that grows
-// into the timer ring, calmed like Peace Out (the time fades in once the ring has settled); numbers = Push's
+// tick = Not Boring's dot that swells into a pearl and settles into a check; next set = Google's setup steps (the done
+// set folds into a row, the next opens in place, its numbers travel); rest = Apple Watch's button that grows into the
+// timer ring, calmed like Peace Out, with the room filling as a colour level and the last five seconds each their own
+// beat (Push's countdown); numbers = Push's
 // single-digit roll with motion blur; labels = the multi-state badge's blur swap; details = trays that grow out of
 // what you tapped (Family) and the name that grows into its page (card to page); record = Nike's takeover from the
-// logged set, Any Distance's medal turning to catch the light, Fitness Wrapped's count-up that locks in.
+// logged set into a dark room (CRED), Any Distance's medal turning to catch the light, Fitness Wrapped's count-up that
+// locks in; finished = Monument Valley's calm COMPLETE with one ring.
 import { play, SPRINGS, reduced } from '../../round/motion.js';
+const playSpring = play;
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -13,6 +17,9 @@ const mmss = (s) => { const t = Math.max(0, Math.ceil(s)); return `${Math.floor(
 const wait = (ms) => new Promise((r) => setTimeout(r, reduced() ? Math.min(ms, 60) : ms));
 const e1rm = (kg, r) => Math.round(kg * (1 + r / 30) * 10) / 10;
 const root = document.documentElement;
+let viaKeys = false; // programmatic focus shows its ring only if the last input was the keyboard
+addEventListener('keydown', () => { viaKeys = true; }, true); addEventListener('pointerdown', () => { viaKeys = false; }, true);
+const focus = (el) => el?.focus({ preventScroll: true, focusVisible: viaKeys });
 
 /* Grain tile, once. */
 {
@@ -102,10 +109,6 @@ function coach() {
   if (x.name.startsWith('Incline')) return { say: 'Last time 30 × 9 on sets 2 and 3. Get all 10 today and it goes up next week.', why: 'Two sessions at 30 kg so far.' };
   return { say: 'On plan. Nothing to change.', why: 'The Coach speaks up when something is worth changing.' };
 }
-function dotsHTML() {
-  const x = ex();
-  return x.sets.map((p, i) => `<i class="${p.done ? (p.rec ? 'rec' : 'd') : i === W.s ? 'c' : ''} ${!p.done && beats(p, x.best) ? 'goal' : ''}"></i>`).join('');
-}
 /** Where the workout goes after the current set: the next undone set, exercise by exercise.
  *  A superset (W.superset = index of its first exercise) alternates its two exercises set by set. */
 function nextPos() {
@@ -120,15 +123,78 @@ function nextPos() {
 function nextLine() {
   const n = nextPos();
   if (!n) return 'Last set of the workout';
-  if (n.e === W.e) { const t = ex().sets[n.s]; return `Then set ${n.s + 1} · <b class="num">${fmtKg(t.kg)} × ${t.r}</b>`; }
+  // The next set of this exercise is already in the stack above, so this line looks one step further ahead.
+  if (n.e === W.e) { const after = W.ex[W.e + 1]; return after ? `After this · <b>${after.name}</b>` : 'Last exercise'; }
   return `${W.superset === W.e && n.e === W.e + 1 ? 'Straight into' : 'Then'} <b>${W.ex[n.e].name}</b>`;
 }
-function paint({ animate = false, dir = 1 } = {}) {
+/* ---------- The set stack ---------- */
+const CK = '<svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg>';
+function renderStack() {
+  const x = ex(), st = $('.stack'), slab = $('.slab');
+  $$('.srow', st).forEach((r) => r.remove());
+  x.sets.forEach((p, i) => {
+    if (i === W.s) { st.append(slab); return; }
+    const d = document.createElement('div');
+    d.className = `srow ${p.done ? 'done' : 'next'}${p.rec ? ' rec' : ''}`; d.dataset.k = `${W.e}-${i}`;
+    d.innerHTML = `<span class="sk">${i + 1}</span><span class="sv num"><b class="rk">${fmtKg(p.kg)}</b><i>×</i><b class="rr">${p.r}</b></span>`
+      + (p.done ? `<span class="ck">${CK}</span>` : `<span class="sp">last ${p.prev}</span>`);
+    st.append(d);
+  });
+  slab.dataset.k = `${W.e}-${W.s}`;
+}
+function renderProg() {
+  $('.segs').innerHTML = W.ex.map((x, e) => `<span style="--n:${x.sets.length}">${x.sets.map((p, i) => `<i class="${e === W.e && i === W.s && !p.done ? 'c' : p.rec ? 'rec' : p.done ? 'd' : ''}"></i>`).join('')}</span>`).join('');
+  const left = W.ex.reduce((t, x) => t + x.sets.filter((p) => !p.done).length, 0);
+  $('.pl').innerHTML = left ? `Exercise <b>${W.e + 1} of ${W.ex.length}</b> · ${left} sets to go · about ${Math.max(1, Math.round(left * 2.2))} min` : `<b>All ${W.ex.length} exercises done</b>`;
+}
+/** Where every set and its numbers are now, so the next layout can start from here. */
+function captureStack() {
+  const m = new Map();
+  $$('.stack > *').forEach((el) => m.set(el.dataset.k, { r: el.getBoundingClientRect(), kg: $('.rk, .kg', el).getBoundingClientRect(), rp: $('.rr, .reps', el).getBoundingClientRect() }));
+  return m;
+}
+/** Every set glides from where it was. The one that changed size unfolds or folds, and its numbers travel between
+ *  the big slab and the small row instead of being replaced. */
+/** While the stack moves, the slab keeps its colour lift but drops the blur (the glow behind it is smooth, so the
+ *  difference is about 1%), because re-blurring a moving slab every frame cost a fifth of the frames. */
+function fly(anims) {
+  const st = $('.stack'); st.classList.add('fly');
+  Promise.allSettled(anims.map((a) => a.finished)).then(() => { if (!st.getAnimations({ subtree: true }).some((a) => a.playState === 'running')) st.classList.remove('fly'); });
+}
+function animateStack(before) {
+  if (reduced()) return;
+  const anims = [];
+  const play = (...a) => { const x = playSpring(...a); anims.push(x); return x; };
+  $$('.stack > *').forEach((el) => {
+    const b = before.get(el.dataset.k); if (!b) return;
+    const a = el.getBoundingClientRect(), dy = b.r.top - a.top, dh = a.height - b.r.height;
+    if (Math.abs(dh) < 2) { if (Math.abs(dy) > 0.5) play(el, [{ transform: `translateY(${dy}px)` }, { transform: 'none' }], SPRINGS.set); return; }
+    if (dh > 0) play(el, [{ transform: `translateY(${dy}px)`, clipPath: `inset(0 0 ${dh}px 0 round 24px)` }, { transform: 'none', clipPath: 'inset(0 0 0 0 round 34px)' }], SPRINGS.set);
+    else play(el, [{ transform: `translateY(${dy}px)`, opacity: 0.4 }, { transform: 'none', opacity: 1 }], SPRINGS.set);
+    [['.rk, .kg', b.kg], ['.rr, .reps', b.rp]].forEach(([q, f]) => {
+      const n = $(q, el), t = n.getBoundingClientRect(), k = f.height / t.height;
+      play(n, [{ transform: `translate(${f.left - t.left}px, ${f.top - t.top}px) scale(${k})` }, { transform: 'none' }], SPRINGS.set);
+    });
+  });  fly(anims);
+}
+/** Next exercise: the old stack slides out and the new one in, with the name (Md Vinyl's next). */
+async function stackTo() {
+  const st = $('.stack');
+  st.classList.add('fly');
+  if (!reduced()) await st.animate([{ transform: 'none', opacity: 1 }, { transform: 'translateX(-40px)', opacity: 0 }], { duration: 180, easing: 'ease-in', fill: 'forwards' }).finished;
+  renderStack();
+  st.getAnimations().forEach((a) => a.cancel());
+  fly([play(st, [{ transform: 'translateX(48px)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.set)]);
+}
+
+function paint({ animate = false, dir = 1, instant = false } = {}) {
   const x = ex(), c = set();
-  if (!animate) { $('.nm').textContent = x.name; $('.kg').textContent = ''; $('.reps').textContent = ''; }
+  if (!animate) $('.nm').textContent = x.name;
+  if (!animate || instant) { $('.kg').textContent = ''; $('.reps').textContent = ''; }
   roll($('.kg'), fmtKg(c.kg), dir); roll($('.reps'), c.r, dir);
   $('.kg').classList.toggle('over', beats(c, x.best));
-  $('.dots').innerHTML = dotsHTML();
+  if (!animate) renderStack();
+  renderProg();
   const b = `Set ${W.s + 1} of ${x.sets.length}`;
   if (animate) swapText($('.bt'), b); else $('.bt').textContent = b;
   $('.lt').innerHTML = x.last ? `Last time <b class="num">${x.last.sets[W.s] ?? x.last.sets.at(-1)}</b>` : `Best <b class="num">${fmtKg(x.best.kg)} × ${x.best.r}</b>`;
@@ -167,7 +233,7 @@ $$('.field').forEach((f) => {
       W.used = null; navigator.vibrate?.(4);
       roll($('.kg'), fmtKg(c.kg), d); roll($('.reps'), c.r, d);
       $('.kg').classList.toggle('over', beats(c, ex().best));
-      $('.dots').innerHTML = dotsHTML(); $('.th').innerHTML = nextLine();
+      $('.th').innerHTML = nextLine();
       $('.coach').classList.toggle('quiet', !coach().use);
       clearTimeout(editT); editT = setTimeout(closeEdit, 5000);
     });
@@ -179,8 +245,10 @@ document.addEventListener('pointerdown', (e) => { if (!e.target.closest('.field'
 const tray = $('.tray'), tin = $('.tray-in'), scrim = $('.scrim');
 let open = null;
 const CHECK = '<svg class="ok" viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg>';
-function chartSVG(x) {
-  const v = x.hist.map(([kg, r]) => e1rm(kg, r)), lo = Math.min(...v) - 2, hi = Math.max(...v) + 2, W_ = 320, H = 110;
+function chartSVG(x, extra = null, gid = 'cg') {
+  let v = (extra ? [...x.hist, extra] : x.hist).map(([kg, r]) => e1rm(kg, r));
+  if (extra) v = v.map((y, i) => Math.max(...v.slice(0, i + 1))); // on a record: your best so far, so the climb reads clearly
+  const lo = Math.min(...v) - 2, hi = Math.max(...v) + 2, W_ = 320, H = 110;
   const pts = v.map((y, i) => [i * (W_ / (v.length - 1)), H - ((y - lo) / (hi - lo)) * H]);
   let d = `M${pts[0][0]},${pts[0][1]}`;
   for (let i = 0; i < pts.length - 1; i++) { // a smooth curve through the points (Catmull-Rom as Béziers)
@@ -188,9 +256,9 @@ function chartSVG(x) {
     d += ` C${p1[0] + (p2[0] - p0[0]) / 6},${p1[1] + (p2[1] - p0[1]) / 6} ${p2[0] - (p3[0] - p1[0]) / 6},${p2[1] - (p3[1] - p1[1]) / 6} ${p2[0]},${p2[1]}`;
   }
   const end = pts.at(-1);
-  return `<svg viewBox="0 0 ${W_} ${H}" preserveAspectRatio="none"><defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--g2)" stop-opacity=".35"/><stop offset="1" stop-color="var(--g2)" stop-opacity="0"/></linearGradient></defs>
-    <path class="area" d="${d} L${W_},${H} L0,${H}Z"/><path class="line" d="${d}" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1"/><circle class="dot" cx="${end[0]}" cy="${end[1]}" r="4"/></svg>
-    <div class="ax"><span>${x.dates[0]}</span><span>Est. best ${v.at(-1)} kg</span><span>${x.dates[1]}</span></div>`;
+  return `<svg viewBox="0 0 ${W_} ${H}" preserveAspectRatio="none"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${extra ? '#E8B65A' : 'var(--g2)'}" stop-opacity=".35"/><stop offset="1" stop-color="${extra ? '#E8B65A' : 'var(--g2)'}" stop-opacity="0"/></linearGradient></defs>
+    <path class="area" d="${d} L${W_},${H} L0,${H}Z" style="fill:url(#${gid})"/><path class="line" d="${d}" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1"/><circle class="dot" cx="${end[0]}" cy="${end[1]}" r="4"/></svg>
+    <div class="ax"><span>${x.dates[0]}</span><span>Est. best ${v.at(-1)} kg</span><span>${extra ? 'Today' : x.dates[1]}</span></div>`;
 }
 /** Everything you can change about the exercise sits at the bottom of its own page: one door, not two. */
 function tools() {
@@ -223,13 +291,6 @@ const VIEWS = {
     return `<p class="cap">Last time</p><h3 class="serif">${x.last.date}</h3>
       <div style="margin-top:10px">${x.last.sets.map((t, i) => `<div class="row"><span class="p">Set ${i + 1}</span><span class="num">${t}</span><span></span></div>`).join('')}</div>
       <p class="why">Best ${fmtKg(x.best.kg)} × ${x.best.r} on ${x.best.date}</p>`;
-  },
-  sets() {
-    const x = ex();
-    return `<p class="cap">${x.name}</p>
-      <div class="row" style="border:0;color:var(--dim);font-size:12px;min-height:30px"><span>Set</span><span>Last time</span><span>Today</span></div>
-      ${x.sets.map((p, i) => `<div class="row ${i === W.s ? 'now' : ''}"><span class="k">${i + 1}</span><span class="p num">${p.prev}</span>
-        <span class="num" style="display:flex;align-items:center;gap:8px">${p.done ? CHECK : ''}${fmtKg(p.kg)} × ${p.r}${!p.done && beats(p, x.best) ? '<span class="tag">BEST</span>' : ''}${p.rec ? '<span class="tag">NEW BEST</span>' : ''}</span></div>`).join('')}`;
   },
   workout() {
     const mins = Math.round((Date.now() - W.start) / 60000);
@@ -296,7 +357,7 @@ async function closeTray() {
   await play(tray, grow(anchor, false), SPRINGS.set, { fill: 'forwards' }).finished.catch(() => {});
   tray.getAnimations().forEach((a) => a.cancel()); scrim.getAnimations().forEach((a) => a.cancel()); tin.getAnimations().forEach((a) => a.cancel());
   tray.hidden = scrim.hidden = true; $('#screen').inert = false;
-  anchor.focus?.({ preventScroll: true });
+  focus(anchor);
 }
 $$('[data-open]').forEach((b) => { press(b, 0.97); b.addEventListener('click', () => openTray(b.dataset.open, b)); });
 scrim.addEventListener('click', closeTray);
@@ -305,8 +366,8 @@ tray.addEventListener('click', (e) => {
   const b = e.target.closest('[data-a]'); if (!b) return;
   const a = b.dataset.a, x = ex();
   if (a === 'close') closeTray();
-  if (a === 'use') { W.used = { kg: coach().use, was: set().kg }; set().kg = W.used.kg; roll($('.kg'), fmtKg(set().kg), 1); $('.kg').classList.toggle('over', beats(set(), x.best)); $('.dots').innerHTML = dotsHTML(); morph('coach'); }
-  if (a === 'unuse') { set().kg = W.used.was; W.used = null; roll($('.kg'), fmtKg(set().kg), -1); $('.kg').classList.toggle('over', beats(set(), x.best)); $('.dots').innerHTML = dotsHTML(); morph('coach'); }
+  if (a === 'use') { W.used = { kg: coach().use, was: set().kg }; set().kg = W.used.kg; roll($('.kg'), fmtKg(set().kg), 1); $('.kg').classList.toggle('over', beats(set(), x.best)); morph('coach'); }
+  if (a === 'unuse') { set().kg = W.used.was; W.used = null; roll($('.kg'), fmtKg(set().kg), -1); $('.kg').classList.toggle('over', beats(set(), x.best)); morph('coach'); }
   if (a === 'replace') { // the choices unfold right under the row you tapped
     const nx = b.nextElementSibling;
     if (nx && nx.classList.contains('alts')) { nx.remove(); return; }
@@ -319,7 +380,7 @@ tray.addEventListener('click', (e) => {
     const n = b.dataset.v, k = SWAPS[n] || { kit: '', kg: x.sets[0].kg, best: x.best.kg };
     Object.assign(x, { name: n, kit: k.kit, last: null, hist: null, how: null, alts: null, note: '', best: { kg: k.best, r: x.sets[0].r, date: 'earlier' } });
     x.sets = x.sets.map((p) => S(k.kg, p.r, '–')); W.s = 0; W.used = null;
-    closeTray().then(() => { nameTo(n); paint({ animate: true, dir: -1 }); });
+    closeTray().then(() => { nameTo(n); stackTo(); paint({ animate: true, dir: -1, instant: true }); });
   }
   if (a === 'superset') { W.superset = W.superset === W.e ? null : W.e; $('.ss', tin).innerHTML = W.superset === W.e ? CHECK : ''; $('.th').innerHTML = nextLine(); }
   if (a === 'rest-' || a === 'rest+') { W.rest = Math.max(30, Math.min(300, W.rest + (a === 'rest+' ? 15 : -15))); roll($('.rv', tin), mmss(W.rest), a === 'rest+' ? 1 : -1); }
@@ -355,12 +416,32 @@ async function pearlIn(gold) {
 }
 function pearlOut() { [$('.ball', pearl), $('svg path', pearl)].forEach((e) => { e.getAnimations().forEach((a) => a.cancel()); e.style.transform = ''; e.style.strokeDashoffset = ''; }); pearl.classList.remove('gold'); }
 
-/** Every set is done: the pill says so and stops taking taps. */
+/** Every set is done: a calm "complete" (Monument Valley), then the pill says Finished and stops taking taps. */
 function finish() {
   $('.dl').textContent = 'Finished'; $('.ds').textContent = ''; pill.disabled = true;
   $('.th').textContent = `Workout done · ${W.ex.length} exercises`; $('.coach').classList.add('quiet');
+  renderStack(); renderProg();
+  const all = W.ex.flatMap((x) => x.sets.filter((p) => p.done)), kg = Math.round(all.reduce((t, p) => t + p.kg * p.r, 0));
+  const fin = $('.fin'), fv = $('.fv');
+  $('.ft1').textContent = mmss((Date.now() - W.start) / 1000); $('.ft2').textContent = all.length; $('.ft3').textContent = all.filter((p) => p.rec).length;
+  fin.hidden = false; $('#screen').inert = true; root.dataset.phase = 'done';
+  const fmt = (n) => n.toLocaleString('en-GB');
+  if (reduced()) { fv.textContent = fmt(kg); $('.fa').style.strokeDashoffset = 0; } else {
+    fin.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 600, easing: 'ease-out' });
+    $('.fa').animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 1600, delay: 300, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'both' });
+    const t0 = performance.now() + 300; // count up on the ring's clock, then lock in
+    const step = (now) => { const k = Math.min(1, Math.max(0, (now - t0) / 1600)), e = 1 - (1 - k) ** 3; fv.textContent = fmt(Math.round(kg * e)); if (k < 1 && !fin.hidden) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+    $$('.fh, .fstats, .fgo', fin).forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: 600, delay: 1200 + i * 160, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
+  }
+  focus($('.fgo'));
   busy = false; // the details stay open to look back at
 }
+$('.fgo').addEventListener('click', async () => {
+  const fin = $('.fin');
+  if (!reduced()) await fin.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: 'forwards' }).finished;
+  fin.getAnimations().forEach((a) => a.cancel()); fin.hidden = true; $('#screen').inert = false; delete root.dataset.phase;
+});
 async function tick() {
   if (busy || !rest.hidden || pill.disabled) return; busy = true; closeEdit();
   const x = ex(), c = set(), rec = beats(c, x.best), g = gen;
@@ -374,13 +455,14 @@ async function tick() {
   if (!n) { finish(); return; }
   const straight = W.superset === W.e && n.e === W.e + 1; // first half of a superset: no rest, go straight on
   W.e = n.e; W.s = n.s;
-  if (straight) { undoTo = null; pearlOut(); await nameTo(ex().name); paint({ animate: true }); busy = false; return; }
+  if (straight) { undoTo = null; pearlOut(); nameTo(ex().name); await stackTo(); paint({ animate: true, instant: true }); busy = false; return; }
   await startRest();
 }
 
 /* ---------- Rest: the pill grows into the ring; the time fades in once it settles (Watch + Peace Out) ---------- */
 const rest = $('.rest'), ring = $('.ring'), arc = $('.arc'), pill = $('.done');
-let iv = 0, endsAt = 0, arcAnim = null, total = 90;
+let iv = 0, endsAt = 0, arcAnim = null, levelAnim = null, total = 90;
+const level = $('.level');
 function pillToRing(dir) {
   const p = pill.getBoundingClientRect(), r = $('.ring-wrap').getBoundingClientRect();
   const k = `translate(${p.left + p.width / 2 - (r.left + r.width / 2)}px, ${p.top + p.height / 2 - (r.top + r.height / 2)}px) scale(${p.width / r.width}, ${p.height / r.height})`;
@@ -395,11 +477,19 @@ function runArc() {
   // re-blurred 5 times a second instead of every frame. A smooth arc over two layers of live blur dropped to ~25 fps.
   arcAnim = arc.animate([{ strokeDashoffset: 0 }, { strokeDashoffset: 804.25 }], { duration: total * 1000, easing: `steps(${Math.round(total * 5)})` });
   arcAnim.currentTime = total * 1000 - left;
+  levelAnim?.cancel(); // the room fills as a colour level, in the same steps as the arc: a level moving every frame over
+  // the full-screen blur cost half the frames (43 fps rest, 23 fps fold at 4x slower CPU); stepped it holds 60.
+  levelAnim = level.animate([{ transform: 'translateY(100%)' }, { transform: 'translateY(0%)' }], { duration: total * 1000, easing: `steps(${Math.round(total * 5)})`, fill: 'forwards' });
+  levelAnim.currentTime = total * 1000 - left;
 }
 function tickClock() {
   const left = (endsAt - performance.now()) / 1000;
   const t = mmss(left), rc = $('.rclock');
-  if (rc.textContent !== t) rc.textContent = t;
+  if (rc.textContent !== t) {
+    rc.textContent = t;
+    // The last five seconds are each their own beat (Push's countdown).
+    if (left > 0 && left <= 5 && !reduced()) { rc.animate([{ transform: 'scale(1.22)', opacity: 0.4, filter: 'blur(3px)' }, { transform: 'none', opacity: 1, filter: 'blur(0)' }], { duration: 420, easing: 'cubic-bezier(.2,.8,.2,1)' }); navigator.vibrate?.(4); }
+  }
   if (left <= 0) endRest(true);
 }
 async function startRest() {
@@ -408,40 +498,36 @@ async function startRest() {
   total = W.rest; endsAt = performance.now() + total * 1000; tickClock();
   rest.hidden = false; root.dataset.phase = 'rest';
   runArc();
-  $('.rest-frost').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, easing: 'ease-out' });
+  $('.rest-frost').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, easing: 'ease-out' }).finished.then(() => { if (!rest.hidden && !rest.dataset.closing) root.dataset.covered = ''; }, () => {});
   pill.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' });
   pillToRing(1);
   $('.ring-in').animate([{ opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0)' }], { duration: 420, delay: reduced() ? 0 : 380, fill: 'backwards', easing: 'ease-out' });
   $$('.rnext, .rctl, .undo', rest).forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 300, delay: reduced() ? 0 : 300 + i * 50, fill: 'backwards', easing: 'cubic-bezier(.2,.8,.2,1)' }));
   iv = setInterval(tickClock, 200);
-  $('#screen').inert = true; $('[data-a=skip]').focus({ preventScroll: true }); // nothing behind the rest can be pressed
+  $('#screen').inert = true; focus($('[data-a=skip]')); // nothing behind the rest can be pressed
   busy = false;
 }
 async function endRest(advance) {
   if (rest.hidden || rest.dataset.closing) return;
   rest.dataset.closing = '1';
   const g = gen;
-  clearInterval(iv); root.dataset.phase = '';
+  clearInterval(iv); delete root.dataset.phase; delete root.dataset.covered;
   const prevE = undoTo?.e;
   $('.rest-frost').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: 'forwards' });
-  $$('.rnext, .rctl, .undo, .ring-in', rest).forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, fill: 'forwards' }));
+  $$('.rnext, .rctl, .undo, .ring-in, .level', rest).forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }));
   await pillToRing(-1).finished.catch(() => {});
   if (g !== gen) return; // the demo was reset while the ring closed
-  [ring, $('.rest-frost'), ...$$('.rnext, .rctl, .undo, .ring-in', rest)].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
-  arcAnim?.cancel(); rest.hidden = true; delete rest.dataset.closing;
+  [ring, $('.rest-frost'), ...$$('.rnext, .rctl, .undo, .ring-in, .level', rest)].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
+  arcAnim?.cancel(); levelAnim?.cancel(); rest.hidden = true; delete rest.dataset.closing;
   pill.getAnimations().forEach((a) => a.cancel());
   pearlOut();
-  if (advance) {
-    // The ring has gone back into the pill; now the screen moves to the next set: the dot fills, the badge
-    // blurs to the new set, only the digits that change roll.
-    if (prevE !== W.e) await nameTo(ex().name);
-    paint({ animate: true });
-    const d = $$('.dots i')[Math.max(0, W.s - 1)];
-    if (d && prevE === W.e) play(d, [{ transform: 'scale(1.7)' }, { transform: 'none' }], SPRINGS.press);
-  } else paint({ animate: true, dir: -1 });
+  // The ring has gone back into the pill; now the stack moves: the finished set folds into a row and the next one
+  // opens in place (or, on undo, the other way round). A new exercise slides in instead.
+  if (W.e !== (prevE ?? W.e)) { nameTo(ex().name); await stackTo(); paint({ animate: true, instant: true }); }
+  else { const before = captureStack(); renderStack(); paint({ animate: true, instant: true, dir: advance ? 1 : -1 }); animateStack(before); }
   undoTo = null;
   if (g !== gen) return;
-  $('#screen').inert = false; pill.focus({ preventScroll: true }); // only once the next set is on screen
+  $('#screen').inert = false; focus(pill); // only once the next set is on screen
 }
 function undoSet() {
   if (!undoTo) return;
@@ -464,8 +550,14 @@ function recordMoment(c) {
     const from = `inset(${slab.top}px ${innerWidth - slab.right}px ${innerHeight - slab.bottom}px ${slab.left}px round 34px)`;
     $('.mv').textContent = fmtKg(c.kg);
     $('.rs').innerHTML = `${ex().name} · <b class="num">${fmtKg(c.kg)} kg × ${c.r}</b><br>${fmtKg(c.kg - ex().best.kg) || 0} kg over your best from ${ex().best.date}`;
+    const rc = $('.rchart', rec);
+    rc.innerHTML = ex().hist ? chartSVG(ex(), [c.kg, c.r], 'rg') : '';
     rec.hidden = false; root.dataset.phase = 'record';
-    const parts = [$('.cap', rec), $('.rh', rec), $('.rs', rec), $('.rgo', rec)];
+    const parts = [$('.cap', rec), $('.rh', rec), $('.rs', rec), rc, $('.rgo', rec)];
+    const rl = $('.line', rc), rd = $('.dot', rc);
+    if (rl && !reduced()) { rl.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 1100, delay: 1100, easing: 'cubic-bezier(.3,.7,.2,1)', fill: 'forwards' });
+      rd.animate([{ transform: 'scale(0)' }, { transform: 'scale(1.6)', offset: 0.6 }, { transform: 'scale(1)' }], { duration: 600, delay: 2100, fill: 'backwards', easing: 'ease-out' }); rd.style.transformOrigin = 'center'; rd.style.transformBox = 'fill-box'; }
+    else if (rl) rl.style.strokeDashoffset = 0;
     if (reduced()) { rec.style.clipPath = ''; } else {
       rec.animate([{ clipPath: from }, { clipPath: 'inset(0 0 0 0 round 0)' }], { duration: 560, easing: 'cubic-bezier(.65,0,.2,1)' });
       play($('.medal'), [{ transform: 'rotateY(84deg) scale(.9)', opacity: 0 }, { transform: 'rotateY(84deg) scale(.9)', opacity: 1, offset: 0.05 }, { transform: 'none', opacity: 1 }], { damping: 0.8, response: 0.9 }, { delay: 380, fill: 'backwards' });
@@ -489,18 +581,19 @@ function recordMoment(c) {
 /* ---------- Demo controls from the page around it ---------- */
 function reset() {
   gen++;
-  clearInterval(iv); arcAnim?.cancel(); rest.hidden = true; delete rest.dataset.closing; $('.record').hidden = true; $('#screen').inert = false;
+  clearInterval(iv); arcAnim?.cancel(); levelAnim?.cancel(); rest.hidden = true; delete rest.dataset.closing; $('.record').hidden = true; $('.fin').hidden = true; $('#screen').inert = false;
   if (open) { open = null; tray.hidden = scrim.hidden = true; $('#screen').inert = false; }
-  [pill, ring, $('.rest-frost'), ...$$('.rest *, .record *')].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
-  root.dataset.phase = ''; busy = false; undoTo = null; pearlOut(); pill.disabled = false; $('.dl').textContent = 'Done';
+  [pill, ring, $('.rest-frost'), ...$$('.rest *, .record *, .fin, .fin *')].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
+  delete root.dataset.phase; delete root.dataset.covered; busy = false; undoTo = null; pearlOut(); pill.disabled = false; $('.dl').textContent = 'Done';
   const start = W.start; W = fresh(); W.start = start;
 }
 function jump(m) {
   reset();
   if (m === 'record') { W.ex[1].sets[2].done = true; W.s = 3; W.ex[1].sets[3].kg = 85; }
   if (m === 'next') { W.ex[1].sets.forEach((p) => { p.done = true; }); W.s = 3; }
+  if (m === 'finish') { W.ex.forEach((x) => x.sets.forEach((p) => { p.done = true; })); W.ex[1].sets[2].rec = true; W.e = 5; W.s = 2; W.ex[5].sets[2].done = false; }
   paint();
-  if (m === 'rest' || m === 'record' || m === 'next') requestAnimationFrame(() => requestAnimationFrame(tick));
+  if (m === 'rest' || m === 'record' || m === 'next' || m === 'finish') requestAnimationFrame(() => requestAnimationFrame(tick));
 }
 addEventListener('message', (e) => {
   const d = e.data || {};
