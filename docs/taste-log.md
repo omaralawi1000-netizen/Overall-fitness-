@@ -44,9 +44,14 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 
 ## Entries
 
+### 2 Nov 2026, night: Heat workout as a deck of glass (/_prototypes/heat/)
+Built: the sets are now a deck of glass cards, like Apple Wallet. Done sets file up behind the current card and show their top row with a check, and the exercise before sits at the top of the pile. The set you're on is the big frosted card. The next sets and the next exercise peek out below. Tapping Done checks the pearl, then the finished card files up behind while the next one rises into place, and then the Done pill's outline grows into the rest ring. A new exercise deals the deck away to the left and deals the new one in from the right, card by card. Sheets and the rest ring now grow by their outline, so they are frosted from the first frame.
+Verdict: waiting for Omar.
+
 ### 2 Nov 2026: Heat workout, refined to fill the dead space (/_prototypes/heat/)
 Built: the empty middle is now a set stack. Done sets are rows with a check, the current set is the big frosted slab, and upcoming sets are dimmer rows. On tick, the finished set folds into a row and its numbers fly down into it while the next one opens (Not Boring's transform-not-replace). A progress strip on top has one segment per set, grouped by exercise, with "Exercise 2 of 6 · 14 sets to go · about 31 min". Rest fills the room with colour from the bottom like a level, and each of the last five seconds lands as its own beat (Push's countdown). A record is now a dark gold room: the medal, then a running-best line that draws to today's dot. The workout ends on a finish screen with a ring that draws round, the kilos lifted today counting up, and time, sets and new bests.
-Verdict: waiting for Omar.
+Verdict: "It still needs a lot of work. Like, when the pop-ups appear, they're transparent, then transform to frosted glass. I need you to fix that, and some animations, make the animations world class. Also, try to having a much better layout if you can. Think outside the box. Make this so much better."
+Reading: the frost has to be there from the first frame; a sheet that turns frosted at the end reads as broken. Rows in a list are not enough of an idea; he wants a layout he hasn't seen.
 
 ### 2 Nov 2026: the bar is the picture (/_prototypes/workout/)
 Asked: "Look at how the picture gradually blurs at the bottom. Make it everything seamless and actually fit. Make it make sense. And also, with that, ignore everything I said was good and just make a very, very, very beautiful and good workout screen with Opus extra high."

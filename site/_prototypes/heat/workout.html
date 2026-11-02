@@ -21,12 +21,12 @@
     <div class="name-row">
       <button type="button" class="name serif" data-open="exercise"><span class="nm">Bench press</span></button>
     </div>
-    <p class="badge"><span class="bt">Set 3 of 4</span></p>
   </section>
 
-  <!-- Every set of the exercise: done ones folded into rows above, the one you're on open as the slab, the rest below. -->
+  <!-- The sets as a deck of glass: done ones filed on top, the one you're on in the middle, the next ones peeking below. -->
   <section class="stack" aria-label="Sets">
   <div class="slab frost">
+    <div class="sh"><span class="bt">Set 3 of 4</span></div>
     <div class="fields">
       <div class="field" data-f="kg">
         <button type="button" class="step minus" data-d="-1" aria-label="Less weight" tabindex="-1">−</button>
@@ -44,8 +44,6 @@
   </div>
   </section>
 
-  <button type="button" class="then" data-open="workout"><span class="th"></span></button>
-
   <button type="button" class="go done" data-a="tick">
     <span class="pearl" aria-hidden="true"><i class="ticks"></i><i class="ball"></i><svg viewBox="0 0 24 24"><path d="M6.5 12.5l3.6 3.6 7.4-8"/></svg></span>
     <span class="dl">Done</span><small class="ds">Set 3</small>
@@ -60,13 +58,15 @@
 <div class="rest" hidden aria-live="polite">
   <div class="rest-frost"></div>
   <div class="level" aria-hidden="true"></div>
+  <p class="rdone"></p>
   <div class="ring-wrap">
+    <div class="ribbons" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i></div>
     <div class="ring frost"><svg viewBox="0 0 280 280" aria-hidden="true"><circle class="track" cx="140" cy="140" r="128"/><circle class="arc glowobj" cx="140" cy="140" r="128"/></svg>
       <div class="ring-in"><span class="cap">Rest</span><span class="num rclock">1:30</span></div>
     </div>
   </div>
-  <p class="rnext"></p>
   <div class="rctl"><button type="button" class="pillbtn frost" data-a="less">−15</button><button type="button" class="pillbtn solid" data-a="skip">Skip</button><button type="button" class="pillbtn frost" data-a="more">+15</button></div>
+  <div class="rcard"><span class="cap">Up next</span><p class="rc-v num"></p><p class="rc-s"></p></div>
   <button type="button" class="undo" data-a="undo">Undo set</button>
 </div>
 
