@@ -47,6 +47,10 @@ describe('workout states', () => {
     expect(w.s().rest!.afterSetId).toBe(w.set(1).id);
   });
 
+  it('elapsed excludes paused time (ported from old Aven core.test.ts)', () => {
+    const s = { id: 'p', kind: 'session', startedAt: 0, pausedMs: 10_000, pausedAt: 40_000, state: 'paused', events: [] } as unknown as Parameters<typeof elapsedMs>[0];
+    expect(elapsedMs(s, 60_000)).toBe(30_000);
+  });
   it('pause, resume and finish: every move is in the story; paused time is not workout time', async () => {
     const w = await workout();
     w.c.tick(10 * 60000);

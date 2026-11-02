@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it } from 'vitest';
+import fc from 'fast-check';
 import { backupName, exportBackup, parseBackup, previewRestore, restore } from '../../src/engine/backup';
 import type { Engine } from '../../src/engine/engine';
 import { dryRun, mapOld, readOldBackup, readOldLocal, runImport } from '../../src/engine/importOld';
@@ -88,6 +89,53 @@ describe('backup and restore', () => {
   });
 });
 
+describe('backup and restore: property tests', () => {
+  const step = fc.record({ id: fc.constantFrom('a', 'b', 'c', 'd'), ml: fc.integer({ min: 1, max: 3000 }), del: fc.boolean() });
+  async function play(e: Engine, steps: { id: string; ml: number; del: boolean }[]) {
+    for (const s of steps) {
+      const has = e.get(s.id);
+      const op = !has ? water(s.id, s.ml) : s.del ? { op: 'delete' as const, id: s.id, ifExists: true } : { op: 'update' as const, id: s.id, set: { ml: s.ml } };
+      await e.commit({ type: 'x', label: 'x', ops: [op] });
+    }
+  }
+  const live = (e: Engine) => e.all('water').map((w) => [w.id, w.ml]).sort();
+
+  it('export → read → replace on another phone gives the same live data, for any history', async () => {
+    await fc.assert(fc.asyncProperty(fc.array(step, { minLength: 1, maxLength: 10 }), fc.array(step, { maxLength: 6 }), async (mine, theirs) => {
+      const a = (await eng()).e, b = (await eng()).e;
+      await play(a, mine); await play(b, theirs);
+      const p = await parseBackup(JSON.stringify(await exportBackup(a)));
+      if (!p.ok) throw new Error(p.problem);
+      const r = await restore(b, p.backup, 'replace');
+      expect(['saved', 'noop']).toContain(r.status);
+      expect(live(b)).toEqual(live(a));
+    }), { numRuns: 25 });
+  });
+
+  it('restoring the same file twice (merge) changes nothing the second time', async () => {
+    await fc.assert(fc.asyncProperty(fc.array(step, { minLength: 1, maxLength: 10 }), fc.array(step, { maxLength: 6 }), async (mine, theirs) => {
+      const a = (await eng()).e, b = (await eng()).e;
+      await play(a, mine); await play(b, theirs);
+      const file = await exportBackup(a);
+      await restore(b, file, 'merge');
+      const after1 = await b.allRecords();
+      expect((await restore(b, file, 'merge')).status).toBe('noop');
+      expect(await b.allRecords()).toEqual(after1);
+    }), { numRuns: 25 });
+  });
+
+  it('changing any number in a saved record makes the checksum refuse the file', async () => {
+    const { e } = await eng();
+    await e.commit({ type: 'x', label: 'x', ops: [water('a', 250), water('b', 500)] });
+    const file = await exportBackup(e);
+    await fc.assert(fc.asyncProperty(fc.integer({ min: 0, max: file.records.length - 1 }), fc.integer({ min: 1, max: 10_000 }), async (i, delta) => {
+      const bad = structuredClone(file);
+      (bad.records[i] as unknown as { ml: number }).ml += delta;
+      expect(await parseBackup(JSON.stringify(bad))).toMatchObject({ ok: false, problem: 'checksum' });
+    }), { numRuns: 30 });
+  });
+});
+
 describe('migrations', () => {
   it('run in order, and running them twice gives the same record', () => {
     const list = [{ from: 1, to: 2, migrate: (r: Record<string, unknown>) => ({ ...r, ml: (r.ml as number) * 1 }) }, { from: 2, to: 3, migrate: (r: Record<string, unknown>) => ({ ...r, unit: 'ml' }) }];
@@ -160,6 +208,19 @@ describe('import from old Aven', () => {
     const u = await e.undo(r.action!.id, { skipConflicts: true });
     expect(u.status).toBe('saved');
     expect(e.allRecords().filter((x) => !x.deleted)).toHaveLength(0);
+  });
+
+  it('property: any half-broken or hand-edited old data never crashes the import, and every record it makes has an id and a kind', () => {
+    const junk = fc.oneof(fc.constant(undefined), fc.constant(null), fc.string(), fc.integer(), fc.boolean(), fc.object({ maxDepth: 2 }), fc.array(fc.anything({ maxDepth: 2 }), { maxLength: 3 }));
+    fc.assert(fc.property(fc.dictionary(fc.constantFrom('sessions', 'foodLog', 'bodyweight', 'activities', 'health', 'memory', 'routines', 'plan', 'settings', 'water', 'active'), junk), fc.boolean(), (patch, keepGood) => {
+      const data = { ...(keepGood ? oldData() : {}), ...patch };
+      const m = mapOld(data, { now, tz: TZ });
+      for (const r of m.records) {
+        expect(typeof r.id).toBe('string');
+        expect(typeof r.kind).toBe('string');
+        if (r.kind === 'set' && (r as { done?: { reps?: unknown } }).done) expect(typeof (r as { done: { reps?: unknown; kg?: unknown } }).done).toBe('object');
+      }
+    }), { numRuns: 200 });
   });
 
   it('a damaged old backup imports what is sound and counts the rest, never guessing', () => {

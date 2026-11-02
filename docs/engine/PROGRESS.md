@@ -50,6 +50,26 @@ Tests live in `tests/engine/`. "untested" is said plainly.
 | Exercise variations are separate exercises | catalogue keeps one id per variation | shape only: records and plateaus come with the Workout phase |
 | Memory cards (scope, valid-from/until, last-seen) and the Coach ladder | model types, import of old memory notes | shape only: used in the Coach phase |
 
+## Test inventory (73 tests)
+Fewer tests than rules looks thin, but each property test runs 25 to 200 random cases, so the real count of checked cases is in the thousands.
+
+**Property tests (11):**
+- Dedupe: any mix of repeated taps logs each action once (`engine`).
+- apply → undo: 40 random histories, then Undo all, ends where it started (`engine`).
+- Rest timer: any reload or ±15 pattern never jumps back (`workout`).
+- Day keys and `addDays`/`diffDays`; every moment maps to a real day; kg ↔ lb; `parseNum` with comma or point (`time-units`).
+- Backup: export → read → replace on another phone gives the same data for any history; restoring the same file twice changes nothing; any edited number fails the checksum (`backup-import`).
+- Old import: half-broken or hand-edited old data never crashes the import (`backup-import`, 200 cases).
+
+**Old tests ported as regressions (9 tests):**
+- `core.test.ts` "dates & units", 6 tests (`time-units`). Its 7th, "percentages follow the language", is screen text and was not ported.
+- `core.test.ts` "elapsed excludes paused time" (`workout`).
+- `beta.test.ts`: its rules (writes only `beta:` keys, copies only `aven…` keys, deletes only its own) are replayed with old Beta's real code next to `a2` data, in 2 tests (`isolation`).
+- `behaviour2.test.ts` "a hand-edited backup never crashes" becomes the import property test above.
+- E1b ports: listed in `old-logic-map.md`.
+
+**Still untested:** see below.
+
 ## What's still untested or open
 - Real phone: persistent-storage grant, a truly full disk, IndexedDB under memory pressure, Chrome killing the tab mid-write.
 - No service worker yet, so "no update mid-workout" and cache separation are rules without wiring.
@@ -61,6 +81,7 @@ Tests live in `tests/engine/`. "untested" is said plainly.
 - E1a-1 (2 Nov): `DATA-MODEL.md`, `src/engine/` model, plan (pure action logic), engine (IndexedDB, action log, Undo), workout and timers, isolation tests.
 - E1a-2 (2 Nov): backup, restore, migrations, import from old Aven, exercise catalogue ported.
 - E1a-3 (2 Nov): debug page at `/engine/` (`src/debug/`), checked in headless Chrome at 384 px.
+- Code review (2 Nov): 10 fixes, 68 tests green. Merged to main in PR #44 and deployed to `/engine/`.
 
 ## Next step
 E1b on **Sonnet** (Omar switches the model): the parser and `docs/parser-examples.md`, then a phrase box on `/engine/`.
