@@ -595,3 +595,74 @@ _Gap:_ The 'Today through the day' gap is solved here: three apps that repaint t
 - Dribbble search returned no list from the cloud this time. Ripplix per-shot clips sometimes need an account.
 - apple.com, ouraring.com, raycast.com, linear.app, family.co, perplexity.ai: no public mp4; live drag demos (Rauno's craft pages) can't be filmed by the tool, which only clicks.
 - whoop.com 403. Motion studios (Buck, ManvsMachine) not reached.
+
+## Round 3 (2 Nov 2026): skies, warm light, the next set, design screens
+
+Aimed at what was thin: Today with a moving sky, warm colour floods, and the next set becoming active. 32 clips kept of about 380 looked at, all watched frame by frame; clips live only in the shared folder `aven2/motion-library/r3-*/`. Each entry: link, then the "In Aven" line shown on the page.
+
+- `r3-warm-weather-temp-colour-band` (numbers, 7/10): https://60fps.design/shots/filter/weather. Your effort number, its highlight bar and the room's tint all shift together from hot red to cool lime as it changes.
+- `r3-warm-replay-orange-mesh-digits` (numbers, 6/10): https://60fps.design/shots/filter/recap. Your month recap: a slow warm mesh, then '42,773 kg' slides in and locks digit by digit. Turn the colour down by half.
+- `r3-next-cred-swipe-to-pay` (proposal, 9/10): https://60fps.design/shots/cred-swipe-to-pay-interaction. Accept a big Coach change by sliding: the glow trails your thumb, then the light rises and floods the room and a check ring turns. Old Aven's light for a commit.
+- `r3-warm-ember-coach-apply-undo` (proposal, 9/10): https://dribbble.com/shots/27808185-Ember-the-AI-Weight-Loss-Coach-App. The Coach suggests two tweaks; you tap 'Apply to my week', the ember orb heats up while each change ticks, then a calm 'Week updated' with Undo. Almost exactly Aven's proposal flow, in old Aven's light.
+- `r3-sky-unwind-dusk-scene` (rest, 6/10): https://60fps.design/shots/unwind-session-finished-scene-animation. Layered hills rising and falling with your breath during rest. Too illustrated for Aven; the slow rise and fall is the idea.
+- `r3-warm-sunset-breathing-scene` (rest, 5/10): https://60fps.design/shots/filter/pulse. A sunset rest screen with 'Next set in 5' counting down. The scene is too bright; on near-black with only the horizon glow it fits.
+- `r3-warm-falling-into-light-horizon` (reward, 5/10): https://dribbble.com/shots/26380679-Day-70-Falling-Into-Light. After a workout, a thin amber horizon line breathes at the bottom and a white glint sweeps across Finish. Quiet and warm.
+- `r3-next-longevity-deck-swipe` (tick, 8/10): https://60fps.design/shots/longevity-deck-swipe-cards-down-stack-interaction. Done with this exercise: its card drops into a small tray at the bottom ('Done · 3') and the next exercise slides in, in its own colour.
+- `r3-next-clear-swipe-check` (tick, 8/10): https://60fps.design/shots/clear-swipe-right-to-check-interaction. Tick a set and it turns green, sinks to a dim done pile, and the next set slides up into the warm 'hot' spot.
+- `r3-next-countly-card-colour` (tick, 7/10): https://60fps.design/shots/countly-intro-widget-card-stack-swipe-interaction. Swipe to the next exercise and the whole background changes colour at the same moment.
+- `r3-next-remy-checklist` (tick, 7/10): https://60fps.design/shots/remy-ai-analysis-checklist-animation. The Coach checking your day: rows tick one after another with a soft green glow on a night sky ('Sleep ✓, Protein ✓, Session ✓').
+- `r3-next-gentler-streak-hold-to-end` (tick, 7/10): https://www.ripplix.com/library/button-success-scroll-gentler-streak-health-fitness-smartwatchmp4. Hold 'End workout': a fill sweeps across, the screen tints, the X becomes a check, and the summary opens.
+- `r3-next-asana-checkpoints` (tick, 6/10): https://60fps.design/shots/asana-get-started-checkpoints. Setup steps that celebrate when done. The illustration goes; the 'done card becomes a small thank-you' stays.
+- `r3-next-creme-active-step` (tick, 6/10): https://60fps.design/shots/creme-scroll-recipe-steps-morph. In a workout list, the active set is the lit, slightly raised card; as you move on, the light passes to the next one.
+- `r3-next-strong-set-log` (tick, 5/10): https://60fps.design/shots/strong-set-input-add-delete-interaction. Strong's plain tick: the row turns pale green. The baseline Aven has to beat.
+- `r3-next-instagram-setup-steps` (tick, 5/10): https://60fps.design/shots/instagram-account-setup-step-complete. A done step moves into a 'Completed' group at the top. Useful for a workout's done exercises.
+- `r3-next-todo-cli-segments` (tick, 5/10): https://60fps.design/shots/todo-cli-task-complete-interaction. Workout progress as 10 small blocks that light up as sets are done. Simple and readable from a distance.
+- `r3-sky-uicrafters-day-night-scrub` (today, 9/10): https://dribbble.com/shots/27841892-Weather-App-Day-Night-Animation-Mobile-UI-UX. Today as a thin day band with a now-mark ('Bench session, 38 min left') that drives the whole sky: golden afternoon, violet dusk, night. The Day line and the sky in one object.
+- `r3-sky-ben-journal-weather-sky-toggle` (today, 8/10): https://60fps.design/shots/ben-journal-weather-toggle-background-animation. Pick today's type (Gym, Wrestling, Rest) and the sky re-skins in 250 ms. Swap weather for day type.
+- `r3-sky-lume-city-colour-fill` (today, 8/10): https://60fps.design/shots/lume-city-selector-interaction. Your day as a band of warm colour on black whose edge is the day's curve (one step per hour). The warm Heat look with a real job.
+- `r3-sky-lume-tab-recolour` (today, 8/10): https://60fps.design/shots/lume-bottom-tab-interaction. Switch between Training, Food and Sleep and one colour takes over the screen per tab, with the big number swapping.
+- `r3-sky-moonlitt-time-scroll` (today, 8/10): https://60fps.design/shots/moonlitt-time-scroll-interaction. Scroll back through today and the room darkens from evening to night, with the time riding an arc over one glowing object (the Coach orb).
+- `r3-sky-structured-timeline-drawer` (today, 8/10): https://www.ripplix.com/library/tabs-select-carousel-structured-productivity-tools-mobile-app. Your day as a vertical line with dots for sessions and meals, a coral drawer at the bottom, and the evening flipping to a moon 'Wind down' row.
+- `r3-sky-outsiders-progress-recolour` (today, 8/10): https://60fps.design/shots/the-outsiders-progress-graph-color-change-interaction. In Progress, each metric (volume, sleep, weight) washes its own soft glow down from the top of the black screen.
+- `r3-warm-weather-city-colour-flood` (today, 8/10): https://60fps.design/shots/filter/weather. Switch from a gym day to a rest day and the whole black screen floods with that day's warm colour bands in half a second.
+- `r3-sky-outcrowd-lockscreen-sky-hours` (today, 7/10): https://dribbble.com/shots/14086611-Mobile-App-Weather-Lock-Screen. The hour steps from 12:00 to 21:00 and the sky behind slides with it. Simple proof that the Today screen can just follow the clock.
+- `r3-sky-sunlit-sun-path-ar` (today, 7/10): https://60fps.design/shots/sunlit-arrow-gyroscope-interaction. Drag along the day's arc and a sun rides it. The camera view goes; the sun-on-an-arc stays as a day scrubber.
+- `r3-sky-structured-day-night-picker` (today, 7/10): https://www.ripplix.com/library/onboarding-structured-productivity-tools-mobile-app. Onboarding 'When do you usually train?': the scene turns from sunrise to night as you scroll the time wheel.
+- `r3-sky-tideguide-lunar-pager` (today, 7/10): https://www.ripplix.com/library/date-picker-tide-guide-weather-smartwatchmp4. Flip between days and the date digits roll while the day's sky colour cross-fades. A calm way to page through your week.
+- `r3-sky-alpenglow-sun-cycle-icon` (today, 7/10): https://dribbble.com/shots/14335414-Alpenglow. The app icon or Log button that shows the time of day: dawn red, day blue, sunset orange.
+- `r3-sky-adaptive-room-light-widgets` (today, 6/10): https://dribbble.com/shots/27354788-Adaptive-Smart-Home-Widgets-Climate-UI-Animation. Evening comes and the cards and room darken together over 700 ms. Aven could dim itself after 21:00.
+- `r3-sky-dinlay-day-in-twelve-seconds` (today, 5/10): https://dribbble.com/shots/27847087-Dinlay-Sleep-Daily-Rhythm-Coach-App-Animated-Walkthrough. A serif clock with a sun/moon dot on a ring. The time-lapse is a demo; a small ring like this could mark 'now'.
+
+### Design screens, round 3
+
+29 App Store screenshots (public, logged out) in `aven2/design-inspiration-r3/` (`stills.json` has the links). Dribbble, Behance, land-book, siteinspire, Awwwards, Mobbin and Refero were blocked or need a login.
+
+- 01 Lumy: https://apps.apple.com/us/app/lumy/id908905093. Opening the app at dusk: the Today screen is a deep blue sky with one horizon glow, and your day sits under it.
+- 02 Lumy: https://apps.apple.com/us/app/lumy/id908905093. 'Training in 52 minutes' in light type over a sky, with a thin arc showing where you are in the day. The sky does the colouring.
+- 03 Lumy: https://apps.apple.com/us/app/lumy/id908905093. Clear glass sheets over your sky, with one coral number glowing inside (your next session at 18:00). Glass, one glow, sky: the whole recipe.
+- 04 Welltory: https://apps.apple.com/us/app/welltory-stress-heart-rate/id1074367771. Your heart rate during a wrestling session as a flowing colour band, with three thin numbers under a plain headline.
+- 05 Welltory: https://apps.apple.com/us/app/welltory-stress-heart-rate/id1074367771. The warm look: ember glow on black, three thin numbers (sleep, strain, protein) and one human sentence from the Coach.
+- 06 Welltory: https://apps.apple.com/us/app/welltory-stress-heart-rate/id1074367771. A Coach answer with its chart inside: one plain sentence ('Your recovery is low'), one glowing arc with the number, a short why.
+- 07 Revolut: https://apps.apple.com/us/app/revolut-send-spend-and-save/id932493382. A big thin number sitting on a cosy photo with glass buttons on top. The photo could be your own gym.
+- 08 Revolut: https://apps.apple.com/us/app/revolut-send-spend-and-save/id932493382. Swipeable cards with a big thin number over a photo, neighbours peeking in. Could be your week, one card per day.
+- 09 Revolut: https://apps.apple.com/us/app/revolut-send-spend-and-save/id932493382. A thin number with smaller decimals over a fine line chart on a deep gradient card. Bodyweight 82.4 kg.
+- 10 Robinhood: https://apps.apple.com/us/app/robinhood-trading-investing/id938003185. A record as a printed certificate: a huge serif '100 kg' with the number in gold on warm black.
+- 11 Perplexity: https://apps.apple.com/us/app/perplexity-ai-agent-search/id1668000334. A light serif headline over a night sky for the Coach's welcome. The floating pages are too much; keep the type and the sky.
+- 12 Pi: https://apps.apple.com/us/app/pi-your-personal-ai/id6445815935. Coach chat set in a warm serif with no bubbles: answers read like a note from a trainer. Light mode here; it works on black too.
+- 13 Opal: https://apps.apple.com/us/app/opal-screen-time-control/id1497465230. A record as a gem on a plinth with tiny stats under it. The object is the reward; the numbers stay small.
+- 14 Opal: https://apps.apple.com/us/app/opal-screen-time-control/id1497465230. A thin pale ring with '1h 23m' and 'less than usual' in tiny caps. Rest or sleep, calm and readable.
+- 15 Opal: https://apps.apple.com/us/app/opal-screen-time-control/id1497465230. The rest timer as a frosted glass slab with a glass stepper (−30s, +30s) and a Start pill.
+- 16 Peloton: https://apps.apple.com/us/app/peloton-fitness-workouts/id792750948. Tiers as gold gems (Bronze, Silver, Gold lifter). Could work for strength levels; keep it to one row.
+- 17 Runna: https://apps.apple.com/us/app/runna-running-plans-coach/id1594204443. 'Fastest 5K 21:38' under a softly glowing badge. In Aven: 'Best bench 100 kg' with its own badge.
+- 18 RISE: https://apps.apple.com/us/app/rise-sleep-tracker/id1453884781. A wide clock arc in the dark with a glass puck showing sleep debt. Today's day line could look like this.
+- 19 Endel: https://apps.apple.com/us/app/endel-focus-sleep-sounds/id1346247457. A giant light number and simple white line art, no colour. A calm way to show one fact from the Coach.
+- 20 Eight Sleep: https://apps.apple.com/us/app/eight-sleep/id1086913845. A big thin '100' inside a dial of hair-fine ticks. Readiness or rest timer with real watch-like craft.
+- 21 Eight Sleep: https://apps.apple.com/us/app/eight-sleep/id1086913845. The home screen opens on a night-sky gradient, then a plain headline: 'Your night was a recovery win'.
+- 22 Apple Weather: https://apps.apple.com/us/app/weather/id1069513131. The whole screen is the sky with one huge thin number on it, glass cards below. The Today screen in one image.
+- 23 Apple Weather: https://apps.apple.com/us/app/weather/id1069513131. A list where each card is tinted by its own sky. This week's days, each lit by the time you trained.
+- 24 Future: https://apps.apple.com/us/app/future-pro-personal-training/id1288178982. A workout's heart-rate line going lime to red, with three huge thin numbers stacked under it. A great finish summary.
+- 25 Sky Guide: https://apps.apple.com/us/app/sky-guide/id576588894. A real moon photo with one plain sentence and fine coloured lines. Mood reference for a night or rest screen.
+- 26 Not Boring Weather: https://apps.apple.com/us/app/not-boring-weather/id1531063436. A clay-like object on black with a thin mono data table. Too techy for the main screens; nice for a details page.
+- 27 Withings: https://apps.apple.com/us/app/withings/id542701020. A score ring made of 100 small dots, one per day. Your 100-day streak as a ring of dots that fill in.
+- 28 Withings: https://apps.apple.com/us/app/withings/id542701020. Insight cards with a thin glowing rim, then 'Ask the Coach anything' with three suggested questions.
+- 29 Tonal: https://apps.apple.com/us/app/tonal/id1437460744. '11,247 kg volume' inside a thin weekly ring. Clean on white; on black with a thin coral ring it's Aven.
