@@ -19,8 +19,7 @@ Whatever it is (a set, a meal, a memory card), a record has:
 | `createdAt`, `updatedAt` | Bookkeeping times. |
 | `rev` | Goes up by one on every change. |
 | `deleted` | Present when deleted: `{ at, by }` (the action that deleted it). Deletes are soft: the record stays, hidden. |
-| `basedOn` | For anything derived (a summary, a reminder, a Coach notice): the ids it was built from. |
-| `stale` | Set when one of those facts was deleted or changed: the derived thing must be rebuilt or not shown. |
+| `builtFrom` | For anything derived (a summary, a reminder, a Coach notice): the revision of each fact it was built from. It is stale (rebuild it or don't show it) whenever any of those facts now has another revision, is deleted, or is itself stale. Staleness is worked out, never stored (`src/engine/derived.ts`). |
 
 **Units.** Every number field has one fixed unit, written in its name or in the table below: kg, g, ml, kcal, seconds,
 metres, cm. Nothing is ever stored in lb, dl or minutes. When someone typed another unit, what they typed is kept beside
@@ -35,7 +34,7 @@ didn't record, reps not typed yet. Sums over unknowns say "at least". No code fi
   yesterday (ported from old Aven's `dates.ts`/`derive.ts`, now time-zone aware).
 - **Logging into yesterday** the next morning sets `day` to yesterday and keeps `at` as the real time it was logged.
 - **Corrections recalculate.** Nothing stores a total that could go stale without saying so: day totals are computed from
-  the records when asked; anything that is stored (a summary) lists its `basedOn` and is marked `stale` when a source
+  the records when asked; anything that is stored (a summary) lists its `builtFrom` and counts as stale when a source
   changes.
 - **Timers** store end times, never a countdown (§5).
 
@@ -122,7 +121,7 @@ arm, thigh, neck), `cm`.
   `was?` (earlier wordings, newest first).
 
 **`coachItem`**: one thing on the Coach's ladder. `stage`: `observation` → `recommendation` → `proposal` → `accepted`
-or `undone` (plus `dismissed` and `expired`, so silence and "no" are learned from too). `text`, `basedOn` (the facts
+or `undone` (plus `dismissed` and `expired`, so silence and "no" are learned from too). `text`, `builtFrom` (the facts
 behind it), `expiresAt` (a stale notice is never shown), `actionId?` (the change it made when accepted, so Undo is the
 real Undo).
 
@@ -148,10 +147,11 @@ Monday), display units (`kg`/`lb`, `km`/`mi`, `cm`/`in`), `restDefaultSec`, food
   this"), instead of overwriting newer work. Undoing a creation also stops if a field was added since (a set created by
   "start workout" and then ticked). Undo is itself an action, so it can be undone too. Nothing ever restores an
   old whole-state copy over newer edits.
-- **Deleting a fact invalidates what was built on it.** In the same transaction, every live record whose `basedOn`
-  includes the deleted (or changed) record is marked `stale`. Undo never clears `stale`: another change may also have
-  made it stale, so it stays stale until it is worked out again. Undoing a recount brings the old value back marked
-  `stale`.
+- **Deleting or changing a fact invalidates what was built on it.** Every write raises a record's revision (`rev`),
+  also an Undo, a restore or an import, and revisions never go back. A derived record is stale whenever a fact's
+  revision differs from the one in its `builtFrom`. Because nothing stores "stale", no mix of changes and Undos can make
+  an old value look fresh: only building it again from the facts as they are now does. Undoing a recount puts back the
+  old `builtFrom`, so the old value is stale again.
 - **Saving shows its true state.** A change is shown at once as **pending** (the tap is never blocked), becomes
   **saved** only after the database confirms the transaction, and becomes **failed** (kept, with Retry) if the write
   fails, for example a full disk. "Saved" is never shown early.

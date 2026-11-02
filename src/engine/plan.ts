@@ -82,7 +82,8 @@ export function planOps(ops: Op[], current: Map<string, Rec | undefined>, ctx: C
       const cur = get(r.id);
       if (cur && op.when === 'absent') continue;
       if (cur && op.when === 'newer' && (cur.deleted || !((r.updatedAt as number) > (cur.updatedAt as number)))) continue;
-      const rec = { ...r, rev: (cur?.rev ?? 0) + 1 } as Rec;
+      // above both the phone's and the file's revision, so a revision never stands for two different states (derived.ts)
+      const rec = { ...r, rev: Math.max(cur?.rev ?? 0, typeof r.rev === 'number' && Number.isFinite(r.rev) ? r.rev : 0) + 1 } as Rec;
       const bad = checkRecord(rec);
       if (bad) throw new EngineError('invalid', `${r.id}: ${bad}`);
       if (cur && cur.kind !== rec.kind) throw new EngineError('invalid', `${r.id}: kind changes`);
@@ -143,19 +144,6 @@ export function planOps(ops: Op[], current: Map<string, Rec | undefined>, ctx: C
   return { changes: order.map((id) => byId.get(id)!), next };
 }
 
-/** Records built on any of `changedIds` (their `basedOn` names one), followed through chains; each gets `stale: true`. */
-export function planStale(changedIds: string[], live: Iterable<Rec>, ctx: Ctx): Planned {
-  const all = [...live].filter((r) => !r.deleted && Array.isArray(r.basedOn));
-  const hit = new Set<string>();
-  const queue = [...changedIds];
-  while (queue.length) {
-    const id = queue.shift()!;
-    for (const r of all) if (!hit.has(r.id) && (r.basedOn as string[]).includes(id)) { hit.add(r.id); queue.push(r.id); }
-  }
-  const ops: Op[] = [...hit].map((id) => ({ op: 'update', id, set: { stale: true } }));
-  return planOps(ops, new Map(all.map((r) => [r.id, r])), ctx);
-}
-
 export interface Conflict { id: string; field: string; expected: unknown; actual: unknown }
 
 /**
@@ -168,24 +156,18 @@ export function planUndo(action: Action, current: Map<string, Rec | undefined>, 
   const conflicts: Conflict[] = [];
   const ops: Op[] = [];
   for (const ch of [...action.changes].reverse()) {
-    // A "stale" mark is never taken back: another change may also have made the record stale since, so it stays stale
-    // until it is worked out again (a needless recount at worst, never a wrong number shown as fresh).
-    if (Object.keys(ch.after).every((k) => k === 'stale')) continue;
     const cur = current.get(ch.id);
     const mine: Conflict[] = [];
     if (!cur) { mine.push({ id: ch.id, field: '*', expected: 'exists', actual: 'missing' }); }
     else {
       // Undoing a creation also stops when a field was added since (a set created empty, then ticked as done).
       const fields = (ch.before ? Object.keys(ch.after) : [...new Set([...Object.keys(ch.after), ...Object.keys(cur), 'deleted'])])
-        .filter((k) => !(ENGINE_FIELDS as readonly string[]).includes(k) && k !== 'stale');
+        .filter((k) => !(ENGINE_FIELDS as readonly string[]).includes(k));
       for (const f of fields) if (!deepEqual(cur[f] ?? null, ch.after[f] ?? null)) mine.push({ id: ch.id, field: f, expected: ch.after[f] ?? null, actual: cur[f] ?? null });
     }
     if (mine.length) { conflicts.push(...mine); continue; }
     // engine bookkeeping (version, created time) is never put back by Undo: it describes the record, not the change
-    // nor is `stale` (see above): a newer stale mark stays
-    const back = ch.before ? Object.fromEntries(Object.entries(ch.before).filter(([k]) => !(ENGINE_FIELDS as readonly string[]).includes(k) && k !== 'stale')) : null;
-    // a value that was already stale before this change comes back stale: Undo never makes an old value look fresh
-    if (back && ch.before!.stale === true && cur!.stale !== true) back.stale = true;
+    const back = ch.before ? Object.fromEntries(Object.entries(ch.before).filter(([k]) => !(ENGINE_FIELDS as readonly string[]).includes(k))) : null;
     if (back && !Object.keys(back).length) continue;
     ops.push(back ? { op: 'update', id: ch.id, set: back } : { op: 'delete', id: ch.id });
   }
