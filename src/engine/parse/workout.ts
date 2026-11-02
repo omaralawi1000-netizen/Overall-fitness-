@@ -11,7 +11,7 @@ export interface WorkoutSet { kg?: number; reps?: number; durationSec?: number; 
 export interface WorkoutRow { raw: string; query: string; sets: WorkoutSet[] }
 
 /** Only the number words that cannot be ordinary words ("to", "en" and "et" are left out: "back to back"). */
-const W: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12, fifteen: 15, twenty: 20, tre: 3, fire: 4, fem: 5, seks: 6, syv: 7, otte: 8, ni: 9, ti: 10 };
+const W: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12, fifteen: 15, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90, tyve: 20, tredive: 30, fyrre: 40, halvtreds: 50, tres: 60, halvfjerds: 70, firs: 80, halvfems: 90, tre: 3, fire: 4, fem: 5, seks: 6, syv: 7, otte: 8, ni: 9, ti: 10 };
 
 /** Number words are digits only where they are a quantity: next to a unit, a set word or a connector, or next to another number. "One-arm Dumbbell Row" keeps its "one". */
 const QTY_AFTER = /^\s*(?:kg|kilos?|kilograms?|lbs?|pounds?|reps?|gange|sets?|saet|sæt|x|×|for|by|at|@|times|seconds?|secs?|minutes?|mins?|km|miles?|\d)/;
