@@ -12,6 +12,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 
 ## Design
 - `docs/inspiration/notes.md`: what Omar likes. `docs/inspiration/web-references.md`: his web links. The numbered images are screenshots.
+- `docs/inspiration/motion-library.md`: 66 watched animations sorted by motion job, top 3 per job, links and notes (clips and design stills in the shared folder).
 - `docs/design-round-2026-11-01.md`: the final design round's decision (rules triaged, Coach ladder, navigation, two directions, PWA limits). Wins over the design bar.
 - `docs/keepers.md`: ideas Omar explicitly approved after prototypes (only his yes adds one).
 - `docs/research/design-bar-2026-11-01.md`: the design bar.
@@ -35,6 +36,8 @@ Lives in the project's shared folder under `aven2/`. Not in git.
 - `aven2/design-review-2026-11-01/`: the design review: shared brief, three directions (light, ink, instrument), research, navigation, critic and skeptic notes.
 - `aven2/taste-2026-11-01/`: the taste work: brief, debate files, 48 old-Aven screenshots, old-Aven films, round screenshots, and the taste test page source (`taste-test/`).
 - `aven2/motion-evidence/`: real app recordings (Hevy, Strong, Flighty, Ladder and others), a clip and a still for each, plus `chapters.json`. Clips artifact: https://claude.ai/artifact/Sow9V4qvaMQtwmC2VLCusy
+- `aven2/motion-library/`: the motion library's clips, frame sheets and per-source notes (`_brief.md` explains them). Phone page: https://claude.ai/artifact/5qeq9tDy2qe2fmJsyWVNHg
+- `aven2/design-inspiration-2026-11-02/`: 33 design stills with `notes.md`.
 - `aven2/research/aven2-tech-scan.html`: the tech scan as a page.
 - `aven2/2026-11-01-blank-page.md` and `aven2/2026-11-01-best-six.md`: the blank-page ideas and the best six.
 - `aven2/real-details.md`: Omar's real details. `aven2/removal-diff.md`: the removal diff.
