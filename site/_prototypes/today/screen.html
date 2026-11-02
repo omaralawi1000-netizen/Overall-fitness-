@@ -184,7 +184,7 @@ function show(k) {
   root.dataset.phase = d.phase;
   level = d.level; field();
   setRing(first ? 0 : d.frac);
-  if (first) { roll($('#big'), '00'); setTimeout(() => { roll($('#big'), String(d.n), 1); setRing(d.frac); }, 350); }
+  if (first) { roll($('#big'), '00'); setTimeout(() => { if (cur !== k) return; roll($('#big'), String(d.n), 1); setRing(d.frac); }, 350); }
   else roll($('#big'), String(d.n), 1);
   swap($('#hcap'), d.hcap); swap($('#hu'), d.hu); swap($('#say'), d.say);
   swap($('#pcap'), d.pcap); swap($('#ptitle'), d.title); swap($('#pmeta'), d.meta); swap($('#pline'), d.line);
