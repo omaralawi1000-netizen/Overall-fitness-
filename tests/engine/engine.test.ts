@@ -266,3 +266,46 @@ describe('exactly once, as a property', () => {
     }), { numRuns: 30 });
   });
 });
+
+describe('fixes from the code review (2 Nov)', () => {
+  it('undoing an Undo is a redo, and the change can then be undone from its own entry again', async () => {
+    const { e } = await eng();
+    const a = await e.commit({ type: 'x', label: 'x', ops: [water('w1', 250)] });
+    const u1 = await e.undo(a.action!.id);
+    expect((await e.undo(u1.action!.id)).status).toBe('saved');
+    expect(e.all('water')).toHaveLength(1);
+    expect(e.actions().find((x) => x.id === a.action!.id)!.undoneBy).toBeUndefined();
+    expect((await e.undo(a.action!.id)).status).toBe('saved');
+    expect(e.all('water')).toHaveLength(0);
+  });
+
+  it('a failed save blocks app updates until it is retried', async () => {
+    const { e } = await eng();
+    const { IDBObjectStore } = await import('fake-indexeddb');
+    const put = IDBObjectStore.prototype.put;
+    IDBObjectStore.prototype.put = function () { throw new DOMException('disk full', 'QuotaExceededError'); };
+    try { await e.run({ type: 'x', label: 'x', ops: [water('w1', 250)] }).result; } finally { IDBObjectStore.prototype.put = put; }
+    expect(e.busy()).toBe(true);
+    await e.retry(e.failures()[0].id)!.result;
+    expect(e.busy()).toBe(false);
+  });
+
+  it('a change still being saved stays on screen when another tab writes', async () => {
+    const { e, idb, name, c } = await eng();
+    const other = (await eng({ idb, name, c })).e;
+    const { result } = e.run({ type: 'x', label: 'x', ops: [water('mine', 1)] });
+    await other.commit({ type: 'x', label: 'x', ops: [water('theirs', 2)] });
+    await e.reload();
+    expect(e.get('mine')).toBeDefined();
+    await result;
+    expect(e.get('mine')).toBeDefined();
+  });
+
+  it('subscribers hear about every saved write, including restore and import', async () => {
+    const { e } = await eng();
+    let heard = 0;
+    e.subscribe(() => heard++);
+    await e.commit({ type: 'x', label: 'x', ops: [water('w1', 1)] });
+    expect(heard).toBe(1);
+  });
+});

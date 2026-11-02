@@ -10,6 +10,7 @@ import type { Engine, Result } from './engine';
 import { SCHEMA, type Action, type AnyRecord, type Kind } from './model';
 import { checkRecord, type Op } from './plan';
 import { canonicalJson, deepEqual, newId, sha256 } from './util';
+import { migrateRecord } from './migrations';
 
 export interface BackupFile {
   app: 'a2-backup';
@@ -31,7 +32,8 @@ export function countKinds(records: AnyRecord[], liveOnly = true): Partial<Recor
 }
 
 export async function exportBackup(e: Engine, now = new Date()): Promise<BackupFile> {
-  const records = e.allRecords();
+  // only what is saved: a change still being written (or that failed) is not in a backup
+  const records = await e.storedRecords();
   const actions = await e.allActions();
   return { app: 'a2-backup', format: 1, schema: SCHEMA, exportedAt: now.toISOString(), counts: countKinds(records), records, actions, checksum: await checksumOf({ schema: SCHEMA, records, actions }) };
 }
@@ -60,7 +62,10 @@ export async function parseBackup(text: string): Promise<Parsed> {
     if (seen.has(r.id)) return { ok: false, problem: 'records', detail: `The record ${r.id} is in the file twice.` };
     seen.add(r.id);
   }
-  return { ok: true, backup: o as BackupFile };
+  const b = o as BackupFile;
+  // an older backup: its records are brought up to this version, the same way the phone's own data is
+  if (b.schema < SCHEMA) return { ok: true, backup: { ...b, schema: SCHEMA, records: b.records.map((r) => migrateRecord(r as unknown as Record<string, unknown>, b.schema)) as unknown as AnyRecord[] } };
+  return { ok: true, backup: b };
 }
 
 export interface Preview {
@@ -109,27 +114,22 @@ export function previewRestore(e: Engine, b: BackupFile): Preview {
   return p;
 }
 
-/** The operations a restore would write. Merge: new ones in, the newer side wins, phone deletes stay. Replace: the phone becomes the file. */
+/**
+ * The operations a restore writes. Each one is decided again inside the write's transaction against the database (not
+ * this screen's copy): merge writes what is new or newer and keeps phone deletes; replace makes the phone the file.
+ */
 export function restoreOps(e: Engine, b: BackupFile, mode: 'merge' | 'replace'): Op[] {
-  const ops: Op[] = [];
-  const inFile = new Set<string>();
-  for (const r of b.records) {
-    inFile.add(r.id);
-    const cur = e.get(r.id);
-    if (!cur) { ops.push({ op: 'put', record: r }); continue; }
-    if (same(cur, r)) continue;
-    if (mode === 'replace') { ops.push({ op: 'put', record: r }); continue; }
-    if (cur.deleted && !r.deleted) continue;
-    if (r.updatedAt > cur.updatedAt) ops.push({ op: 'put', record: r });
+  const ops: Op[] = b.records.map((record) => ({ op: 'put', record, when: mode === 'merge' ? 'newer' : 'always' }));
+  if (mode === 'replace') {
+    const inFile = new Set(b.records.map((r) => r.id));
+    for (const r of e.allRecords()) if (!inFile.has(r.id) && !r.deleted) ops.push({ op: 'delete', id: r.id, ifExists: true });
   }
-  if (mode === 'replace') for (const r of e.allRecords()) if (!inFile.has(r.id) && !r.deleted) ops.push({ op: 'delete', id: r.id });
   return ops;
 }
 
 /** Restore as one action, after a last-known-good copy. Returns the engine's result (one Undo takes it all back). */
 export async function restore(e: Engine, b: BackupFile, mode: 'merge' | 'replace', actionId = newId('r')): Promise<Result> {
   const ops = restoreOps(e, b, mode);
-  if (!ops.length) return { status: 'noop' };
   await e.snapshot(`before restoring a backup from ${b.exportedAt} (${mode})`);
   return e.commit({ id: actionId, type: `restore.${mode}`, label: `Restored a backup from ${b.exportedAt.slice(0, 10)} (${mode === 'merge' ? 'merged' : 'replaced'}): ${summarise(countKinds(b.records))}`, source: 'import', ops });
 }

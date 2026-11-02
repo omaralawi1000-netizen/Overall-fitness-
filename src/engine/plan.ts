@@ -14,10 +14,14 @@ export type Op =
   | { op: 'create'; record: NewRecord }
   /** set fields; `null` removes a field */
   | { op: 'update'; id: string; set: Record<string, unknown> }
-  /** soft delete */
-  | { op: 'delete'; id: string }
-  /** restore and import only: write a whole record as given (checked), keeping its own times; the revision goes up */
-  | { op: 'put'; record: AnyRecord };
+  /** soft delete; `ifExists`: a record that isn't there is fine (restore's "replace") */
+  | { op: 'delete'; id: string; ifExists?: boolean }
+  /**
+   * restore and import only: write a whole record as given (checked), keeping its own times; the revision goes up.
+   * Decided against the database inside the transaction: `absent` writes only a record that isn't there (import);
+   * `newer` also replaces a live one that is older (merge; something deleted here stays deleted); `always` (replace).
+   */
+  | { op: 'put'; record: AnyRecord; when: 'absent' | 'newer' | 'always' };
 
 export interface Ctx { actionId: string; now: number; tz: string; source: Source }
 type Rec = Record<string, unknown> & { id: string; kind: Kind; rev: number };
@@ -76,6 +80,8 @@ export function planOps(ops: Op[], current: Map<string, Rec | undefined>, ctx: C
       const r = structuredClone(op.record) as unknown as Rec;
       for (const k of Object.keys(r)) if (r[k] === undefined) delete r[k];
       const cur = get(r.id);
+      if (cur && op.when === 'absent') continue;
+      if (cur && op.when === 'newer' && (cur.deleted || !((r.updatedAt as number) > (cur.updatedAt as number)))) continue;
       const rec = { ...r, rev: (cur?.rev ?? 0) + 1 } as Rec;
       const bad = checkRecord(rec);
       if (bad) throw new EngineError('invalid', `${r.id}: ${bad}`);
@@ -109,6 +115,7 @@ export function planOps(ops: Op[], current: Map<string, Rec | undefined>, ctx: C
       continue;
     }
     const cur = get(op.id);
+    if (!cur && op.op === 'delete' && op.ifExists) continue;
     if (!cur) throw new EngineError('missing', `${op.id} doesn't exist`);
     let set: Record<string, unknown>;
     if (op.op === 'delete') {
@@ -165,11 +172,14 @@ export function planUndo(action: Action, current: Map<string, Rec | undefined>, 
     const mine: Conflict[] = [];
     if (!cur) { mine.push({ id: ch.id, field: '*', expected: 'exists', actual: 'missing' }); }
     else {
-      const fields = ch.before ? Object.keys(ch.after) : [...new Set([...Object.keys(ch.after), 'deleted'])].filter((k) => !['createdAt', 'v'].includes(k));
+      const fields = (ch.before ? Object.keys(ch.after) : [...new Set([...Object.keys(ch.after), 'deleted'])]).filter((k) => !['createdAt', 'v'].includes(k));
       for (const f of fields) if (!deepEqual(cur[f] ?? null, ch.after[f] ?? null)) mine.push({ id: ch.id, field: f, expected: ch.after[f] ?? null, actual: cur[f] ?? null });
     }
     if (mine.length) { conflicts.push(...mine); continue; }
-    ops.push(ch.before ? { op: 'update', id: ch.id, set: ch.before } : { op: 'delete', id: ch.id });
+    // engine bookkeeping (version, created time) is never put back by Undo: it describes the record, not the change
+    const back = ch.before ? Object.fromEntries(Object.entries(ch.before).filter(([k]) => !(ENGINE_FIELDS as readonly string[]).includes(k))) : null;
+    if (back && !Object.keys(back).length) continue;
+    ops.push(back ? { op: 'update', id: ch.id, set: back } : { op: 'delete', id: ch.id });
   }
   if (conflicts.length && !skipConflicts) return { changes: [], next: new Map(), conflicts };
   return { ...planOps(ops, current, ctx), conflicts };

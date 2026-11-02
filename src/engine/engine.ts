@@ -75,13 +75,12 @@ export class Engine {
   private history: Action[] = [];
   private states = new Map<string, SaveState>();
   private failed = new Map<string, { input: ActionInput; error: EngineError }>();
+  private pendingInputs = new Map<string, ActionInput & { id: string }>();
   private queue: Promise<unknown> = Promise.resolve();
   private listeners = new Set<() => void>();
   private channel: BroadcastChannel | null = null;
   /** the database was written by a newer Aven 2: read it, never write it */
   readOnly = false;
-  /** schema the database was at before this open (for the report after a migration) */
-  migratedFrom: number | null = null;
 
   private constructor(private db: IDBDatabase, private now: () => number, private tz: () => string, private historySize: number) {}
 
@@ -115,8 +114,8 @@ export class Engine {
   actions(): Action[] { return this.history; }
   saveState(actionId: string): SaveState | undefined { return this.states.get(actionId); }
   failures() { return [...this.failed.entries()].map(([id, f]) => ({ id, label: f.input.label, error: f.error })); }
-  /** A save is waiting or failed: never say "saved", never apply an app update. */
-  busy(): boolean { return [...this.states.values()].some((s) => s === 'pending'); }
+  /** A save is waiting or failed (waiting for Retry): never say "saved", never apply an app update or reload. */
+  busy(): boolean { return [...this.states.values()].some((s) => s === 'pending') || this.failed.size > 0; }
   subscribe(fn: () => void): () => void { this.listeners.add(fn); return () => { this.listeners.delete(fn); }; }
   private emit() { for (const l of this.listeners) { try { l(); } catch { /* a listener's own problem */ } } }
 
@@ -126,6 +125,21 @@ export class Engine {
     const [recs, acts] = await Promise.all([req(tx.objectStore('records').getAll()), req(tx.objectStore('actions').index('at').getAll())]);
     this.records = new Map((recs as Rec[]).map((r) => [r.id, r]));
     this.history = (acts as Action[]).reverse().slice(0, this.historySize);
+    // changes still being saved stay on screen (they were shown at the tap)
+    for (const input of this.pendingInputs.values()) this.overlay(input);
+  }
+
+  /** Show an action's changes in memory before the database has them (the tap path). Best effort: the write decides. */
+  private overlay(input: ActionInput & { id: string }) {
+    try {
+      const cur = new Map<string, Rec | undefined>();
+      for (const op of input.ops) {
+        const k = op.op === 'create' || op.op === 'put' ? (op.record as { id: string }).id : op.id;
+        cur.set(k, this.records.get(k));
+      }
+      const { next } = planOps(input.ops, cur as Map<string, never>, this.ctx(input.id, input.source ?? 'tap'));
+      for (const [k, r] of next) this.records.set(k, r as unknown as Rec);
+    } catch { /* the real write reports the problem */ }
   }
 
   // ── writing ─────────────────────────────────────────────
@@ -153,17 +167,11 @@ export class Engine {
     const id = input.id ?? newId('a');
     const full = { ...input, id };
     this.states.set(id, 'pending');
-    try {
-      const cur = new Map<string, Rec | undefined>();
-      for (const op of input.ops) {
-        const k = op.op === 'create' || op.op === 'put' ? (op.record as { id: string }).id : op.id;
-        cur.set(k, this.records.get(k));
-      }
-      const { next } = planOps(input.ops, cur as Map<string, never>, this.ctx(id, input.source ?? 'tap'));
-      for (const [k, r] of next) this.records.set(k, r as unknown as Rec);
-    } catch { /* the real write below reports the problem */ }
+    this.pendingInputs.set(id, full);
+    this.overlay(full);
     this.emit();
     const result = this.commit(full).then(async (r) => {
+      this.pendingInputs.delete(id);
       if (r.status === 'failed') {
         this.states.set(id, 'failed');
         this.failed.set(id, { input: full, error: r.error! });
@@ -244,6 +252,7 @@ export class Engine {
     for (const r of written) this.records.set(r.id, r);
     this.history = [action, ...this.history].slice(0, this.historySize);
     this.channel?.postMessage({ action: action.id });
+    this.emit();
   }
 
   /**
@@ -261,7 +270,8 @@ export class Engine {
 
   private async writeUndo(id: string, target: string, source: Source, skip: boolean): Promise<Result> {
     if (this.readOnly) return { status: 'failed', error: new EngineError('readOnly', 'This data was saved by a newer Aven 2.') };
-    const tx = this.db.transaction(['records', 'actions'], 'readwrite');
+    let tx: IDBTransaction;
+    try { tx = this.db.transaction(['records', 'actions'], 'readwrite'); } catch (e) { return { status: 'failed', error: asEngineError(e) }; }
     const finished = done(tx);
     let result: Result;
     try {
@@ -282,6 +292,11 @@ export class Engine {
           for (const r of [...planned.next.values(), ...stale.next.values()]) recs.put(r);
           acts.put(undoAction);
           acts.put({ ...action, undoneBy: id });
+          // undoing an Undo is a redo: the original change is live again, so it can be undone from its own entry
+          if (action.undoes) {
+            const orig = (await req(acts.get(action.undoes))) as Action | undefined;
+            if (orig) { const { undoneBy: _gone, ...rest } = orig; acts.put(rest); }
+          }
           result = { status: 'saved', action: undoAction, conflicts: planned.conflicts };
         }
       }
@@ -328,7 +343,6 @@ export class Engine {
     }
     if (stored > SCHEMA) { this.readOnly = true; return; }
     if (stored === SCHEMA) return;
-    this.migratedFrom = stored;
     await this.snapshot(`before migrating from schema ${stored} to ${SCHEMA}`);
     const tx = this.db.transaction(['records', 'meta'], 'readwrite');
     const finished = done(tx);
@@ -338,17 +352,14 @@ export class Engine {
     await finished;
   }
 
+  /** Every record as the database has it (only saved changes: for backups). */
+  async storedRecords(): Promise<AnyRecord[]> { return (await req(this.db.transaction('records').objectStore('records').getAll())) as AnyRecord[]; }
   /** Every action ever written, oldest first (for backups). */
   async allActions(): Promise<Action[]> { return (await req(this.db.transaction('actions').objectStore('actions').index('at').getAll())) as Action[]; }
 
   async meta<T>(key: string): Promise<T | undefined> { return (await req(this.db.transaction('meta').objectStore('meta').get(key))) as T | undefined; }
   async setMeta(key: string, value: unknown) { const tx = this.db.transaction('meta', 'readwrite'); tx.objectStore('meta').put(value, key); await done(tx); }
 
-  /**
-   * Write many records as ONE action in one transaction (restore, import). `ops` are planned against the database as it
-   * is inside the transaction, so it's all or nothing.
-   */
-  bulk(input: ActionInput): Promise<Result> { return this.commit(input); }
 }
 
 /** Aven 2's "delete everything": only its own databases and `a2` keys. Never anything else on the site. */

@@ -19,6 +19,7 @@ const COMMON = ['bench-press', 'back-squat', 'deadlift', 'overhead-press', 'barb
 
 let e: Engine;
 let message = '';
+/** `m` is trusted page text: anything from data goes through esc() first. */
 const say = (m: string) => { message = m; render(); };
 const day = () => dayKeyAt(Date.now(), deviceTz(), (e.get<'settings'>('settings')?.dayStartHour) ?? 0);
 
@@ -26,8 +27,8 @@ function explain(r: Result, done: string): string {
   if (r.status === 'saved') return done;
   if (r.status === 'noop') return 'Nothing to change.';
   if (r.status === 'duplicate') return 'Already done (this tap was saved before).';
-  if (r.status === 'conflict') return `Undo stopped: newer changes to ${r.conflicts!.map((c) => `${c.field} (now ${JSON.stringify(c.actual)})`).join(', ')}. Use "Undo the rest" to leave those as they are.`;
-  return `Not saved: ${r.error?.message ?? 'unknown problem'}`;
+  if (r.status === 'conflict') return `Undo stopped: newer changes to ${esc(r.conflicts!.map((c) => `${c.field} (now ${JSON.stringify(c.actual)})`).join(', '))}. Use "Undo the rest" to leave those as they are.`;
+  return `Not saved: ${esc(r.error?.message ?? 'unknown problem')}`;
 }
 
 /** The tap path: shown at once as pending, then saved or failed. */
@@ -35,7 +36,7 @@ function act(type: string, label: string, ops: Parameters<Engine['run']>[0]['ops
   if (!ops.length) return;
   const { result } = e.run({ type, label, ops });
   render();
-  void result.then((r) => { say(explain(r, `Saved: ${label}`)); void keepWhenUseful(e); });
+  void result.then((r) => { say(explain(r, `Saved: ${esc(label)}`)); void keepWhenUseful(e); });
 }
 
 // ── workout ───────────────────────────────────────────────

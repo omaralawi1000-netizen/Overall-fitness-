@@ -33,13 +33,6 @@ export function done(tx: IDBTransaction): Promise<void> {
   });
 }
 
-/** A copy with the given keys left out. */
-export function omit<T extends object>(o: T, keys: readonly string[]): Record<string, unknown> {
-  const out: Record<string, unknown> = {};
-  for (const [k, v] of Object.entries(o)) if (!keys.includes(k) && v !== undefined) out[k] = v;
-  return out;
-}
-
 /** JSON with keys in a fixed order, so the same data always gives the same text (and checksum). */
 export function canonicalJson(v: unknown): string {
   if (v === null || typeof v !== 'object') return JSON.stringify(v) ?? 'null';

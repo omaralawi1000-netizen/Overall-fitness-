@@ -9,7 +9,7 @@ import { oldBackupText, oldData } from './fixtures/oldBackup';
 
 const open: Engine[] = [];
 afterEach(() => { open.splice(0).forEach((e) => e.close()); });
-async function eng() { const f = await fresh(); open.push(f.e); return f; }
+async function eng(o: Parameters<typeof fresh>[0] = {}) { const f = await fresh(o); open.push(f.e); return f; }
 
 describe('backup and restore', () => {
   it('exports a versioned file with a checksum, and reads it back', async () => {
@@ -173,5 +173,47 @@ describe('import from old Aven', () => {
     expect(why['damaged weigh-ins']).toBe(1);
     expect(m.records.some((r) => r.kind === 'memory')).toBe(false);
     expect(m.records.some((r) => r.kind === 'food')).toBe(true);
+  });
+});
+
+describe('fixes from the code review (2 Nov)', () => {
+  it('a merge is decided against the database, so a delete in another tab after the preview still stays deleted', async () => {
+    const { e, idb, name, c } = await eng();
+    await e.commit({ type: 'x', label: 'x', ops: [water('a', 1)] });
+    c.tick(5000);
+    const file = await exportBackup(e);
+    const newer = { ...file, records: file.records.map((r) => ({ ...r, updatedAt: r.updatedAt + 99999, ml: 5 })) } as typeof file;
+    const other = (await eng({ idb, name, c })).e;
+    const del = await other.commit({ type: 'x', label: 'x', ops: [{ op: 'delete', id: 'a' }] }); // this tab hasn't heard yet
+    expect(del.error?.message ?? del.status).toBe('saved');
+    expect((await restore(e, newer, 'merge')).status).toBe('noop');
+    await e.reload();
+    expect(e.all('water')).toHaveLength(0);
+  });
+
+  it('Undo of a replace-restore works even when the file’s records differ in version or creation time', async () => {
+    const { e } = await eng();
+    await e.commit({ type: 'x', label: 'x', ops: [water('a', 1)] });
+    const file = await exportBackup(e);
+    const odd = { ...file, records: file.records.map((r) => ({ ...r, createdAt: 5, ml: 9, updatedAt: r.updatedAt + 1 })) } as typeof file;
+    const r = await restore(e, odd, 'replace');
+    expect(e.get('a')).toMatchObject({ ml: 9 });
+    expect((await e.undo(r.action!.id)).status).toBe('saved');
+    expect(e.get('a')).toMatchObject({ ml: 1 });
+  });
+
+  it('a backup only holds saved changes, never one still being written', async () => {
+    const { e } = await eng();
+    e.run({ type: 'x', label: 'x', ops: [water('pending', 1)] });
+    const b = await exportBackup(e);
+    expect(b.records.some((r) => r.id === 'pending')).toBe(false);
+  });
+
+  it('records with only a day get noon of that very day, even far east of UTC', () => {
+    for (const tz of ['Pacific/Auckland', 'Pacific/Kiritimati', 'Europe/Copenhagen', 'America/Los_Angeles']) {
+      const m = mapOld({ measurements: [{ id: 'm', date: '2025-01-10', kind: 'waist', cm: 80 }] }, { now: 0, tz });
+      const r = m.records[0];
+      expect(new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', hourCycle: 'h23' }).format(new Date(r.at))).toBe('2025-01-10, 12');
+    }
   });
 });

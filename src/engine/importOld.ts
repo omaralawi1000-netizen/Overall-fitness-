@@ -84,9 +84,13 @@ export function mapOld(data: Any, o: { now: number; tz: string; photos?: number;
   const env = (id: string, at: number, day: string | undefined) => ({ id, v: SCHEMA, at, tz: o.tz, ...(day ? { day } : {}), source: 'import' as const, createdAt: at, updatedAt: at, rev: 1 });
   /** a day's noon, for old records that only had a day */
   const noon = (day: string) => {
-    const base = Date.parse(`${day}T12:00:00Z`);
-    const w = wallClock(base, o.tz);
-    return base - ((w.h - 12) * 60 + w.min) * 60000;
+    const want = Date.parse(`${day}T12:00:00Z`);
+    let t = want;
+    for (let i = 0; i < 2; i++) { // twice, in case the zone's offset differs at the corrected time
+      const w = wallClock(t, o.tz);
+      t -= Date.UTC(w.y, w.m - 1, w.d, w.h, w.min) - want;
+    }
+    return t;
   };
   const push = (r: AnyRecord, what: string) => { if (checkRecord(r)) bad(what); else out.push(r); };
 
@@ -265,8 +269,9 @@ export function dryRun(e: Engine, mapped: Mapped): Report {
 
 /** Write the import as one action (one Undo), after a last-known-good copy. Records that appeared meanwhile are left alone. */
 export async function runImport(e: Engine, report: Report, actionId = newId('i')): Promise<Result> {
-  const ops: Op[] = report.add.filter((r) => !e.get(r.id)).map((record) => ({ op: 'put', record }));
+  // decided again inside the write against the database: anything that appeared meanwhile is left alone
+  const ops: Op[] = report.add.map((record) => ({ op: 'put', record, when: 'absent' }));
   if (!ops.length) return { status: 'noop' };
   await e.snapshot('before importing from old Aven');
-  return e.commit({ id: actionId, type: 'import.oldAven', label: `Imported from old Aven: ${summarise(countKinds(ops.map((x) => (x as { record: AnyRecord }).record)))}`, source: 'import', ops });
+  return e.commit({ id: actionId, type: 'import.oldAven', label: `Imported from old Aven: ${report.summary}`, source: 'import', ops });
 }

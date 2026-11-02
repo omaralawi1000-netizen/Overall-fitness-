@@ -7,7 +7,7 @@
  */
 import type { AnyRecord, Rest, Session, SessionState, SetDone, SetPlan, Slot, WorkSet } from './model';
 import type { NewRecord, Op } from './plan';
-import { newId } from './util';
+import { deepEqual, newId } from './util';
 
 const ev = (s: Session, type: Session['events'][number]['type'], at: number) => [...s.events, { type, at }];
 
@@ -69,7 +69,7 @@ export const discardSession = (s: Session, now: number) => end(s, 'discarded', '
 export function tickSet(o: { session: Session; set: WorkSet; done: Omit<SetDone, 'at'>; now: number; restSec?: number }): Op[] {
   const done: SetDone = { ...o.done, at: o.set.done?.at ?? o.now };
   for (const k of Object.keys(done) as (keyof SetDone)[]) if (done[k] === undefined) delete done[k];
-  const same = o.set.done && JSON.stringify({ ...o.set.done, at: 0 }) === JSON.stringify({ ...done, at: 0 });
+  const same = !!o.set.done && deepEqual({ ...o.set.done, at: 0 }, { ...done, at: 0 });
   const ops: Op[] = [{ op: 'update', id: o.set.id, set: { done, skipped: null } }];
   if (!same && o.restSec && o.restSec > 0 && o.session.state === 'active') {
     ops.push({ op: 'update', id: o.session.id, set: { rest: { startedAt: o.now, endsAt: o.now + o.restSec * 1000, totalSec: o.restSec, afterSetId: o.set.id } } });
