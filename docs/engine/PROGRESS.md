@@ -61,7 +61,7 @@ Tests live in `tests/engine/`. "untested" is said plainly.
 | Reading a phrase saves nothing | `e2e` phrase box ("nothing was saved by reading") | tested in Chromium |
 | Memory cards (scope, valid-from/until, last-seen) and the Coach ladder | model types, import of old memory notes | shape only: used in the Coach phase |
 
-## Test inventory (260 tests: 82 engine, 178 parser)
+## Test inventory (262 tests: 82 engine, 180 parser)
 Fewer tests than rules looks thin, but each property test runs 25 to 200 random cases, so the real count of checked cases is in the thousands.
 
 **Property tests (12):**
@@ -140,3 +140,5 @@ Codex's tenth look at #51 (2 findings, reproduced, fixed): "eighty two kg" and "
 Codex's eleventh look at #51 (2 findings, reproduced, fixed): "80x8" and "8 x80" are as ambiguous as "80 x 8" (asked, not chosen); all the teens are number words in workout phrases.
 
 Codex's twelfth look at #51 (1 finding, reproduced, fixed): spoken compound numbers in food rows ("two hundred grams oats", "to hundrede gram havregryn") are one quantity, not a count of 2; "two thousand grams" is refused and listed as unread. Also fixed a flaky property test ("5 at 5, no 5" has one reading, so there is nothing to choose).
+
+Codex's thirteenth look at #51 (1 new finding, fixed; the other was already covered by the twelfth fix and now has a test): a counted unit in a portion label matches whole words only, so "2 cans" no longer lands on "1 cup canned tomatoes" and asks for grams instead.

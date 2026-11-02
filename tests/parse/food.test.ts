@@ -209,3 +209,15 @@ describe('Codex review of #51, round 12', () => {
     expect(parseFood('two thousand grams oats').unread).toEqual(['two thousand grams oats']);
   });
 });
+
+describe('Codex review of #51, round 13', () => {
+  it('"one hundred grams" is 100 g, never a count of 1', () => {
+    expect(parseFood('one hundred grams oats').rows[0]).toMatchObject({ amount: 100, dim: 'g', query: 'oats' });
+    expect(parseFood('en hundrede gram havregryn').rows[0]).toMatchObject({ amount: 100, dim: 'g' });
+  });
+  it('a counted unit matches whole words only: "canned" is not a can', () => {
+    const tom: FoodShape = { name: 'Tomatoes', basis: 'g', portions: [{ id: 'c', label: '1 cup canned tomatoes (240 g)', amount: 240, verified: true }] };
+    const q = rowQuantity(parseFood('2 cans tomatoes').rows[0], tom);
+    expect(q.problem).toBe('needsGrams');
+  });
+});

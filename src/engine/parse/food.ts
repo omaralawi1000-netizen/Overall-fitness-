@@ -191,7 +191,7 @@ export function placeholderPortion(p: { label: string; amount: number }, basis: 
 
 /** Does a portion's label name this counted unit, in either language? "1 skive (40 g)" names a slice. */
 function labelHasCountWord(label: string, word: string): boolean {
-  return plainLabel(label).split(' ').some((t) => { const u = unitOf(t); return u?.kind === 'count' && u.word === word; }) || plainLabel(label).includes(word);
+  return plainLabel(label).split(' ').some((t) => { const u = unitOf(t); return u?.kind === 'count' && u.word === word; });
 }
 
 /** A parsed row against a chosen food: a real quantity, flagged when it is an estimate, or why it cannot be worked out. */
