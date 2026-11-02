@@ -44,6 +44,10 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 
 ## Entries
 
+### 2 Nov 2026, night: Plate, a blind full app as an artifact (claude.ai/artifact/7GPxZ7wunE9Hu1AtfhWzb8)
+Rejected: the whole app. It was graphite with competition-plate colours, a barbell that loads real plates, a slam with chalk dust when you log a set, a gold plate for a new best, and the Coach woven through every screen.
+Why: "Bro, that is trash. That plate is trash."
+
 ### 2 Nov 2026, night: Heat workout as a deck of glass (/_prototypes/heat/)
 Built: the sets are now a deck of glass cards, like Apple Wallet. Done sets file up behind the current card and show their top row with a check, and the exercise before sits at the top of the pile. The set you're on is the big frosted card. The next sets and the next exercise peek out below. Tapping Done checks the pearl, then the finished card files up behind while the next one rises into place, and then the Done pill's outline grows into the rest ring. A new exercise deals the deck away to the left and deals the new one in from the right, card by card. Sheets and the rest ring now grow by their outline, so they are frosted from the first frame.
 Verdict: waiting for Omar.
