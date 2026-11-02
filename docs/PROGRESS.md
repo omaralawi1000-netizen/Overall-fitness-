@@ -223,7 +223,17 @@ Build plan, one screen, prototype only (`site/_prototypes/slice/`, live at /_pro
   zero when interrupted, a dim-layer flash, rows jumping back, the rest ring snapping empty, interrupted digit rolls).
 - Needs phone: smoothness of the ring under the glass card at 120 Hz, the medal flip edges, tick feel and haptics, banding.
 
+### Round 2 of the slice (2 Nov, after his "very in my old style" no)
+- Old Aven's paint is gone. Two looks share every motion: A "Volt" (black, lime "go", mint calm) and B "Daylight"
+  (light, frosted card, italic serif, cobalt "go", sky calm). Switch at the top, or `?look=a|b`.
+- Built from his clips: Not Boring's pearl and sparks for the tick; the same numbers fly card→row and row→card
+  (never a cross-fade); Apple Watch's ring grows out of the button and its light ribbons pull into one line; Push's
+  last-5-seconds beats; Family's digit settle; medal flip; the summary is a calm hero with one big number and the sets.
+- Judges, four rounds (Sonnet): final design A 8.0, B 8.0; motion 7, its last defect (a flash when ticking mid-rest)
+  fixed and checked frame by frame after. Taps made while numbers fly are queued, never dropped.
+- Full reference list by moment, with swap options: https://claude.ai/artifact/2jJor7thCGrFfTDd4S8Hmb
+
 ## Next step
-Omar tries /_prototypes/slice/ on his phone and answers "Is this better than anything so far?" plus the one thing that
-bugs him most. Log it in docs/taste-log.md, then change one design thing per round (bugs and jank freely). Two yeses
+Omar tries /_prototypes/slice/ (both looks) on his phone and answers "Is this better than anything so far?", which
+look, and the one thing that bugs him most. Log it in docs/taste-log.md, then change one design thing per round (bugs and jank freely). Two yeses
 in a row: propose writing DESIGN.md.

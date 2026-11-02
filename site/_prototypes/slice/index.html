@@ -1,9 +1,9 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-look="a">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#0a0809">
+<meta name="theme-color" content="#050607">
 <meta name="robots" content="noindex">
 <title>Aven 2 · workout slice</title>
 <link rel="preload" href="fonts/newsreader-italic.woff2" as="font" type="font/woff2" crossorigin>
@@ -15,6 +15,7 @@
 <main class="screen">
   <header class="top">
     <p class="session"><em>Push</em><span class="clock">18:42</span></p>
+    <div class="look" role="group" aria-label="Look"><button data-look="a" aria-pressed="true">Volt</button><button data-look="b" aria-pressed="false">Daylight</button></div>
     <button class="coach" aria-label="Coach" aria-expanded="false"><span class="coach-dot"></span></button>
   </header>
   <div class="coach-tray" role="status" hidden>
@@ -41,16 +42,19 @@
       <div class="pair"><button class="step" data-k="r" data-d="-1" aria-label="One rep less">−</button><button class="step" data-k="r" data-d="1" aria-label="One rep more">+</button></div>
     </div>
     <div class="dial">
-      <svg class="ticks" viewBox="0 0 200 200" aria-hidden="true"></svg>
-      <span class="track"></span>
-      <span class="arc warm"><span class="half r"><span class="seg"></span></span><span class="half l"><span class="seg"></span></span></span>
-      <span class="arc cool"><span class="half r"><span class="seg"></span></span><span class="half l"><span class="seg"></span></span></span>
-      <span class="full"></span>
+      <span class="ringset">
+        <span class="track"></span>
+        <span class="arc warm"><span class="half r"><span class="seg"></span></span><span class="half l"><span class="seg"></span></span></span>
+        <span class="arc cool"><span class="half r"><span class="seg"></span></span><span class="half l"><span class="seg"></span></span></span>
+        <span class="full"></span>
+      </span>
       <button class="tick" aria-label="Set done">
+        <span class="ribbons" aria-hidden="true"><span class="ribbons-in"><span class="rib"><canvas class="cool"></canvas><canvas class="go"></canvas></span><span class="rib"><canvas class="cool"></canvas><canvas class="go"></canvas></span><span class="rib"><canvas class="cool"></canvas><canvas class="go"></canvas></span></span></span>
+        <span class="sparks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
         <span class="pearl"></span>
         <svg class="check c-hot" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 16.5l5.2 5.2L24 10.5"/></svg>
         <svg class="check c-dark" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 16.5l5.2 5.2L24 10.5"/></svg>
-        <span class="rest-face" aria-hidden="true"><span class="rest-word">rest</span><span class="roll count"></span><span class="rest-tap">tap when done</span></span>
+        <span class="rest-face" aria-hidden="true"><span class="rest-word">rest</span><span class="roll count"></span></span>
       </button>
     </div>
     <div class="foot">
@@ -59,6 +63,8 @@
     </div>
     <div class="summary" hidden>
       <p class="sum-title">Bench press, done.</p>
+      <p class="sum-big"><span class="sum-kg"></span><span class="unit">kg moved</span></p>
+      <ol class="sum-sets"></ol>
       <p class="sum-line"></p>
       <button class="again">Start over</button>
     </div>
