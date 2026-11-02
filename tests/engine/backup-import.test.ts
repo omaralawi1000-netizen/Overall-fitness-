@@ -76,6 +76,18 @@ describe('backup and restore', () => {
     expect(other.all('water', true)).toHaveLength(2);
   });
 
+  it('replace also removes a record another tab added that this tab has not heard about yet', async () => {
+    const { e, idb, name, c } = await eng();
+    const file = await exportBackup(e); // an empty phone
+    (e as unknown as { channel: BroadcastChannel }).channel.onmessage = null; // this tab never hears about the other
+    const tab2 = (await eng({ idb, name, c })).e;
+    await tab2.commit({ type: 'x', label: 'x', ops: [water('late', 1)] });
+    expect(e.get('late')).toBeUndefined();
+    expect((await restore(e, file, 'replace')).status).toBe('saved');
+    await e.reload();
+    expect(e.all('water')).toHaveLength(0);
+  });
+
   it('a restore that fails half-way leaves the phone exactly as it was', async () => {
     const { e } = await eng();
     await e.commit({ type: 'x', label: 'x', ops: [water('keep', 7)] });

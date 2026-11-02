@@ -168,11 +168,16 @@ export function planUndo(action: Action, current: Map<string, Rec | undefined>, 
   const conflicts: Conflict[] = [];
   const ops: Op[] = [];
   for (const ch of [...action.changes].reverse()) {
+    // A "stale" mark is never taken back: another change may also have made the record stale since, so it stays stale
+    // until it is worked out again (a needless recount at worst, never a wrong number shown as fresh).
+    if (Object.keys(ch.after).every((k) => k === 'stale')) continue;
     const cur = current.get(ch.id);
     const mine: Conflict[] = [];
     if (!cur) { mine.push({ id: ch.id, field: '*', expected: 'exists', actual: 'missing' }); }
     else {
-      const fields = (ch.before ? Object.keys(ch.after) : [...new Set([...Object.keys(ch.after), 'deleted'])]).filter((k) => !['createdAt', 'v'].includes(k));
+      // Undoing a creation also stops when a field was added since (a set created empty, then ticked as done).
+      const fields = (ch.before ? Object.keys(ch.after) : [...new Set([...Object.keys(ch.after), ...Object.keys(cur), 'deleted'])])
+        .filter((k) => !(ENGINE_FIELDS as readonly string[]).includes(k) && k !== 'stale');
       for (const f of fields) if (!deepEqual(cur[f] ?? null, ch.after[f] ?? null)) mine.push({ id: ch.id, field: f, expected: ch.after[f] ?? null, actual: cur[f] ?? null });
     }
     if (mine.length) { conflicts.push(...mine); continue; }

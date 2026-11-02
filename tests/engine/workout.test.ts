@@ -47,6 +47,16 @@ describe('workout states', () => {
     expect(w.s().rest!.afterSetId).toBe(w.set(1).id);
   });
 
+  it('undoing the workout start stops if a set was ticked since, so logged work is never hidden', async () => {
+    const w = await workout();
+    const start = w.e.actions().find((a) => a.type === 'session.start')!;
+    await w.tick(0);
+    const u = await w.e.undo(start.id);
+    expect(u.status).toBe('conflict');
+    expect(u.conflicts!.some((c) => c.id === w.set(0).id && c.field === 'done')).toBe(true);
+    expect(w.set(0).done).toMatchObject({ reps: 8 });
+  });
+
   it('elapsed excludes paused time (ported from old Aven core.test.ts)', () => {
     const s = { id: 'p', kind: 'session', startedAt: 0, pausedMs: 10_000, pausedAt: 40_000, state: 'paused', events: [] } as unknown as Parameters<typeof elapsedMs>[0];
     expect(elapsedMs(s, 60_000)).toBe(30_000);
