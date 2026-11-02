@@ -90,7 +90,16 @@ function readRow(seg: string): FoodRow | null {
   const query = words.slice(i).join(' ').trim();
   if (!query || !(amount > 0)) return null;
   if (/^\d+(?:[./]\d+)?(?:\s|$)/.test(query)) return null; // a second quantity left in the name was not understood
+  if (hasAmount(words.slice(i))) return null; // another amount and unit inside the name ("skyr 60 grams oats") was not understood
   return { raw: seg, amount: Math.round(amount * factor * 1000) / 1000, dim, ...(countWord ? { countWord } : {}), query, ...(weak ? { weak: true as const } : {}) };
+}
+
+/** Is there a number with a unit ("60 grams", "60g") among these words? Then a second food was run into the first. */
+function hasAmount(words: string[]): boolean {
+  return words.some((t, j) => {
+    const glued = t.match(/^\d+(?:\.\d+)?([a-zæøå]+)$/);
+    return (glued && !!unitOf(fold(glued[1]))) || (/^\d+(?:\.\d+)?$/.test(t) && !!words[j + 1] && !!unitOf(fold(words[j + 1])));
+  });
 }
 
 /** What was read, and the pieces that could not be (shown to the person, never dropped silently). */

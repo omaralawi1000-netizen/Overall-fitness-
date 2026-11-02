@@ -172,3 +172,13 @@ describe('Codex review of #51, round 8', () => {
     expect(rowQuantity(parseFood('1 1/2 cups oats').rows[0], oats).qty).toEqual({ amount: 1, unit: 'portion', portionId: 'c' });
   });
 });
+
+describe('Codex review of #51, round 9', () => {
+  it('a second amount inside a food name is handed back unread, not swallowed', () => {
+    const r = parseFood('200 grams skyr 60 grams oats');
+    expect(r.rows).toEqual([]);
+    expect(r.unread).toEqual(['200 grams skyr 60 grams oats']);
+    expect(parseFood('200 grams skyr 60g oats').rows).toEqual([]);
+    expect(parseFood('2 eggs 5 spice').rows[0]).toMatchObject({ amount: 2, query: 'eggs 5 spice' }); // a number that is not an amount stays in the name
+  });
+});

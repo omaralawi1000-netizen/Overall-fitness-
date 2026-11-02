@@ -63,7 +63,7 @@ export function parseWorkoutSegment(seg: string): WorkoutRow | null {
       for (let i = 0; i < times; i++) sets.push({ ...load(Number(m[1]), m[2]), reps: Number(m[3]) });
       rest = rest.replace(m[0], ' ');
       // "80 for 8, 8 and 6": bare numbers are more reps, unless a new set starts ("and 60 for 10")
-      const more = m.index !== undefined ? s.slice(m.index + m[0].length).match(/^\s*(?:(?:,|&|and|og)\s*\d+(?!\.?\d*\s*(?:kg|kilos?|lbs?|pounds?|x|for|by|at|@|gange|reps?|sets?))\s*)+/) : null;
+      const more = m.index !== undefined ? s.slice(m.index + m[0].length).match(/^\s*(?:(?:,|&|and|og)\s*\d+(?!\.?\d*\s*(?:kg|kilos?|lbs?|pounds?|x|for|by|at|@|sets?))\s*)+/) : null;
       if (more) {
         for (const r of more[0].match(/\d+/g) ?? []) sets.push({ ...sets[0], reps: Number(r) });
         rest = rest.replace(more[0], ' ');

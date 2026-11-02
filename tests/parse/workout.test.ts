@@ -109,3 +109,11 @@ describe('Codex review of #51, round 6', () => {
     expect(parseWorkoutText('barbell curl .5 kg for 10').rows[0].sets[0].kg).toBe(0.5);
   });
 });
+
+describe('Codex review of #51, round 9', () => {
+  it('a rep label at the end of a continuation list is fine', () => {
+    expect(sets('bench 80 for 8, 8 and 6 reps')).toEqual([[80, 8], [80, 8], [80, 6]]);
+    expect(parseWorkoutText('bench press 80 for 8 and 60 for 10').rows).toEqual([]);
+    expect(parseWorkoutText('bench press 80 for 8 and 60 kg').rows).toEqual([]);
+  });
+});
