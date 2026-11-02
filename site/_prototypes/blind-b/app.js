@@ -9,9 +9,9 @@ const REST = q.has('rest') ? Math.max(3, Number(q.get('rest')) || 3) : null;   /
 const PLAN = () => ({
   name: 'Push',
   exercises: [
-    { name: 'Bench press', rest: 120, step: 2.5, best: [82.5, 7], sets: [[80, 8, 1], [80, 8], [82.5, 8], [82.5, 8]] },
-    { name: 'Incline dumbbell press', rest: 90, step: 2, best: [30, 10], sets: [[28, 10], [30, 10], [30, 9]] },
-    { name: 'Cable fly', rest: 75, step: 2.5, best: [20, 12], sets: [[17.5, 12], [17.5, 12], [20, 10]] },
+    { name: 'Bench press', short: 'Bench', rest: 120, step: 2.5, best: [82.5, 7], sets: [[80, 8, 1], [80, 8], [82.5, 8], [82.5, 8]] },
+    { name: 'Incline dumbbell press', short: 'Incline', rest: 90, step: 2, best: [30, 10], sets: [[28, 10], [30, 10], [30, 9]] },
+    { name: 'Cable fly', short: 'Fly', rest: 75, step: 2.5, best: [20, 12], sets: [[17.5, 12], [17.5, 12], [20, 10]] },
   ].map((e) => ({ ...e, sets: e.sets.map(([w, r, done]) => ({ w, r, done: !!done })) })),
 });
 
@@ -24,10 +24,12 @@ const fmtT = (s) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 const e1rm = (w, r) => w * (1 + r / 30);
 const buzz = (p) => { try { navigator.vibrate?.(p); } catch { /* not allowed yet */ } };
 const wait = (ms) => new Promise((r) => setTimeout(r, ms));
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 let plan = PLAN();
 let ex = 0, cur = 1, phase = 'lift', cast = null, records = 0;
 let rest = { end: 0, total: 0, shown: -1, then: 'set' };
+let armedAt = 0;   // the button ignores taps until then, so a double tap can't skip a rest or wipe a finished workout
 const startedAt = Date.now() - (18 * 60 + 42) * 1000;
 
 const E = () => plan.exercises[ex];
@@ -39,13 +41,15 @@ function heroBox() { const r = rect(hero); return { x: r.x + 30, y: r.y + 6, w: 
 function repsBox() { const r = rect(reps); return { x: r.x + 26, y: r.y + 4, w: r.w - 52, h: r.h - 8 }; }
 
 // ---------- words ----------
+const EASE = 'cubic-bezier(.23,1,.32,1)';
 function swap(el, html) {
   if (el.innerHTML === html) return;
   el.getAnimations().forEach((a) => a.cancel());
-  const out = el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-6px)' }], { duration: 140, easing: 'cubic-bezier(.4,0,1,1)', fill: 'forwards' });
+  if (calm) { el.innerHTML = html; return; }
+  const out = el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-4px)' }], { duration: 110, easing: EASE, fill: 'forwards' });
   out.onfinish = () => {
     el.innerHTML = html; out.cancel();
-    el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 460, easing: 'cubic-bezier(.22,1,.36,1)' });
+    el.animate([{ opacity: 0, transform: 'translateY(6px)' }, { opacity: 1, transform: 'none' }], { duration: 300, easing: EASE });
   };
 }
 
@@ -110,9 +114,9 @@ const centre = (el) => { const r = rect(el); return [r.x + r.w / 2, r.y + r.h / 
 function mood(name) {
   if (!cast) return;
   const m = cast.mood;
-  if (name === 'lift') { m.horizonTo = [0.10, 0.34, 1.0]; m.key.set(3.2); m.gold.set(0); cast.pill.glow.set(0.6); }
+  if (name === 'lift') { m.horizonTo = [0.10, 0.34, 1.0]; m.key.set(3.2); m.gold.set(0, 60, 14); cast.pill.glow.set(0.6); }
   if (name === 'rest') { m.horizonTo = [1.1, 0.42, 0.12]; m.key.set(2.5); cast.pill.glow.set(0.25); }
-  if (name === 'gold') { m.horizonTo = [1.3, 0.82, 0.3]; m.key.set(3.6); m.gold.set(1); }
+  if (name === 'gold') { m.horizonTo = [1.3, 0.82, 0.3]; m.key.set(3.6); m.gold.set(1, 140, 18); }
 }
 
 // ---------- screens ----------
@@ -157,7 +161,7 @@ async function recordMoment(s) {
   buzz([12, 70, 30]);
   if (cast) {
     cast.sweep(); cast.drop(...centre(hero), 2.6, 5);
-    const h = cast.lines.get('hero').height; h.set(1, 120, 9); h.v = 4.5;   // the metal surges up and settles
+    const L = cast.lines.get('hero'); L.pulse.v = calm ? 0 : 6; L.height.set(1, 120, 9); L.height.v = 4.5;   // the number swells, then settles
   }
   swap($('sub'), `${fmtW(s.w)} kg × ${s.r} · your best yet`);
   await wait(1700);
@@ -170,8 +174,9 @@ function startRest(then) {
   rest.total = REST || E().rest;
   rest.end = Date.now() + rest.total * 1000;
   rest.shown = rest.total;
+  armedAt = Date.now() + 700;
   app.classList.remove('is-lift'); app.classList.add('is-rest');
-  setHero(fmtT(rest.total), { stagger: 0.05, dur: 0.5 });
+  setHero(fmtT(rest.total), { stagger: 0.04, dur: 0.42 });
   lift('reps', 0, 260, 26);
   if (cast) {
     cast.drop(...centre(reps), 0.7, 2.4);
@@ -190,10 +195,10 @@ function tick() {
   $('clock').textContent = fmtT(Math.floor((Date.now() - startedAt) / 1000));
   if (phase !== 'rest') return;
   const left = Math.max(0, Math.ceil((rest.end - Date.now()) / 1000));
-  if (cast && cast.mood.heat.to > 0) cast.mood.heat.set(0.93 * Math.pow(Math.max(0, (rest.end - Date.now()) / (rest.total * 1000)), 0.8), 40, 13);
+  if (cast && cast.mood.heat.to > 0) cast.mood.heat.set(0.93 * Math.pow(Math.max(0, (rest.end - Date.now()) / (rest.total * 1000)), 1.4), 40, 13);
   if (left !== rest.shown) {
     rest.shown = left;
-    setHero(fmtT(left), { stagger: 0.03, dur: 0.44 });
+    setHero(fmtT(left), { stagger: 0.03, dur: 0.36 });
     if (left > 0 && left <= 3) buzz(6);
   }
   if (left <= 0) endRest();
@@ -226,11 +231,12 @@ async function sinkAll() {
   await wait(460);
 }
 async function riseAll() {
-  if (!cast) return;
+  if (!cast) { app.classList.remove('is-sunk'); return; }
   const [hx, hy] = centre(hero);
   cast.drop(hx, hy, 2.4, 6);
-  setTimeout(() => { lift('hero', 1, 150, 13); app.classList.remove('is-sunk'); }, 90);
+  setTimeout(() => lift('hero', 1, 150, 13), 90);
   setTimeout(() => { lift('reps', 1, 170, 14); cast.drop(...centre(reps), 0.7, 2.2); }, 230);
+  setTimeout(() => app.classList.remove('is-sunk'), 330);
   E().sets.forEach((s, i) => setTimeout(() => {
     const b = cast.beads[i]; if (!b) return;
     b.h.set(s.done || i === cur ? 1 : 0.42); cast.drop(b.x, b.y, 0.5, 1.4);
@@ -247,12 +253,13 @@ async function nextExercise() {
   if (cast) cast.beads.forEach((b) => b.h.snap(0));
   showLift(true);
   await riseAll();
-  await wait(500);
+  await wait(300);
   phase = 'lift';
 }
 
 async function finish() {
   phase = 'done';
+  armedAt = Date.now() + 900;
   app.classList.remove('is-lift', 'is-rest'); app.classList.add('is-done');
   const vol = plan.exercises.reduce((a, e) => a + e.sets.filter((s) => s.done).reduce((b, s) => b + s.w * s.r, 0), 0);
   const sets = plan.exercises.reduce((a, e) => a + e.sets.filter((s) => s.done).length, 0);
@@ -265,9 +272,19 @@ async function finish() {
   swap($('sub'), `${mins} min · ${sets} sets${records ? ` · ${records} new best` : ''}`);
   swap($('upnext'), '');
   swap($('goLabel'), 'Start again');
-  paintSets(); paintSegs();
+  paintSegs();
   $('segs').querySelectorAll('i').forEach((i) => (i.className = 'done'));
   buzz([20, 60, 20, 60, 40]);
+  // the set beads sink; one gold bead per exercise rises in their place
+  app.classList.add('is-sunk');
+  if (cast) cast.beads.forEach((b, i) => setTimeout(() => b.h.set(0, 160, 16), i * 40));
+  await wait(420);
+  setsEl.innerHTML = plan.exercises.map((e) => `<div class="set done"><i class="bead"></i><span>${e.short} · ${e.sets.filter((s) => s.done).length}</span></div>`).join('');
+  if (cast) {
+    syncBeads();
+    cast.beads.forEach((b, i) => { b.h.snap(0); b.fill.snap(1); setTimeout(() => { b.h.set(1, 190, 13); cast.drop(b.x, b.y, 0.6, 1.6); }, 60 + i * 110); });
+  }
+  setTimeout(() => app.classList.remove('is-sunk'), 160);
 }
 
 async function restart() {
@@ -289,9 +306,8 @@ async function restart() {
 function change(kind, dir) {
   if (phase !== 'lift') return;
   const s = S(), e = E();
-  if (kind === 'w') { const w = Math.max(0, Math.round((s.w + dir * e.step) * 100) / 100); if (w === s.w) return; s.w = w; setHero(fmtW(w), { stagger: 0.035, dur: 0.42 }); placeTape(w, e.step); }
-  else { const r = Math.max(1, Math.min(50, s.r + dir)); if (r === s.r) return; s.r = r; setReps(r, { dur: 0.42 }); }
-  if (cast) { const [x, y] = centre(kind === 'w' ? hero : reps); cast.drop(x + dir * 40, y, 0.35, 1.6); }
+  if (kind === 'w') { const w = Math.max(0, Math.round((s.w + dir * e.step) * 100) / 100); if (w === s.w) return; s.w = w; setHero(fmtW(w), { stagger: 0.025, dur: 0.3 }); placeTape(w, e.step); }
+  else { const r = Math.max(1, Math.min(50, s.r + dir)); if (r === s.r) return; s.r = r; setReps(r, { dur: 0.3 }); }
   buzz(5);
   paintSets();
 }
@@ -306,9 +322,15 @@ document.querySelectorAll('[data-rest]').forEach((b) => b.addEventListener('clic
   if (cast) cast.drop(...centre(b), 0.5, 1.8);
   tick();
 }));
+document.querySelectorAll('.step, .chip').forEach((b) => {
+  let f = null;
+  b.addEventListener('pointerdown', () => { if (cast) { const [x, y] = centre(b); f = cast.press(x, y, 30); } });
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach((t) => b.addEventListener(t, () => { if (cast && f) cast.release(f); f = null; }));
+});
 go.addEventListener('pointerdown', () => { if (!cast) return; cast.pill.press.set(1, 900, 40); cast.pill.glow.set(1.15, 400, 30); });
 ['pointerup', 'pointercancel', 'pointerleave'].forEach((t) => go.addEventListener(t, () => { if (!cast) return; cast.pill.press.set(0, 260, 13); if (cast.pill.glow.to > 1) cast.pill.glow.set(phase === 'rest' ? 0.25 : 0.6, 120, 20); }));
 go.addEventListener('click', () => {
+  if (Date.now() < armedAt) return;
   if (phase === 'lift') logSet();
   else if (phase === 'rest') { if (cast) cast.drop(...centre(go), 1.2, 3); endRest(); }
   else if (phase === 'done') restart();
@@ -331,22 +353,21 @@ async function boot() {
   paintSegs(); buildSets();
   $('name').textContent = E().name; $('sub').textContent = subFor(); $('upnext').textContent = upNext();
   try { await Promise.race([document.fonts.load('860 200px Geist'), wait(2500)]); } catch { /* fall back to whatever font loaded */ }
-  try { cast = createCast($('gl'), { quality: q.has('q') ? Number(q.get('q')) : undefined }); } catch (err) { console.error(err); cast = null; }
+  try { cast = createCast($('gl'), { quality: q.has('q') ? Number(q.get('q')) : undefined, onLost: () => app.classList.add('flat') }); } catch (err) { console.error(err); cast = null; }
   if (!cast) app.classList.add('flat');
   if (cast) {
-    cast.addLine('hero', 5); cast.addLine('reps', 3);
+    cast.addLine('hero', 8); cast.addLine('reps', 3);
     syncBeads(); syncPill(); beadTargets(false);
     cast.start();
   }
   showLift(true);
   if (cast) {
-    cast.drop(...centre(hero), 2.6, 7);
-    setTimeout(() => lift('hero', 1, 130, 12), 160);
+    setTimeout(() => { cast.drop(...centre(hero), 1.8, 7); lift('hero', 1, 90, 13); }, 60);
     setTimeout(() => { lift('reps', 1, 170, 14); cast.drop(...centre(reps), 0.7, 2.2); }, 360);
     E().sets.forEach((s, i) => setTimeout(() => { cast.beads[i].h.set(s.done || i === cur ? 1 : 0.42); cast.drop(cast.beads[i].x, cast.beads[i].y, 0.45, 1.4); }, 480 + i * 75));
     setTimeout(() => { cast.pill.h.set(1, 150, 15); cast.drop(...centre(go), 1, 3); }, 640);
   }
-  const stagger = [['.top', 80], ['.title', 160], ['.mid', 380], ['.sets span', 520], ['.go span', 700], ['.upnext', 760]];
+  const stagger = [['.top', 80], ['.title', 160], ['.mid', 380], ['.unit', 450], ['.sets span', 520], ['.go span', 700], ['.upnext', 760]];
   stagger.forEach(([sel, d]) => document.querySelectorAll(sel).forEach((el) => (el.style.transitionDelay = `${d}ms`)));
   requestAnimationFrame(() => requestAnimationFrame(() => app.classList.remove('is-intro')));
   setTimeout(() => document.querySelectorAll('[style*="transition-delay"]').forEach((el) => (el.style.transitionDelay = '')), 2000);

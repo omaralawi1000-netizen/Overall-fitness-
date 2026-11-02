@@ -37,10 +37,11 @@ in vec2 vUv; out vec4 o;
 uniform vec2 uRes;
 uniform sampler2D uAtlas; uniform vec2 uAtlasSize; uniform vec2 uCell;
 uniform float uFs, uSpread, uBase, uMid, uCap;
-uniform vec4 uSlot[8];   // centre x, baseline y, font size (css px), height 0..1
-uniform vec4 uGlyph[8];  // glyph A, glyph B, mix, bulge
+uniform vec4 uSlot[12];  // centre x, baseline y, font size (css px), height 0..1
+uniform vec4 uGlyph[12];  // glyph A, glyph B, mix, bulge
 uniform vec4 uBead[6];   // centre x, y, radius, height
 uniform vec4 uBeadX[6];  // fill (ring -> sphere), 0, 0, 0
+uniform vec4 uPress[2];  // a finger pressing into the liquid: centre x, y, radius, depth
 uniform vec4 uPill;      // centre x, y, half w, half h
 uniform vec4 uPillP;     // edge radius, height, press, 0
 uniform sampler2D uWave; uniform float uWaveAmp;
@@ -76,7 +77,7 @@ float relief(float sd, float b){
 void main(){
   vec2 p = vec2(vUv.x * uRes.x, (1.0 - vUv.y) * uRes.y);
   float h = 0.0, metal = 0.0, glass = 0.0, bend = 0.0, near = 0.0;
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < 12; i++) {
     vec4 s = uSlot[i];
     if (s.z <= 0.0 || s.w <= 0.001) continue;
     float k = uFs / s.z;
@@ -87,13 +88,13 @@ void main(){
     float w = sin(3.14159 * g.z);
     sd -= g.w * w * (1.0 + 0.5 * sin(p.x * 0.07 + uTime * 5.0) * sin(p.y * 0.05 - uTime * 4.0));
     float hm = clamp(s.w, 0.0, 1.2);
-    sd += (1.0 - min(hm, 1.0)) * 7.0;          // thins out as it sinks
+    sd += (1.0 - min(hm, 1.0)) * 12.0;         // thin strokes while it rises out of the liquid or sinks back
     float sdc = sd / k;
     float b = s.z * 0.042;
     float hh = relief(sdc, b) * s.w;
     if (hh > h) { h = hh; bend = clamp((p.y - (s.y - uCap / uFs * s.z * 0.5)) / (uCap / uFs * s.z * 0.5), -1.3, 1.3); }
-    metal = max(metal, smoothstep(0.6, -0.6, sdc) * smoothstep(0.0, 0.3, hm));
-    if (i < uHotSlots) { float g = 1.0 - smoothstep(0.0, s.z * 0.13, sdc); near = max(near, g * g * smoothstep(0.0, 0.3, hm)); }
+    metal = max(metal, smoothstep(0.6, -0.6, sdc) * smoothstep(0.0, 0.5, hm));
+    if (i < uHotSlots) { float g = 1.0 - smoothstep(0.0, s.z * 0.08, sdc); near = max(near, g * g * smoothstep(0.0, 0.3, hm)); }
   }
   for (int i = 0; i < 6; i++) {
     vec4 bd = uBead[i];
@@ -125,6 +126,12 @@ void main(){
     float hh = (body + dome * (1.0 - 1.6 * uPillP.z) + men) * uPillP.y;
     if (hh > h) { h = hh; bend = clamp((p.y - uPill.y) / uPill.w, -1.0, 1.0) * 0.8; }
     glass = smoothstep(0.6, -0.6, sd) * smoothstep(0.0, 0.3, uPillP.y);
+  }
+  for (int i = 0; i < 2; i++) {
+    vec4 f = uPress[i];
+    if (f.w == 0.0) continue;
+    vec2 q = (p - f.xy) / f.z;
+    h -= f.w * f.z * 0.22 * exp(-dot(q, q) * 1.6);
   }
   h += texture(uWave, vec2(vUv.x, vUv.y)).r * uWaveAmp;
   h += uSwell * (sin(p.x * 0.011 + uTime * 0.31) * sin(p.y * 0.0072 - uTime * 0.23) + 0.6 * sin((p.x * 0.6 + p.y) * 0.0135 + uTime * 0.41));
@@ -199,10 +206,10 @@ void main(){
   // black liquid
   float Fl = 0.045 + 0.955 * pow(1.0 - ndv, 5.0);
   vec3 room = env(R, 0.0);
-  vec3 liquid = vec3(0.0012, 0.0013, 0.0018) + room * Fl * 0.22;
+  vec3 liquid = vec3(0.0012, 0.0013, 0.0018) + mix(vec3(dot(room, vec3(0.3, 0.55, 0.15))), room, 0.45) * Fl * 0.22;
 
   // chrome, silver turning gold; a faint oil-film colour on the steep edges
-  vec3 tint = mix(vec3(0.93, 0.94, 0.96), vec3(1.0, 0.74, 0.36), uGold);
+  vec3 tint = mix(vec3(0.93, 0.94, 0.96), vec3(1.0, 0.7, 0.28), uGold);
   float steep = smoothstep(0.12, 0.75, 1.0 - N.z);
   vec3 film = 0.5 + 0.5 * cos(6.2831 * (vec3(0.0, 0.33, 0.67) + ndv * 1.7 + 0.15));
   vec3 metal = room * tint * mix(vec3(1.0), film * 1.25, steep * 0.32 * (1.0 - uGold));
@@ -218,7 +225,7 @@ void main(){
   float hot = 0.0;
   if (uHeat > 0.001) {
     hot = clamp(uHeat * 1.45 - 0.25 - 0.22 * c.a, 0.0, 1.0) * smoothstep(0.85, 1.0, c.b) * (0.74 + 0.26 * N.z * N.z);
-    metal *= mix(1.0, 0.18, smoothstep(0.15, 0.75, hot));
+    metal *= mix(1.0, 0.5, smoothstep(0.15, 0.75, hot));
   }
 
   vec3 col = mix(liquid, metal, mM);
@@ -226,7 +233,7 @@ void main(){
 
   if (uHeat > 0.001) {
     col += blackbody(hot) * mM * (0.45 + 0.55 * pow(N.z, 3.0)) * (0.92 + 0.08 * sin(p.x * 0.08 + p.y * 0.05 + uTime * 2.0));
-    col += blackbody(uHeat * 0.72) * c.b * (1.0 - mM) * 0.36;
+    col += blackbody(uHeat * 0.72) * c.b * (1.0 - mM) * 0.16;
   }
 
   // when a set is logged, a ring of the button's light runs out across the liquid
@@ -244,7 +251,7 @@ void main(){
     float steep = smoothstep(0.12, 0.75, 1.0 - N.z);
     float s = (p.x + p.y * 0.35) / uRes.x;
     float band = exp(-pow((s - uSweep) / 0.045, 2.0)) + 0.35 * exp(-pow((s - uSweep + 0.09) / 0.02, 2.0));
-    col += vec3(1.0, 0.84, 0.55) * band * mM * (0.6 + 1.6 * steep);
+    col += vec3(1.0, 0.84, 0.55) * band * mM * (0.9 + 3.0 * steep);
   }
 
   // tone map, gamma, dither (the phone bands on soft gradients)
@@ -268,7 +275,7 @@ class Spring {
   }
 }
 
-const easeMelt = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const easeOut = (t) => 1 - Math.pow(1 - t, 3);   // a tap answers at once, then settles
 
 // ---------- glyph atlas (signed distance fields) ----------
 const CHARS = '0123456789.,:';
@@ -328,7 +335,7 @@ function buildAtlas(family, weight) {
 }
 
 // ---------- the renderer ----------
-export function createCast(canvas, { family = 'Geist', weight = 860, quality } = {}) {
+export function createCast(canvas, { family = 'Geist', weight = 860, quality, onLost } = {}) {
   const gl = canvas.getContext('webgl2', { antialias: false, alpha: false, premultipliedAlpha: false, powerPreference: 'high-performance', desynchronized: false });
   if (!gl || !gl.getExtension('EXT_color_buffer_float')) return null;
 
@@ -362,11 +369,15 @@ export function createCast(canvas, { family = 'Geist', weight = 860, quality } =
 
   let cssW = 0, cssH = 0, scale = quality || Math.min(window.devicePixelRatio || 1, 2), hT = null, sim = [null, null], simW = 0, simH = 0, cur = 0;
   const freeTarget = (t) => { if (t) { gl.deleteTexture(t.t); gl.deleteFramebuffer(t.f); } };
-  function resize() {
-    freeTarget(hT); sim.forEach(freeTarget);
-    cssW = window.innerWidth; cssH = window.innerHeight;
+  function resizeHeight() {
+    freeTarget(hT);
     canvas.width = Math.round(cssW * scale); canvas.height = Math.round(cssH * scale);
     hT = target(canvas.width, canvas.height);
+  }
+  function resize() {
+    sim.forEach(freeTarget);
+    cssW = window.innerWidth; cssH = window.innerHeight;
+    resizeHeight();
     simW = Math.round(cssW / 3); simH = Math.round(cssH / 3);
     sim = [target(simW, simH), target(simW, simH)];
     for (const s of sim) { gl.bindFramebuffer(gl.FRAMEBUFFER, s.f); gl.clearColor(0, 0, 0, 0); gl.clear(gl.COLOR_BUFFER_BIT); }
@@ -382,9 +393,19 @@ export function createCast(canvas, { family = 'Geist', weight = 860, quality } =
     horizon: [0.10, 0.34, 1.0], horizonTo: [0.10, 0.34, 1.0],
   };
   let sweep = -1, sweepT = 0, drops = [];
+  const presses = [0, 1].map(() => ({ x: 0, y: 0, r: 0, d: new Spring(0, 520, 30) }));
+  const pressBuf = new Float32Array(8);
   const tilt = { x: new Spring(0, 30, 11), y: new Spring(0, 30, 11), has: false, base: null };
 
-  function addLine(id, n) { const slots = []; for (let i = 0; i < n; i++) slots.push({ gA: -1, gB: -1, t: 1, from: null, to: null, start: 0, dur: 1, delay: 0 }); lines.set(id, { slots, height: new Spring(0, 170, 17), text: '', box: null }); }
+  // a slot is one glyph: where it sits (springs), what it is (a morph from glyph A to B), and how it bobs (dip)
+  function addLine(id, n) {
+    const slots = [];
+    for (let i = 0; i < n; i++) {
+      slots.push({ gA: -1, gB: -1, t: 1, start: 0, dur: 1, delay: 0, kick: 0, placed: false,
+        cx: new Spring(0, 260, 28), by: new Spring(0, 260, 28), S: new Spring(0, 260, 28), dip: new Spring(0, 240, 19), alive: new Spring(0, 200, 24) });
+    }
+    lines.set(id, { slots, height: new Spring(0, 170, 17), pulse: new Spring(0, 160, 10), text: '', box: null });
+  }
 
   function layout(text, box, maxSize, tracking = -0.035) {
     const advs = [...text].map((ch) => (/\d/.test(ch) ? atlas.digitAdv : atlas.adv[ch] ?? 0.3));
@@ -395,36 +416,34 @@ export function createCast(canvas, { family = 'Geist', weight = 860, quality } =
     return { S, by, width: em * S, left: x, pos: advs.map((a) => { const cx = x + (a * S) / 2; x += (a + tracking) * S; return { cx, by, S }; }) };
   }
 
+  const calm = window.matchMedia('(prefers-reduced-motion: reduce)').matches;   // smaller ripples, quick morphs, no bob
+
   function setText(id, text, { box, maxSize = 999, instant = false, stagger = 0.04, dur = 0.52 } = {}) {
     const L = lines.get(id); if (box) L.box = box; L.maxSize = maxSize;
     const lay = layout(text, L.box, maxSize);
     const now = performance.now() / 1000;
+    const n = Math.min(text.length, L.slots.length);
+    if (calm) { stagger = 0; dur = Math.min(dur, 0.18); }
     let changed = 0;
     L.slots.forEach((s, i) => {
-      const ch = text[i];
-      const g = ch === undefined ? -1 : CHARS.indexOf(ch);
-      const pos = ch === undefined ? null : lay.pos[i];
-      const curPos = currentPos(s);
-      const shown = s.t >= 0.5 ? s.gB : s.gA;
-      const target = pos || curPos || { cx: L.box.x + L.box.w / 2, by: lay.by, S: lay.S };
-      if (instant) { s.gA = s.gB = g; s.t = 1; s.from = s.to = target; s.start = 0; return; }
-      const samePos = curPos && Math.abs(curPos.cx - target.cx) < 0.3 && Math.abs(curPos.S - target.S) < 0.3;
-      if (g === shown && samePos && s.t >= 1) return;
-      s.gA = shown; s.gB = g;
-      s.from = curPos || target; s.to = target;
-      s.start = now; s.dur = g === shown ? dur * 0.9 : dur; s.t = 0;
-      s.delay = g === shown ? 0 : (changed++) * stagger;
+      const g = i < n ? CHARS.indexOf(text[i]) : -1;
+      // a digit that leaves shrinks into the last one that stays; one that arrives rises where it belongs
+      const pos = i < n ? lay.pos[i] : n ? { ...lay.pos[n - 1], S: lay.S * 0.55 } : { cx: L.box.x + L.box.w / 2, by: lay.by, S: lay.S * 0.5 };
+      if (instant || !s.placed || s.alive.x < 0.01) { s.cx.snap(pos.cx); s.by.snap(pos.by); s.S.snap(pos.S); s.placed = true; }
+      else { s.cx.set(pos.cx); s.by.set(pos.by); s.S.set(pos.S); }
+      if (instant) { s.gA = s.gB = g; s.t = 1; s.start = 0; s.kick = 0; s.dip.snap(0); s.alive.snap(g >= 0 ? 1 : 0); return; }
+      s.alive.set(g >= 0 ? 1 : 0);
+      if (g === s.gB) return;
+      if (s.t < 1 && easeOut(s.t) < 0.5) { s.gB = g; return; }   // early in a morph: change where it goes, never snap back
+      s.gA = s.gB; s.gB = g;
+      s.start = now; s.t = 0; s.dur = g < 0 ? dur * 0.5 : dur;
+      s.delay = (changed++) * stagger;
+      s.kick = calm || s.gA < 0 || g < 0 ? 0 : 9;               // the glyph sinks a little as it melts, then bobs back
     });
     L.text = text;
     return lay;
   }
-  function currentPos(s) {
-    if (!s.from || !s.to) return s.to || s.from;
-    const e = easeMelt(Math.min(1, s.t));
-    return { cx: s.from.cx + (s.to.cx - s.from.cx) * e, by: s.from.by + (s.to.by - s.from.by) * e, S: s.from.S + (s.to.S - s.from.S) * e };
-  }
-
-  function drop(x, y, amp = 1, r = 2.2) { drops.push([x / cssW, 1 - y / cssH, r, amp]); if (drops.length > 6) drops.shift(); }
+  function drop(x, y, amp = 1, r = 2.2) { drops.push([x / cssW, 1 - y / cssH, r, calm ? amp * 0.35 : amp]); if (drops.length > 6) drops.shift(); }
 
   // tilt the room with the phone (Android Chrome gives orientation without a prompt)
   window.addEventListener('deviceorientation', (e) => {
@@ -440,7 +459,7 @@ export function createCast(canvas, { family = 'Geist', weight = 860, quality } =
 
   // ---------- frame ----------
   const U = (prog) => prog.u;
-  const slotBuf = new Float32Array(32), glyphBuf = new Float32Array(32), beadBuf = new Float32Array(24), beadXBuf = new Float32Array(24), dropBuf = new Float32Array(24);
+  const slotBuf = new Float32Array(48), glyphBuf = new Float32Array(48), beadBuf = new Float32Array(24), beadXBuf = new Float32Array(24), dropBuf = new Float32Array(24);
   let last = performance.now(), time = 0, simAcc = 0, raf = 0, running = false;
   const frameLog = [];
 
@@ -453,7 +472,7 @@ export function createCast(canvas, { family = 'Geist', weight = 860, quality } =
     best = Math.min(best, a[3]);                       // the screen's own frame time, near enough
     const median = a[30];
     slowChecks = median > best * 1.35 ? slowChecks + 1 : 0;
-    if (slowChecks >= 2 && scale > 1.2) { scale = Math.max(1.2, scale * 0.8); slowChecks = 0; resize(); frameLog.length = 0; }
+    if (slowChecks >= 2 && scale > 1.2) { scale = Math.max(1.2, scale * 0.8); slowChecks = 0; resizeHeight(); frameLog.length = 0; }
   }
   function frame(nowMs) {
     raf = requestAnimationFrame(frame);
@@ -465,22 +484,25 @@ export function createCast(canvas, { family = 'Geist', weight = 860, quality } =
     // advance glyph morphs and springs
     let si = 0;
     for (const L of lines.values()) {
-      L.height.step(dt);
+      L.height.step(dt); L.pulse.step(dt);
+      const zoom = 1 + 0.25 * L.pulse.x, mx = L.box ? L.box.x + L.box.w / 2 : 0, my = L.box ? L.box.y + L.box.h / 2 : 0;
       for (const s of L.slots) {
-        if (s.t < 1 && s.start) s.t = Math.max(0, Math.min(1, (now - s.start - s.delay) / s.dur));
-        const p = currentPos(s);
-        const e = easeMelt(s.t);
-        const pop = s.gA !== s.gB ? 1 + 0.035 * Math.sin(Math.PI * e) : 1;
-        const dip = s.gA !== s.gB ? 1 - 0.32 * Math.sin(Math.PI * e) : 1;
-        if (p && (s.gA >= 0 || s.gB >= 0)) { slotBuf.set([p.cx, p.by, p.S * pop, L.height.x * dip], si * 4); }
-        else slotBuf.set([0, 0, 0, 0], si * 4);
-        glyphBuf.set([s.gA, s.gB, s.gA === s.gB ? 1 : e, p ? (FS * 0.034) : 0], si * 4);
+        if (s.start && s.t < 1) s.t = Math.max(0, Math.min(1, (now - s.start - s.delay) / s.dur));
+        if (s.kick && now - s.start >= s.delay) { s.dip.v += s.kick; s.kick = 0; }
+        s.cx.step(dt); s.by.step(dt); s.S.step(dt); s.dip.step(dt); s.alive.step(dt);
+        if (s.gB < 0 && s.t >= 1 && s.alive.x < 0.01) { s.gA = -1; s.alive.snap(0); }
+        const a = Math.min(1.1, s.alive.x), d = s.dip.x;
+        if (a > 0.001 && (s.gA >= 0 || s.gB >= 0)) {
+          slotBuf.set([mx + (s.cx.x - mx) * zoom, my + (s.by.x - my) * zoom, s.S.x * (1 + 0.12 * d) * zoom, L.height.x * a * Math.max(0, 1 - d)], si * 4);
+          glyphBuf.set([s.gA, s.gB, s.t >= 1 ? 1 : easeOut(s.t), FS * 0.034], si * 4);
+        } else { slotBuf.set([0, 0, 0, 0], si * 4); glyphBuf.set([-1, -1, 1, 0], si * 4); }
         si++;
       }
     }
-    for (; si < 8; si++) slotBuf.set([0, 0, 0, 0], si * 4);
+    for (; si < 12; si++) slotBuf.set([0, 0, 0, 0], si * 4);
     beads.forEach((b, i) => { b.h.step(dt); b.fill.step(dt); beadBuf.set([b.x, b.y, b.r, Math.max(-0.2, b.h.x)], i * 4); beadXBuf.set([Math.max(0, Math.min(1.05, b.fill.x)), 0, 0, 0], i * 4); });
     for (let i = beads.length; i < 6; i++) beadBuf.set([0, 0, 0, 0], i * 4);
+    presses.forEach((f, i) => { f.d.step(dt); pressBuf.set([f.x, f.y, f.r, f.r ? f.d.x : 0], i * 4); });
     pill.h.step(dt); pill.press.step(dt); pill.glow.step(dt); if (pill.spill >= 0) { pill.spill += dt / 1.1; if (pill.spill >= 1) pill.spill = -1; }
     mood.gold.step(dt); mood.heat.step(dt); mood.key.step(dt);
     for (let i = 0; i < 3; i++) mood.horizon[i] += (mood.horizonTo[i] - mood.horizon[i]) * Math.min(1, dt * 3);
@@ -515,8 +537,9 @@ export function createCast(canvas, { family = 'Geist', weight = 860, quality } =
     gl.uniform1f(u.uFs, FS); gl.uniform1f(u.uSpread, SPREAD); gl.uniform1f(u.uBase, BASE); gl.uniform1f(u.uMid, CW / 2); gl.uniform1f(u.uCap, atlas.cap * FS);
     gl.uniform4fv(u.uSlot, slotBuf); gl.uniform4fv(u.uGlyph, glyphBuf);
     gl.uniform4fv(u.uBead, beadBuf); gl.uniform4fv(u.uBeadX, beadXBuf);
+    gl.uniform4fv(u.uPress, pressBuf);
     gl.uniform4f(u.uPill, pill.x, pill.y, pill.hw, pill.hh); gl.uniform4f(u.uPillP, 9, Math.max(0, pill.h.x), Math.max(0, pill.press.x), 0);
-    gl.uniform1f(u.uWaveAmp, 3.6); gl.uniform1i(u.uHotSlots, 5); gl.uniform1f(u.uTime, time); gl.uniform1f(u.uSwell, 3.2);
+    gl.uniform1f(u.uWaveAmp, 3.6); gl.uniform1i(u.uHotSlots, 8); gl.uniform1f(u.uTime, time); gl.uniform1f(u.uSwell, calm ? 0 : 3.2);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
 
     // 3. shade
@@ -538,14 +561,21 @@ export function createCast(canvas, { family = 'Geist', weight = 860, quality } =
     gl.drawArrays(gl.TRIANGLES, 0, 3);
   }
 
-  function start() { if (running) return; running = true; last = performance.now(); raf = requestAnimationFrame(frame); }
+  let lost = false;
+  function start() { if (running || lost) return; running = true; last = performance.now(); raf = requestAnimationFrame(frame); }
   function stop() { running = false; cancelAnimationFrame(raf); }
   document.addEventListener('visibilitychange', () => (document.hidden ? stop() : start()));
-  window.addEventListener('resize', () => { resize(); });
+  window.addEventListener('resize', () => { if (!lost) resize(); });
+  // the GPU can drop the canvas (memory pressure, a driver reset): fall back to plain numbers, rebuild when it returns
+  canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); lost = true; stop(); onLost?.(); });
+  canvas.addEventListener('webglcontextrestored', () => location.reload());
 
   return {
     atlas, addLine, setText, lines, beads, pill, mood, drop, start,
     sweep() { sweep = -0.2; sweepT = 0; },
+    // press into the liquid under a finger; let go and it springs back with a ripple
+    press(x, y, r) { const f = presses.find((p) => !p.r || p.d.to === 0) || presses[0]; Object.assign(f, { x, y, r }); f.d.set(1, 520, 30); return f; },
+    release(f) { if (!f) return; f.d.set(0, 300, 11); drop(f.x, f.y, 0.5, 1.6); },
     setBeads(list) {
       // keep springs for beads that still exist, so nothing pops
       while (beads.length > list.length) beads.pop();
