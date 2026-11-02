@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Aven 2 · workout · Keypad</title>
+<link rel="preload" href="../slice/fonts/newsreader-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../slice/fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="common.css">
+<link rel="stylesheet" href="v4.css">
+</head>
+<body data-m="set">
+<div class="stage">
+  <div class="bg" aria-hidden="true"><i class="g1"></i><i class="g2"></i></div>
+  <div class="app">
+    <header class="head">
+      <div><small id="hs">Push · set 3 of 4</small><em>Bench press</em></div>
+      <button class="coach" aria-label="Coach"><span></span></button>
+    </header>
+    <nav class="ribbon" id="ribbon" aria-label="Where am I in the workout"></nav>
+
+    <section class="chart" id="chart" aria-label="This week against last week"><div class="cols" id="cols"></div><p class="legend"><i></i>today <i class="g"></i>last week</p></section>
+
+    <section class="entry" id="entry"><button class="f on" id="fKg"><span class="big num" id="vKg">82.5</span><small>kg</small></button><span class="x">×</span><button class="f" id="fReps"><span class="big num" id="vReps">6</span><small>reps</small></button></section>
+    <p class="hint"><em>Last time 82.5 × 5.</em> Beat it.</p>
+
+    <section class="pad" id="pad">
+      <div class="keys" id="keys"></div>
+    </section>
+
+    <section class="restp" id="restp">
+      <div class="liquid"><div class="water" id="water"><svg class="wave" viewBox="0 0 400 24" preserveAspectRatio="none"><path d="M0 12 Q 50 0 100 12 T 200 12 T 300 12 T 400 12 V24 H0Z"/></svg><i></i></div></div>
+      <div class="rtop"><small>Rest</small><span class="big num" id="clock">1:30</span><p>Next · <b id="nx">85 kg × 6</b></p></div>
+      <div class="rbtn"><button id="m15">−15 s</button><button id="p15">+15 s</button><button id="skip" class="primary">Start set 4</button></div>
+    </section>
+
+    <section class="tiles" id="tiles" aria-label="The workout so far"><div class="tg" id="tg"></div><p class="tc"><span></span><em>25 min left? I'd drop cable fly.</em><button>Apply</button></p></section>
+
+    <section class="rec" id="rec"><small>New best</small><div class="giant"><span class="num" id="gv">0</span></div><p class="kgx">kg × 6</p><h2>Heaviest six you've ever done.</h2><p class="from">Up from 82.5 × 6 on 26 Oct · est. 1RM 102 kg</p><button id="keep">Keep going</button></section>
+  </div>
+  <div class="grain"></div>
+</div>
+<script type="module" src="v4.js"></script>
+</body>
+</html>

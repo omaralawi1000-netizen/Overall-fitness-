@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Aven 2 · workout · Bar</title>
+<link rel="preload" href="../slice/fonts/newsreader-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../slice/fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="common.css">
+<link rel="stylesheet" href="v2.css">
+</head>
+<body data-m="set">
+<div class="stage">
+  <div class="bg" aria-hidden="true"><i class="glow"></i></div>
+  <div class="app" id="app">
+    <header class="head">
+      <div><small>Push · 41:12</small><button class="title" id="open"><em>Bench press</em></button></div>
+      <button class="coach" aria-label="Coach"><span></span></button>
+    </header>
+    <button class="segs" id="segs" aria-label="Where am I in the workout"></button>
+
+    <section class="read" id="read">
+      <p class="lbl" id="lbl">Set 3 of 4 · last time 82.5 × 5</p>
+      <div class="total"><span class="big num" id="total">82.5</span><span class="unit">kg</span></div>
+    </section>
+
+    <section class="barwrap" id="barwrap" aria-label="The bar">
+      <div class="bar"><i class="shaft"></i><i class="grip"></i><i class="beam" id="beam"></i></div>
+      <div class="plates l" id="pl"></div><div class="plates r" id="pr"></div>
+      <div class="ghost-note" id="gnote">+2.5 each side</div>
+    </section>
+
+    <section class="reps" id="reps"><button id="rm" aria-label="One rep less">−</button><span><b class="num" id="rn">6</b> reps</span><button id="rp" aria-label="One rep more">+</button></section>
+
+    <section class="rest" id="rest"><small>Rest</small><span class="big num" id="clock">1:30</span><p>Next · <b id="nxt">85 kg × 6</b> · add <b>2.5</b> each side</p></section>
+
+    <section class="record" id="rec"><div class="coin"><i class="rim"></i><div class="in"><small>New best</small><span class="big num">85</span><em>kg × 6</em></div></div><h2>Heaviest six you've ever done.</h2><p>Up from 82.5 × 6 on 26 Oct · est. 1RM 102 kg</p></section>
+
+    <div class="tray glass" id="tray" aria-label="Plates"></div>
+    <footer class="dock"><span class="ds" id="ds"></span><button class="tick" id="go" aria-label="Set done"><i class="halo"></i><i class="pearl"></i><svg viewBox="0 0 32 32"><path d="M8 16.5l5.2 5.2L24 10.5"/></svg></button><button class="undo" id="undo" aria-label="Take a plate off">⌫</button></footer>
+  </div>
+
+  <div class="scrim" id="scrim"></div>
+  <aside class="sheet glass" id="sheet" aria-label="The workout so far">
+    <i class="handle"></i>
+    <div class="w-head"><h2>Exercise 2 of 6</h2><span>41:12 · about 24 min left</span></div>
+    <ol id="wlist"></ol>
+    <p class="w-coach"><span></span><em>Short on time? Superset lateral raise and triceps, save 6 min.</em><button>Apply</button></p>
+  </aside>
+  <div class="grain"></div>
+</div>
+<script type="module" src="v2.js"></script>
+</body>
+</html>

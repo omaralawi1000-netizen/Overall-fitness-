@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Aven 2 · workout · Path</title>
+<link rel="preload" href="../slice/fonts/newsreader-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../slice/fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="common.css">
+<link rel="stylesheet" href="v3.css">
+</head>
+<body data-m="set">
+<div class="stage">
+  <div class="bg" aria-hidden="true"><i class="b1"></i><i class="b2"></i><i class="b3"></i></div>
+  <div class="scroll" id="scroll">
+    <header class="top">
+      <div class="row1"><small>Push</small><button class="coach" aria-label="Coach"><span></span></button></div>
+      <button class="sum" id="sum" aria-label="Show the whole workout">
+        <div class="stats"><div><b class="num" id="sElapsed">41:12</b><span>elapsed</span></div><div><b class="num">≈ 24</b><span>min left</span></div><div><b class="num" id="sSets">5<small>/19</small></b><span>sets</span></div></div>
+        <div class="seg" id="seg"></div>
+      </button>
+    </header>
+    <ol class="path" id="path"></ol>
+    <p class="coachline"><span></span><em>25 min left? Dropping cable fly keeps you on pace.</em><button>See</button></p>
+    <div class="spacer"></div>
+  </div>
+  <footer class="dock"><button class="go" id="go"><span id="goLab">Set 3 done</span><span class="gv num" id="goVal">82.5 × 6</span></button></footer>
+  <div class="grain"></div>
+</div>
+<script type="module" src="v3.js"></script>
+</body>
+</html>

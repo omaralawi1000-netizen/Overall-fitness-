@@ -27,6 +27,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 
 ## Live pages (`site/`, published by `.github/workflows/pages.yml`)
 Base: https://omaralawi1000-netizen.github.io/Overall-fitness-/
+- `/_prototypes/wide/` (`site/_prototypes/wide/`): four different workout screens on one swipe page (Dial, Bar, Path, Keypad); `/_prototypes/slice/` and `/_prototypes/premium/` are the earlier workout prototypes.
 - `/round/` (`site/round/`): the final design round: Day line, Rooms and the Ordinary control.
 - `/looks/` (`site/looks/`): three clickable looks, Ink, Ink rich, Heat (history: superseded by /round/).
 - `/concepts/` (`site/concepts/`): the concept prototypes.

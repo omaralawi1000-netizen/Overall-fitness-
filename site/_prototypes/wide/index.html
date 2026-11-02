@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="robots" content="noindex">
+<title>Aven 2 · four workout screens</title>
+<style>
+  :root { --bar: 84px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: #0c0d10; color: #f2f3f5; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; overflow: hidden; }
+  .pager { position: fixed; left: 0; right: 0; top: 0; bottom: calc(var(--bar) + env(safe-area-inset-bottom, 0px)); display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .pager::-webkit-scrollbar { display: none; }
+  .pager section { flex: none; width: 100%; height: 100%; scroll-snap-align: start; scroll-snap-stop: always; }
+  iframe { width: 100%; height: 100%; border: 0; display: block; background: #111; }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--bar) + env(safe-area-inset-bottom, 0px)); padding: 8px 12px calc(env(safe-area-inset-bottom, 0px) + 8px); background: #0c0d10; border-top: 1px solid rgba(255, 255, 255, .08); display: flex; flex-direction: column; gap: 8px; }
+  .top { display: flex; align-items: center; gap: 10px; min-height: 30px; }
+  .dots { display: flex; gap: 6px; } .dots button { width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, .08); color: rgba(255, 255, 255, .6); font-size: 12px; font-weight: 600; border: 0; } .dots button.on { background: #fff; color: #0c0d10; }
+  .name { font-size: 15px; font-weight: 600; } .name span { font-weight: 400; color: rgba(255, 255, 255, .55); font-size: 13px; margin-left: 6px; }
+  .chips { display: flex; gap: 8px; } .chips button { flex: 1; height: 36px; border-radius: 18px; border: 0; background: rgba(255, 255, 255, .1); color: #f2f3f5; font-size: 14px; font-weight: 500; } .chips button.on { background: #f2f3f5; color: #0c0d10; }
+</style>
+</head>
+<body>
+<main class="pager" id="pager"></main>
+<footer class="bar">
+  <div class="top"><div class="dots" id="dots"></div><div class="name" id="name"></div></div>
+  <div class="chips" id="chips"></div>
+</footer>
+<script>
+const V = [
+  ['v1', 'Dial', 'light · spin the numbers'],
+  ['v2', 'Bar', 'night · plates on the bar'],
+  ['v3', 'Path', 'mist · the whole workout'],
+  ['v4', 'Keypad', 'green · type the set'],
+];
+const M = [['set', 'Set'], ['rest', 'Rest'], ['where', 'Where'], ['record', 'Record']];
+const pager = document.getElementById('pager'), dots = document.getElementById('dots'), name = document.getElementById('name'), chips = document.getElementById('chips');
+let cur = 0, mom = 'set';
+V.forEach(([f], i) => { const s = document.createElement('section'); s.innerHTML = `<iframe title="${f}" loading="${i < 2 ? 'eager' : 'lazy'}" src="${f}.html"></iframe>`; pager.append(s); });
+V.forEach((v, i) => { const b = document.createElement('button'); b.textContent = i + 1; b.onclick = () => pager.scrollTo({ left: i * pager.clientWidth, behavior: 'smooth' }); dots.append(b); });
+M.forEach(([k, l]) => { const b = document.createElement('button'); b.textContent = l; b.dataset.m = k; b.onclick = () => { mom = k; send(); paint(); }; chips.append(b); });
+const frame = () => pager.children[cur].querySelector('iframe');
+function send() { frame().contentWindow.postMessage({ type: 'moment', m: mom }, '*'); }
+function paint() {
+  [...dots.children].forEach((b, i) => b.classList.toggle('on', i === cur));
+  name.innerHTML = `${V[cur][1]}<span>${V[cur][2]}</span>`;
+  [...chips.children].forEach((b) => b.classList.toggle('on', b.dataset.m === mom));
+}
+pager.addEventListener('scroll', () => { const i = Math.round(pager.scrollLeft / pager.clientWidth); if (i !== cur) { cur = i; mom = 'set'; paint(); } }, { passive: true });
+const start = +new URLSearchParams(location.search).get('v');
+if (start >= 1 && start <= 4) requestAnimationFrame(() => pager.scrollTo({ left: (start - 1) * pager.clientWidth }));
+paint();
+</script>
+</body>
+</html>
