@@ -84,7 +84,7 @@ const rW = new Roll($('.big.w')), rR = new Roll($('.big.r')), rSet = new Roll($(
 /* ---------- The room ---------- */
 /* ---------- The two looks (prototype switch) ---------- */
 const LOOKS = {
-  a: { room: null, reward: [215, 228, 255], cool: '#3d78ff', go: '#c6ff3d', theme: '#050607' },
+  a: { room: null, reward: [215, 228, 255], cool: '#55701f', go: '#c6ff3d', theme: '#050607' },
   b: { room: { blobs: [{ x: 0.95, y: 0.02, sx: 0.8, sy: 0.6, c: [176, 198, 255], a: 0.55 }, { x: 0.05, y: 0.95, sx: 0.7, sy: 0.5, c: [255, 255, 255], a: 0.7 }], base: [237, 240, 245] },
        reward: [150, 175, 255], cool: '#b7c4e6', go: '#2d58ff', theme: '#edf0f5' },
 };
@@ -104,12 +104,7 @@ function setLook(k) {
 }
 document.querySelectorAll('.look button').forEach((b) => b.addEventListener('click', () => {
   if (b.dataset.look === look) return;
-  const scr = $('.screen');
-  scr.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, fill: 'forwards' }).finished.then(() => {
-    setLook(b.dataset.look);
-    scr.getAnimations().forEach((a) => a.cancel());
-    scr.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220 });
-  });
+  swapScreen(() => setLook(b.dataset.look));
 }));
 setLook(look);
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(paintRoom, 200); });
@@ -140,6 +135,9 @@ const PLAN = [
   { w: 82.5, r: 6, last: '82.5 × 6' },
   { w: 85, r: 6, last: '82.5 × 5' },
 ];
+/** Timers that belong to one run: Start over bumps gen, so nothing from the old run fires into the new one. */
+let gen = 0, inFlight = 0;
+const later = (fn, t) => { const g = gen; setTimeout(() => { if (g === gen) fn(); }, t); };
 let sets, cur, best, medalShown, medalPending = false, phase, locked, restEnd, restTimer, restAnims = [];
 
 function rowEl(s, i, done) {
@@ -152,6 +150,7 @@ function medalSlot(row) { const m = document.createElement('span'); m.className 
 
 function init() {
   sets = PLAN.map((s) => ({ ...s }));
+  gen++; inFlight = 0;
   clearTicks();
   cur = 1; best = e1(82.5, 6); medalShown = false; phase = 'ready'; locked = false;
   stopRest();
@@ -229,14 +228,19 @@ function restTick() {
     litCount++;
   }
   // The last five seconds are each their own beat.
-  if (left !== lastLeft && left <= 5 && left > 0) {
+  if (left !== lastLeft && left <= 5 && left > 0 && !reduced()) {
     spring($('.count'), [{ transform: 'scale(1.16)' }, { transform: 'none' }], SPRINGS.press);
     buzz(6);
   }
   lastLeft = left;
   if (performance.now() >= restEnd) { endRest(); }
 }
-function clearTicks() { tickLines.forEach((l) => l.classList.remove('lit')); }
+function clearTicks() {
+  const svg = $('.ticks');
+  svg.classList.add('quiet'); // one instant reset, not sixty transitions at the busiest moment
+  tickLines.forEach((l) => l.classList.remove('lit'));
+  requestAnimationFrame(() => requestAnimationFrame(() => svg.classList.remove('quiet')));
+}
 /** Stops the clock. The ring's animations are kept (held where they are) until it has faded, so it never snaps empty. */
 function stopRest(after = 0) {
   clearInterval(restTimer); restTimer = null;
@@ -256,6 +260,7 @@ skipBtn.addEventListener('click', () => {
   if (phase !== 'rest') return;
   const left = restEnd - performance.now(), quick = 360;
   if (left <= quick) return;
+  $('.ticks').classList.add('quiet');
   restAnims.forEach((a) => a.updatePlaybackRate(left / quick));
   restEnd = performance.now() + quick;
 });
@@ -280,13 +285,13 @@ tick.addEventListener('pointerleave', release);
 tick.addEventListener('click', doTick);
 
 function doTick() {
-  if (locked || phase === 'done') return;
-  locked = true; setTimeout(() => { locked = false; }, 620);
+  if (locked || inFlight || phase === 'done') return;
+  locked = true; later(() => { locked = false; }, 620);
   buzz(12);
   const i = cur, s = sets[i];
   const wasResting = phase === 'rest';
   phase = 'ticking';
-  if (wasResting) { stopRest(200); clearTicks(); fadeTo(restFace, 1, 0, 120); fadeTo(warm, 1, 0, 160); fadeTo(cool, getComputedStyle(cool).opacity, 0, 160); hideSkip(true); }
+  if (wasResting) { stopRest(200); clearTicks(); fadeTo(restFace, 1, 0, 120); fadeTo(warm, 1, 0, 240); fadeTo(cool, getComputedStyle(cool).opacity, 0, 240); hideSkip(true); }
   else fadeTo(hint, 1, 0, 140);
   // The tick has a body: an orange pearl swells inside the button and settles into a check.
   pearl.getAnimations().forEach((a) => a.cancel());
@@ -299,17 +304,17 @@ function doTick() {
 
   const isRec = e1(s.w, s.r) > best + 1e-6, oldBest = best;
   if (isRec) { best = e1(s.w, s.r); }
-  setTimeout(() => {
+  later(() => {
     const row = conveyor(i, isRec);
     if (isRec) {
       bestEl.textContent = `${fmtW(s.w)} kg × ${s.r}`;
       bestEl.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 300 });
-      if (!medalShown) { medalShown = true; medalPending = true; setTimeout(() => { medalPending = false; showMedal(row, s, oldBest, best); }, 380); }
+      if (!medalShown) { medalShown = true; medalPending = true; later(() => { medalPending = false; showMedal(row, s, oldBest, best); }, 380); }
       else { const m = medalSlot(row); spring(m, [{ transform: 'scale(0)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.press, { delay: 200, fill: 'backwards' }); }
     }
-    if (cur >= sets.length) { phase = 'done'; if (reward.hidden && !(isRec && medalPending)) setTimeout(finish, 200); }
+    if (cur >= sets.length) { phase = 'done'; if (reward.hidden && !(isRec && medalPending)) later(finish, 200); }
   }, 240);
-  setTimeout(() => { if (phase === 'ticking' && cur < sets.length) startRest(); }, 560);
+  later(() => { if (phase === 'ticking' && cur < sets.length) startRest(); }, 560);
 }
 
 /**
@@ -318,6 +323,8 @@ function doTick() {
  * takes its place on the same frame.
  */
 function fly(text, big, small, toSmall, delay = 0, xSpring = { damping: 1, response: 0.34 }, ySpring = SPRINGS.set) {
+  if (reduced()) return Promise.resolve();
+  const sOp = +getComputedStyle(small.closest('.row')).opacity * (small.closest('.row.up') ? 0.62 : 1);
   const bs = getComputedStyle(big), br = big.getBoundingClientRect(), sr = small.getBoundingClientRect();
   const k = parseFloat(getComputedStyle(small).fontSize) / parseFloat(bs.fontSize);
   const outer = document.createElement('span'), inner = document.createElement('span');
@@ -326,11 +333,14 @@ function fly(text, big, small, toSmall, delay = 0, xSpring = { damping: 1, respo
   Object.assign(inner.style, { fontFamily: bs.fontFamily, fontSize: bs.fontSize, fontWeight: bs.fontWeight, fontStyle: bs.fontStyle, letterSpacing: bs.letterSpacing, color: bs.color, lineHeight: br.height + 'px' });
   outer.append(inner); document.body.append(outer);
   const b = centre(br), s = centre(sr), dx = s.x - b.x, dy = s.y - b.y;
-  const xs = [{ transform: 'none' }, { transform: `translateX(${dx}px)` }], ys = [{ transform: 'none' }, { transform: `translateY(${dy}px) scale(${k})` }];
+  // A waiting row's numbers are dimmer: the flyer brightens (or dims) on the way, by opacity, never by colour.
+  const xs = [{ transform: 'none' }, { transform: `translateX(${dx}px)` }], ys = [{ transform: 'none', opacity: 1 }, { transform: `translateY(${dy}px) scale(${k})`, opacity: sOp }];
   if (!toSmall) { xs.reverse(); ys.reverse(); }
   const o = { delay, fill: 'both' };
   spring(outer, xs, xSpring, o);
-  return spring(inner, ys, ySpring, o).finished.then(() => outer.remove(), () => outer.remove());
+  inFlight++;
+  const g = gen;
+  return spring(inner, ys, ySpring, o).finished.then(() => outer.remove(), () => outer.remove()).then(() => { if (g === gen) inFlight--; });
 }
 
 /** The done set's numbers fly into a new row above; the next set's numbers fly up out of their row into the card. */
@@ -364,7 +374,7 @@ function conveyor(i, isRec) {
   const uw = up.querySelector('.rvw'), urr = up.querySelector('.rvr');
   // Sideways first, then up: X settles faster than Y, so the numbers swing round the dial instead of through it.
   const IN_X = { damping: 1, response: 0.26 }, IN_Y = { damping: 1, response: 0.46 };
-  const pw = fly(fmtW(n.w), bigW, uw, false, 90, IN_X, IN_Y), pr = fly(String(n.r), bigR, urr, false, 120, IN_X, IN_Y);
+  const pw = fly(fmtW(n.w), bigW, uw, false, 20, IN_X, IN_Y), pr = fly(String(n.r), bigR, urr, false, 50, IN_X, IN_Y);
   uw.style.opacity = 0; urr.style.opacity = 0;
   Object.assign(up.style, { position: 'fixed', left: ur.left + 'px', top: ur.top + 'px', width: ur.width + 'px', margin: 0, pointerEvents: 'none' });
   document.body.append(up);
@@ -383,7 +393,7 @@ function conveyor(i, isRec) {
 
 /* ---------- Steppers: only the changed digit rolls ---------- */
 document.querySelectorAll('.step').forEach((b) => b.addEventListener('click', () => {
-  if (phase === 'done' || cur >= sets.length) return;
+  if (phase === 'done' || cur >= sets.length || inFlight) return;
   const s = sets[cur], k = b.dataset.k, d = +b.dataset.d;
   const v = k === 'w' ? Math.max(0, Math.min(500, s.w + d)) : Math.max(1, Math.min(50, s.r + d));
   if (v === s[k]) return;
@@ -404,14 +414,17 @@ function finish() {
   fadeTo($('.restart'), 1, 0, 200).finished.then(() => { if (phase === 'done') $('.restart').style.visibility = 'hidden'; }, () => {});
   [...summary.children].forEach((el, k) => spring(el, [{ transform: 'translateY(12px)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.set, { delay: 160 + k * 60, fill: 'backwards' }));
 }
+/** Fade the screen's parts (not .screen itself: an ancestor with opacity would cut the card's frost off from the room). */
+function swapScreen(change) {
+  const parts = [...$('.screen').children];
+  Promise.all(parts.map((p) => p.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 130, fill: 'forwards' }).finished)).then(() => {
+    change();
+    for (const p of parts) { p.getAnimations().forEach((a) => a.cancel()); p.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220 }); }
+  });
+}
 function restart() {
   if (!$('.reward').hidden) return;
-  const scr = $('.screen');
-  scr.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140, fill: 'forwards' }).finished.then(() => {
-    init();
-    scr.getAnimations().forEach((a) => a.cancel());
-    scr.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220 });
-  });
+  swapScreen(init);
 }
 $('.again').addEventListener('click', restart);
 $('.restart').addEventListener('click', restart);

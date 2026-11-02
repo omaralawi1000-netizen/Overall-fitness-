@@ -9,21 +9,21 @@
 :root {
   --sans: 'Geist', system-ui, sans-serif;
   --serif: 'Newsreader', 'Iowan Old Style', Georgia, serif;
-  --dial: 176px;
-  --disc: 128px;
+  --dial: 200px;
+  --disc: 140px;
 }
 /* A · Volt: true black, solid surfaces, white numbers with weight, one electric colour that means "go". */
 :root, [data-look="a"] {
   --bg: #050607; --tx: #f3f5f6; --dim: rgba(243, 245, 246, .6); --faint: rgba(243, 245, 246, .44); --line: rgba(255, 255, 255, .07);
   --go: #c6ff3d; --go-lit: #ecffb3; --go-deep: #86cc00; --on-go: #102000; --go-glow: rgba(198, 255, 61, .28);
-  --cool: #3d78ff;
+  --cool: #55701f;
   --surface: #0f1113; --surface-edge: inset 0 1px 0 rgba(255, 255, 255, .06), inset 0 0 0 1px rgba(255, 255, 255, .055); --surface-blur: none; --surface-shadow: 0 0 0 transparent;
   --chip: rgba(255, 255, 255, .07); --chip-on: rgba(255, 255, 255, .13);
   --ring: 8px; --track: rgba(255, 255, 255, .07); --tickmark: rgba(255, 255, 255, .14); --tickmark-major: rgba(255, 255, 255, .3);
   --disc-bg: #16191c; --disc-edge: inset 0 1px 0 rgba(255, 255, 255, .07);
   --name: 600 normal 34px/1.05 var(--sans); --name-track: -.035em; --em-font: var(--sans); --em-style: normal; --em-weight: 560;
   --num-weight: 420; --num-track: -.05em;
-  --tray: rgba(24, 27, 30, .96);
+  --tray: rgba(24, 27, 30, .96); --halo: #0f1113;
   --dim-bg: rgba(3, 4, 5, .95);
   --m-face: radial-gradient(circle at 32% 24%, #f2f5f8 0%, #aab2bb 26%, #59616a 62%, #2b3036 100%);
   --m-rim: rgba(255, 255, 255, .55); --m-ring: #22272c; --m-ink: #10151a; --m-sub: rgba(16, 21, 26, .62); --m-edge: linear-gradient(90deg, #3a4047, #b9c1ca 50%, #3a4047);
@@ -32,7 +32,7 @@
 }
 /* B · Daylight: cool paper and sky light, frosted white glass, ink numbers, italic serif names, cobalt for "go". */
 [data-look="b"] {
-  --bg: #edf0f5; --tx: #0f1320; --dim: rgba(15, 19, 32, .58); --faint: rgba(15, 19, 32, .44); --line: rgba(15, 19, 32, .08);
+  --bg: #edf0f5; --tx: #0f1320; --dim: rgba(15, 19, 32, .62); --faint: rgba(15, 19, 32, .56); --line: rgba(15, 19, 32, .08);
   --go: #2d58ff; --go-lit: #8fa6ff; --go-deep: #1a3ccc; --on-go: #ffffff; --go-glow: rgba(45, 88, 255, .25);
   --cool: #b7c4e6;
   --surface: rgba(255, 255, 255, .62); --surface-edge: inset 0 1px 0 rgba(255, 255, 255, .95), inset 0 0 0 1px rgba(255, 255, 255, .7); --surface-blur: blur(24px) saturate(1.4); --surface-shadow: 0 18px 44px rgba(30, 44, 90, .09), 0 2px 6px rgba(30, 44, 90, .04);
@@ -41,7 +41,7 @@
   --disc-bg: rgba(255, 255, 255, .9); --disc-edge: 0 6px 18px rgba(30, 44, 90, .08), inset 0 0 0 1px rgba(15, 19, 32, .05);
   --name: italic 400 40px/1.05 var(--serif); --name-track: -.015em; --em-font: var(--serif); --em-style: italic; --em-weight: 400;
   --num-weight: 250; --num-track: -.045em;
-  --tray: rgba(255, 255, 255, .9);
+  --tray: rgba(255, 255, 255, .9); --halo: #f7f8fb;
   --dim-bg: rgba(237, 240, 245, .96);
   --m-face: radial-gradient(circle at 32% 24%, #ffffff 0%, #e3e8f0 30%, #a9b3c2 68%, #7c8798 100%);
   --m-rim: rgba(255, 255, 255, .9); --m-ring: #c9d1dc; --m-ink: #18213a; --m-sub: rgba(24, 33, 58, .6); --m-edge: linear-gradient(90deg, #8a94a3, #eef2f7 50%, #8a94a3);
@@ -84,7 +84,7 @@ em { font-family: var(--em-font); font-style: var(--em-style); font-weight: var(
 
 /* Sets above and below the card: slim rows. Done ones stack upward from the card; next ones wait below. */
 .done-zone, .next-zone { flex: 1 1 0; min-height: 52px; display: flex; flex-direction: column; overflow: hidden; padding: 0 6px; }
-.done-zone { justify-content: flex-end; padding-bottom: 8px; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 34px); mask-image: linear-gradient(to bottom, transparent, #000 34px); }
+.done-zone { justify-content: flex-end; padding-bottom: 8px; -webkit-mask-image: linear-gradient(to bottom, transparent, #000 52px); mask-image: linear-gradient(to bottom, transparent, #000 52px); }
 .next-zone { justify-content: flex-start; padding-top: 8px; -webkit-mask-image: linear-gradient(to top, transparent, #000 34px); mask-image: linear-gradient(to top, transparent, #000 34px); }
 .row { flex: none; height: 44px; display: flex; align-items: center; gap: 12px; font-size: 16px; }
 .row .rl { color: var(--dim); width: 44px; }
@@ -152,9 +152,9 @@ em { font-family: var(--em-font); font-style: var(--em-style); font-weight: var(
 [data-look="b"] .c-hot { stroke: var(--go); }
 .c-dark { stroke: var(--on-go); stroke-width: 3; opacity: 0; }
 .rest-face { display: flex; flex-direction: column; align-items: center; opacity: 0; }
-.rest-word { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
+.rest-word { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
 .count { font-size: 40px; font-weight: var(--num-weight); letter-spacing: -.035em; line-height: 46px; font-variant-numeric: tabular-nums; }
-.rest-tap { font-size: 10px; letter-spacing: .08em; color: var(--faint); margin-top: 2px; }
+.rest-tap { font-size: 11px; letter-spacing: .04em; color: var(--dim); margin-top: 2px; }
 
 .foot { height: 44px; margin-top: 8px; display: grid; place-items: center; }
 .foot > * { grid-area: 1 / 1; }
@@ -201,8 +201,9 @@ em { font-family: var(--em-font); font-style: var(--em-style); font-weight: var(
 
 /* The rest dial's head: a bright bead at the arc's leading edge, rotated on the compositor. */
 .head { position: absolute; inset: 0; will-change: transform; }
-.head i { position: absolute; left: 50%; top: calc(var(--ring) / 2); width: calc(var(--ring) + 6px); height: calc(var(--ring) + 6px); margin: calc((var(--ring) + 6px) / -2) 0 0 calc((var(--ring) + 6px) / -2); border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--bg), 0 0 14px var(--c); }
-.ticks line { transition: stroke .45s, stroke-width .45s; }
+.head i { position: absolute; left: 50%; top: calc(var(--ring) / 2); width: calc(var(--ring) + 6px); height: calc(var(--ring) + 6px); margin: calc((var(--ring) + 6px) / -2) 0 0 calc((var(--ring) + 6px) / -2); border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--halo), 0 0 14px var(--c); }
+.ticks line { transition: stroke .45s; }
+.ticks.quiet line { transition: none; }
 .ticks line.lit { stroke-width: 2; }
 .ticks line:not(.lit) { stroke: var(--tickmark) !important; }
 .ticks line.major:not(.lit) { stroke: var(--tickmark-major) !important; }
@@ -217,4 +218,4 @@ em { font-family: var(--em-font); font-style: var(--em-style); font-weight: var(
 .look button[aria-pressed="true"] { opacity: 1; }
 .look button[aria-pressed="true"] { background: var(--tx); color: var(--bg); }
 
-@media (max-height: 700px) { :root { --dial: 160px; --disc: 116px; } .ex { font-size: 32px; } .big { font-size: 52px; } }
+@media (max-height: 700px) { :root { --dial: 168px; --disc: 120px; } .ex { font-size: 32px; } .big { font-size: 52px; } }

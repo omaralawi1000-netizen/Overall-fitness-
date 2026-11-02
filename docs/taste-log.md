@@ -22,6 +22,10 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 
 ## Entries
 
+### 2 Nov 2026: build from the clips themselves
+His words: "Do you think this is a good idea? We use the actual things I like, just with, like, use the actual reference I like."
+Decision: each moment is built from one clip he picked, matched frame by frame (timing, bounce, what grows and shrinks), then dressed in Aven's look. Copy the movement, never the screen. One shared timing keeps it one app.
+
 ### 2 Nov 2026: the workout slice (round 1, /_prototypes/slice/)
 Verdict: no. His words: "This is very in my old style. I actually don't like it, but maybe it's because the color or something. … Maybe you can do another style that's a little better. And when you say the motion is 6 out of 10 and the design is 7 out of 10, try to make it an 8 or a 9."
 On the motion: "Yes, the set [tick], but I feel like it needs better motion and number shrinking. It doesn't really shrink. Yes, it shrinks, but then it fades away and there's a number replacing it. Yes, the ring [filling], but I don't know. This just seems a little boring."
