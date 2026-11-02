@@ -26,7 +26,7 @@ const root = document.documentElement;
 const S = (kg, r, prev, done = false) => ({ kg, r, prev, done });
 function fresh() {
   return {
-    rest: 90, start: Date.now() - (41 * 60 + 12) * 1000, superset: false,
+    rest: 90, start: Date.now() - (41 * 60 + 12) * 1000, superset: null,
     ex: [
       { name: 'Overhead press', kit: 'Shoulders · Triceps · Barbell', best: { kg: 42.5, r: 6, date: '26 Oct' }, sets: [S(40, 8, '40 × 8', true), S(42.5, 6, '42.5 × 5', true), S(42.5, 6, '42.5 × 5', true)] },
       { name: 'Bench press', kit: 'Chest · Triceps · Barbell', alts: ['Dumbbell bench press', 'Machine chest press', 'Smith bench press'], note: '',
@@ -106,11 +106,22 @@ function dotsHTML() {
   const x = ex();
   return x.sets.map((p, i) => `<i class="${p.done ? (p.rec ? 'rec' : 'd') : i === W.s ? 'c' : ''} ${!p.done && beats(p, x.best) ? 'goal' : ''}"></i>`).join('');
 }
+/** Where the workout goes after the current set: the next undone set, exercise by exercise.
+ *  A superset (W.superset = index of its first exercise) alternates its two exercises set by set. */
+function nextPos() {
+  const undone = (e) => W.ex[e].sets.findIndex((p, i) => !p.done && !(e === W.e && i === W.s));
+  const A = W.superset;
+  if (A !== null && (W.e === A || W.e === A + 1)) {
+    for (const e of W.e === A ? [A + 1, A] : [A, A + 1]) { const i = undone(e); if (i >= 0) return { e, s: i }; }
+  }
+  for (let k = 0; k < W.ex.length; k++) { const e = (W.e + k) % W.ex.length, i = undone(e); if (i >= 0) return { e, s: i }; }
+  return null;
+}
 function nextLine() {
-  const x = ex();
-  if (W.s < x.sets.length - 1) { const n = x.sets[W.s + 1]; return `Then set ${W.s + 2} · <b class="num">${fmtKg(n.kg)} × ${n.r}</b>`; }
-  const nx = W.ex[W.e + 1];
-  return nx ? `${W.superset ? 'Superset with' : 'Then'} <b>${nx.name}</b>` : 'Last exercise';
+  const n = nextPos();
+  if (!n) return 'Last set of the workout';
+  if (n.e === W.e) { const t = ex().sets[n.s]; return `Then set ${n.s + 1} · <b class="num">${fmtKg(t.kg)} × ${t.r}</b>`; }
+  return `${W.superset === W.e && n.e === W.e + 1 ? 'Straight into' : 'Then'} <b>${W.ex[n.e].name}</b>`;
 }
 function paint({ animate = false, dir = 1 } = {}) {
   const x = ex(), c = set();
@@ -186,7 +197,7 @@ function tools() {
   const x = ex(), nx = W.ex[W.e + 1];
   return `<p class="cap lbl">Today only</p>
       ${x.alts ? `<button type="button" class="row" data-a="replace" style="width:100%;text-align:left"><span>⇄</span><span>Swap for another exercise</span><span class="p">›</span></button>` : ''}
-      ${nx ? `<button type="button" class="row" data-a="superset" style="width:100%;text-align:left"><span>∞</span><span>Superset with ${nx.name}</span><span class="p ss">${W.superset ? CHECK : ''}</span></button>` : ''}
+      ${nx ? `<button type="button" class="row" data-a="superset" style="width:100%;text-align:left"><span>∞</span><span>Superset with ${nx.name}</span><span class="p ss">${W.superset === W.e ? CHECK : ''}</span></button>` : ''}
       <p class="cap lbl">Note</p><textarea class="note" placeholder="Seat height, cues, how it felt…">${x.note || ''}</textarea>
       <p class="cap lbl">Rest after a set</p>
       <div class="stepper"><button type="button" data-a="rest-" aria-label="Shorter rest">−</button><span class="num rv">${mmss(W.rest)}</span><button type="button" data-a="rest+" aria-label="Longer rest">+</button></div>`;
@@ -225,7 +236,7 @@ const VIEWS = {
     return `<p class="cap">Push · ${mins} min in · about 24 min left</p>
       <div class="wk" style="margin-top:8px">${W.ex.map((x, i) => {
         const d = x.sets.filter((p) => p.done).length, st = i < W.e ? 'done' : i === W.e ? 'cur' : '';
-        return `<div class="row ${st}"><i class="pt"></i><span class="serif">${x.name}${W.superset && i === W.e + 1 ? ' <span class="tag">SUPERSET</span>' : ''}</span><span class="p num">${st === 'done' ? `${x.sets.length} sets` : st === 'cur' ? `${d} of ${x.sets.length}` : `${x.sets.length} × ${x.sets[0].r} · ${fmtKg(x.sets[0].kg)}`}</span></div>`;
+        return `<div class="row ${st}"><i class="pt"></i><span class="serif">${x.name}${W.superset !== null && i === W.superset + 1 ? ' <span class="tag">SUPERSET</span>' : ''}</span><span class="p num">${st === 'done' ? `${x.sets.length} sets` : st === 'cur' ? `${d} of ${x.sets.length}` : `${x.sets.length} × ${x.sets[0].r} · ${fmtKg(x.sets[0].kg)}`}</span></div>`;
       }).join('')}</div>`;
   },
   exercise() {
@@ -259,7 +270,8 @@ function openTray(kind, anchor) {
   if (open) { morph(kind); return; }
   open = { kind, anchor };
   tin.innerHTML = VIEWS[kind](); tin.scrollTop = 0;
-  tray.hidden = scrim.hidden = false;
+  tray.hidden = scrim.hidden = false; $('#screen').inert = true;
+  tin.tabIndex = -1; tin.focus({ preventScroll: true });
   placeTray(kind, anchor);
   play(tray, grow(anchor), SPRINGS.lift);
   tin.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, delay: reduced() ? 0 : 90, fill: 'backwards' });
@@ -283,10 +295,12 @@ async function closeTray() {
   tin.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 90, fill: 'forwards' });
   await play(tray, grow(anchor, false), SPRINGS.set, { fill: 'forwards' }).finished.catch(() => {});
   tray.getAnimations().forEach((a) => a.cancel()); scrim.getAnimations().forEach((a) => a.cancel()); tin.getAnimations().forEach((a) => a.cancel());
-  tray.hidden = scrim.hidden = true;
+  tray.hidden = scrim.hidden = true; $('#screen').inert = false;
+  anchor.focus?.({ preventScroll: true });
 }
 $$('[data-open]').forEach((b) => { press(b, 0.97); b.addEventListener('click', () => openTray(b.dataset.open, b)); });
 scrim.addEventListener('click', closeTray);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && open) closeTray(); });
 tray.addEventListener('click', (e) => {
   const b = e.target.closest('[data-a]'); if (!b) return;
   const a = b.dataset.a, x = ex();
@@ -307,7 +321,7 @@ tray.addEventListener('click', (e) => {
     x.sets = x.sets.map((p) => S(k.kg, p.r, '–')); W.s = 0; W.used = null;
     closeTray().then(() => { nameTo(n); paint({ animate: true, dir: -1 }); });
   }
-  if (a === 'superset') { W.superset = !W.superset; $('.ss', tin).innerHTML = W.superset ? CHECK : ''; $('.th').innerHTML = nextLine(); }
+  if (a === 'superset') { W.superset = W.superset === W.e ? null : W.e; $('.ss', tin).innerHTML = W.superset === W.e ? CHECK : ''; $('.th').innerHTML = nextLine(); }
   if (a === 'rest-' || a === 'rest+') { W.rest = Math.max(30, Math.min(300, W.rest + (a === 'rest+' ? 15 : -15))); roll($('.rv', tin), mmss(W.rest), a === 'rest+' ? 1 : -1); }
 });
 tray.addEventListener('input', (e) => { if (e.target.classList.contains('note')) ex().note = e.target.value; });
@@ -341,6 +355,11 @@ async function pearlIn(gold) {
 }
 function pearlOut() { [$('.ball', pearl), $('svg path', pearl)].forEach((e) => { e.getAnimations().forEach((a) => a.cancel()); e.style.transform = ''; e.style.strokeDashoffset = ''; }); pearl.classList.remove('gold'); }
 
+/** Every set is done: the pill says so and stops taking taps. */
+function finish() {
+  $('.dl').textContent = 'Finished'; $('.ds').textContent = ''; pill.disabled = true;
+  $('.th').textContent = `Workout done · ${W.ex.length} exercises`; $('.coach').classList.add('quiet');
+}
 async function tick() {
   if (busy) return; busy = true; closeEdit();
   const x = ex(), c = set(), rec = beats(c, x.best), g = gen;
@@ -350,7 +369,11 @@ async function tick() {
   c.done = true;
   if (rec) { c.rec = true; await recordMoment(c); if (g !== gen) return; x.best = { kg: c.kg, r: c.r, date: 'today' }; }
   W.used = null;
-  if (W.s < x.sets.length - 1) W.s++; else if (W.e < W.ex.length - 1) { W.e++; W.s = 0; }
+  const n = nextPos();
+  if (!n) { finish(); return; }
+  const straight = W.superset === W.e && n.e === W.e + 1; // first half of a superset: no rest, go straight on
+  W.e = n.e; W.s = n.s;
+  if (straight) { undoTo = null; pearlOut(); await nameTo(ex().name); paint({ animate: true }); busy = false; return; }
   await startRest();
 }
 
@@ -463,9 +486,9 @@ function recordMoment(c) {
 function reset() {
   gen++;
   clearInterval(iv); arcAnim?.cancel(); rest.hidden = true; delete rest.dataset.closing; $('.record').hidden = true;
-  if (open) { open = null; tray.hidden = scrim.hidden = true; }
+  if (open) { open = null; tray.hidden = scrim.hidden = true; $('#screen').inert = false; }
   [pill, ring, $('.rest-frost'), ...$$('.rest *, .record *')].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
-  root.dataset.phase = ''; busy = false; undoTo = null; pearlOut();
+  root.dataset.phase = ''; busy = false; undoTo = null; pearlOut(); pill.disabled = false; $('.dl').textContent = 'Done';
   const start = W.start; W = fresh(); W.start = start;
 }
 function jump(m) {
