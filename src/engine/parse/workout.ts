@@ -150,6 +150,8 @@ const LIFT_ALIASES: Record<string, string> = {
   curl: 'barbell curl', curls: 'barbell curl', 'bicep curl': 'barbell curl', 'bicep curls': 'barbell curl', 'biceps curl': 'barbell curl', 'biceps curls': 'barbell curl',
   'skull crusher': 'skullcrusher', 'skull crushers': 'skullcrusher', skullcrushers: 'skullcrusher',
   ran: 'run', running: 'run', jog: 'run', jogged: 'run', jogging: 'run', lob: 'run', walked: 'walk', gaatur: 'walk', 'went for a run': 'run',
+  'push up': 'push-up', 'push ups': 'push-up', pushup: 'push-up', pushups: 'push-up', 'press ups': 'push-up', armbojning: 'push-up', armbojninger: 'push-up',
+  cycled: 'cycling', biked: 'cycling', cycling: 'cycling', 'bike ride': 'cycling', rowed: 'rowing machine', rowing: 'rowing machine',
   dodloft: 'deadlift', 'dead lift': 'deadlift', deadlifts: 'deadlift',
 };
 const aliasOf = (q: string) => LIFT_ALIASES[fold(q).replace(/\s+/g, ' ').trim()];
