@@ -240,4 +240,4 @@ in a row: propose writing DESIGN.md.
 
 ## Session 11: wide workout round, four layouts (2 Nov 2026)
 Built `site/_prototypes/wide/` (live at /_prototypes/wide/, no storage): `index.html` is a swipe pager with chips (Set, Rest, Where, Record); `v1` Dial, `v2` Bar, `v3` Path, `v4` Keypad; shared `common.js/css` (springs from `site/round/motion.js`, rolling digits). Look and layout lead; motion kept light. Tested headless at 384×832 (no errors, set→rest→set→record flows run in all four). Not judged by subagents (usage rule); blur, grain and banding need his phone.
-Next: Omar says what he likes and doesn't per version; log it in `taste-log.md`, update `keepers.md`, then build one chosen direction polished.
+Result: Omar rejected all four ("This is not at all what I want") and asked to wait. Logged in `taste-log.md`. Next: nothing until he comes back; then ask what he wants in his own words before building.
