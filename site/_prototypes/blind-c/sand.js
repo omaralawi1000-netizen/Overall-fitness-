@@ -218,6 +218,8 @@ export class Sand {
     this.r = rng(7);
     this.t0 = performance.now();
     this.lastBake = -1e9;
+    this.calmAt = 0;     // when everything now in motion will have settled
+    this.lastDraw = -1;
     this.hlq = [];
     this.hit = { x: 0, y: 0, t: 0, c: 0, h: 0, shade: 1 };
     this.layers = [];
@@ -303,6 +305,7 @@ export class Sand {
     this.layers = [];
     this.layer = null;
     this.lastBake = this.now();
+    this.calmAt = this.lastBake + 1;
   }
 
   setPalette(i, h) { this.pal.set(hex(h), i * 3); }
@@ -512,6 +515,7 @@ export class Sand {
     d[o + 20] = s.size; d[o + 21] = s.tone; d[o + 22] = s.phase; d[o + 23] = s.glint;
     this.mark(i, i + 1);
     this.hlq.push(H.t, H.c, H.h);
+    if (H.t + 0.2 > this.calmAt) this.calmAt = H.t + 0.2;
   }
 
   // Lay sand down instantly (for the ground that exists before the screen opens).
@@ -561,6 +565,7 @@ export class Sand {
   // burst, fallOver (s), matchAll}
   setFigure(lines, o = {}) {
     const now = this.now();
+    this.stir(now + 3.5 + (o.spawnDelay || 0));
     const { slots: neu, boxes } = this.layout(lines);
     const old = this.slots;
     const w0 = o.omega ?? 11;
@@ -722,6 +727,7 @@ export class Sand {
   // Everything that is still a number pours down into the current layer.
   dropFigure(o = {}) {
     const now = this.now(), r = this.r;
+    this.stir(now + (o.over ?? 0.6) + 1);
     const all = [];
     for (const s of this.slots) {
       const b = s.block * BLOCK;
@@ -802,16 +808,23 @@ export class Sand {
     const U = this.u, from = Array.isArray(U[key]) ? U[key].slice() : U[key];
     for (const a of this.anims) if (a.key === key) this.anims.delete(a);
     this.anims.add({ key, from, to, t0: this.now(), dur, ease, done });
+    this.stir(this.now() + dur);
   }
+
+  stir(until) { if (until > this.calmAt) this.calmAt = until; }
 
   skyTo(sky, dur) {
     const from = this.sky ? { ...this.sky } : sky;
     this.skyAnim = { from, to: sky, t0: this.now(), dur };
+    this.stir(this.now() + dur);
     if (!this.sky) this.sky = { ...sky };
   }
 
   frame() {
     const gl = this.gl, now = this.now();
+    // when nothing is moving the sand only twinkles: 30 frames a second is plenty, and it spares the battery
+    if (now > this.calmAt && now - this.lastDraw < 1 / 31) return;
+    this.lastDraw = now;
     for (const a of [...this.anims]) {
       const k = Math.min(1, (now - a.t0) / a.dur), e = a.ease(k);
       this.u[a.key] = Array.isArray(a.from) ? a.from.map((v, i) => v + (a.to[i] - v) * e) : a.from + (a.to - a.from) * e;

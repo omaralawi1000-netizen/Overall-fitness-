@@ -14,11 +14,12 @@ const TXT = {
     restBefore: (n, m) => `Rest, then set ${n} of ${m}`,
     restBeforeEx: (name) => `Rest, then ${name.toLowerCase()}`,
     next: (w, r) => `Next ${w} kg × ${r}`,
-    last: (w, r) => `Last time ${w} × ${r}`,
+    last: (w, r) => `Last time ${w} kg × ${r}`,
+    hint: 'tap the numbers to change',
     log: (n) => `Log set ${n}`,
     skip: 'Skip rest',
     again: 'Start over',
-    kg: 'kg', reps: 'reps',
+    kg: 'kg',
     minus: '−15 s', plus: '+15 s',
     weight: 'Weight', repsL: 'Reps', done: 'Done',
     best: 'New best',
@@ -35,11 +36,12 @@ const TXT = {
     restBefore: (n, m) => `Pause, så sæt ${n} af ${m}`,
     restBeforeEx: (name) => `Pause, så ${name.toLowerCase()}`,
     next: (w, r) => `Næste ${w} kg × ${r}`,
-    last: (w, r) => `Sidst ${w} × ${r}`,
+    last: (w, r) => `Sidst ${w} kg × ${r}`,
+    hint: 'tryk på tallene for at ændre',
     log: (n) => `Log sæt ${n}`,
     skip: 'Spring pausen over',
     again: 'Start forfra',
-    kg: 'kg', reps: 'reps',
+    kg: 'kg',
     minus: '−15 s', plus: '+15 s',
     weight: 'Vægt', repsL: 'Gentagelser', done: 'Færdig',
     best: 'Ny rekord',
@@ -72,8 +74,8 @@ const DATA = {
 };
 
 const SKY = {
-  bench: { zen: '#04071c', mid: '#141d52', low: '#2c2a62', glow: '#ff9a48', pore: '#2b150e', glowAmt: 0.9 },
-  incline: { zen: '#06041b', mid: '#211650', low: '#45285f', glow: '#ff8a5c', pore: '#2b130f', glowAmt: 0.9 },
+  bench: { zen: '#04071c', mid: '#141d52', low: '#2c2a62', glow: '#ff8a34', pore: '#2b150e', glowAmt: 0.68 },
+  incline: { zen: '#06041b', mid: '#211650', low: '#45285f', glow: '#ff7446', pore: '#2b130f', glowAmt: 0.68 },
   rest: { zen: '#03051a', mid: '#0c1446', low: '#242764', glow: '#c4513c', pore: '#24120c', glowAmt: 0.38 },
   done: { zen: '#020312', mid: '#0a0f35', low: '#1f2158', glow: '#b8473a', pore: '#1f0f0a', glowAmt: 0.32 },
 };
@@ -92,7 +94,7 @@ const skyRGB = (s) => ({ zen: rgb(s.zen), mid: rgb(s.mid), low: rgb(s.low), glow
 
 const $ = (id) => document.getElementById(id);
 const el = {
-  canvas: $('sand'), exName: $('exName'), sub: $('sub'), clock: $('clock'), figure: $('figure'), capW: $('capW'), capR: $('capR'),
+  canvas: $('sand'), exName: $('exName'), sub: $('sub'), clock: $('clock'), figure: $('figure'), capW: $('capW'),
   note: $('note'), restbar: $('restbar'), minus: $('minus'), plus: $('plus'), best: $('best'), bestTitle: $('bestTitle'),
   bestSub: $('bestSub'), labels: $('labels'), summary: $('summary'), sumTitle: $('sumTitle'), sumList: $('sumList'),
   main: $('main'), scrim: $('scrim'), tray: $('tray'), rollW: $('rollW'), rollR: $('rollR'), live: $('live'),
@@ -150,7 +152,7 @@ const now = () => performance.now() / 1000;
 
 function reset() {
   plan = structuredClone(DATA);
-  st = { ex: 1, set: 2, phase: 'work', busy: 0, bests: 0, t0: now(), shownClock: '' };
+  st = { ex: 1, set: 2, phase: 'work', busy: 0, bests: 0, t0: now(), shownClock: '', restId: 0 };
 }
 
 const ex = () => plan.exercises[st.ex];
@@ -212,8 +214,6 @@ function placeFigure(boxes) {
   const w = boxes.w, r = boxes.r;
   el.capW.style.left = `${Math.min(G.W - 34, w.right + 9)}px`;
   el.capW.style.top = `${w.bottom - 21}px`;
-  el.capR.style.left = `${Math.min(G.W - 46, r.right + 9)}px`;
-  el.capR.style.top = `${r.bottom - 21}px`;
   el.figure.style.top = `${w.top - 16}px`;
   el.figure.style.height = `${r.bottom - w.top + 34}px`;
   el.note.style.top = `${r.bottom + 26 * G.k}px`;
@@ -230,15 +230,15 @@ function showSet(opts = {}) {
   });
   placeFigure(boxes);
   el.capW.textContent = TXT.kg;
-  el.capR.textContent = TXT.reps;
   const last = ex().last[st.set];
-  const lastText = last ? TXT.last(fmt(last[0]), last[1]) : '';
+  // the first set also says once that the numbers can be changed
+  const lastText = [last ? TXT.last(fmt(last[0]), last[1]) : '', st.hinted ? '' : TXT.hint].filter(Boolean).join('\n');
   // the words arrive once the sand has nearly settled
-  fade(el.note, false, 0); fade(el.capW, false, 0); fade(el.capR, false, 0);
+  fade(el.note, false, 0); fade(el.capW, false, 0);
   const shown = st.showId = (st.showId || 0) + 1;
   setTimeout(() => {
     if (st.showId !== shown || st.phase !== 'work') return;
-    fade(el.capW, true); fade(el.capR, true);
+    fade(el.capW, true);
     el.note.textContent = lastText;
     fade(el.note, true, 4);
   }, REDUCE ? 0 : 700 + (opts.delay || 0) * 1000);
@@ -275,7 +275,7 @@ function pourDone() {
 const placed = [];
 function freeY(y) {
   if (!Number.isFinite(y)) return y;
-  for (let k = 0; k < 20 && placed.some((p) => Math.abs(p - y) < 12); k++) y -= 3;
+  for (let k = 0; k < 24 && placed.some((p) => Math.abs(p - y) < 14); k++) y -= 3;
   placed.push(y);
   return y;
 }
@@ -349,6 +349,7 @@ function placeBest() {
 // ---------- moments ----------
 
 function logSet() {
+  st.hinted = true;
   const x = ex(), [w, r] = cur();
   const record = e1rm(w, r) > e1rm(...x.best) + 1e-6;
   const was = e1rm(...x.best);
@@ -373,7 +374,7 @@ async function recordMoment(nowMax, was) {
   el.bestSub.textContent = TXT.bestSub(fmt(Math.round(nowMax * 10) / 10), fmt(Math.round(was * 10) / 10));
   placeBest();
   el.best.classList.add('on');
-  fade(el.capW, false); fade(el.capR, false); fade(el.note, false);
+  fade(el.capW, false); fade(el.note, false);
   const g = LOOK.gold;
   sand.tween('alb', rgb(g.alb), 0.45);
   sand.tween('emit', rgb(g.emit), 0.45);
@@ -405,11 +406,17 @@ function startRest() {
   sand.tween('heat', 0.5, 1.4);
   sand.tween('light', LIGHT.slice(), 0.8);
   sand.skyTo(skyRGB(SKY.rest), 1.6);
-  fade(el.capW, false); fade(el.capR, false);
+  fade(el.capW, false);
   const next = nextSet();
-  el.note.style.top = `${G.byC + 30 * G.k}px`;
-  swap(el.note, TXT.next(fmt(next.w), next.r));
-  fade(el.note, true);
+  // "Next …" waits until the reps have poured away, so it never sits on top of them
+  fade(el.note, false);
+  const id = ++st.restId;
+  setTimeout(() => {
+    if (st.phase !== 'rest' || st.restId !== id) return;
+    el.note.style.top = `${G.byC + 30 * G.k}px`;
+    el.note.textContent = TXT.next(fmt(next.w), next.r);
+    fade(el.note, true);
+  }, REDUCE ? 0 : 850);
   swap(el.sub, next.newEx ? TXT.restBeforeEx(TXT.ex[next.ex.id]) : TXT.restBefore(next.n, x.sets.length));
   setMain(TXT.skip);
   setTimeout(() => st.phase === 'rest' && el.restbar.classList.add('on'), 260);
@@ -480,17 +487,20 @@ function finish() {
   label(sand.endLayer(st.layerMeta), 1300);
   sand.skyTo(skyRGB(SKY.done), 2.4);
   sand.tween('heat', 0.4, 1.5);
-  fade(el.capW, false); fade(el.capR, false); fade(el.note, false);
+  fade(el.capW, false); fade(el.note, false);
   el.best.classList.remove('on');
   swap(el.sub, '');
   swap(el.exName, '');
   const mins = Math.floor((DATA.elapsed + now() - st.t0) / 60);
-  const vol = plan.exercises.reduce((s, x) => s + x.sets.slice(0, x.done).reduce((a, [w, r]) => a + w * r, 0), 0);
+  const vol = Math.round(plan.exercises.reduce((s, x) => s + x.sets.slice(0, x.done).reduce((a, [w, r]) => a + w * r, 0), 0));
   el.sumList.textContent = '';
-  for (const [k, v] of [[TXT.time, `${mins} min`], [TXT.volume, `${fmt(vol)} kg`], [TXT.sets, String(totalSets())], [TXT.bests, String(st.bests)]]) {
+  for (const [k, v, unit] of [[TXT.time, mins, 'min'], [TXT.volume, fmt(vol), 'kg'], [TXT.sets, totalSets()], [TXT.bests, st.bests]]) {
+    const item = document.createElement('div');
     const dt = document.createElement('dt'); dt.textContent = k;
-    const dd = document.createElement('dd'); dd.textContent = v;
-    el.sumList.append(dt, dd);
+    const dd = document.createElement('dd'); dd.textContent = String(v);
+    if (unit) { const u = document.createElement('small'); u.textContent = unit; dd.append(u); }
+    item.append(dt, dd);
+    el.sumList.append(item);
   }
   setTimeout(() => el.summary.classList.add('on'), 900);
   setMain(TXT.again);
@@ -522,6 +532,7 @@ function roll(node, text, dir) {
 
 function openTray() {
   if (st.phase !== 'work') return;
+  st.hinted = true;
   const [w, r] = cur();
   roll(el.rollW, fmt(w), 0);
   roll(el.rollR, String(r), 0);
@@ -564,7 +575,19 @@ el.main.addEventListener('click', () => {
 el.figure.addEventListener('click', openTray);
 el.scrim.addEventListener('click', closeTray);
 $('trayDone').addEventListener('click', closeTray);
-el.tray.querySelectorAll('.step').forEach((b) => b.addEventListener('click', () => step(b.dataset.k, Number(b.dataset.d))));
+// a step button repeats while held: one step at once, then about eleven a second after 0.4 s
+el.tray.querySelectorAll('.step').forEach((b) => {
+  let hold = 0, rep = 0;
+  const go = () => step(b.dataset.k, Number(b.dataset.d));
+  const stop = () => { clearTimeout(hold); clearInterval(rep); };
+  b.addEventListener('pointerdown', (e) => {
+    if (e.button) return;
+    stop(); go();
+    hold = setTimeout(() => { rep = setInterval(go, 90); }, 400);
+  });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) b.addEventListener(ev, stop);
+  b.addEventListener('click', (e) => { if (e.detail === 0) go(); });   // keyboard and switch access
+});
 el.minus.addEventListener('click', () => adjustRest(-15));
 el.plus.addEventListener('click', () => adjustRest(15));
 
