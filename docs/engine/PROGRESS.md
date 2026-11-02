@@ -61,7 +61,7 @@ Tests live in `tests/engine/`. "untested" is said plainly.
 | Reading a phrase saves nothing | `e2e` phrase box ("nothing was saved by reading") | tested in Chromium |
 | Memory cards (scope, valid-from/until, last-seen) and the Coach ladder | model types, import of old memory notes | shape only: used in the Coach phase |
 
-## Test inventory (229 tests: 82 engine, 147 parser)
+## Test inventory (237 tests: 82 engine, 155 parser)
 Fewer tests than rules looks thin, but each property test runs 25 to 200 random cases, so the real count of checked cases is in the thousands.
 
 **Property tests (12):**
@@ -118,3 +118,5 @@ E1a is finished and Omar has tried it on his phone (2 Nov): everything worked. E
 It covers the parser and `docs/parser-examples.md` (not written yet), then a phrase box on `/engine/`. Start from `old-logic-map.md` "Port now" E1b rows and the self-correction rule in `SPEC.md` (contradiction 3).
 
 Codex's first look at #51 (7 findings, all reproduced by a failing test, then fixed): "80 x 8" no longer picks reps or weight (asks; a unit settles it); an "undo" inside a correction no longer undoes; fractional reps refused in the two labelled forms; "80 for 8 and 60 for 10" is no longer read as 60 reps; "plank 1 minute" and "run 1 mile" no longer match the prefix "mi"; "extension" keeps its x; a named unit ("2 cups") with no matching portion is no longer swapped for another portion.
+
+Codex's second look at #51 (4 findings, all reproduced, then fixed): the rep-list pattern could take seconds on a long digit string (a pasted number could freeze the phrase box; now separators are required, phrases over 300 characters are ignored, and a timing property test covers it); `skyr,60g oats` without a space after the comma is split; a portion that stands for several items ("2 slices (50 g)") counts per item; "1/2 cup" is 120 ml, not 480.

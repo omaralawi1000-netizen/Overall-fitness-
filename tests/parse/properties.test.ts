@@ -120,3 +120,14 @@ describe('food and water read back exactly', () => {
     }));
   });
 });
+
+describe('no phrase can freeze the page', () => {
+  it('long runs of digits, separators and set words stay fast', () => {
+    const piece = fc.constantFrom('8', '80', '1', ' ', ', ', ',', ' and ', ' x ', ' for ', ' at ', ' kg', ' reps', '.', 'bench ', 'no ', 'sets ');
+    fc.assert(fc.property(fc.array(piece, { minLength: 20, maxLength: 150 }).map((a) => a.join('')), fc.boolean(), (t, wo) => {
+      const t0 = performance.now();
+      understand(t, { workoutOpen: wo });
+      expect(performance.now() - t0).toBeLessThan(100);
+    }), { numRuns: 600 });
+  });
+});

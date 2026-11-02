@@ -63,3 +63,18 @@ describe('Codex review of #51', () => {
     expect(sets('bench 80 kg x 8')).toEqual([[80, 8]]);
   });
 });
+
+describe('Codex review of #51, round 2', () => {
+  it('a long run of digits cannot freeze the parser', () => {
+    for (const n of [30, 60, 500]) {
+      const t0 = performance.now();
+      parseWorkoutText(`bench ${'1'.repeat(n)}`);
+      parseWorkoutText(`bench ${'8 '.repeat(n)}reps`);
+      expect(performance.now() - t0).toBeLessThan(200);
+    }
+  });
+  it('rep counts are separated: 8, 8 and 6 reps at 80', () => {
+    expect(sets('bench 8, 8 and 6 reps at 80 kg')).toEqual([[80, 8], [80, 8], [80, 6]]);
+    expect(sets('bench 8 8 6 reps at 80 kg')).toEqual([[80, 8], [80, 8], [80, 6]]);
+  });
+});

@@ -1,6 +1,6 @@
 // The router: which reading a phrase gets, and the rule that nothing uncertain is ever read as a log.
 import { describe, it, expect } from 'vitest';
-import { understand as u, show } from '../../src/engine/parse';
+import { understand as u, understand, show } from '../../src/engine/parse';
 
 const open = { workoutOpen: true };
 const closed = { workoutOpen: false };
@@ -70,5 +70,13 @@ describe('show() always gives a sentence', () => {
     for (const t of ['8 at 80', 'no', 'undo', '500 ml water', 'I weigh 80', 'bench 80 for 8', '2 eggs', 'hello', '', '200 grams skyr and stuff']) {
       expect(show(u(t, open)).length).toBeGreaterThan(3);
     }
+  });
+});
+
+describe('very long text', () => {
+  it('is ignored fast instead of read', () => {
+    const t0 = performance.now();
+    expect(understand('bench ' + '1'.repeat(5000), { workoutOpen: true })).toEqual({ kind: 'ignored', reason: 'notLoggable' });
+    expect(performance.now() - t0).toBeLessThan(100);
   });
 });

@@ -104,3 +104,20 @@ describe('Codex review of #51', () => {
     expect(rowQuantity(parseFood('2 protein powder').rows[0], powder).qty).toMatchObject({ unit: 'portion' }); // no unit named: the usual portion
   });
 });
+
+describe('Codex review of #51, round 2', () => {
+  it('a comma or semicolon splits rows with or without a space; decimal commas stay', () => {
+    expect(parseFood('200g skyr,60g oats').rows.map((r) => [r.amount, r.query])).toEqual([[200, 'skyr'], [60, 'oats']]);
+    expect(parseFood('2 eggs;1 banana').rows.map((r) => [r.amount, r.query])).toEqual([[2, 'eggs'], [1, 'banana']]);
+    expect(parseFood('1,5 dl mælk').rows[0]).toMatchObject({ amount: 150, query: 'mælk' });
+  });
+  it('a portion that stands for several items counts per item', () => {
+    const bread: FoodShape = { name: 'Bread', basis: 'g', portions: [{ id: 'b', label: '2 slices (50 g)', amount: 50, verified: true }] };
+    expect(rowQuantity(parseFood('2 slices bread').rows[0], bread).qty).toEqual({ amount: 1, unit: 'portion', portionId: 'b' });
+    expect(rowQuantity(parseFood('3 slices bread').rows[0], bread).qty).toEqual({ amount: 1.5, unit: 'portion', portionId: 'b' });
+  });
+  it('a fraction in a portion label is kept: 1/2 cup is 120 ml, not 480', () => {
+    const oats: FoodShape = { name: 'Oats', basis: 'g', portions: [{ id: 'c', label: '1/2 cup (40 g)', amount: 40, verified: true }] };
+    expect(rowQuantity(parseFood('120 ml oats').rows[0], oats).qty).toEqual({ amount: 1, unit: 'portion', portionId: 'c' });
+  });
+});

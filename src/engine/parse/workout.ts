@@ -63,7 +63,7 @@ export function parseWorkoutSegment(seg: string): WorkoutRow | null {
   }
   // "8, 8 and 6 reps at 80 kg"
   if (!sets.length) {
-    m = rest.match(new RegExp(`((?:\\d+\\s*(?:,|&|and|og)?\\s*)+)\\s*(?:reps?|gange)\\s*(?:at|with|@|med|paa|på)\\s*(\\d+(?:\\.\\d+)?)\\s*(${UNIT})?`));
+    m = rest.match(new RegExp(`(\\d+(?:(?:\\s*(?:,|&|and|og)\\s*|\\s+)\\d+)*)\\s*(?:reps?|gange)\\s*(?:at|with|@|med|paa|på)\\s*(\\d+(?:\\.\\d+)?)\\s*(${UNIT})?`));
     if (m) {
       for (const r of m[1].match(/\d+/g) ?? []) sets.push({ ...load(Number(m[2]), m[3]), reps: Number(r) });
       rest = rest.replace(m[0], ' ');

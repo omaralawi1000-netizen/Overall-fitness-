@@ -51,7 +51,7 @@ export interface FoodRow {
 export function splitSegments(text: string): string[] {
   const t = text.replace(/(\d),(\d)/g, '$1.$2').replace(/\s+/g, ' ').trim();
   return t
-    .split(/\s*(?:[,;.]\s+|[,;]$|\.$|\band\b|\bog\b|\bplus\b|\bthen\b|\bsamt\b)\s*/i)
+    .split(/\s*(?:[,;]|\.\s+|\.$|\band\b|\bog\b|\bplus\b|\bthen\b|\bsamt\b)\s*/i)
     .map((s) => s.trim())
     .filter(Boolean);
 }
@@ -117,8 +117,15 @@ const VOL_WORD: [RegExp, number][] = [
   [/(\d+(?:[.,]\d+)?)?\s*(?:tbsp|spsk|tablespoons?|spiseske)/, 15], [/(\d+(?:[.,]\d+)?)?\s*(?:tsp|tsk|teaspoons?|teske)/, 5],
   [/(\d+(?:[.,]\d+)?)?\s*(?:cups?|kop)\b/, 240],
 ];
+/** A label with fractions and decimal commas made plain, then folded: "1/2 cup" → "0.5 cup", "1,5 dl" → "1.5 dl". */
+const plainLabel = (label: string) => fold(label.toLowerCase().replace(/(\d+)\s*\/\s*(\d+)/g, (_, a, b) => String(Number(a) / Number(b))).replace(/(\d),(\d)/g, '$1.$2'));
+/** How many of the counted thing a portion stands for: "2 slices (50 g)" is 2, "1 slice" is 1, "1/2 pizza" is 0.5. */
+function portionCount(label: string): number {
+  const m = plainLabel(label).match(/^(\d+(?:\.\d+)?)(?![\d.]*\s*-)\s+[a-z]/);
+  return m && Number(m[1]) > 0 ? Number(m[1]) : 1;
+}
 function portionMl(label: string): number | undefined {
-  const l = fold(label);
+  const l = plainLabel(label);
   for (const [re, ml] of VOL_WORD) { const m = l.match(re); if (m) return (m[1] ? Number(m[1].replace(',', '.')) : 1) * ml; }
   return undefined;
 }
@@ -160,5 +167,5 @@ export function rowQuantity(row: FoodRow, food: FoodShape): RowQuantity {
   const p = named || food.portions[0];
   // a database's stand-in "serving (100 g)" is not one of the thing: "10 corn cakes" must not become 10 × 100 g
   if (!named && placeholderPortion(p, food.basis)) return { qty: null, estimated: false, problem: 'needsGrams' };
-  return { qty: { amount: row.amount, unit: 'portion', portionId: p.id }, estimated: !p.verified };
+  return { qty: { amount: Math.round((row.amount / (named ? portionCount(p.label) : 1)) * 1000) / 1000, unit: 'portion', portionId: p.id }, estimated: !p.verified };
 }

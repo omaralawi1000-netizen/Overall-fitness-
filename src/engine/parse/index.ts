@@ -45,11 +45,15 @@ const MEALS: [RegExp, Meal][] = [
 ];
 const FOOD_LEAD = /^(?:i (?:just )?(?:ate|had)|jeg (?:har )?(?:lige )?(?:spist|spiste)|ate|spiste|log|add|tilføj|tilfoej)\s+/i;
 
+/** Longest phrase read (the phrase box reads on every keystroke). */
+const MAX_LEN = 300;
+
 export interface Context { workoutOpen: boolean }
 
 export function understand(text: string, ctx: Context = { workoutOpen: false }): Understood {
   const t = text.trim();
   if (!t) return { kind: 'ignored', reason: 'empty' };
+  if (t.length > MAX_LEN) return { kind: 'ignored', reason: 'notLoggable' }; // a pasted wall of text is not a phrase
 
   const w = readWater(t);
   if (w) return 'ask' in w ? { kind: 'ask', why: 'range', text: `${w.value} ${w.unit} of water?` } : { kind: 'water', ...w };
