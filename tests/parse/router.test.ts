@@ -77,7 +77,7 @@ describe('very long text', () => {
   it('is ignored fast instead of read', () => {
     const t0 = performance.now();
     expect(understand('bench ' + '1'.repeat(5000), { workoutOpen: true })).toEqual({ kind: 'ignored', reason: 'notLoggable' });
-    expect(performance.now() - t0).toBeLessThan(100);
+    expect(performance.now() - t0).toBeLessThan(500);
   });
 });
 

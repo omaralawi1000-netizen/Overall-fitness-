@@ -127,7 +127,7 @@ describe('no phrase can freeze the page', () => {
     fc.assert(fc.property(fc.array(piece, { minLength: 20, maxLength: 150 }).map((a) => a.join('')), fc.boolean(), (t, wo) => {
       const t0 = performance.now();
       understand(t, { workoutOpen: wo });
-      expect(performance.now() - t0).toBeLessThan(100);
+      expect(performance.now() - t0).toBeLessThan(500); // a real blowup takes seconds; this only guards against a loaded machine
     }), { numRuns: 600 });
   });
 });

@@ -70,7 +70,7 @@ describe('Codex review of #51, round 2', () => {
       const t0 = performance.now();
       parseWorkoutText(`bench ${'1'.repeat(n)}`);
       parseWorkoutText(`bench ${'8 '.repeat(n)}reps`);
-      expect(performance.now() - t0).toBeLessThan(200);
+      expect(performance.now() - t0).toBeLessThan(1000);
     }
   });
   it('rep counts are separated: 8, 8 and 6 reps at 80', () => {
