@@ -31,6 +31,8 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 ### 2 Nov 2026: the Oura-style premium still, for Today
 His words: "One thing I want you to remember, the aura screen is could actually be somewhat what I want on the today screen, and of course tweaked to my liking." ("aura" = Oura, the premium still at `/_prototypes/premium/`.)
 Reading: the still failed as a workout screen ("looks like a Today screen"), but that is where it belongs. It is a starting point for Today, not a finished design: he wants it tweaked. Nothing built from this yet.
+Follow-up, same day: "This is just a starting point. Maybe we'll get a whole different design direction, just so you know."
+Reading: not a decision. A whole different direction may still replace it, so don't build on it as settled.
 
 ### 2 Nov 2026: wide workout round, four layouts (/_prototypes/wide/)
 Ask (Omar): "Can we try to build 3 or 4 different versions? Do you know a little what I like? Just give me something. I can maybe tell you."
