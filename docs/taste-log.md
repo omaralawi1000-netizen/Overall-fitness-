@@ -7,25 +7,37 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 - **After every test, prototype or rejection:** add a dated entry. His words go in quotes. Our reading of them is marked "Reading".
 - **Rounds alternate:** a wide search (Sonnet), then one small polished slice (Opus).
 
-## What it suggests now (2 Nov 2026)
-- He rejects whole looks quickly, but loves single moments. Six looks got a no; 35 motion clips got a heart. Show him moments he can feel, not whole skins to judge.
-- "Ordinary" is the worst thing he can say. Clear and safe is not enough ("Ink sounds too safe"). He wants every moment to have its own life ("they don't all have to look the same").
-- From old Aven he keeps the serif names. He rejected both the thin and the heavy number, so the number still needs a third answer.
-- Open: the rest of the taste test.
+## What it suggests now (2 Nov 2026, after the taste test)
+- **Pictures can't decide most of it.** 8 of 11 pairs got "neither". Several of his notes say "it depends" more than "no": themes, a day that "can change dynamically based on me", rest "could be good, but also, vice versa". Settle these by feeling them on his phone, inside a real moment, not with another A/B of stills.
+- **Firm so far:** italic serif names, and the Coach showing up as light that fills the screen (he'd still explore). Data you can feel (water that tilts) is a yes for later, for hydration.
+- **Treat as open, not as noes:** rest, tick, finish, the big number, logging. The rejections there are of those two versions. Several look like execution (Heat's flat colour field, a reading app's bloom out of context), not the idea, because he hearted similar ideas in the motion library.
+- **Tension to watch:** themes vs "fewer knobs, done perfectly" (his brief). Old Aven grew 8 palettes. One theme done perfectly first, more later.
+- He rejects whole looks quickly but loves single moments. Show him moments.
 
 ## Entries
 
-### 2 Nov 2026: taste test, 11 this-or-that pairs (in progress)
-Page: https://claude.ai/artifact/3F55dCusNya4BDpNacPhZA (picks saved in its store, collection `answers`). What each pair decides: `docs/research/taste-2026-11-01.md`.
+### 2 Nov 2026: taste test, 11 this-or-that pairs
+Page: https://claude.ai/artifact/3F55dCusNya4BDpNacPhZA (store `answers`). What each pair decides: `docs/research/taste-2026-11-01.md`. His notes are dictated; quoted as saved. He asked that these be read as signal from a sparring partner, not as rules ("don't treat it as he must like this").
 
-| # | Question | Picked | Rejected |
+| # | Question | Picked | His words |
 |---|---|---|---|
-| 3 | Which titles? | **Italic serif** (old Aven) | bold sans |
-| 4 | Which big number? | **Neither** | thin 2,500 (old Aven) and heavy 2,500 |
-| 1, 2, 5–11 | | not answered yet | |
+| 1 | Background: dark with one glow, or full-screen colour (Rooms)? | Neither | "I'm planning on having themes. I have themes in aven, and you can change the themes, so you can always change it" |
+| 2 | Dark room or light room? | Neither | |
+| 3 | Titles: bold sans or italic serif? | **Italic serif** (old Aven) | |
+| 4 | Big number: thin or heavy? | Neither | |
+| 5 | What opens the day: training or food? | Neither | "It can change dynamically based on me." |
+| 6 | Rest: old small bar or Heat's full-screen timer? | Neither | "I need more opinions on this. The timer takes the whole screen. Yes, it could be good, but also, vice versa." |
+| 7 | Logging: one set at a time (Day line) or the whole list (old)? | Neither | "I don't know about this." |
+| 8 | Ticking a set: old tick or the colour bloom (clip 06)? | Neither | |
+| 9 | Finish: Hevy-style share card or old medal? | Neither | |
+| 10 | Numbers: plain (Skyr) or something you feel (water tilt, clip 16)? | **Water that moves when you tilt** | "This is an exceptional reference for the hydration … that's not my main focus right now, but we can always add this. Because it would be still so cool" |
+| 11 | Coach: light that rises and fills the screen (clip 01), or the small orb? | **Light that fills the screen** | "I mean, it's good, but of course, we will still explore" |
 
-Why: no notes yet.
-Reading: the serif is a keeper. Old Aven's thin number is not the answer, and neither is the heavy poster number the new looks used.
+Reading:
+- Q8 vs the motion library: he hearted clip 06's bloom there, and said neither here. Likely the context (a book app's button next to a set) rather than the bloom itself.
+- Q6 vs keepers: he approved "the tapped button grows into the full-screen rest ring" and "rest as a colour level filling the screen". Here he rejected Heat's full-screen timer and is unsure about full screen at all. Rest is open; test both sizes on his phone.
+- Q9 fits keepers: neither a share card nor a medal; the approved idea is hold to commit and a quiet "complete".
+- Q1, Q2, Q5: he wants it to adapt (themes, a day that changes with him), not one fixed answer.
 
 ### 2 Nov 2026: motion library
 Picked: 35 of 51 round-2 clips plus the round-1 hearts, and six approved ideas (all in `keepers.md`).

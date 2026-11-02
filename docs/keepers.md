@@ -112,3 +112,5 @@ Not hearted on the page (a signal, not a no): the slide-to-approve concept (clip
 ### From the taste test (2 Nov 2026)
 Picks from https://claude.ai/artifact/3F55dCusNya4BDpNacPhZA; the noes and reasons are in `docs/taste-log.md`.
 - **Italic serif for names and titles** (Pull, Breakfast, Today), as in old Aven, over bold sans.
+- **The Coach shows it's there as light that rises and fills the screen** (clip 01, `own-01-orb-sunrise-flood`), over the small orb. "It's good, but of course, we will still explore."
+- **Later, for hydration: water you can feel, moving when you tilt the phone** (clip 16). "Not my main focus right now, but we can always add this."
