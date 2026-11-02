@@ -429,7 +429,6 @@ async function endRest(advance) {
   if (g !== gen) return; // the demo was reset while the ring closed
   [ring, $('.rest-frost'), ...$$('.rnext, .rctl, .undo, .ring-in', rest)].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
   arcAnim?.cancel(); rest.hidden = true; delete rest.dataset.closing;
-  $('#screen').inert = false; pill.focus({ preventScroll: true });
   pill.getAnimations().forEach((a) => a.cancel());
   pearlOut();
   if (advance) {
@@ -441,6 +440,8 @@ async function endRest(advance) {
     if (d && prevE === W.e) play(d, [{ transform: 'scale(1.7)' }, { transform: 'none' }], SPRINGS.press);
   } else paint({ animate: true, dir: -1 });
   undoTo = null;
+  if (g !== gen) return;
+  $('#screen').inert = false; pill.focus({ preventScroll: true }); // only once the next set is on screen
 }
 function undoSet() {
   if (!undoTo) return;
