@@ -12,6 +12,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 
 ## Design
 - `docs/inspiration/notes.md`: what Omar likes. `docs/inspiration/web-references.md`: his web links. The numbered images are screenshots.
+- `docs/inspiration/wide-2026-11-02.md`: 32 stills from outside fitness (instruments, cars, glass, lifting) with sources; board https://claude.ai/artifact/Mafnuqn84i2C5ohymPGkdG, stills in `aven2/inspiration-wide-2026-11-02/`.
 - `docs/inspiration/motion-library.md`: 117 watched animations in two rounds, sorted by motion job, top 3 per job, links and notes (clips and design stills in the shared folder).
 - `docs/design-round-2026-11-01.md`: the final design round's decision (rules triaged, Coach ladder, navigation, two directions, PWA limits). Wins over the design bar.
 - `docs/keepers.md`: ideas Omar explicitly approved after prototypes (only his yes adds one).
