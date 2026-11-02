@@ -14,15 +14,19 @@
     <button type="button" class="chip frost" data-open="workout" aria-label="Whole workout"><span class="serif">Push</span><span class="num clock">41:12</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M3 4.5l3 3 3-3"/></svg></button>
     <button type="button" class="coach" data-open="coach" aria-label="Coach"><i class="glowobj"></i></button>
   </header>
+  <!-- The whole workout as one line of small segments, one per set (lights up as you go); opens the workout list. -->
+  <button type="button" class="prog" data-open="workout" aria-label="Whole workout"><span class="segs"></span><span class="pl"></span></button>
 
   <section class="ex">
     <div class="name-row">
       <button type="button" class="name serif" data-open="exercise"><span class="nm">Bench press</span></button>
     </div>
-    <button type="button" class="sets-btn" data-open="sets" aria-label="All sets"><span class="dots"></span><span class="badge"><span class="bt">Set 3 of 4</span></span></button>
+    <p class="badge"><span class="bt">Set 3 of 4</span></p>
   </section>
 
-  <section class="slab frost">
+  <!-- Every set of the exercise: done ones folded into rows above, the one you're on open as the slab, the rest below. -->
+  <section class="stack" aria-label="Sets">
+  <div class="slab frost">
     <div class="fields">
       <div class="field" data-f="kg">
         <button type="button" class="step minus" data-d="-1" aria-label="Less weight" tabindex="-1">−</button>
@@ -37,6 +41,7 @@
       </div>
     </div>
     <button type="button" class="last" data-open="last"><span class="lt">Last time <b class="num">82.5 × 5</b></span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M4.5 3l3 3-3 3"/></svg></button>
+  </div>
   </section>
 
   <button type="button" class="then" data-open="workout"><span class="th"></span></button>
@@ -54,6 +59,7 @@
 <!-- Rest: the Done pill grows into the ring. -->
 <div class="rest" hidden aria-live="polite">
   <div class="rest-frost"></div>
+  <div class="level" aria-hidden="true"></div>
   <div class="ring-wrap">
     <div class="ring frost"><svg viewBox="0 0 280 280" aria-hidden="true"><circle class="track" cx="140" cy="140" r="128"/><circle class="arc glowobj" cx="140" cy="140" r="128"/></svg>
       <div class="ring-in"><span class="cap">Rest</span><span class="num rclock">1:30</span></div>
@@ -70,7 +76,16 @@
   <p class="cap rk">New best</p>
   <h2 class="serif rh">Strongest bench yet</h2>
   <p class="rs"></p>
+  <div class="rchart" aria-hidden="true"></div>
   <button type="button" class="go rgo" data-a="continue"><span>Continue</span><small>to rest</small></button>
+</div>
+<!-- Finished: a calm "complete" with one ring that draws once (Monument Valley), the total counts up and locks (Fitness Wrapped). -->
+<div class="fin" hidden>
+  <div class="fring"><svg viewBox="0 0 240 240" aria-hidden="true"><circle class="ft" cx="120" cy="120" r="110"/><circle class="fa" cx="120" cy="120" r="110" pathLength="1"/></svg>
+    <div class="fin-in"><span class="cap">Lifted today</span><span class="num fv">0</span><small>kg</small></div></div>
+  <h2 class="serif fh">Workout complete</h2>
+  <div class="fstats"><div><b class="num ft1"></b><small>time</small></div><div><b class="num ft2"></b><small>sets</small></div><div><b class="num ft3"></b><small>new bests</small></div></div>
+  <button type="button" class="go fgo" data-a="fin-close"><span>Close</span></button>
 </div>
 <div class="grain"></div>
 <script type="module" src="workout.js"></script>
