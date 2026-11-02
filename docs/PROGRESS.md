@@ -186,7 +186,15 @@ can really do on Android and iPhone. Nothing built.
   areas, light with a source, a Coach that is an event.
 - Taste test (11 this-or-that pairs) for his phone: https://claude.ai/artifact/3F55dCusNya4BDpNacPhZA
 
+## Session 9: motion library (2 Nov 2026)
+- Omar asked for the world's most exceptional animations, actually watched. Six Sonnet helpers looked at about 450 clips
+  (60fps.design, Ripplix, Dribbble, motion.dev, motionvault, Rive, NumberFlow, screensdesign, his 26 + 10 clips) and kept 66,
+  each watched as timestamped slow-motion frame sheets. Top 3 per job judged on Opus. Also 33 design stills.
+- Notes and links: docs/inspiration/motion-library.md. Clips, frames and stills only in the shared folder (copyright).
+- Phone page with every clip and a ♥ button: https://claude.ai/artifact/5qeq9tDy2qe2fmJsyWVNHg (store collection `loves`).
+- Gaps: no great "next set becomes active", proposal dismiss/undo, or a Today that changes through the day.
+
 ## Next step
-Omar answers the taste test on his phone. Read his picks (ArtifactData list, collection `answers`), write only what he
-picked into docs/keepers.md, then start the next design round from the keepers and the recipe in
-docs/research/taste-2026-11-01.md.
+Omar hearts the clips he loves (and answers the taste test). Read both stores (ArtifactData list: `loves` on the motion
+library, `answers` on the taste test), write only his picks into docs/keepers.md, then start the next design round from
+the keepers and the recipe in docs/research/taste-2026-11-01.md.
