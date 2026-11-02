@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import fc from 'fast-check';
 import { Engine } from '../../src/engine/engine';
-import type { NewRecord } from '../../src/engine/plan';
+import type { NewRecord, Op } from '../../src/engine/plan';
+import { buildOn, isStale } from '../../src/engine/derived';
 import { clock, fresh, water, TZ } from './helpers';
 
 const open: Engine[] = [];
@@ -158,34 +159,84 @@ describe('Undo', () => {
 });
 
 describe('derived facts', () => {
-  it('deleting or correcting a fact marks what was built on it stale, through chains; Undo never makes it fresh again', async () => {
+  const sumOf = (e: Engine, id: string, facts: string[], text: string): Op => ({ op: 'create', record: { id, kind: 'coachItem', stage: 'observation', text, ...buildOn((k) => e.get(k), facts) } as NewRecord });
+  const recount = (e: Engine, id: string, facts: string[], text: string): Op => ({ op: 'update', id, set: { text, ...buildOn((k) => e.get(k), facts) } });
+  const stale = (e: Engine, id: string) => isStale(e.get(id)!, (k) => e.get(k));
+
+  it('deleting or correcting a fact makes what was built on it stale, through chains; Undo never makes it fresh again', async () => {
     const { e } = await eng();
     await e.commit({ type: 'x', label: 'x', ops: [water('w1', 250), water('w2', 500)] });
-    await e.commit({ type: 'x', label: 'x', ops: [
-      { op: 'create', record: { id: 'sum', kind: 'coachItem', stage: 'observation', text: 'You drank 750 ml', basedOn: ['w1', 'w2'] } as NewRecord },
-      { op: 'create', record: { id: 'nudge', kind: 'coachItem', stage: 'recommendation', text: 'Drink more', basedOn: ['sum'] } as NewRecord },
-    ] });
+    await e.commit({ type: 'x', label: 'x', ops: [sumOf(e, 'sum', ['w1', 'w2'], 'You drank 750 ml')] });
+    await e.commit({ type: 'x', label: 'x', ops: [sumOf(e, 'nudge', ['sum'], 'Drink more')] });
+    expect(stale(e, 'sum')).toBe(false);
+    expect(stale(e, 'nudge')).toBe(false);
+    expect(stale(e, 'w1')).toBe(false); // a fact is never stale
     const d = await e.commit({ type: 'x', label: 'x', ops: [{ op: 'delete', id: 'w1' }] });
-    expect(e.get('sum')!.stale).toBe(true);
-    expect(e.get('nudge')!.stale).toBe(true);
-    await e.commit({ type: 'x', label: 'x', ops: [{ op: 'update', id: 'w2', set: { ml: 400 } }] }); // the second fact changes too
+    expect(stale(e, 'sum')).toBe(true);
+    expect(stale(e, 'nudge')).toBe(true);
     expect((await e.undo(d.action!.id)).status).toBe('saved');
     expect(e.get('w1')!.deleted).toBeUndefined();
-    expect(e.get('sum')!.stale).toBe(true); // w2 is still changed: the summary must not look fresh
-    expect(e.get('nudge')!.stale).toBe(true);
+    expect(stale(e, 'sum')).toBe(true); // the fact is back, but it was touched: only a recount makes the summary fresh
+    await e.commit({ type: 'x', label: 'x', ops: [recount(e, 'sum', ['w1', 'w2'], 'You drank 750 ml')] });
+    expect(stale(e, 'sum')).toBe(false);
+    expect(stale(e, 'nudge')).toBe(true); // built on the old summary
   });
-});
 
-describe('derived facts and Undo', () => {
-  it('undoing a change that touched a summary and its stale flag keeps a newer stale mark', async () => {
+  it('undoing a recount brings the old value back stale', async () => {
     const { e } = await eng();
-    await e.commit({ type: 'x', label: 'x', ops: [water('w1', 250), { op: 'create', record: { id: 'sum', kind: 'coachItem', stage: 'observation', text: 'v1', basedOn: ['w1'] } as NewRecord }] });
-    const r = await e.commit({ type: 'x', label: 'x', ops: [{ op: 'update', id: 'sum', set: { text: 'v2', stale: false } }] });
+    await e.commit({ type: 'x', label: 'x', ops: [water('w1', 250)] });
+    await e.commit({ type: 'x', label: 'x', ops: [sumOf(e, 'sum', ['w1'], 'v1')] });
     await e.commit({ type: 'x', label: 'x', ops: [{ op: 'update', id: 'w1', set: { ml: 300 } }] });
-    expect(e.get('sum')!.stale).toBe(true);
+    const r = await e.commit({ type: 'x', label: 'x', ops: [recount(e, 'sum', ['w1'], 'v2')] });
+    expect(stale(e, 'sum')).toBe(false);
     expect((await e.undo(r.action!.id)).status).toBe('saved');
     expect(e.get<'coachItem'>('sum')!.text).toBe('v1');
-    expect(e.get('sum')!.stale).toBe(true);
+    expect(stale(e, 'sum')).toBe(true);
+  });
+
+  it('a record built on a summary and on a notice built on that summary is fresh while nothing changed (shared ancestor, no loop)', async () => {
+    const { e } = await eng();
+    await e.commit({ type: 'x', label: 'x', ops: [water('w1', 250)] });
+    await e.commit({ type: 'x', label: 'x', ops: [sumOf(e, 'sum', ['w1'], 's')] });
+    await e.commit({ type: 'x', label: 'x', ops: [sumOf(e, 'notice', ['sum'], 'n')] });
+    await e.commit({ type: 'x', label: 'x', ops: [sumOf(e, 'both', ['sum', 'notice'], 'b')] });
+    expect(stale(e, 'both')).toBe(false);
+    await e.commit({ type: 'x', label: 'x', ops: [{ op: 'update', id: 'w1', set: { ml: 1 } }] });
+    expect(stale(e, 'both')).toBe(true);
+  });
+
+  it('a derived record in the older shape (basedOn or a stored stale flag) counts as stale until rebuilt', () => {
+    const base = { id: 'old', kind: 'coachItem', v: 1, at: 1, tz: TZ, source: 'tap', createdAt: 1, updatedAt: 1, rev: 1 };
+    expect(isStale({ ...base, basedOn: ['w1'] } as never, () => undefined)).toBe(true);
+    expect(isStale({ ...base, stale: true } as never, () => undefined)).toBe(true);
+    expect(isStale(base as never, () => undefined)).toBe(false);
+  });
+
+  it('property: no mix of edits, deletes, Undos, redos and recounts leaves a summary fresh unless its facts are exactly as it last saw them', async () => {
+    type Step = { t: 'edit' | 'del' | 'undo' | 'recount'; i: number; ml: number };
+    const stepArb = fc.record({ t: fc.constantFrom<Step['t']>('edit', 'del', 'undo', 'recount'), i: fc.integer({ min: 0, max: 20 }), ml: fc.integer({ min: 1, max: 9 }) });
+    await fc.assert(fc.asyncProperty(fc.array(stepArb, { minLength: 1, maxLength: 20 }), async (steps) => {
+      const { e } = await eng();
+      const facts = ['a', 'b', 'c'];
+      await e.commit({ type: 'x', label: 'x', ops: facts.map((f) => water(f, 1)) });
+      await e.commit({ type: 'x', label: 'x', ops: [sumOf(e, 'sum', facts, 't0')] });
+      // every state each fact has been in, by stamp: a stamp must never stand for two different states
+      const seen = new Map<string, unknown>();
+      const look = (k: string) => { const r = e.get<'water'>(k); return r ? { ml: r.ml, deleted: !!r.deleted } : null; };
+      const note = () => { for (const k of facts) { const r = e.get(k); if (!r) continue; const key = `${k}@${r.stamp}`, v = look(k); if (seen.has(key)) expect(seen.get(key)).toEqual(v); else seen.set(key, v); } };
+      note();
+      for (const s of steps) {
+        const f = facts[s.i % 3];
+        if (s.t === 'edit' && e.get(f) && !e.get(f)!.deleted) await e.commit({ type: 'x', label: 'x', ops: [{ op: 'update', id: f, set: { ml: s.ml } }] });
+        if (s.t === 'del') await e.commit({ type: 'x', label: 'x', ops: [{ op: 'delete', id: f, ifExists: true }] });
+        if (s.t === 'recount' && facts.every((k) => e.get(k) && !e.get(k)!.deleted)) await e.commit({ type: 'x', label: 'x', ops: [recount(e, 'sum', facts, `t${s.ml}`)] });
+        if (s.t === 'undo') { const open = e.actions().filter((x) => !x.undoneBy); const a = open[s.i % Math.max(1, open.length)]; if (a) await e.undo(a.id, { skipConflicts: true }); }
+        note();
+        // the rule: a summary that looks fresh saw exactly the facts as they are now
+        const sum = e.get('sum')!;
+        if (!sum.deleted && !stale(e, 'sum')) for (const [k, st] of Object.entries(sum.builtFrom!)) expect(seen.get(`${k}@${st}`)).toEqual(look(k));
+      }
+    }), { numRuns: 60 });
   });
 });
 

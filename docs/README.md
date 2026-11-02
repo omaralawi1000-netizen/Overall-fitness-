@@ -14,6 +14,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 - `docs/engine/SPEC.md`: the engine spec, its review and decisions. `docs/engine/PROGRESS.md`: plan, rule → test table, next step.
 - `docs/engine/DATA-MODEL.md`: the data model in plain words. `docs/engine/old-logic-map.md`: every old-Aven module, port or drop.
 - Code `src/engine/`, debug page `src/debug/` (live at `/engine/`), tests `tests/engine/`. `npm run verify` checks all.
+- Browser check: `tests/e2e/engine-page.mjs` (25 checks in real Chromium; see `docs/engine/PROGRESS.md`).
 
 ## Design
 - `docs/inspiration/notes.md`: what Omar likes. `docs/inspiration/web-references.md`: his web links. The numbered images are screenshots.
