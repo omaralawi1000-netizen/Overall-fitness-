@@ -82,15 +82,38 @@ const lastEl = $('.last'), bestEl = $('.best'), summary = $('.summary');
 const rW = new Roll($('.big.w')), rR = new Roll($('.big.r')), rSet = new Roll($('.set-no')), rCount = new Roll($('.count'), fmtT(REST));
 
 /* ---------- The room ---------- */
+/* ---------- The two looks (prototype switch) ---------- */
+const LOOKS = {
+  a: { room: null, reward: [215, 228, 255], cool: '#3d78ff', go: '#c6ff3d', theme: '#050607' },
+  b: { room: { blobs: [{ x: 0.95, y: 0.02, sx: 0.8, sy: 0.6, c: [176, 198, 255], a: 0.55 }, { x: 0.05, y: 0.95, sx: 0.7, sy: 0.5, c: [255, 255, 255], a: 0.7 }], base: [237, 240, 245] },
+       reward: [150, 175, 255], cool: '#b7c4e6', go: '#2d58ff', theme: '#edf0f5' },
+};
+let look = new URLSearchParams(location.search).get('look') === 'b' ? 'b' : 'a';
 function paintRoom() {
-  const host = $('.glow');
-  const c = paintField([{ x: 0.12, y: 0.06, sx: 0.66, sy: 0.55, c: [255, 96, 38], a: 0.38 }, { x: 0.12, y: 0.06, sx: 0.28, sy: 0.22, c: [255, 140, 90], a: 0.18 }],
-    [10, 8, 9], { w: innerWidth, h: innerHeight, over: 1, seed: 5 });
-  host.replaceChildren(c);
+  const L = LOOKS[look], host = $('.glow');
+  host.replaceChildren(...(L.room ? [paintField(L.room.blobs, L.room.base, { w: innerWidth, h: innerHeight, over: 1, seed: 5 })] : []));
+  $('.reward-glow').replaceChildren(paintField([{ x: 0.5, y: 0.5, s: 0.2, c: L.reward, a: 0.4 }], null, { w: 460, h: 460, over: 1, seed: 9 }));
 }
-paintRoom();
+function setLook(k) {
+  look = k;
+  document.documentElement.dataset.look = k;
+  document.querySelector('meta[name="theme-color"]').content = LOOKS[k].theme;
+  document.querySelectorAll('.look button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.look === k));
+  const u = new URL(location.href); u.searchParams.set('look', k); history.replaceState(null, '', u);
+  paintRoom();
+}
+document.querySelectorAll('.look button').forEach((b) => b.addEventListener('click', () => {
+  if (b.dataset.look === look) return;
+  const scr = $('.screen');
+  scr.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, fill: 'forwards' }).finished.then(() => {
+    setLook(b.dataset.look);
+    scr.getAnimations().forEach((a) => a.cancel());
+    scr.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220 });
+  });
+}));
+setLook(look);
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(paintRoom, 200); });
-$('.reward-glow').append(paintField([{ x: 0.5, y: 0.5, s: 0.2, c: [255, 107, 44], a: 0.42 }], null, { w: 460, h: 460, over: 1, seed: 9 }));
+const mix = (a, b, t) => { const p = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)); const x = p(a), y = p(b); return `rgb(${x.map((v, i) => Math.round(v + (y[i] - v) * t)).join(',')})`; };
 
 // Dial ticks: 60 marks, every fifth longer. Drawn once.
 (() => {
@@ -104,6 +127,8 @@ $('.reward-glow').append(paintField([{ x: 0.5, y: 0.5, s: 0.2, c: [255, 107, 44]
     svg.append(l);
   }
 })();
+const tickLines = [...document.querySelectorAll('.ticks line')];
+const heads = [...document.querySelectorAll('.arc .head')];
 
 // Medal edge: thin discs between the faces, so it has a body when it turns.
 (() => { const m = $('.medal'); for (let z = -3; z <= 3; z++) { const e = document.createElement('div'); e.className = 'edge'; e.style.transform = `translateZ(${z}px)`; m.prepend(e); } })();
@@ -120,18 +145,21 @@ let sets, cur, best, medalShown, medalPending = false, phase, locked, restEnd, r
 function rowEl(s, i, done) {
   const r = document.createElement('div');
   r.className = 'row ' + (done ? 'done' : 'up');
-  r.innerHTML = `<span class="mk">${done ? '<svg viewBox="0 0 32 32"><path d="M8 16.5l5.2 5.2L24 10.5"/></svg>' : ''}</span><span class="rl">Set ${i + 1}</span><span class="rv">${fmtW(s.w)}<i>kg ×</i>${s.r}</span>`;
+  r.innerHTML = `<span class="mk">${done ? '<svg viewBox="0 0 32 32"><path d="M8 16.5l5.2 5.2L24 10.5"/></svg>' : ''}</span><span class="rl">Set ${i + 1}</span><span class="rv"><b class="rvw">${fmtW(s.w)}</b><i>kg ×</i><b class="rvr">${s.r}</b></span>`;
   return r;
 }
 function medalSlot(row) { const m = document.createElement('span'); m.className = 'medal-slot'; row.append(m); return m; }
 
 function init() {
   sets = PLAN.map((s) => ({ ...s }));
+  clearTicks();
   cur = 1; best = e1(82.5, 6); medalShown = false; phase = 'ready'; locked = false;
   stopRest();
   doneZone.replaceChildren(rowEl(sets[0], 0, true));
   nextZone.replaceChildren(...sets.slice(2).map((s, k) => rowEl(s, k + 2, false)));
   rW.render(fmtW(sets[1].w)); rR.render(String(sets[1].r)); rSet.render('2');
+  $('.big.w').style.opacity = ''; $('.big.r').style.opacity = '';
+  document.querySelectorAll('.flyer').forEach((f) => f.remove());
   lastEl.textContent = 'last time ' + sets[1].last;
   bestEl.textContent = '82.5 kg × 6';
   for (const el of card.children) { el.getAnimations().forEach((a) => a.cancel()); el.style.opacity = ''; el.style.visibility = ''; }
@@ -168,7 +196,7 @@ function startRest() {
   fadeTo(full, 1, 0, 220);
   fadeTo(pearl, 1, 0, 260); spring(pearl, [{ transform: 'scale(1)' }, { transform: 'scale(.9)' }], SPRINGS.type, { fill: 'forwards' });
   fadeTo(cDark, 1, 0, 160);
-  fadeTo(restFace, 0, 1, 260, { delay: 80, fill: 'backwards' });
+  fadeTo(restFace, 0, 1, 280, { delay: 320, fill: 'backwards' }); // after the next set's numbers have passed
   warm.style.opacity = 1; cool.style.opacity = 1;
   warm.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220 });
   restAnims = segs.map(({ el, right }) => el.animate(right
@@ -177,17 +205,38 @@ function startRest() {
   { duration: T, easing: 'linear', fill: 'forwards' }));
   // Colour follows the time left: cool for most of the rest, warming to orange near the end.
   restAnims.push(cool.animate([{ opacity: 1 }, { opacity: 0.85, offset: 0.5 }, { opacity: 0 }], { duration: T, easing: 'cubic-bezier(.5,0,.75,.6)', fill: 'forwards' }));
+  // A bright head sweeps round at the arc's leading edge (one per colour layer, so it changes colour with them).
+  for (const h of heads) restAnims.push(h.animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], { duration: T, easing: 'linear', fill: 'forwards' }));
+  litCount = 0; lastLeft = REST;
+  tickLines.forEach((l) => { l.classList.remove('lit'); l.style.stroke = ''; });
   fadeTo(hint, 1, 0, 140);
   skipBtn.style.visibility = 'visible'; fadeTo(skipBtn, 0, 1, 220, { delay: 120, fill: 'backwards' });
   tick.setAttribute('aria-label', `Resting. Set ${cur + 1} done`);
   clearInterval(restTimer);
   restTimer = setInterval(restTick, 100);
 }
+let litCount = 0, lastLeft = 0;
 function restTick() {
   const left = Math.max(0, Math.ceil((restEnd - performance.now()) / 1000));
   rCount.set(fmtT(left), -1);
+  // The dial: each tick lights as the head passes it, in the colour of that moment, so the trail shows the time.
+  const a = restAnims[0], f = a ? Math.min(1, (a.currentTime || 0) / ms(REST)) : 1;
+  const want = Math.min(60, Math.floor(f * 60));
+  while (litCount < want) {
+    const l = tickLines[litCount], t = litCount / 59;
+    l.style.stroke = mix(LOOKS[look].cool, LOOKS[look].go, Math.pow(t, 1.6));
+    l.classList.add('lit');
+    litCount++;
+  }
+  // The last five seconds are each their own beat.
+  if (left !== lastLeft && left <= 5 && left > 0) {
+    spring($('.count'), [{ transform: 'scale(1.16)' }, { transform: 'none' }], SPRINGS.press);
+    buzz(6);
+  }
+  lastLeft = left;
   if (performance.now() >= restEnd) { endRest(); }
 }
+function clearTicks() { tickLines.forEach((l) => l.classList.remove('lit')); }
 /** Stops the clock. The ring's animations are kept (held where they are) until it has faded, so it never snaps empty. */
 function stopRest(after = 0) {
   clearInterval(restTimer); restTimer = null;
@@ -199,6 +248,9 @@ function endRest() {
   stopRest(300);
   buzz(30);
   readyLook(true);
+  clearTicks();
+  // Ready: the full ring blooms once.
+  spring(full, [{ transform: 'scale(.94)' }, { transform: 'none' }], SPRINGS.press);
 }
 skipBtn.addEventListener('click', () => {
   if (phase !== 'rest') return;
@@ -234,7 +286,7 @@ function doTick() {
   const i = cur, s = sets[i];
   const wasResting = phase === 'rest';
   phase = 'ticking';
-  if (wasResting) { stopRest(200); fadeTo(restFace, 1, 0, 120); fadeTo(warm, 1, 0, 160); fadeTo(cool, getComputedStyle(cool).opacity, 0, 160); hideSkip(true); }
+  if (wasResting) { stopRest(200); clearTicks(); fadeTo(restFace, 1, 0, 120); fadeTo(warm, 1, 0, 160); fadeTo(cool, getComputedStyle(cool).opacity, 0, 160); hideSkip(true); }
   else fadeTo(hint, 1, 0, 140);
   // The tick has a body: an orange pearl swells inside the button and settles into a check.
   pearl.getAnimations().forEach((a) => a.cancel());
@@ -260,48 +312,69 @@ function doTick() {
   setTimeout(() => { if (phase === 'ticking' && cur < sets.length) startRest(); }, 560);
 }
 
-/** The done set flies up and becomes a slim row; the next set rises from its row into the card. */
+/**
+ * One number travels: a copy drawn at the big size flies between the card and a row, scaling on the way. X and Y
+ * run on slightly different springs, so it moves on a gentle curve. It never fades; when it lands, the real number
+ * takes its place on the same frame.
+ */
+function fly(text, big, small, toSmall, delay = 0, xSpring = { damping: 1, response: 0.34 }, ySpring = SPRINGS.set) {
+  const bs = getComputedStyle(big), br = big.getBoundingClientRect(), sr = small.getBoundingClientRect();
+  const k = parseFloat(getComputedStyle(small).fontSize) / parseFloat(bs.fontSize);
+  const outer = document.createElement('span'), inner = document.createElement('span');
+  outer.className = 'flyer'; inner.textContent = text;
+  Object.assign(outer.style, { left: br.left + 'px', top: br.top + 'px', width: br.width + 'px', height: br.height + 'px' });
+  Object.assign(inner.style, { fontFamily: bs.fontFamily, fontSize: bs.fontSize, fontWeight: bs.fontWeight, fontStyle: bs.fontStyle, letterSpacing: bs.letterSpacing, color: bs.color, lineHeight: br.height + 'px' });
+  outer.append(inner); document.body.append(outer);
+  const b = centre(br), s = centre(sr), dx = s.x - b.x, dy = s.y - b.y;
+  const xs = [{ transform: 'none' }, { transform: `translateX(${dx}px)` }], ys = [{ transform: 'none' }, { transform: `translateY(${dy}px) scale(${k})` }];
+  if (!toSmall) { xs.reverse(); ys.reverse(); }
+  const o = { delay, fill: 'both' };
+  spring(outer, xs, xSpring, o);
+  return spring(inner, ys, ySpring, o).finished.then(() => outer.remove(), () => outer.remove());
+}
+
+/** The done set's numbers fly into a new row above; the next set's numbers fly up out of their row into the card. */
 function conveyor(i, isRec) {
   const s = sets[i];
+  const bigW = $('.big.w'), bigR = $('.big.r');
   // Done rows: the new one lands at the bottom, the others make room upward.
   const before = new Map([...doneZone.children].map((r) => [r, r.getBoundingClientRect().top]));
   const row = rowEl(s, i, true);
+  const rw = row.querySelector('.rvw'), rr = row.querySelector('.rvr');
+  rw.style.opacity = 0; rr.style.opacity = 0;
   doneZone.append(row);
   for (const [r, top] of before) {
     const dy = top - r.getBoundingClientRect().top;
     if (Math.abs(dy) > 0.5) spring(r, [{ transform: `translateY(${dy}px)` }, { transform: 'none' }]);
   }
-  spring(row, [{ transform: 'translateY(14px)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.set, { delay: 120, fill: 'backwards' });
-
-  // A copy of the card's numbers shrinks toward the new row and hands over to it.
-  const vr = vals.getBoundingClientRect(), cr = card.getBoundingClientRect();
-  const g = vals.cloneNode(true);
-  g.setAttribute('aria-hidden', 'true');
-  Object.assign(g.style, { position: 'absolute', left: vr.left - cr.left + 'px', top: vr.top - cr.top + 'px', width: vr.width + 'px', margin: 0, pointerEvents: 'none' });
-  card.append(g);
-  const to = centre(row.querySelector('.rv').getBoundingClientRect()), from = centre(vr);
-  spring(g, [{ transform: 'none', opacity: 1 }, { transform: `translate(${to.x - from.x}px, ${to.y - from.y}px) scale(.3)`, opacity: 0 }], SPRINGS.set, { fill: 'forwards' })
-    .finished.then(() => g.remove(), () => g.remove());
+  for (const el of row.querySelectorAll('.mk, .rl, i')) spring(el, [{ opacity: 0 }, { opacity: 1 }], SPRINGS.set, { delay: 160, fill: 'backwards' });
+  const land = (el) => () => { el.style.opacity = ''; };
+  fly(fmtW(s.w), bigW, rw, true).then(land(rw));
+  fly(String(s.r), bigR, rr, true, 30).then(land(rr));
+  bigW.style.opacity = 0; bigR.style.opacity = 0;
 
   cur = i + 1;
   const n = sets[cur];
-  if (!n) { vals.style.opacity = 0; return row; }
-  // The next set's row rises into the card; the rows below it move up.
+  if (!n) return row;
+  // The next set: its numbers leave their row and grow into the card; the row's other parts fade, the rows below move up.
   const up = nextZone.firstElementChild;
   const ur = up.getBoundingClientRect();
   const rest = [...nextZone.children].slice(1), rb = new Map(rest.map((r) => [r, r.getBoundingClientRect().top]));
-  const ug = up.cloneNode(true);
-  Object.assign(ug.style, { position: 'absolute', left: ur.left + 'px', top: ur.top + 'px', width: ur.width + 'px', pointerEvents: 'none', zIndex: 2 });
-  document.body.append(ug);
-  up.remove();
-  spring(ug, [{ transform: 'none', opacity: 1 }, { transform: 'translateY(-30px)', opacity: 0 }], SPRINGS.type, { fill: 'forwards' }).finished.then(() => ug.remove(), () => ug.remove());
+  rW.render(fmtW(n.w)); rR.render(String(n.r));
+  const uw = up.querySelector('.rvw'), urr = up.querySelector('.rvr');
+  // Sideways first, then up: X settles faster than Y, so the numbers swing round the dial instead of through it.
+  const IN_X = { damping: 1, response: 0.26 }, IN_Y = { damping: 1, response: 0.46 };
+  const pw = fly(fmtW(n.w), bigW, uw, false, 90, IN_X, IN_Y), pr = fly(String(n.r), bigR, urr, false, 120, IN_X, IN_Y);
+  uw.style.opacity = 0; urr.style.opacity = 0;
+  Object.assign(up.style, { position: 'fixed', left: ur.left + 'px', top: ur.top + 'px', width: ur.width + 'px', margin: 0, pointerEvents: 'none' });
+  document.body.append(up);
+  spring(up, [{ opacity: 1 }, { opacity: 0 }], SPRINGS.type, { fill: 'forwards' }).finished.then(() => up.remove(), () => up.remove());
   for (const [r, top] of rb) {
     const dy = top - r.getBoundingClientRect().top;
-    if (Math.abs(dy) > 0.5) spring(r, [{ transform: `translateY(${dy}px)` }, { transform: 'none' }], SPRINGS.set, { delay: 40, fill: 'backwards' });
+    if (Math.abs(dy) > 0.5) spring(r, [{ transform: `translateY(${dy}px)` }, { transform: 'none' }], SPRINGS.set, { delay: 140, fill: 'backwards' });
   }
-  rW.render(fmtW(n.w)); rR.render(String(n.r));
-  // A short rise, not the whole way: the full path would cross the dial.
-  spring(vals, [{ transform: 'translateY(34px) scale(.86)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.set, { delay: 90, fill: 'backwards' });
+  pw.then(() => { if (sets[cur] === n) bigW.style.opacity = ''; });
+  pr.then(() => { if (sets[cur] === n) bigR.style.opacity = ''; });
   rSet.set(String(cur + 1), 1);
   lastEl.textContent = 'last time ' + n.last;
   lastEl.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 260, delay: 120, fill: 'backwards' });

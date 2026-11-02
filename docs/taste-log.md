@@ -22,6 +22,11 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 
 ## Entries
 
+### 2 Nov 2026: the workout slice (round 1, /_prototypes/slice/)
+Verdict: no. His words: "This is very in my old style. I actually don't like it, but maybe it's because the color or something. … Maybe you can do another style that's a little better. And when you say the motion is 6 out of 10 and the design is 7 out of 10, try to make it an 8 or a 9."
+On the motion: "Yes, the set [tick], but I feel like it needs better motion and number shrinking. It doesn't really shrink. Yes, it shrinks, but then it fades away and there's a number replacing it. Yes, the ring [filling], but I don't know. This just seems a little boring."
+Reading: the tick is a keeper. "Transform, not replace" must be literal: the same numbers have to travel and land, never cross-fade into a copy. The rest ring needs more life than a filling line. Old Aven's paint (near-black, warm orange glow) reads as old Aven even in a new layout, so it goes. Judges must reach 8+ before he sees a round.
+
 ### 2 Nov 2026: his motion language, from the 48 picks
 His words: "My narrowing in the Motion Library ("picks3", 48 kept) is my real taste. Note what I DROPPED: every sky/time item and almost every whole-room colour flood. Round 3 leaned on skies, and I only hearted 2 of 32. So drop "time is a sky" and "light owns the room" as signatures."
 "My language, from what I kept: physical and continuous. (1) Numbers have weight (rolls, counters, dials). (2) Things transform instead of being replaced (trays, unfolding approvals, cards to pages, controls turning into choices). (3) Big decisions are committed with the hand (hold, slide, toggle); one tap still ticks a set. (4) Colour lives in controls and follows their value, not flooding the room. (5) The Coach is quiet (a dot, an ask bar that becomes the conversation). (6) Calm hero screens with one big number (Oura, MacroFactor, Copilot)."
