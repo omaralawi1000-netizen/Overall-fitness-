@@ -44,6 +44,15 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 
 ## Entries
 
+### 2 Nov 2026, 22:00: the Today photo follows the time of day
+Asked (passed on in the project chat; his exact words aren't on record): the Today photo should change with the time of day, from morning mountains and sun through to night.
+Reading: this brings back the sky-through-the-day hearts he had dropped as a signature.
+Two things he made clear in the same talk:
+- **"The library"** means the motion library's 73 saves (store `loves`: 65 clips and 8 stills). All of them are to be used, with the best one picked for each moment.
+- **"It's only a plan":** plans come without a separate build prompt.
+Plan direction (thread "Make the Today and workout app exceptional"): one real valley whose light follows the clock, and a draggable ruler of hours that replaces the Oura-like arc and the four rings. The workout opens by pushing into the same photo.
+Verdict: waiting for Omar's OK on the plan.
+
 ### 2 Nov 2026, night: Heat workout as a deck of glass (/_prototypes/heat/)
 Built: the sets are now a deck of glass cards, like Apple Wallet. Done sets file up behind the current card and show their top row with a check, and the exercise before sits at the top of the pile. The set you're on is the big frosted card. The next sets and the next exercise peek out below. Tapping Done checks the pearl, then the finished card files up behind while the next one rises into place, and then the Done pill's outline grows into the rest ring. A new exercise deals the deck away to the left and deals the new one in from the right, card by card. Sheets and the rest ring now grow by their outline, so they are frosted from the first frame.
 Verdict: waiting for Omar.
