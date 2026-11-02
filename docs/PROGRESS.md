@@ -176,6 +176,17 @@ can really do on Android and iPhone. Nothing built.
 - Needs phone: blur and banding on his screen, tap latency on Log, slide-to-accept feel, Skip within 250 ms,
   rest running out.
 
+## Session 8: what Omar loves in old Aven (1 Nov 2026, late night)
+- Omar rejected all six looks (Ink, Ink rich, Heat, Day line, Rooms, Ordinary) and asked for many reviewers on old Aven.
+- Ran old Aven with demo data: 48 screenshots, plus films of tick to rest, finish, tabs and opening a workout (filmed
+  with time slowed 10x so the headless computer gives smooth motion). Seven reviewers, two rounds of debate.
+- Findings: docs/research/taste-2026-11-01.md. In short: the rounds threw away old Aven's light (near-black room, one
+  soft glow, clear glass, italic serif names with thin numbers, one coral thing to tap, the orb). Missing for
+  world-class: a rest that owns the screen, a Today with one answer, a tick with a body, one world instead of blinking
+  areas, light with a source, a Coach that is an event.
+- Taste test (11 this-or-that pairs) for his phone: https://claude.ai/artifact/3F55dCusNya4BDpNacPhZA
+
 ## Next step
-Omar picks a spine on his phone at /round/ and says what he liked and didn't. Update docs/keepers.md from his
-answers only. Then the gym sprint starts with the winner, using only keepers that fit it.
+Omar answers the taste test on his phone. Read his picks (ArtifactData list, collection `answers`), write only what he
+picked into docs/keepers.md, then start the next design round from the keepers and the recipe in
+docs/research/taste-2026-11-01.md.
