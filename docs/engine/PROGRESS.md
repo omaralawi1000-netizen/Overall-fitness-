@@ -3,6 +3,9 @@
 Spec and review: `SPEC.md`. Data model: `DATA-MODEL.md`. Old code map: `old-logic-map.md`.
 Branch: `claude/project-thread-dkkklx`. The main `docs/PROGRESS.md` is for design; engine progress lives here only.
 
+## Merge rule
+Merge an engine PR only when `npm run verify` is green **and** Codex's review of it has finished. Fix or answer every finding first. PR #44 was merged while Codex was still reviewing, and it found 4 real bugs afterwards (fixed in #45).
+
 ## Plan
 | Part | What | Model | Phone check |
 |---|---|---|---|
