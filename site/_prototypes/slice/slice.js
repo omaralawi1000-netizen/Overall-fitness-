@@ -265,9 +265,10 @@ function restTick() {
   if (performance.now() >= restEnd) { endRest(); }
 }
 /** Stops the clock. The ring's animations are kept (held where they are) until it has faded, so it never snaps empty. */
-function stopRest(after = 0) {
+function stopRest(after = 0, freeze = false) {
   clearInterval(restTimer); restTimer = null;
   const list = restAnims; restAnims = [];
+  if (freeze) list.forEach((a) => { try { a.commitStyles(); } catch { /* element gone */ } });
   list.forEach((a) => a.pause());
   if (after) setTimeout(() => list.forEach((a) => a.cancel()), after); else list.forEach((a) => a.cancel());
 }
@@ -314,7 +315,7 @@ function doTick() {
     // Read where everything is first, then let go of the rest animations, so nothing pops.
     const op = (el) => getComputedStyle(el).opacity;
     const o = { rb: op(ribbons), rf: op(restFace), w: op(warm), c: op(cool), f: op(full) }, rt = getComputedStyle(ringset).transform;
-    stopRest(300); // held (paused) under the fades below, cancelled once they are done
+    stopRest(0, true); // each rest animation is frozen where it is (committed), so nothing shows through the fades below
     fadeTo(ribbons, o.rb, 0, 200); fadeTo(restFace, o.rf, 0, 90); fadeTo(warm, o.w, 0, 240); fadeTo(cool, o.c, 0, 240); fadeTo(full, o.f, 1, 240);
     // The ring closes round the button again before the next rest grows it back out.
     ringset.getAnimations().forEach((a) => a.cancel());
