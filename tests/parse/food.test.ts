@@ -136,3 +136,13 @@ describe('Codex review of #51, round 3', () => {
     expect(rowQuantity(parseFood('1 dl oats').rows[0], oats).qty).toEqual({ amount: 40, unit: 'g' });
   });
 });
+
+describe('Codex review of #51, round 4', () => {
+  it('plural mass units keep their weight', () => {
+    expect(parseFood('2 kilograms potatoes').rows[0]).toMatchObject({ amount: 2000, dim: 'g', query: 'potatoes' });
+  });
+  it('Danish body weight with a subject', () => {
+    expect(readBodyweight('jeg vejer 82,5 kg')).toEqual({ kg: 82.5 });
+    expect(readBodyweight('jeg vejede 82 kilo i morges')).toEqual({ kg: 82 });
+  });
+});

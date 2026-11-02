@@ -71,7 +71,7 @@ export function understand(text: string, ctx: Context = { workoutOpen: false }):
   if (wo) return wo;
 
   let meal: Meal | undefined;
-  let f = t;
+  let f = t.replace(/[.!?\s]+$/, ''); // a full stop at the end changes nothing
   for (const [re, m] of MEALS) if (re.test(f)) { meal = m; f = f.replace(re, '').trim(); }
   const lead = FOOD_LEAD.test(f);
   f = f.replace(FOOD_LEAD, '');

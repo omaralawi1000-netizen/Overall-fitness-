@@ -13,12 +13,18 @@ export interface WorkoutRow { raw: string; query: string; sets: WorkoutSet[] }
 /** Only the number words that cannot be ordinary words ("to", "en" and "et" are left out: "back to back"). */
 const W: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12, fifteen: 15, twenty: 20, tre: 3, fire: 4, fem: 5, seks: 6, syv: 7, otte: 8, ni: 9, ti: 10 };
 
+/** Number words are digits only where they are a quantity: next to a unit, a set word or a connector, or next to another number. "One-arm Dumbbell Row" keeps its "one". */
+const QTY_AFTER = /^\s*(?:kg|kilos?|kilograms?|lbs?|pounds?|reps?|gange|sets?|saet|sæt|x|×|for|by|at|@|times|seconds?|secs?|minutes?|mins?|km|miles?|\d)/;
+const QTY_BEFORE = /(?:\b(?:for|at|x|by|of|af|and|og|with|med|på|paa|then)|[,&@×]|\d)\s*$/;
+const NUMBER_RE = new RegExp(`\\b(${Object.keys(W).join('|')})\\b`, 'g');
 function normaliseNumbers(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/(\d),(\d)/g, '$1.$2')
-    .replace(/\b(one|two|three|four|five|six|seven|eight|nine|ten|twelve|fifteen|twenty|tre|fire|fem|seks|syv|otte|ni|ti)\b/g, (m) => String(W[m]))
-    .replace(/×/g, ' x ');
+  let out = s.toLowerCase().replace(/(\d),(\d)/g, '$1.$2').replace(/×/g, ' x ');
+  for (let pass = 0; pass < 6; pass++) {
+    const next = out.replace(NUMBER_RE, (m, w: string, at: number) => (QTY_AFTER.test(out.slice(at + m.length)) || QTY_BEFORE.test(out.slice(0, at)) ? String(W[w]) : m));
+    if (next === out) break;
+    out = next;
+  }
+  return out;
 }
 
 export function splitExerciseSegments(text: string): string[] {

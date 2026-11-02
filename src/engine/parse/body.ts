@@ -44,7 +44,7 @@ function water(ml: number, assumed?: string): BodyRead<WaterRead> {
   return { ml: v, ...(assumed ? { assumed } : {}) };
 }
 
-const WEIGHT_CUE = '(?:(?:i )?(?:weigh|weighed|weigh in at|vejer|vejede)|(?:my )?(?:body ?weight|morning weight|weight|kropsvaegt|vaegt|min vaegt|morgenvaegt))(?: is| was| er| var| at)?';
+const WEIGHT_CUE = '(?:(?:(?:i|jeg) )?(?:weigh|weighed|weigh in at|vejer|vejede)|(?:my )?(?:body ?weight|morning weight|weight|kropsvaegt|vaegt|min vaegt|morgenvaegt))(?: is| was| er| var| at)?';
 
 /** "I weigh 82.5", "bodyweight 180 lb", "vægt 82,5 kg". Null when no weight word was said. */
 export function readBodyweight(text: string): BodyRead<BodyweightRead> {

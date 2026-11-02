@@ -80,3 +80,13 @@ describe('very long text', () => {
     expect(performance.now() - t0).toBeLessThan(100);
   });
 });
+
+describe('Codex review of #51, round 4', () => {
+  it('a full stop at the end changes nothing', () => {
+    expect(understand('I had 2 eggs for breakfast.')).toMatchObject({ kind: 'food', meal: 'breakfast', rows: [{ query: 'eggs' }] });
+    expect(understand('a banana for breakfast.')).toMatchObject({ kind: 'food', meal: 'breakfast' });
+  });
+  it('an exercise named with a number word is logged by name', () => {
+    expect(understand('One-arm Dumbbell Row 20 kg for 10')).toMatchObject({ kind: 'workout', rows: [{ exercise: { name: 'One-arm Dumbbell Row' } }] });
+  });
+});

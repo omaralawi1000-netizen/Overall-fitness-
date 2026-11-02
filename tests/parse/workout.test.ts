@@ -78,3 +78,13 @@ describe('Codex review of #51, round 2', () => {
     expect(sets('bench 8 8 6 reps at 80 kg')).toEqual([[80, 8], [80, 8], [80, 6]]);
   });
 });
+
+describe('Codex review of #51, round 4', () => {
+  it('number words inside an exercise name stay; number words that are quantities still count', () => {
+    expect(parseWorkoutText('One-arm Dumbbell Row 20 kg for 10').rows[0]).toMatchObject({ query: 'one-arm dumbbell row', sets: [{ kg: 20, reps: 10 }] });
+    expect(parseWorkoutText('one arm dumbbell row twenty kg for ten').rows[0]).toMatchObject({ query: 'one arm dumbbell row', sets: [{ kg: 20, reps: 10 }] });
+    expect(sets('bench press eighty for eight')).toEqual([[80, 8]]);
+    expect(sets('bench three sets of eight at eighty')).toEqual([[80, 8], [80, 8], [80, 8]]);
+    expect(sets('bench eight eight six reps at eighty kg')).toEqual([[80, 8], [80, 8], [80, 6]]);
+  });
+});

@@ -61,7 +61,7 @@ Tests live in `tests/engine/`. "untested" is said plainly.
 | Reading a phrase saves nothing | `e2e` phrase box ("nothing was saved by reading") | tested in Chromium |
 | Memory cards (scope, valid-from/until, last-seen) and the Coach ladder | model types, import of old memory notes | shape only: used in the Coach phase |
 
-## Test inventory (238 tests: 82 engine, 156 parser)
+## Test inventory (243 tests: 82 engine, 161 parser)
 Fewer tests than rules looks thin, but each property test runs 25 to 200 random cases, so the real count of checked cases is in the thousands.
 
 **Property tests (12):**
@@ -122,3 +122,5 @@ Codex's first look at #51 (7 findings, all reproduced by a failing test, then fi
 Codex's second look at #51 (4 findings, all reproduced, then fixed): the rep-list pattern could take seconds on a long digit string (a pasted number could freeze the phrase box; now separators are required, phrases over 300 characters are ignored, and a timing property test covers it); `skyr,60g oats` without a space after the comma is split; a portion that stands for several items ("2 slices (50 g)") counts per item; "1/2 cup" is 120 ml, not 480.
 
 Codex's third look at #51 (2 findings, reproduced, fixed): plural units ("2 teaspoons", "tablespoons") now keep their volume; a food measured in ml is weighed like a liquid, never with a dry ingredient's density ("100 g oat milk" is not oats).
+
+Codex's fourth look at #51 (4 new findings; a 5th, plural units, was already fixed in the commit before): number words stay in exercise names ("One-arm Dumbbell Row") and are digits only where they are a quantity; a full stop at the end no longer hides the meal word; "jeg vejer 82,5 kg" works.
