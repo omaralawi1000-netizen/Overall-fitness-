@@ -24,7 +24,8 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 
 ### 2 Nov 2026: the workout slice (round 2, Volt and Daylight)
 Verdict: no. His words: "I'm just saying, I don't like the design. It feels very plain."
-Reading: round 1 was "very in my old style", and round 2 is "plain". Taking out the glow and the atmosphere overcorrected. The answer is somewhere between: a new look that still has richness and light, not old Aven's paint and not a flat page. Open: did both looks feel plain, and did the motion feel better than round 1?
+Reading: round 1 was "very in my old style", and round 2 is "plain". Taking out the glow and the atmosphere overcorrected. The answer is somewhere between: a new look that still has richness and light, not old Aven's paint and not a flat page. On the motion: "Yes, the motion felt better, but it still needs a lot of work. It doesn't feel premium, but maybe that's because it's not a part of a premium design. I want it to feel like wowing, like references."
+On round 1: "The first one was just my old app." He may not have seen the second look (the switch at the top).
 
 ### 2 Nov 2026: build from the clips themselves
 His words: "Do you think this is a good idea? We use the actual things I like, just with, like, use the actual reference I like."
