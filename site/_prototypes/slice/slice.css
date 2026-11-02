@@ -19,7 +19,7 @@
   --cool: #55701f;
   --surface: #0f1113; --surface-edge: inset 0 1px 0 rgba(255, 255, 255, .06), inset 0 0 0 1px rgba(255, 255, 255, .055); --surface-blur: none; --surface-shadow: 0 0 0 transparent;
   --chip: rgba(255, 255, 255, .07); --chip-on: rgba(255, 255, 255, .13);
-  --ring: 8px; --track: rgba(255, 255, 255, .07); --tickmark: rgba(255, 255, 255, .14); --tickmark-major: rgba(255, 255, 255, .3);
+  --ring: 8px; --track: rgba(255, 255, 255, .07);
   --disc-bg: #16191c; --disc-edge: inset 0 1px 0 rgba(255, 255, 255, .07);
   --name: 600 normal 34px/1.05 var(--sans); --name-track: -.035em; --em-font: var(--sans); --em-style: normal; --em-weight: 560;
   --num-weight: 420; --num-track: -.05em;
@@ -37,7 +37,7 @@
   --cool: #b7c4e6;
   --surface: rgba(255, 255, 255, .62); --surface-edge: inset 0 1px 0 rgba(255, 255, 255, .95), inset 0 0 0 1px rgba(255, 255, 255, .7); --surface-blur: blur(24px) saturate(1.4); --surface-shadow: 0 18px 44px rgba(30, 44, 90, .09), 0 2px 6px rgba(30, 44, 90, .04);
   --chip: rgba(15, 19, 32, .055); --chip-on: rgba(15, 19, 32, .1);
-  --ring: 6px; --track: rgba(15, 19, 32, .07); --tickmark: rgba(15, 19, 32, .14); --tickmark-major: rgba(15, 19, 32, .3);
+  --ring: 6px; --track: rgba(15, 19, 32, .07);
   --disc-bg: rgba(255, 255, 255, .9); --disc-edge: 0 6px 18px rgba(30, 44, 90, .08), inset 0 0 0 1px rgba(15, 19, 32, .05);
   --name: italic 400 40px/1.05 var(--serif); --name-track: -.015em; --em-font: var(--serif); --em-style: italic; --em-weight: 400;
   --num-weight: 250; --num-track: -.045em;
@@ -127,9 +127,6 @@ em { font-family: var(--em-font); font-style: var(--em-style); font-weight: var(
 
 /* The dial: the tick button, with the rest ring around it. */
 .dial { position: relative; width: var(--dial); height: var(--dial); margin: 14px auto 0; }
-.ticks { position: absolute; inset: -12px; width: calc(100% + 24px); height: calc(100% + 24px); }
-.ticks line { stroke: var(--tickmark); stroke-width: 1; stroke-linecap: round; }
-.ticks line.major { stroke: var(--tickmark-major); }
 .track, .full, .arc, .half, .seg { position: absolute; border-radius: 50%; }
 .track, .full, .arc { inset: 0; }
 .track { box-shadow: inset 0 0 0 var(--ring) var(--track); }
@@ -151,10 +148,9 @@ em { font-family: var(--em-font); font-style: var(--em-style); font-weight: var(
 .c-hot { stroke: var(--go); }
 [data-look="b"] .c-hot { stroke: var(--go); }
 .c-dark { stroke: var(--on-go); stroke-width: 3; opacity: 0; }
-.rest-face { display: flex; flex-direction: column; align-items: center; opacity: 0; }
+.rest-face { display: flex; flex-direction: column; align-items: center; opacity: 0; margin-top: -22px; position: relative; }
 .rest-word { font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--faint); }
 .count { font-size: 40px; font-weight: var(--num-weight); letter-spacing: -.035em; line-height: 46px; font-variant-numeric: tabular-nums; }
-.rest-tap { font-size: 11px; letter-spacing: .04em; color: var(--dim); margin-top: 2px; }
 
 .foot { height: 44px; margin-top: 8px; display: grid; place-items: center; }
 .foot > * { grid-area: 1 / 1; }
@@ -199,14 +195,19 @@ em { font-family: var(--em-font); font-style: var(--em-style); font-weight: var(
 .r-max { color: var(--dim); font-size: 14px; margin-top: 4px; font-variant-numeric: tabular-nums; }
 .reward-text > * { opacity: 0; }
 
-/* The rest dial's head: a bright bead at the arc's leading edge, rotated on the compositor. */
-.head { position: absolute; inset: 0; will-change: transform; }
-.head i { position: absolute; left: 50%; top: calc(var(--ring) / 2); width: calc(var(--ring) + 6px); height: calc(var(--ring) + 6px); margin: calc((var(--ring) + 6px) / -2) 0 0 calc((var(--ring) + 6px) / -2); border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px var(--halo), 0 0 14px var(--c); }
-.ticks line { transition: stroke .45s; }
-.ticks.quiet line { transition: none; }
-.ticks line.lit { stroke-width: 2; }
-.ticks line:not(.lit) { stroke: var(--tickmark) !important; }
-.ticks line.major:not(.lit) { stroke: var(--tickmark-major) !important; }
+/* Rest ring: one set of rings that scales between hugging the button and its full size. */
+.ringset { position: absolute; inset: 0; border-radius: 50%; will-change: transform; }
+/* The light inside the button during rest: ribbons, clipped to the disc. */
+.ribbons { position: absolute; inset: 0; border-radius: 50%; overflow: hidden; opacity: 0; pointer-events: none; }
+.ribbons-in, .rib { position: absolute; inset: 0; transform-origin: 50% 72%; }
+.rib { will-change: transform; }
+.rib canvas { position: absolute; left: 0; top: 0; }
+.rib canvas.go { opacity: 0; }
+/* Sparks round the pearl as it swells (Not Boring). */
+.sparks { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; }
+.sparks i { position: absolute; left: -1px; top: -5px; width: 2px; height: 10px; border-radius: 1px; background: var(--go); opacity: 0; }
+.pearl::after { content: ''; position: absolute; left: 22%; top: 14%; width: 34%; height: 22%; border-radius: 50%; background: radial-gradient(closest-side, rgba(255, 255, 255, .75), transparent); }
+.pearl { position: relative; }
 /* A number in flight between the card and a row (drawn at the big size, scaled down on the way). */
 .flyer { position: fixed; z-index: 20; display: flex; justify-content: center; pointer-events: none; will-change: transform; }
 .flyer > span { display: block; white-space: pre; font-variant-numeric: tabular-nums; transform-origin: 50% 50%; will-change: transform; }

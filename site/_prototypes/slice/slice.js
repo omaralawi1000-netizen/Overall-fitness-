@@ -59,7 +59,8 @@ class Roll {
       if (prev && dx === null) dx = o.left + prev.x - c.getBoundingClientRect().left;
       if (prev && prev.t === c.textContent) return;
       if (prev) this.ghost(prev, -dir * h);
-      spring(c, [{ transform: `translateY(${dir * h}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.type);
+      // Push's roll (only this digit moves, stretched as it travels) + Family's landing (a tiny settle in scale).
+      spring(c, [{ transform: `translateY(${dir * h}px) scale(.86, 1.12)`, opacity: 0 }, { transform: 'none', opacity: 1 }], { damping: 0.78, response: 0.3 });
     });
     old.forEach((p, i) => { if (!used.has(i)) this.ghost(p, -dir * h * 0.5); });
     if (dx === null) dx = o.left - n.left;
@@ -77,6 +78,8 @@ class Roll {
 const card = $('.card'), vals = $('.vals'), doneZone = $('.done-zone'), nextZone = $('.next-zone');
 const tick = $('.tick'), pearl = $('.pearl'), cHot = $('.c-hot'), cDark = $('.c-dark'), restFace = $('.rest-face');
 const full = $('.full'), warm = $('.arc.warm'), cool = $('.arc.cool'), hint = $('.hint'), skipBtn = $('.skip');
+const ringset = $('.ringset'), ribbons = $('.ribbons'), ribbonsIn = $('.ribbons-in');
+const sparks = [...document.querySelectorAll('.sparks i')];
 const segs = [...document.querySelectorAll('.arc .half')].map((h) => ({ el: h.firstElementChild, right: h.classList.contains('r') }));
 const lastEl = $('.last'), bestEl = $('.best'), summary = $('.summary');
 const rW = new Roll($('.big.w')), rR = new Roll($('.big.r')), rSet = new Roll($('.set-no')), rCount = new Roll($('.count'), fmtT(REST));
@@ -88,6 +91,7 @@ const LOOKS = {
   b: { room: { blobs: [{ x: 0.95, y: 0.02, sx: 0.8, sy: 0.6, c: [176, 198, 255], a: 0.55 }, { x: 0.05, y: 0.95, sx: 0.7, sy: 0.5, c: [255, 255, 255], a: 0.7 }], base: [237, 240, 245] },
        reward: [150, 175, 255], cool: '#b7c4e6', go: '#2d58ff', theme: '#edf0f5' },
 };
+let ribbonsReady = false;
 let look = new URLSearchParams(location.search).get('look') === 'b' ? 'b' : 'a';
 function paintRoom() {
   const L = LOOKS[look], host = $('.glow');
@@ -101,6 +105,7 @@ function setLook(k) {
   document.querySelectorAll('.look button').forEach((b) => b.setAttribute('aria-pressed', b.dataset.look === k));
   const u = new URL(location.href); u.searchParams.set('look', k); history.replaceState(null, '', u);
   paintRoom();
+  if (ribbonsReady) paintRibbons();
 }
 document.querySelectorAll('.look button').forEach((b) => b.addEventListener('click', () => {
   if (b.dataset.look === look) return;
@@ -108,22 +113,32 @@ document.querySelectorAll('.look button').forEach((b) => b.addEventListener('cli
 }));
 setLook(look);
 let rz; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(paintRoom, 200); });
-const mix = (a, b, t) => { const p = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)); const x = p(a), y = p(b); return `rgb(${x.map((v, i) => Math.round(v + (y[i] - v) * t)).join(',')})`; };
-
-// Dial ticks: 60 marks, every fifth longer. Drawn once.
-(() => {
-  const svg = $('.ticks'), ns = 'http://www.w3.org/2000/svg';
-  for (let i = 0; i < 60; i++) {
-    const a = (i / 60) * Math.PI * 2, major = i % 5 === 0, r1 = major ? 93 : 95, r2 = 99;
-    const l = document.createElementNS(ns, 'line');
-    l.setAttribute('x1', 100 + r1 * Math.sin(a)); l.setAttribute('y1', 100 - r1 * Math.cos(a));
-    l.setAttribute('x2', 100 + r2 * Math.sin(a)); l.setAttribute('y2', 100 - r2 * Math.cos(a));
-    if (major) l.setAttribute('class', 'major');
-    svg.append(l);
+// The rest light (Apple Watch's breathing countdown): three soft ribbons drawn once per look, in the calm colour and
+// in the "go" colour. During rest they drift, warm from one colour to the other, and pull together into one line.
+const RIBBONS = [{ amp: 0.09, f: 0.9, ph: 0.3, w: 2.6 }, { amp: 0.06, f: 1.35, ph: 2.1, w: 2 }, { amp: 0.11, f: 0.7, ph: 4.2, w: 1.6 }];
+const RIB_Y = 0.72; // the light sits under the number, never behind it
+function paintRibbons() {
+  const D = tick.offsetWidth || 140, S = Math.min(window.devicePixelRatio || 1, 2), L = LOOKS[look];
+  for (const [k, rib] of document.querySelectorAll('.rib').entries()) {
+    for (const cv of rib.querySelectorAll('canvas')) {
+      const col = cv.classList.contains('go') ? L.go : L.cool, p = RIBBONS[k];
+      cv.width = cv.height = Math.round(D * S); cv.style.width = cv.style.height = D + 'px';
+      const ctx = cv.getContext('2d');
+      ctx.scale(S, S); ctx.lineCap = 'round'; ctx.strokeStyle = col; ctx.shadowColor = col;
+      for (const [blur, alpha, wm] of [[14, 0.5, 2.4], [5, 0.95, 1]]) {
+        ctx.shadowBlur = blur; ctx.globalAlpha = alpha; ctx.lineWidth = p.w * wm;
+        ctx.beginPath();
+        for (let x = -4; x <= D + 4; x += 2) {
+          const u = x / D, env = Math.sin(Math.PI * Math.min(1, Math.max(0, u)));
+          const y = D * RIB_Y + D * p.amp * env * Math.sin(u * Math.PI * 2 * p.f + p.ph);
+          x === -4 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+      }
+    }
   }
-})();
-const tickLines = [...document.querySelectorAll('.ticks line')];
-const heads = [...document.querySelectorAll('.arc .head')];
+}
+ribbonsReady = true; paintRibbons();
 
 // Medal edge: thin discs between the faces, so it has a body when it turns.
 (() => { const m = $('.medal'); for (let z = -3; z <= 3; z++) { const e = document.createElement('div'); e.className = 'edge'; e.style.transform = `translateZ(${z}px)`; m.prepend(e); } })();
@@ -151,7 +166,6 @@ function medalSlot(row) { const m = document.createElement('span'); m.className 
 function init() {
   sets = PLAN.map((s) => ({ ...s }));
   gen++; inFlight = 0;
-  clearTicks();
   cur = 1; best = e1(82.5, 6); medalShown = false; phase = 'ready'; locked = false;
   stopRest();
   doneZone.replaceChildren(rowEl(sets[0], 0, true));
@@ -168,10 +182,18 @@ function init() {
 }
 
 /* ---------- Rest: a ring that fills, cool to orange as time runs out ---------- */
+/** How small the ring is when it hugs the button (ready), as a share of the full rest ring. */
+const rim = () => (tick.offsetWidth + 18) / $('.dial').offsetWidth;
 function readyLook(animate = true) {
   phase = 'ready';
   const d = animate ? 260 : 0;
+  // The ring closes back round the button and turns to "go" (Apple Watch's timer, in reverse).
+  const from = getComputedStyle(ringset).transform;
+  ringset.getAnimations().forEach((a) => a.cancel());
+  ringset.style.transform = `scale(${rim()})`;
+  if (animate) spring(ringset, [{ transform: from === 'none' ? 'none' : from }, { transform: `scale(${rim()})` }], SPRINGS.press);
   fadeTo(full, getComputedStyle(full).opacity, 1, d);
+  fadeTo(ribbons, getComputedStyle(ribbons).opacity, 0, d);
   fadeTo(warm, getComputedStyle(warm).opacity, 0, d); fadeTo(cool, getComputedStyle(cool).opacity, 0, d);
   fadeTo(restFace, getComputedStyle(restFace).opacity, 0, d * 0.6);
   pearl.getAnimations().forEach((a) => a.cancel()); pearl.style.opacity = 0; pearl.style.transform = 'scale(0)';
@@ -191,55 +213,50 @@ function startRest() {
   phase = 'rest';
   const T = ms(REST);
   restEnd = performance.now() + T;
-  rCount.render(fmtT(REST));
-  fadeTo(full, 1, 0, 220);
+  rCount.render(fmtT(REST)); lastLeft = REST;
+  // The button grows into the rest ring (Apple Watch's timer): the ring swells out from the button to its full size
+  // and goes from "go" to the calm colour as it does. Then it empties, second by second.
+  const grow = curve(SPRINGS.set).duration;
+  ringset.getAnimations().forEach((a) => a.cancel());
+  ringset.style.transform = 'none';
+  spring(ringset, [{ transform: `scale(${rim()})` }, { transform: 'none' }], SPRINGS.set);
+  fadeTo(full, 1, 0, grow);
+  warm.style.opacity = 1; cool.style.opacity = 1;
+  warm.animate([{ opacity: 0 }, { opacity: 1 }], { duration: grow });
   fadeTo(pearl, 1, 0, 260); spring(pearl, [{ transform: 'scale(1)' }, { transform: 'scale(.9)' }], SPRINGS.type, { fill: 'forwards' });
   fadeTo(cDark, 1, 0, 160);
   fadeTo(restFace, 0, 1, 280, { delay: 320, fill: 'backwards' }); // after the next set's numbers have passed
-  warm.style.opacity = 1; cool.style.opacity = 1;
-  warm.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220 });
   restAnims = segs.map(({ el, right }) => el.animate(right
-    ? [{ transform: 'rotate(45deg)' }, { transform: 'rotate(225deg)', offset: 0.5 }, { transform: 'rotate(225deg)' }]
-    : [{ transform: 'rotate(45deg)' }, { transform: 'rotate(45deg)', offset: 0.5 }, { transform: 'rotate(225deg)' }],
+    ? [{ transform: 'rotate(225deg)' }, { transform: 'rotate(225deg)', offset: 0.5 }, { transform: 'rotate(45deg)' }]
+    : [{ transform: 'rotate(225deg)' }, { transform: 'rotate(45deg)', offset: 0.5 }, { transform: 'rotate(45deg)' }],
   { duration: T, easing: 'linear', fill: 'forwards' }));
-  // Colour follows the time left: cool for most of the rest, warming to orange near the end.
+  // Colour follows the time left: calm for most of the rest, turning to "go" near the end (Apple's effort colour).
   restAnims.push(cool.animate([{ opacity: 1 }, { opacity: 0.85, offset: 0.5 }, { opacity: 0 }], { duration: T, easing: 'cubic-bezier(.5,0,.75,.6)', fill: 'forwards' }));
-  // A bright head sweeps round at the arc's leading edge (one per colour layer, so it changes colour with them).
-  for (const h of heads) restAnims.push(h.animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], { duration: T, easing: 'linear', fill: 'forwards' }));
-  litCount = 0; lastLeft = REST;
-  tickLines.forEach((l) => { l.classList.remove('lit'); l.style.stroke = ''; });
+  // The light inside: ribbons drift, warm up, and pull into one bright line as the rest runs out.
+  ribbons.style.opacity = 1;
+  restAnims.push(ribbons.animate([{ opacity: 0 }, { opacity: 0.7, offset: 0.04 }, { opacity: 0.7, offset: 0.8 }, { opacity: 1 }], { duration: T, fill: 'forwards' }));
+  restAnims.push(ribbonsIn.animate([{ transform: 'none' }, { transform: 'scaleY(.04)' }], { duration: T, easing: 'cubic-bezier(.55,0,.8,.45)', fill: 'forwards' }));
+  for (const g of document.querySelectorAll('.rib canvas.go')) restAnims.push(g.animate([{ opacity: 0 }, { opacity: 0.2, offset: 0.5 }, { opacity: 1 }], { duration: T, easing: 'cubic-bezier(.5,0,.75,.6)', fill: 'forwards' }));
+  document.querySelectorAll('.rib').forEach((r, k) => restAnims.push(r.animate(
+    [{ transform: 'translateX(-7px) rotate(-6deg)' }, { transform: 'translateX(7px) rotate(5deg)' }],
+    { duration: [3100, 4300, 5300][k], iterations: Infinity, direction: 'alternate', easing: 'ease-in-out' })));
   fadeTo(hint, 1, 0, 140);
   skipBtn.style.visibility = 'visible'; fadeTo(skipBtn, 0, 1, 220, { delay: 120, fill: 'backwards' });
   tick.setAttribute('aria-label', `Resting. Set ${cur + 1} done`);
   clearInterval(restTimer);
   restTimer = setInterval(restTick, 100);
 }
-let litCount = 0, lastLeft = 0;
+let lastLeft = 0;
 function restTick() {
   const left = Math.max(0, Math.ceil((restEnd - performance.now()) / 1000));
   rCount.set(fmtT(left), -1);
-  // The dial: each tick lights as the head passes it, in the colour of that moment, so the trail shows the time.
-  const a = restAnims[0], f = a ? Math.min(1, (a.currentTime || 0) / ms(REST)) : 1;
-  const want = Math.min(60, Math.floor(f * 60));
-  while (litCount < want) {
-    const l = tickLines[litCount], t = litCount / 59;
-    l.style.stroke = mix(LOOKS[look].cool, LOOKS[look].go, Math.pow(t, 1.6));
-    l.classList.add('lit');
-    litCount++;
-  }
-  // The last five seconds are each their own beat.
+  // The last five seconds are each their own beat (Push's countdown).
   if (left !== lastLeft && left <= 5 && left > 0 && !reduced()) {
     spring($('.count'), [{ transform: 'scale(1.16)' }, { transform: 'none' }], SPRINGS.press);
     buzz(6);
   }
   lastLeft = left;
   if (performance.now() >= restEnd) { endRest(); }
-}
-function clearTicks() {
-  const svg = $('.ticks');
-  svg.classList.add('quiet'); // one instant reset, not sixty transitions at the busiest moment
-  tickLines.forEach((l) => l.classList.remove('lit'));
-  requestAnimationFrame(() => requestAnimationFrame(() => svg.classList.remove('quiet')));
 }
 /** Stops the clock. The ring's animations are kept (held where they are) until it has faded, so it never snaps empty. */
 function stopRest(after = 0) {
@@ -252,15 +269,11 @@ function endRest() {
   stopRest(300);
   buzz(30);
   readyLook(true);
-  clearTicks();
-  // Ready: the full ring blooms once.
-  spring(full, [{ transform: 'scale(.94)' }, { transform: 'none' }], SPRINGS.press);
 }
 skipBtn.addEventListener('click', () => {
   if (phase !== 'rest') return;
   const left = restEnd - performance.now(), quick = 360;
   if (left <= quick) return;
-  $('.ticks').classList.add('quiet');
   restAnims.forEach((a) => a.updatePlaybackRate(left / quick));
   restEnd = performance.now() + quick;
 });
@@ -291,12 +304,21 @@ function doTick() {
   const i = cur, s = sets[i];
   const wasResting = phase === 'rest';
   phase = 'ticking';
-  if (wasResting) { stopRest(200); clearTicks(); fadeTo(restFace, 1, 0, 120); fadeTo(warm, 1, 0, 240); fadeTo(cool, getComputedStyle(cool).opacity, 0, 240); hideSkip(true); }
+  if (wasResting) { stopRest(260); fadeTo(ribbons, 1, 0, 200); fadeTo(restFace, 1, 0, 120); fadeTo(warm, 1, 0, 240); fadeTo(cool, getComputedStyle(cool).opacity, 0, 240); hideSkip(true); }
   else fadeTo(hint, 1, 0, 140);
   // The tick has a body: an orange pearl swells inside the button and settles into a check.
   pearl.getAnimations().forEach((a) => a.cancel());
   pearl.style.transform = 'none'; pearl.style.opacity = 1;
-  spring(pearl, [{ transform: 'scale(.15)', opacity: 0.6 }, { transform: 'none', opacity: 1 }], SPRINGS.type);
+  spring(pearl, [{ transform: 'scale(.12)', opacity: 0.7 }, { transform: 'none', opacity: 1 }], SPRINGS.set);
+  // Not Boring's sparks: short marks flick outward round the swelling pearl, then they are gone.
+  if (!reduced()) sparks.forEach((sp, k) => {
+    const a = k * 30 + (k % 2 ? 9 : -6), d = 60 + (k * 37) % 50;
+    sp.animate([
+      { transform: `rotate(${a}deg) translateY(-${tick.offsetWidth * 0.3}px) scaleY(.3)`, opacity: 0 },
+      { transform: `rotate(${a}deg) translateY(-${tick.offsetWidth * 0.5 + 6}px) scaleY(1)`, opacity: 1, offset: 0.45 },
+      { transform: `rotate(${a}deg) translateY(-${tick.offsetWidth * 0.5 + 22}px) scaleY(.5)`, opacity: 0 }],
+    { duration: 420, delay: d, easing: 'cubic-bezier(.2,.7,.3,1)', fill: 'both' });
+  });
   fadeTo(cHot, getComputedStyle(cHot).opacity, 0, 90);
   cDark.style.opacity = 1;
   spring(cDark, [{ transform: 'scale(.55)', opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.press, { delay: 70, fill: 'backwards' });

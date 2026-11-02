@@ -42,16 +42,19 @@
       <div class="pair"><button class="step" data-k="r" data-d="-1" aria-label="One rep less">−</button><button class="step" data-k="r" data-d="1" aria-label="One rep more">+</button></div>
     </div>
     <div class="dial">
-      <svg class="ticks" viewBox="0 0 200 200" aria-hidden="true"></svg>
-      <span class="track"></span>
-      <span class="arc warm"><span class="half r"><span class="seg"></span></span><span class="half l"><span class="seg"></span></span><span class="head"><i></i></span></span>
-      <span class="arc cool"><span class="half r"><span class="seg"></span></span><span class="half l"><span class="seg"></span></span><span class="head"><i></i></span></span>
-      <span class="full"></span>
+      <span class="ringset">
+        <span class="track"></span>
+        <span class="arc warm"><span class="half r"><span class="seg"></span></span><span class="half l"><span class="seg"></span></span></span>
+        <span class="arc cool"><span class="half r"><span class="seg"></span></span><span class="half l"><span class="seg"></span></span></span>
+        <span class="full"></span>
+      </span>
       <button class="tick" aria-label="Set done">
+        <span class="ribbons" aria-hidden="true"><span class="ribbons-in"><span class="rib"><canvas class="cool"></canvas><canvas class="go"></canvas></span><span class="rib"><canvas class="cool"></canvas><canvas class="go"></canvas></span><span class="rib"><canvas class="cool"></canvas><canvas class="go"></canvas></span></span></span>
+        <span class="sparks" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
         <span class="pearl"></span>
         <svg class="check c-hot" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 16.5l5.2 5.2L24 10.5"/></svg>
         <svg class="check c-dark" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 16.5l5.2 5.2L24 10.5"/></svg>
-        <span class="rest-face" aria-hidden="true"><span class="rest-word">rest</span><span class="roll count"></span><span class="rest-tap">tap when done</span></span>
+        <span class="rest-face" aria-hidden="true"><span class="rest-word">rest</span><span class="roll count"></span></span>
       </button>
     </div>
     <div class="foot">
