@@ -1,0 +1,21 @@
+{
+  "name": "aven2",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "verify": "tsc --noEmit && vitest run && vite build"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.5",
+    "fake-indexeddb": "^6.2.7",
+    "fast-check": "^4.10.2",
+    "typescript": "~5.9.3",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  }
+}

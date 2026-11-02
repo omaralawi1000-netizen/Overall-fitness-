@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex">
+  <title>Aven 2 engine</title>
+  <style>
+    :root { color-scheme: light dark; font: 16px/1.4 system-ui, sans-serif; }
+    body { margin: 0; padding: 12px 16px 80px; max-width: 640px; }
+    h1 { font-size: 20px; margin: 4px 0 8px; } h2 { font-size: 17px; margin: 22px 0 6px; }
+    section { border-top: 1px solid #8884; }
+    button, select, input { font: inherit; min-height: 44px; margin: 3px 2px; padding: 0 12px; }
+    input[type=number] { width: 84px; }
+    .row { display: flex; flex-wrap: wrap; align-items: center; gap: 2px; }
+    .muted { opacity: .65; font-size: 14px; } .bad { color: #d33; } .ok { color: #2a2; }
+    .big { font-size: 40px; font-variant-numeric: tabular-nums; }
+    ul { padding-left: 18px; margin: 4px 0; } li { margin: 3px 0; }
+    pre { white-space: pre-wrap; font-size: 13px; }
+  </style>
+</head>
+<body>
+  <h1>Aven 2 engine (debug)</h1>
+  <p class="muted">A bare test page for the engine. It uses only Aven 2's own storage (a2) and never touches old Aven.</p>
+  <div id="status" class="muted"></div>
+  <div id="fail"></div>
+  <section><h2>Workout</h2><div id="workout"></div></section>
+  <section><h2>History (newest first)</h2><div id="history"></div></section>
+  <section><h2>Backup</h2>
+    <div class="row"><button id="export">Export backup</button><label><input id="restoreFile" type="file" accept=".json,application/json" hidden><button id="restorePick">Restore from a file…</button></label></div>
+    <div id="restore"></div>
+  </section>
+  <section><h2>Import from old Aven</h2>
+    <div class="row"><button id="importLocal">Copy from old Aven on this phone</button><label><input id="importFile" type="file" accept=".json,application/json" hidden><button id="importPick">Import an old Aven backup file…</button></label></div>
+    <div id="import"></div>
+  </section>
+  <section><h2>Danger</h2><button id="wipe">Delete everything in Aven 2 (only a2)</button></section>
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>

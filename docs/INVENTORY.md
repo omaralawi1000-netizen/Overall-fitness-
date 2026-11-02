@@ -153,7 +153,7 @@ product**, so many buttons and settings become "just tell the Coach".
 | Coach recipes with real-food macros + shopping list | | keep | |
 | 601 built-in foods (EN + DA), 3,660 Danish packaged products offline | | keep | Danish foods first; ODbL attribution for OFF data |
 | Dictation choices remembered ("skyr" → this skyr) | | keep | |
-| Heavy-day watch + catch-up trims + "a little over" toast | | keep, as Coach behaviour | Generic code, but it becomes the Coach's judgement per person, not a fixed feature |
+| Heavy-day watch + catch-up trims + "a little over" toast | | keep, as Coach behaviour (old `eating.ts` noticing goes to the Coach phase, Omar 2 Nov) | Generic code, but it becomes the Coach's judgement per person, not a fixed feature |
 | Targets history (judge a day against its own target) | | keep | Honest numbers |
 
 ## 5. Coach and voice
@@ -180,11 +180,11 @@ product**, so many buttons and settings become "just tell the Coach".
 | First-open disclaimer | | keep | |
 | Long chats load in batches | | keep | |
 | Full-screen voice | | keep | |
-| Speech: Groq Whisper, then browser speech, then typing | | keep | |
+| Speech: Groq Whisper, then browser speech, then typing | | keep | Voice phase (Omar, 2 Nov): speech gets vocabulary hints from the person's own lifts and foods (old `sttNames.ts`), and the recording is cleaned before speech-to-text (old `audioprep.ts`) because Whisper invents words in silence |
 | Type instead / Speak instead | | keep | |
 | Said words morph into a bubble | | keep, redesigned | |
 | Quick-log auto-close with a flying icon | | keep | |
-| Continue in Coach | | keep | One conversation everywhere |
+| Continue in Coach | | keep | One conversation everywhere: the orb and the Coach share one thread (old `thread.ts`, Omar 2 Nov) |
 | Coach memory page (grouped, reword, history, until, linked exercises, goal progress, add your own) | | keep, rebuilt | Memory is visible and editable |
 | Learned from you (habits from undo/moves/swaps) | | keep | |
 | Conversation history search + delete | | keep | |
@@ -299,7 +299,7 @@ product**, so many buttons and settings become "just tell the Coach".
 | Haptics vocabulary | | keep | |
 | Lazy screens, pre-built workout window | | keep (as performance work) | |
 | Broken screen guard | | keep | |
-| Danish first paint | | keep | |
+| Danish first paint | | keep | Danish strings load separately so English opens fast (old `i18n.ts`, Omar 2 Nov) |
 | Persistent storage request | | keep | |
 | Glow/dither machinery (canvas glows, grain, frost copies, dock shadow) | | old code not ported | New noise or dither is allowed if the blur test needs it (zero banding) |
 | Beta build isolation | | keep, rebuilt | Checkpoint 2, step 14 |

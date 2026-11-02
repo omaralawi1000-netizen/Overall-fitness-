@@ -17,6 +17,7 @@ Facts and taste learned the hard way (Oct 2026). Not old CSS rules: the new desi
 8. Tab switches drew only ~30 fps when leaving layers piled up. Interrupted transitions must not stack.
 9. A tap must show on the very next frames (press dip at ~50 ms). Never wait on a timer before opening something.
 10. Android Back must close the top sheet, and a closing sheet must be catchable and turn round mid-motion.
+39. Screens behind the live workout never redraw on each tick of a timer; only the timer's own text changes (old `hooks.ts`, Omar 2 Nov).
 
 ## Voice, mic and speech
 11. Bluetooth earbuds drop the mic into call mode and wreck audio: prefer the phone's own mic.
