@@ -71,6 +71,9 @@ function readRow(seg: string): FoodRow | null {
   else if (/^\d+(\.\d+)?$/.test(numTok)) { amount = Number(numTok); i++; }
   else if (glued && UNITS[fold(glued[2])]) { amount = Number(glued[1]); words.splice(i, 1, glued[1], glued[2]); i++; }
   else if (WORD_NUM[numTok] !== undefined && words.length > 1) { amount = WORD_NUM[numTok]; i++; }
+  // "1 1/2 cups": a whole number and a fraction are one quantity
+  const mixed = amount !== undefined && Number.isInteger(amount) && words[i]?.match(/^(\d+)\/(\d+)$/);
+  if (mixed && Number(mixed[2]) > 0) { amount! += Number(mixed[1]) / Number(mixed[2]); i++; }
   if (amount === undefined) return null; // no amount said: could be anything, so not a food row
   // "half a banana"
   if (amount === 0.5 && (words[i] === 'a' || words[i] === 'en' || words[i] === 'et')) i++;
@@ -86,6 +89,7 @@ function readRow(seg: string): FoodRow | null {
   if (words[i] === 'of' || words[i] === 'af') i++;
   const query = words.slice(i).join(' ').trim();
   if (!query || !(amount > 0)) return null;
+  if (/^\d+(?:[./]\d+)?(?:\s|$)/.test(query)) return null; // a second quantity left in the name was not understood
   return { raw: seg, amount: Math.round(amount * factor * 1000) / 1000, dim, ...(countWord ? { countWord } : {}), query, ...(weak ? { weak: true as const } : {}) };
 }
 

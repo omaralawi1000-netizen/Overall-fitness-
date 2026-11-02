@@ -135,3 +135,12 @@ describe('Codex review of #51, round 5', () => {
     expect(fixMisheard({ reps: 80 }, { reps: 8 })).toMatchObject({ reps: 8, heard: { reps: 80 } });
   });
 });
+
+describe('Codex review of #51, round 7', () => {
+  it('reps are corrected only when the fix lands within 10 % of the usual reps', () => {
+    expect(fixMisheard({ reps: 80 }, { reps: 12 }).reps).toBe(80);
+    expect(fixMisheard({ reps: 40 }, { reps: 7 }).reps).toBe(40);
+    expect(fixMisheard({ reps: 80 }, { reps: 8 }).reps).toBe(8);
+    expect(fixMisheard({ reps: 100 }, { reps: 10 }).reps).toBe(10);
+  });
+});

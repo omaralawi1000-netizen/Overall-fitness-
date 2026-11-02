@@ -146,3 +146,15 @@ describe('Codex review of #51, round 4', () => {
     expect(readBodyweight('jeg vejede 82 kilo i morges')).toEqual({ kg: 82 });
   });
 });
+
+describe('Codex review of #51, round 7', () => {
+  it('a mixed fraction is one quantity', () => {
+    expect(parseFood('1 1/2 cups oats').rows[0]).toMatchObject({ amount: 1.5, dim: 'count', countWord: 'cup', query: 'oats' });
+    expect(parseFood('2 1/4 kg potatoes').rows[0]).toMatchObject({ amount: 2250, dim: 'g' });
+  });
+  it('a quantity left in the food name is handed back unread', () => {
+    const r = parseFood('2 3 4 eggs');
+    expect(r.rows).toEqual([]);
+    expect(r.unread).toEqual(['2 3 4 eggs']);
+  });
+});

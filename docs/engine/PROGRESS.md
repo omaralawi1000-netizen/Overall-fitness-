@@ -61,7 +61,7 @@ Tests live in `tests/engine/`. "untested" is said plainly.
 | Reading a phrase saves nothing | `e2e` phrase box ("nothing was saved by reading") | tested in Chromium |
 | Memory cards (scope, valid-from/until, last-seen) and the Coach ladder | model types, import of old memory notes | shape only: used in the Coach phase |
 
-## Test inventory (247 tests: 82 engine, 165 parser)
+## Test inventory (250 tests: 82 engine, 168 parser)
 Fewer tests than rules looks thin, but each property test runs 25 to 200 random cases, so the real count of checked cases is in the thousands.
 
 **Property tests (12):**
@@ -128,3 +128,5 @@ Codex's fourth look at #51 (4 new findings; a 5th, plural units, was already fix
 Codex's fifth look at #51 (2 findings, reproduced, fixed): reps are only auto-corrected when a usual rep count is known ("80 reps" with nothing to go by is asked about, not turned into 8); "80 kilograms" is matched whole in workout phrases.
 
 Codex's sixth look at #51 (2 new findings; the reps one was already fixed in 5755c40): "twenty five" is one number in workout phrases; ".5 km" keeps its decimal point instead of becoming 5 km.
+
+Codex's seventh look at #51 (2 findings, reproduced, fixed): "1 1/2 cups" is one quantity (and a second quantity left in a food name is handed back unread); a rep count is auto-corrected only when the fix lands within 10 % of the usual reps (the same limit as weight).
