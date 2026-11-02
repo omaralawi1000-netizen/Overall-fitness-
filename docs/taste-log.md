@@ -28,6 +28,10 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 
 ## Entries
 
+### 2 Nov 2026: Heat, for the workout screen
+His words: "You know heat and rooms? Not rooms, that is for the UI, but you know the heat. I think right now we're only focusing on the workout screen. That was actually the closest thing I liked. It was not just Evan, old Evan." (Dictated; "Evan" is probably Aven, kept as he said it.)
+Reading: for the **workout screen**, Heat (from `/looks/`) is the closest thing he has liked so far. Rooms he sees as a UI idea, not the workout look. Focus is the workout screen only for now. The last sentence is left as dictated, not interpreted. Log only; nothing built until he says go.
+
 ### 2 Nov 2026: the Oura-style premium still, for Today
 His words: "One thing I want you to remember, the aura screen is could actually be somewhat what I want on the today screen, and of course tweaked to my liking." ("aura" = Oura, the premium still at `/_prototypes/premium/`.)
 Reading: the still failed as a workout screen ("looks like a Today screen"), but that is where it belongs. It is a starting point for Today, not a finished design: he wants it tweaked. Nothing built from this yet.
