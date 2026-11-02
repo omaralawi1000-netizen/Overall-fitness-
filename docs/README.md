@@ -15,6 +15,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 - `docs/inspiration/motion-library.md`: 117 watched animations in two rounds, sorted by motion job, top 3 per job, links and notes (clips and design stills in the shared folder).
 - `docs/design-round-2026-11-01.md`: the final design round's decision (rules triaged, Coach ladder, navigation, two directions, PWA limits). Wins over the design bar.
 - `docs/keepers.md`: ideas Omar explicitly approved after prototypes (only his yes adds one).
+- `docs/taste-log.md`: every test, prototype and rejection with his reasons, in his words. Keepers = approved ideas to build from; the log = the whole history, noes included. Read it before every design round.
 - `docs/research/design-bar-2026-11-01.md`: the design bar.
 - `docs/research/taste-2026-11-01.md`: what Omar loves in old Aven (seven reviewers, two rounds) and the taste test link.
 - `docs/history/`: old material, history not direction (`old-aven-review.md`).
