@@ -127,3 +127,11 @@ describe('Codex review of #51: one notation, one meaning', () => {
     expect(p('80 kg 8 reps')).toEqual({ kind: 'set', kg: 80, reps: 8 });
   });
 });
+
+describe('Codex review of #51, round 5', () => {
+  it('reps are only corrected with something to go by', () => {
+    expect(fixMisheard({ reps: 80 }, {})).toEqual({ kg: undefined, reps: 80 });
+    expect(fixMisheard({ reps: 80 }, { kg: 80 }).reps).toBe(80);
+    expect(fixMisheard({ reps: 80 }, { reps: 8 })).toMatchObject({ reps: 8, heard: { reps: 80 } });
+  });
+});

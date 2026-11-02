@@ -34,7 +34,7 @@ export function splitExerciseSegments(text: string): string[] {
     .filter(Boolean);
 }
 
-const UNIT = '(?:kg|kilos?|kilograms?|lbs?|pounds?)';
+const UNIT = '(?:kilograms?|kilos?|kg|lbs?|pounds?)\\b';
 const MAX_SETS = 12;
 const load = (v: number, u?: string): { kg: number; entered?: { value: number; unit: 'lb' } } =>
   u && /^(lb|pound)/.test(u) ? { kg: Math.round(v * KG_PER_LB * 100) / 100, entered: { value: v, unit: 'lb' } } : { kg: v };

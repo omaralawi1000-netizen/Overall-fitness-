@@ -88,3 +88,12 @@ describe('Codex review of #51, round 4', () => {
     expect(sets('bench eight eight six reps at eighty kg')).toEqual([[80, 8], [80, 8], [80, 6]]);
   });
 });
+
+describe('Codex review of #51, round 5', () => {
+  it('spelled-out weight units are matched whole', () => {
+    expect(parseWorkoutText('bench 8 reps at 80 kilograms').rows[0]).toMatchObject({ query: 'bench', sets: [{ kg: 80, reps: 8 }] });
+    expect(parseWorkoutText('bench 3 sets of 8 at 80 kilograms').rows[0].sets).toHaveLength(3);
+    expect(parseWorkoutText('bench 80 kilograms for 8').rows[0]).toMatchObject({ query: 'bench', sets: [{ kg: 80, reps: 8 }] });
+    expect(parseWorkoutText('bench 135 pounds for 5').rows[0].sets[0].entered).toEqual({ value: 135, unit: 'lb' });
+  });
+});

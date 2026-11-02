@@ -157,7 +157,7 @@ export function fixMisheard(said: { kg?: number; reps?: number }, usual: { kg?: 
     if (fix !== undefined) { out.kg = Math.round(fix * 4) / 4; out.heard = { ...out.heard, kg: said.kg }; }
   }
   if (said.reps !== undefined && said.reps > 30) {
-    const fix = slips(said.reps).find((x) => Number.isInteger(x) && x >= 1 && x <= 30 && (!usual.reps || Math.abs(x - usual.reps) <= Math.max(3, usual.reps * 0.5)));
+    const fix = slips(said.reps).find((x) => Number.isInteger(x) && x >= 1 && x <= 30 && (!!usual.reps && Math.abs(x - usual.reps) <= Math.max(3, usual.reps * 0.5)));
     if (fix !== undefined) { out.reps = fix; out.heard = { ...out.heard, reps: said.reps }; }
   }
   return out;
