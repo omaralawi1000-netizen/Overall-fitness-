@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0a0b">
+<meta name="robots" content="noindex">
+<title>Aven 2 · frost round</title>
+<style>
+  :root { --bar: 96px; }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; background: #0a0a0b; color: #f2f3f5; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif; overflow: hidden; }
+  .pager { position: fixed; left: 0; right: 0; top: 0; bottom: calc(var(--bar) + env(safe-area-inset-bottom, 0px)); display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+  .pager::-webkit-scrollbar { display: none; }
+  .pager section { flex: none; width: 100%; height: 100%; scroll-snap-align: start; scroll-snap-stop: always; }
+  iframe { width: 100%; height: 100%; border: 0; display: block; background: #0a0a0b; }
+  .bar { position: fixed; left: 0; right: 0; bottom: 0; height: calc(var(--bar) + env(safe-area-inset-bottom, 0px)); padding: 10px 12px calc(env(safe-area-inset-bottom, 0px) + 10px); background: #0a0a0b; border-top: 1px solid rgba(255, 255, 255, .08); display: flex; flex-direction: column; gap: 10px; }
+  .row { display: flex; align-items: center; gap: 10px; min-height: 30px; }
+  .dots { display: flex; gap: 5px; } .dots button { width: 26px; height: 26px; border-radius: 50%; background: rgba(255, 255, 255, .08); color: rgba(255, 255, 255, .6); font-size: 12px; font-weight: 600; border: 0; } .dots button.on { background: #fff; color: #0a0a0b; }
+  .name { font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; } .name span { font-weight: 400; color: rgba(255, 255, 255, .55); font-size: 13px; margin-left: 6px; }
+  .chips { display: flex; gap: 6px; flex: 1; } .chips button { flex: 1; height: 38px; border-radius: 19px; border: 0; background: rgba(255, 255, 255, .1); color: #f2f3f5; font-size: 13px; font-weight: 500; }
+  .themes { display: flex; gap: 6px; } .themes button { width: 28px; height: 28px; border-radius: 50%; border: 0; background: linear-gradient(135deg, var(--a), var(--b)); box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); }
+  .themes button.on { box-shadow: 0 0 0 2px #0a0a0b, 0 0 0 4px #fff; }
+</style>
+</head>
+<body>
+<main class="pager" id="pager"></main>
+<footer class="bar">
+  <div class="row"><div class="dots" id="dots"></div><div class="name" id="name"></div></div>
+  <div class="row"><div class="chips" id="chips"></div><div class="themes" id="themes"></div></div>
+</footer>
+<script>
+const V = [
+  ['steam', 'Steam', 'a fogged window you wipe clear'],
+  ['fluted', 'Fluted', 'light runs through reeded glass'],
+  ['deck', 'Deck', 'every set is a pane of glass'],
+  ['thermo', 'Thermo', 'drag the heat, colour follows'],
+  ['lava', 'Lava', 'a molten capsule, a drop per set'],
+  ['poster', 'Poster', 'giant type behind glass slats'],
+];
+const M = [['set', 'Set'], ['rest', 'Rest'], ['record', 'Record']];
+const T = [['heat', '#FF4816', '#FFAC3C', 'Heat'], ['glacier', '#2F6BFF', '#7FD3FF', 'Glacier'], ['volt', '#2FA51A', '#C8FF3A', 'Volt'], ['violet', '#8A2BFF', '#FF4FD8', 'Violet'], ['rose', '#FF3D63', '#FFB38A', 'Rose'], ['chrome', '#5E6672', '#DCE3EC', 'Chrome']];
+const q = new URLSearchParams(location.search);
+let cur = 0, theme = T.some((t) => t[0] === q.get('t')) ? q.get('t') : 'heat';
+const pager = document.getElementById('pager'), dots = document.getElementById('dots'), name = document.getElementById('name'), chips = document.getElementById('chips'), themes = document.getElementById('themes');
+const frames = V.map(([f], i) => { const s = document.createElement('section'); s.innerHTML = `<iframe title="${f}" src="${f}.html?t=${theme}"></iframe>`; pager.append(s); return s.firstChild; });
+const post = (f, msg) => f.contentWindow && f.contentWindow.postMessage(msg, '*');
+V.forEach((v, i) => { const b = document.createElement('button'); b.textContent = i + 1; b.setAttribute('aria-label', v[1]); b.onclick = () => pager.scrollTo({ left: i * pager.clientWidth, behavior: 'smooth' }); dots.append(b); });
+M.forEach(([k, l]) => { const b = document.createElement('button'); b.textContent = l; b.onclick = () => post(frames[cur], { type: 'moment', m: k }); chips.append(b); });
+T.forEach(([k, a, b, l]) => { const e = document.createElement('button'); e.style.setProperty('--a', a); e.style.setProperty('--b', b); e.dataset.t = k; e.setAttribute('aria-label', l + ' theme'); e.onclick = () => { theme = k; frames.forEach((f) => post(f, { type: 'theme', t: k })); paint(); }; themes.append(e); });
+function paint() {
+  [...dots.children].forEach((b, i) => b.classList.toggle('on', i === cur));
+  name.innerHTML = `${V[cur][1]}<span>${V[cur][2]}</span>`;
+  [...themes.children].forEach((b) => b.classList.toggle('on', b.dataset.t === theme));
+  frames.forEach((f, i) => post(f, { type: 'active', on: i === cur }));
+}
+frames.forEach((f) => f.addEventListener('load', () => post(f, { type: 'active', on: f === frames[cur] })));
+pager.addEventListener('scroll', () => { const i = Math.round(pager.scrollLeft / pager.clientWidth); if (i !== cur) { cur = i; paint(); } }, { passive: true });
+const start = +q.get('v');
+if (start >= 1 && start <= V.length) requestAnimationFrame(() => { pager.scrollTo({ left: (start - 1) * pager.clientWidth }); });
+paint();
+</script>
+</body>
+</html>

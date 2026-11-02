@@ -7,7 +7,13 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 - **After every test, prototype or rejection:** add a dated entry. His words go in quotes. Our reading of them is marked "Reading".
 - **Rounds alternate:** a wide search (Sonnet), then one small polished slice (Opus).
 
-## What it suggests now (2 Nov 2026, before the wide workout round)
+## What it suggests now (2 Nov 2026, before the frost round)
+- **Plain is the sin, and Heat is the only workout look that escaped it.** Every flat or tidy round died ("plain", "ordinary", "like those"). Heat's one hot light from below survived. So this round keeps Heat's light and type and changes the material and the idea, not the palette.
+- **He wants frost he can see.** Frost only shows when something bright and shaped sits behind it. Smooth gradients behind glass read as a tinted card. Every screen this round puts something bold behind the glass (a giant number, a sun, molten blobs, stacked panes).
+- **Colour is a theme, not the identity.** He wants themes ("it's going to be another color if I want anyways"), so the idea has to hold in every colour. Each screen ships with six themes and a switch.
+- **Motion stays small and honest.** Springs, rolling digits and one signature per screen. No imitations of his clips.
+
+## What it suggested before that (2 Nov 2026, before the wide workout round)
 - **He judges looks fast and moments slowly.** Whole looks get a quick no; single moments get hearts. So this round shows four whole workout screens, each different in layout, and asks per screen what he likes.
 - **Light beat dark, but "plain" is the real enemy.** Daylight beat Volt, yet both were "plain". Richness (light, depth, material) matters more than light vs dark. This round has two light and two dark, so he can say.
 - **A workout screen has to look like a workout.** The premium still read as a Today screen. Each version now answers "what is the weight, how many reps, where am I, what's my record" with gym things (drums, plates, set rows, a keypad), not a hero gauge.
@@ -27,6 +33,18 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 - **After the Pick list (2 Nov):** he picks mechanics he can picture using (trays, rolling digits, card to page, records as objects) and leaves atmosphere (skies, light floods) at "maybe". Prove atmosphere inside a real moment before building on it.
 
 ## Entries
+
+### 2 Nov 2026: frost round, six workout screens from Heat (/_prototypes/frost/)
+Ask (Omar): "I think maybe I want to have multiple themes, so it's going to be another color if I want anyways. And I also want more frosty glass blur. Can we have more variations of that on Opus, so it actually be creative and have maybe different layouts? … Give Opus the full creative control. Think of outside the box."
+Built, one swipe page, same session in all six (Bench press, set 3 of 4; set 4 at 85 kg beats the record), each with set, rest and record, a one-tap Done, Undo and Skip, and six themes (Heat, Glacier, Volt, Violet, Rose, Chrome) with a switch under the page. All keep Heat's hot light from below, Unbounded numbers and the cream pill; exercise names are italic serif (his taste-test pick).
+1. **Steam:** the whole screen is a fogged window, wiped clear with one hand stroke where the weight is. Each set is a finger stroke on the glass. Rest fogs the window over, and it slowly clears as you recover.
+2. **Fluted:** one tall pane of reeded glass with a hot sun behind it. During rest the sun rolls across the ribs, so time passes through the glass.
+3. **Deck:** every set is its own pane, what's left stacked behind. A tick files the front pane into the row of finished sets; the next steps forward.
+4. **Thermo:** the weight is a column of light in a frosted tube you drag; the room gets hotter the closer you are to your record, gold above it. Rest drains the tube.
+5. **Lava:** the exercise is a frosted lava-lamp capsule. Each set drops into the pool at the bottom. Rest slows and cools the lava.
+6. **Poster:** the weight is giant lit type behind frosted slats. Rest turns the slats open and the giant countdown takes over.
+A record turns the light gold for a moment in all six.
+Verdict: waiting for Omar.
 
 ### 2 Nov 2026: Heat, for the workout screen
 His words: "You know heat and rooms? Not rooms, that is for the UI, but you know the heat. I think right now we're only focusing on the workout screen. That was actually the closest thing I liked. It was not just Evan, old Evan." (Dictated; "Evan" is probably Aven, kept as he said it.)
