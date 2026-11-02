@@ -150,7 +150,8 @@ Monday), display units (`kg`/`lb`, `km`/`mi`, `cm`/`in`), `restDefaultSec`, food
   old whole-state copy over newer edits.
 - **Deleting a fact invalidates what was built on it.** In the same transaction, every live record whose `basedOn`
   includes the deleted (or changed) record is marked `stale`. Undo never clears `stale`: another change may also have
-  made it stale, so it stays stale until it is worked out again.
+  made it stale, so it stays stale until it is worked out again. Undoing a recount brings the old value back marked
+  `stale`.
 - **Saving shows its true state.** A change is shown at once as **pending** (the tap is never blocked), becomes
   **saved** only after the database confirms the transaction, and becomes **failed** (kept, with Retry) if the write
   fails, for example a full disk. "Saved" is never shown early.

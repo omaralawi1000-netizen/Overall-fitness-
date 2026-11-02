@@ -4,7 +4,7 @@ Spec and review: `SPEC.md`. Data model: `DATA-MODEL.md`. Old code map: `old-logi
 Branch: `claude/project-thread-dkkklx`. The main `docs/PROGRESS.md` is for design; engine progress lives here only.
 
 ## Merge rule
-Merge an engine PR only when `npm run verify` is green **and** Codex's review of it has finished. Fix or answer every finding first. Codex (the `chatgpt-codex-connector` bot on GitHub) reviews only when a PR is opened, so a push after that is checked by `verify` and our own review. If it hasn't finished within about 15 minutes, merge on a green `verify`. PR #44 was merged while Codex was still reviewing, and it found 4 real bugs afterwards (fixed in #45).
+Merge an engine PR only when `npm run verify` is green **and** Codex's review of it has finished. Fix or answer every finding first. Codex (the `chatgpt-codex-connector` bot on GitHub) reviews when a PR is opened **and again after every push**, so wait for the review of the last commit (its summary comment shows the commit and "Completed"). If it hasn't finished within about 15 minutes, merge on a green `verify`. PR #44 was merged while Codex was still reviewing, and it found 4 real bugs afterwards (fixed in #45).
 
 ## Plan
 | Part | What | Model | Phone check |
@@ -53,7 +53,7 @@ Tests live in `tests/engine/`. "untested" is said plainly.
 | Exercise variations are separate exercises | catalogue keeps one id per variation | shape only: records and plateaus come with the Workout phase |
 | Memory cards (scope, valid-from/until, last-seen) and the Coach ladder | model types, import of old memory notes | shape only: used in the Coach phase |
 
-## Test inventory (77 tests)
+## Test inventory (78 tests)
 Fewer tests than rules looks thin, but each property test runs 25 to 200 random cases, so the real count of checked cases is in the thousands.
 
 **Property tests (11):**
@@ -85,7 +85,7 @@ Fewer tests than rules looks thin, but each property test runs 25 to 200 random 
 - E1a-2 (2 Nov): backup, restore, migrations, import from old Aven, exercise catalogue ported.
 - E1a-3 (2 Nov): debug page at `/engine/` (`src/debug/`), checked in headless Chrome at 384 px.
 - Code review (2 Nov): 10 fixes, 68 tests green. Merged to main in PR #44 and deployed to `/engine/`.
-- Codex review of PR #44 (2 Nov, after the merge): 4 real findings, all reproduced by a failing test, then fixed: undoing a creation now stops if a field was added since; Undo never makes a stale summary look fresh; a repeated tap after a newer change shows the database; replace also removes records another tab just added. Codex's look at #45 found a 5th: Undo also restored an old `stale` value when the change touched other fields too; fixed the same way. Plus 5 property tests and 1 ported test (77 tests).
+- Codex review of PR #44 (2 Nov, after the merge): 4 real findings, all reproduced by a failing test, then fixed: undoing a creation now stops if a field was added since; Undo never makes a stale summary look fresh; a repeated tap after a newer change shows the database; replace also removes records another tab just added. Codex's look at #45 found a 5th: Undo also restored an old `stale` value when the change touched other fields too; fixed the same way. Its look at that fix found a 6th (#45 was merged before that look finished, against this rule): undoing a recount left the old value looking fresh; now it comes back marked stale (#46). Plus 5 property tests and 1 ported test (77 tests).
 
 ## Next step
 E1b on **Sonnet** (Omar switches the model): the parser and `docs/parser-examples.md`, then a phrase box on `/engine/`.

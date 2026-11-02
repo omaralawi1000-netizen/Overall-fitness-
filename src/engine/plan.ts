@@ -184,6 +184,8 @@ export function planUndo(action: Action, current: Map<string, Rec | undefined>, 
     // engine bookkeeping (version, created time) is never put back by Undo: it describes the record, not the change
     // nor is `stale` (see above): a newer stale mark stays
     const back = ch.before ? Object.fromEntries(Object.entries(ch.before).filter(([k]) => !(ENGINE_FIELDS as readonly string[]).includes(k) && k !== 'stale')) : null;
+    // a value that was already stale before this change comes back stale: Undo never makes an old value look fresh
+    if (back && ch.before!.stale === true && cur!.stale !== true) back.stale = true;
     if (back && !Object.keys(back).length) continue;
     ops.push(back ? { op: 'update', id: ch.id, set: back } : { op: 'delete', id: ch.id });
   }
