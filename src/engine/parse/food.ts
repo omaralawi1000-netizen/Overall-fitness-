@@ -167,6 +167,11 @@ export function placeholderPortion(p: { label: string; amount: number }, basis: 
   return p.amount === 100 && (/^(1\s*)?(serving|portion|servering|serv\.?)\b/.test(l) || l.replace(/\s+/g, '') === `100${basis}`);
 }
 
+/** Does a portion's label name this counted unit, in either language? "1 skive (40 g)" names a slice. */
+function labelHasCountWord(label: string, word: string): boolean {
+  return plainLabel(label).split(' ').some((t) => { const u = unitOf(t); return u?.kind === 'count' && u.word === word; }) || plainLabel(label).includes(word);
+}
+
 /** A parsed row against a chosen food: a real quantity, flagged when it is an estimate, or why it cannot be worked out. */
 export function rowQuantity(row: FoodRow, food: FoodShape): RowQuantity {
   if (!(row.amount > 0)) return { qty: null, estimated: false, problem: 'noAmount' };
@@ -184,7 +189,7 @@ export function rowQuantity(row: FoodRow, food: FoodShape): RowQuantity {
   // a count: a portion whose label mentions the counted word
   if (!food.portions.length) return { qty: null, estimated: false, problem: 'needsGrams' };
   const w = row.countWord;
-  const named = w ? food.portions.find((x) => fold(x.label).includes(w)) : undefined;
+  const named = w ? food.portions.find((x) => labelHasCountWord(x.label, w)) : undefined;
   // a named unit with no portion of that kind ("2 cups" on a food with only a scoop) is not swapped for another portion
   if (w && !named) return { qty: null, estimated: false, problem: 'needsGrams' };
   const p = named || food.portions[0];

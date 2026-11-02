@@ -61,7 +61,7 @@ Tests live in `tests/engine/`. "untested" is said plainly.
 | Reading a phrase saves nothing | `e2e` phrase box ("nothing was saved by reading") | tested in Chromium |
 | Memory cards (scope, valid-from/until, last-seen) and the Coach ladder | model types, import of old memory notes | shape only: used in the Coach phase |
 
-## Test inventory (254 tests: 82 engine, 172 parser)
+## Test inventory (256 tests: 82 engine, 174 parser)
 Fewer tests than rules looks thin, but each property test runs 25 to 200 random cases, so the real count of checked cases is in the thousands.
 
 **Property tests (12):**
@@ -134,3 +134,5 @@ Codex's seventh look at #51 (2 findings, reproduced, fixed): "1 1/2 cups" is one
 Codex's eighth look at #51 (2 findings, reproduced, fixed): "half a glass of water" is water; a mixed fraction in a portion label ("1 1/2 cups") is one quantity.
 
 Codex's ninth look at #51 (2 findings, reproduced, fixed): "80 for 8, 8 and 6 reps" keeps its closing rep label; "200 grams skyr 60 grams oats" (no separator) is handed back unread instead of one food named "skyr 60 grams oats".
+
+Codex's tenth look at #51 (2 findings, reproduced, fixed): "eighty two kg" and "eighty two ml water" are read; a Danish portion label ("1 skive", "1 dåse") matches the counted word.

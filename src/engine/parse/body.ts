@@ -19,7 +19,7 @@ const FILLER = /\b(?:i|jeg|just|lige|had|drank|drink|drikker|har|drukket|log|add
 function clean(text: string): string {
   let s = ` ${text.toLowerCase()} `.replace(/(\d),(\d)/g, '$1.$2').replace(/[!?;:,"“”]/g, ' ').replace(/\.(?!\d)/g, ' ');
   s = s.replace(/[a-zæøå]+/g, (w) => (w in NUMBER_WORDS && w !== 'en' && w !== 'et' ? String(NUMBER_WORDS[w]) : w));
-  return s;
+  return s.replace(/\b([2-9]0) ([1-9])\b/g, (_, a, b) => String(Number(a) + Number(b))); // "eighty two" → 82
 }
 
 /** "500 ml water", "1.5 l water", "2 dl vand", "a glass of water", "two bottles of water". Null when it isn't one. */

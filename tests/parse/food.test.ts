@@ -182,3 +182,17 @@ describe('Codex review of #51, round 9', () => {
     expect(parseFood('2 eggs 5 spice').rows[0]).toMatchObject({ amount: 2, query: 'eggs 5 spice' }); // a number that is not an amount stays in the name
   });
 });
+
+describe('Codex review of #51, round 10', () => {
+  it('compound number words in water and body weight', () => {
+    expect(readBodyweight('I weigh eighty two kg')).toEqual({ kg: 82 });
+    expect(readWater('eighty two ml water')).toEqual({ ml: 82 });
+  });
+  it('a Danish portion label matches the counted word', () => {
+    const bread: FoodShape = { name: 'Rugbrød', basis: 'g', portions: [{ id: 's', label: '1 skive (40 g)', amount: 40, verified: true }] };
+    expect(rowQuantity(parseFood('2 skiver rugbrød').rows[0], bread).qty).toEqual({ amount: 2, unit: 'portion', portionId: 's' });
+    expect(rowQuantity(parseFood('2 slices bread').rows[0], bread).qty).toEqual({ amount: 2, unit: 'portion', portionId: 's' });
+    const tuna: FoodShape = { name: 'Tun', basis: 'g', portions: [{ id: 'd', label: '1 dåse (120 g)', amount: 120, verified: true }] };
+    expect(rowQuantity(parseFood('1 dåse tun').rows[0], tuna).qty).toEqual({ amount: 1, unit: 'portion', portionId: 'd' });
+  });
+});
