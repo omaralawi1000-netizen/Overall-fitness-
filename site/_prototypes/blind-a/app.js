@@ -71,7 +71,7 @@ const renderer = createRenderer(canvas, { keep: FILM });
 if (!renderer) document.documentElement.classList.add('nogl');
 const tide = new Tide();
 const colorP = new Spring(1, 5, 1); // 0 hot, 1 recovered
-const goldS = new Spring(0, 4, 1);
+const goldS = new Spring(0, 6, 1);
 let W = innerWidth, H = innerHeight, scale = Math.min(devicePixelRatio || 1, 4);
 const L = { base: 120, max: 560, finish: 300 };
 
@@ -345,14 +345,15 @@ function startRest(sec, s, e) {
   colorP.set(0);
   goldS.set(s.record ? 1 : 0);
   surge(s.record ? 1.15 : 1);
-  tide.fizz = s.record ? 0.3 : 0.26;
-  tide.fizzTarget = s.record ? 0.07 : 0.06;
+  tide.fizz = s.record ? 0.08 : 0.26;
+  tide.fizzTarget = s.record ? 0.03 : 0.06;
   buzz(s.record ? [14, 50, 14, 50, 36] : 16);
   setDigits(mmss(sec), wasResting);
   $('done').textContent = tr('done', { n: setI + 1 });
   layers.editor.v.w = 28;
   layers.editor.v.t = 0;
-  later(120, () => { if (rest) { layers.rest.v.t = 1; digitA.t = 1; } });
+  digitA.w = 9;
+  later(180, () => { if (rest) { layers.rest.v.t = 1; digitA.t = 1; } });
   later(260, () => { if (rest) layers.restBtns.v.t = 1; });
   const rec = $('rec');
   if (s.record) {
@@ -373,6 +374,7 @@ function endRest(why) {
   colorP.t = 1;
   goldS.t = 0;
   tide.fizzTarget = 0.04;
+  digitA.w = 20;
   digitA.t = 0;
   layers.rest.v.t = 0;
   layers.restBtns.v.t = 0;
@@ -398,15 +400,13 @@ function finish(record) {
   const all = data.exercises.flatMap((e) => e.sets.filter((s) => s.done).map((s) => ({ ...s, each: e.each })));
   const vol = all.reduce((a, s) => a + s.w * s.r * (s.each ? 2 : 1), 0);
   const bests = all.filter((s) => s.record).length;
-  $('fMin').textContent = intFmt.format(Math.round((now - startedAt) / 60000));
-  $('fSets').textContent = intFmt.format(all.length);
-  $('fKg').textContent = intFmt.format(Math.round(vol));
-  $('fBest').textContent = intFmt.format(bests);
+  const totals = [['fMin', Math.round((now - startedAt) / 60000)], ['fSets', all.length], ['fKg', Math.round(vol)], ['fBest', bests]];
+  for (const [id] of totals) $(id).textContent = intFmt.format(0);
   $('fBestL').textContent = bests === 1 ? S.best1 : S.bestN;
-  colorP.set(0.15);
-  colorP.t = 1;
+  // A record makes the finish molten gold; otherwise it floods calm aqua. Never a mix of the two (that goes olive).
+  colorP.set(1);
   goldS.set(bests ? 1 : 0);
-  goldS.t = bests ? 0.55 : 0;
+  goldS.t = goldS.x;
   tide.level.t = H + 60;
   tide.level.v += 700;
   tide.splash(W / 2, 700, 80);
@@ -415,8 +415,14 @@ function finish(record) {
   tide.fizzTarget = 0.1;
   buzz(record ? [14, 50, 14, 50, 36] : [20, 60, 30]);
   for (const k of ['ex', 'sets', 'editor', 'rest', 'restBtns']) layers[k].v.t = 0;
+  digitA.w = 30;
   digitA.t = 0;
-  later(1300, () => { if (finished) { tide.level.t = L.finish; layers.finish.v.t = 1; } });
+  later(1300, () => {
+    if (!finished) return;
+    tide.level.t = L.finish;
+    layers.finish.v.t = 1;
+    totals.forEach(([id, n], i) => later(i * 90, () => tween(1100, (p) => { $(id).textContent = intFmt.format(Math.round(n * easeOut(p))); })));
+  });
   $('done').textContent = S.again;
 }
 

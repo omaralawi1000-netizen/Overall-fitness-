@@ -72,7 +72,7 @@ precision highp int;
 #define N ${N}
 out vec4 outColor;
 uniform vec2 uSize;
-uniform float uDpr, uTime, uLevel, uSlope, uIdle, uFizz, uCaus;
+uniform float uDpr, uTime, uLevel, uSlope, uIdle, uFizz, uCaus, uSpark;
 uniform float uH[N];
 uniform vec3 uSurf, uDeep, uGlow;
 uniform vec4 uRect[3];
@@ -134,6 +134,20 @@ float bubbles(vec2 p, float depth) {
   return acc * smoothstep(1., 22., depth);
 }
 
+// Gold dust for a record: tiny glints that drift up and twinkle (bubbles in gold would read as a drink).
+float sparkle(vec2 p, float depth) {
+  if (uSpark < .01 || depth < 1.) return 0.;
+  vec2 q = vec2(p.x, p.y + uTime * 9.) / 24.;
+  vec2 id = floor(q);
+  float h = hash12(id + 41.);
+  if (h > .3) return 0.;
+  vec2 o = (vec2(hash12(id + 5.3), hash12(id + 9.1)) - .5) * .6;
+  vec2 d = (fract(q) - .5 - o) * 24.;
+  float tw = pow(.5 + .5 * sin(uTime * (1.6 + h * 5.) + h * 60.), 6.);
+  float star = exp(-abs(d.x) * 1.4) * exp(-abs(d.y) * .3) + exp(-abs(d.y) * 1.4) * exp(-abs(d.x) * .3);
+  return (star * .45 + exp(-dot(d, d) * .6)) * tw * uSpark * smoothstep(1., 18., depth);
+}
+
 vec3 bodyColor(float depth) {
   float dn = clamp(depth / (uLevel * .95 + 60.), 0., 1.);
   vec3 c = mix(uSurf, uDeep, pow(dn, .75));
@@ -191,6 +205,7 @@ void main() {
   body += mix(uGlow, vec3(1.), .62) * exp(-depth / 1.15) * facing;
   if (depth < 280.) body += uGlow * caustic(p / 250. + vec2(uTime * .011, 0.), uTime * .38) * uCaus * exp(-depth / 120.);
   body += bubbles(p, depth) * mix(uGlow, vec3(1.), .55) * .85;
+  body += sparkle(p, depth) * vec3(1., .96, .86);
   vec3 col = mix(spillColor(max(-d, 0.)), body, inside);
 
   if (uDigitA > .002 && p.y > uBox.y - 40. && p.y < uBox.y + uBox.w + 40. && p.x > uBox.x - 30. && p.x < uBox.x + uBox.z + 30.) {
@@ -215,7 +230,9 @@ void main() {
     if (m > 0.) {
       vec3 g = frostScene(p);
       bool milk = rp.y > 1.5;
-      vec3 glass = milk ? mix(g, vec3(.95, .956, .966), .8) : g * .78 + vec3(.06) + uGlow * .03;
+      // Clear glass darkens over bright liquid so its white label stays readable.
+      float lum = dot(g, vec3(.2126, .7152, .0722));
+      vec3 glass = milk ? mix(g, vec3(.95, .956, .966), .8) : g * (.8 - .36 * smoothstep(.15, .6, lum)) + vec3(.05) + uGlow * .02;
       float top = clamp(1. - (p.y - r.y) / r.w, 0., 1.);
       glass += exp(-abs(sd) / .9) * (.05 + .32 * top * top) * (milk ? .55 : 1.);
       col = mix(col, glass, m);
@@ -228,7 +245,7 @@ void main() {
   outColor = vec4(col, 1.);
 }`;
 
-const UNIFORMS = ['uSize', 'uDpr', 'uTime', 'uLevel', 'uSlope', 'uIdle', 'uFizz', 'uCaus', 'uH', 'uSurf', 'uDeep', 'uGlow',
+const UNIFORMS = ['uSize', 'uDpr', 'uTime', 'uLevel', 'uSlope', 'uIdle', 'uFizz', 'uCaus', 'uSpark', 'uH', 'uSurf', 'uDeep', 'uGlow',
   'uRect', 'uRectP', 'uAtlas', 'uCell', 'uAtlasSize', 'uBox', 'uDigitA', 'uSlots', 'uSlot', 'uRoll'];
 
 export function createRenderer(canvas, { keep = false } = {}) {
@@ -322,6 +339,7 @@ export function createRenderer(canvas, { keep = false } = {}) {
       gl.uniform1f(u.uIdle, s.tide.idle);
       gl.uniform1f(u.uFizz, s.tide.fizz);
       gl.uniform1f(u.uCaus, s.color.caustics);
+      gl.uniform1f(u.uSpark, s.color.spark);
       gl.uniform1fv(u.uH, s.tide.h);
       gl.uniform3fv(u.uSurf, s.color.surf);
       gl.uniform3fv(u.uDeep, s.color.deep);
@@ -376,7 +394,7 @@ const stop = (surf, deep, glow) => ({ surf: toLab(hex(surf)), deep: toLab(hex(de
 const HOT = stop('#ff4b2b', '#3f0416', '#ff9c5e');
 const MID = stop('#a83cff', '#170548', '#d58cff');
 const COOL = stop('#16cfc2', '#01202f', '#7dffe8');
-const GOLD = stop('#ffbd45', '#2a0e00', '#fff0c4');
+const GOLD = stop('#eb9a2c', '#4a0c03', '#ffe9b0'); // molten: white-gold at the top, deep ember below
 const mixLab = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
 
 export function paletteAt(p, gold) {
@@ -386,6 +404,7 @@ export function paletteAt(p, gold) {
     if (gold > 0) c = mixLab(c, GOLD[key], gold);
     out[key] = fromLab(c);
   }
-  out.caustics = 0.16 + 0.26 * gold;
+  out.caustics = 0.16 + 0.3 * gold;
+  out.spark = gold;
   return out;
 }
