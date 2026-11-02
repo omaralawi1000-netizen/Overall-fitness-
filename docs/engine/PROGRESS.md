@@ -74,10 +74,21 @@ Fewer tests than rules looks thin, but each property test runs 25 to 200 random 
 
 **Still untested:** see below.
 
+## Browser check (real Chromium, made-up data)
+`node --experimental-strip-types tests/e2e/engine-page.mjs [url]` runs 25 checks on the `/engine/` page (default: the live page) in fresh browser profiles:
+- Import from old Aven, then reload: the workout and food are listed, old Aven is unchanged, and importing again adds nothing.
+- Export, delete everything, then restore with a preview; an edited file is refused.
+- A double tap on Tick ticks once.
+- The rest timer survives a reload, +15 s, and pause with a reload.
+- Undo survives a reload.
+- Two tabs both save and both show each other's ticks.
+- The browser killed with SIGKILL in the middle of an import leaves all or nothing, never half (8 runs).
+
+Run it after every page or engine change, and again against the live page after the deploy. Omar is asked only for what needs his own phone or his own file.
+
 ## What's still untested or open
-- Real phone: persistent-storage grant, a truly full disk, IndexedDB under memory pressure, Chrome killing the tab mid-write.
+- Real phone: persistent-storage grant (headless Chrome always says no), a truly full disk, IndexedDB under memory pressure. A killed browser mid-write is now tested in real Chromium, not on Android.
 - No service worker yet, so "no update mid-workout" and cache separation are rules without wiring.
-- Two tabs were tested with two engines on one database in Node, not two real Chrome tabs.
 - Old Aven's real backup format was tested with a made-up file built from its types; Omar's own file is the real test.
 
 ## Done
