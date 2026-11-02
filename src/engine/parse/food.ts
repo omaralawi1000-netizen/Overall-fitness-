@@ -125,7 +125,7 @@ const VOL_WORD: [RegExp, number][] = [
   [/(\d+(?:[.,]\d+)?)?\s*(?:cups?|kop)\b/, 240],
 ];
 /** A label with fractions and decimal commas made plain, then folded: "1/2 cup" → "0.5 cup", "1,5 dl" → "1.5 dl". */
-const plainLabel = (label: string) => fold(label.toLowerCase().replace(/(\d+)\s*\/\s*(\d+)/g, (_, a, b) => String(Number(a) / Number(b))).replace(/(\d),(\d)/g, '$1.$2'));
+const plainLabel = (label: string) => fold(label.toLowerCase().replace(/(\d+)\s+(\d+)\s*\/\s*(\d+)/g, (_, w, a, b) => String(Number(w) + Number(a) / Number(b))).replace(/(\d+)\s*\/\s*(\d+)/g, (_, a, b) => String(Number(a) / Number(b))).replace(/(\d),(\d)/g, '$1.$2'));
 /** How many of the counted thing a portion stands for: "2 slices (50 g)" is 2, "1 slice" is 1, "1/2 pizza" is 0.5. */
 function portionCount(label: string): number {
   const m = plainLabel(label).match(/^(\d+(?:\.\d+)?)(?![\d.]*\s*-)\s+[a-z]/);

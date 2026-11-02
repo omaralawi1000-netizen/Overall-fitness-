@@ -158,3 +158,17 @@ describe('Codex review of #51, round 7', () => {
     expect(r.unread).toEqual(['2 3 4 eggs']);
   });
 });
+
+describe('Codex review of #51, round 8', () => {
+  it('half a glass of water', () => {
+    expect(readWater('I drank half a glass of water')).toMatchObject({ ml: 125 });
+    expect(readWater('half a bottle of water')).toMatchObject({ ml: 250 });
+    expect(readWater('halvt glas vand')).toBeNull(); // not a supported Danish form: ignored, never guessed
+    expect(readWater('half glass of water')).toMatchObject({ ml: 125 });
+  });
+  it('a mixed fraction in a portion label is one quantity', () => {
+    const oats: FoodShape = { name: 'Oats', basis: 'g', portions: [{ id: 'c', label: '1 1/2 cups (120 g)', amount: 120, verified: true }] };
+    expect(rowQuantity(parseFood('360 ml oats').rows[0], oats).qty).toEqual({ amount: 1, unit: 'portion', portionId: 'c' });
+    expect(rowQuantity(parseFood('1 1/2 cups oats').rows[0], oats).qty).toEqual({ amount: 1, unit: 'portion', portionId: 'c' });
+  });
+});

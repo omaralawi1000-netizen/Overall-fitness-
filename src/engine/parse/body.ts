@@ -30,9 +30,9 @@ export function readWater(text: string): BodyRead<WaterRead> {
     const f = { ml: 1, cl: 10, dl: 100 }[m[2] as 'ml'] ?? 1000;
     return water(Number(m[1]) * f);
   }
-  m = s.match(new RegExp(`^(?:(\\d+(?:\\.\\d+)?|a|an|en|et|half|halv) )?(glass|glasses|glas|bottle|bottles|flaske|flasker) ${WATER_WORD}$`));
+  m = s.match(new RegExp(`^(?:(\\d+(?:\\.\\d+)?|a|an|en|et|(?:half|halv)(?: (?:a|an|en|et))?) )?(glass|glasses|glas|bottle|bottles|flaske|flasker) ${WATER_WORD}$`));
   if (m) {
-    const k = m[1] === undefined || /^(a|an|en|et)$/.test(m[1]) ? 1 : /^(half|halv)$/.test(m[1]) ? 0.5 : Number(m[1]);
+    const k = m[1] === undefined || /^(a|an|en|et)$/.test(m[1]) ? 1 : /^(half|halv)/.test(m[1]) ? 0.5 : Number(m[1]);
     const bottle = /^(bottle|flaske)/.test(m[2]);
     return water(k * (bottle ? BOTTLE_ML : GLASS_ML), `${bottle ? 'a bottle' : 'a glass'} counted as ${bottle ? BOTTLE_ML : GLASS_ML} ml`);
   }
