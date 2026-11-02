@@ -19,6 +19,9 @@ const QTY_BEFORE = /(?:\b(?:for|at|x|by|of|af|and|og|with|med|på|paa|then)|[,&@
 const NUMBER_RE = new RegExp(`\\b(${Object.keys(W).join('|')})\\b`, 'g');
 function normaliseNumbers(s: string): string {
   let out = s.toLowerCase().replace(/(\d),(\d)/g, '$1.$2').replace(/×/g, ' x ');
+  out = out.replace(/(^|[^\d])\.(\d)/g, '$10.$2'); // ".5" is 0.5, not a 5 behind a stray full stop
+  // "twenty five" is 25: tens and ones are one number
+  out = out.replace(/\b(twenty|thirty|forty|fifty|sixty|seventy|eighty|ninety)[ -](one|two|three|four|five|six|seven|eight|nine)\b/g, (_, t: string, o: string) => String(W[t] + W[o]));
   for (let pass = 0; pass < 6; pass++) {
     const next = out.replace(NUMBER_RE, (m, w: string, at: number) => (QTY_AFTER.test(out.slice(at + m.length)) || QTY_BEFORE.test(out.slice(0, at)) ? String(W[w]) : m));
     if (next === out) break;

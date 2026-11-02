@@ -97,3 +97,15 @@ describe('Codex review of #51, round 5', () => {
     expect(parseWorkoutText('bench 135 pounds for 5').rows[0].sets[0].entered).toEqual({ value: 135, unit: 'lb' });
   });
 });
+
+describe('Codex review of #51, round 6', () => {
+  it('compound number words are one number', () => {
+    expect(sets('bench twenty five reps at eighty kg')).toEqual([[80, 25]]);
+    expect(sets('bench eighty two for eight')).toEqual([[82, 8]]);
+  });
+  it('a leading decimal point is kept', () => {
+    expect(parseWorkoutText('run .5 km').rows[0].sets[0].distanceM).toBe(500);
+    expect(parseWorkoutText('plank .5 minutes').rows[0].sets[0].durationSec).toBe(30);
+    expect(parseWorkoutText('barbell curl .5 kg for 10').rows[0].sets[0].kg).toBe(0.5);
+  });
+});
