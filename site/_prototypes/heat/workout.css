@@ -14,27 +14,52 @@ svg path { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: 
 :root[data-phase] .coach i { animation-play-state: paused; }
 @keyframes breathe { 50% { transform: scale(1.25); } }
 
-/* The exercise: name (opens its page, with everything you can change at the bottom) and the set dots (open every set). */
+/* The whole workout: one segment per set, grouped by exercise (todo-cli's lighting blocks). */
+.prog { display: block; width: 100%; margin-top: 18px; padding: 10px 4px; text-align: left; }
+.segs { display: flex; gap: 8px; }
+.segs span { display: flex; gap: 3px; flex: var(--n) 1 0; }
+.segs i { flex: 1; height: 4px; border-radius: 2px; background: color-mix(in srgb, var(--ink) 14%, transparent); transition: background-color .4s, box-shadow .4s; }
+.segs i.d { background: color-mix(in srgb, var(--ink) 70%, transparent); }
+.segs i.rec { background: var(--gold); }
+.segs i.c { background: var(--hot); box-shadow: 0 0 10px var(--g2); }
+.pl { display: block; margin-top: 10px; font-size: 14px; color: var(--dim); }
+.pl b { color: var(--soft); font-weight: 600; }
+
+/* The exercise: name (opens its page, with everything you can change at the bottom) and which set you're on. */
 .ex { margin-top: auto; padding: 0 4px; }
 .name-row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.name { font-size: 46px; line-height: 1.05; text-align: left; min-height: 48px; overflow: clip; }
+.name { font-size: 42px; line-height: 1.05; text-align: left; min-height: 48px; overflow: clip; }
 .name .nm { display: inline-block; }
-.sets-btn { display: flex; align-items: center; gap: 12px; min-height: 44px; margin-top: 4px; }
-.dots { display: flex; gap: 8px; }
-.dots i { width: 12px; height: 12px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ink) 50%, transparent); transition: background-color .3s, box-shadow .3s; }
-.dots i.d { background: var(--ink); box-shadow: none; }
-.dots i.c { box-shadow: inset 0 0 0 1.5px var(--ink), 0 0 0 4px color-mix(in srgb, var(--ink) 14%, transparent); }
-.dots i.rec { background: var(--gold); box-shadow: none; }
-.dots i.goal { box-shadow: inset 0 0 0 1.5px var(--gold); }
-.badge { display: inline-block; font-size: 14px; font-weight: 600; color: var(--soft); }
+.bt { display: inline-block; }
+
+/* The deck. Every set is a glass card of the same size, placed only by transform (workout.js deckPos): done sets
+ * file upward behind the current one and show their top row, next sets peek out below and show their bottom row.
+ * Only the current card has real blur; the others are tinted glass, which over the glow looks the same. */
+.stack { position: relative; margin: 14px 0 14px; padding: 100px 0; }
+.gc { position: absolute; left: 0; right: 0; top: 100px; border-radius: 34px; padding: 0 20px; overflow: hidden; text-align: left;
+  background: color-mix(in srgb, var(--ink) 10%, color-mix(in srgb, var(--base) 72%, transparent));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 30%, transparent), inset 0 0 0 0.5px color-mix(in srgb, #fff 16%, transparent), 0 20px 50px -30px rgb(0 0 0 / .8); }
+.gc .gr { position: absolute; left: 20px; right: 16px; display: flex; align-items: center; gap: 12px; height: 50px; font-size: 17px; }
+.gc .gh { top: 0; } .gc .gf { bottom: 0; }
+.gc.past .gf, .gc.ahead .gh { display: none; }
+.gc.deep .gr { opacity: 0; }
+.gc .sk { font: 600 11px 'Unbounded', sans-serif; letter-spacing: .08em; color: var(--dim); min-width: 46px; }
+.gc .sv { font-weight: 600; letter-spacing: -0.02em; color: var(--soft); white-space: nowrap; }
+.gc .sp { margin-left: auto; font-size: 14px; color: var(--dim); }
+.gc .ck { margin-left: auto; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--solid-ink); }
+.gc .ck svg { width: 14px; height: 14px; } .gc .ck path { stroke-width: 2.4; }
+.gc.rec .ck { background: var(--gold); color: #2A1500; } .gc.rec .sv { color: var(--gold); }
+.gc.then .sv { color: var(--ink); font-family: 'Newsreader', Georgia, serif; font-style: italic; font-size: 22px; font-weight: 400; letter-spacing: 0; }
+.slab { position: relative; z-index: 10; }
+.sh { display: flex; align-items: center; height: 30px; margin-top: -6px; font-size: 14px; font-weight: 600; color: var(--soft); }
 
 /* The set: one frosted slab, two big numbers. Tapping a number unfolds its − and + out of it. */
-.slab { margin-top: 14px; border-radius: 34px; padding: 22px 18px 6px; --veil: 10%; --blur: 32px; }
+.slab { border-radius: 34px; padding: 22px 18px 6px; --veil: 10%; --blur: 32px; }
 .fields { display: flex; align-items: center; justify-content: space-between; }
 .x { font-size: 28px; color: var(--dim); }
 .field { position: relative; display: flex; align-items: center; }
 .val { display: flex; align-items: baseline; gap: 6px; min-height: 76px; padding: 0 4px; border-radius: 18px; }
-.big { font-size: 64px; font-weight: 700; line-height: 1; letter-spacing: -0.05em; }
+.big { font-size: 64px; font-weight: 700; line-height: 1; letter-spacing: -0.05em; transform-origin: 0 0; }
 .val small { font-size: 15px; font-weight: 600; color: var(--soft); }
 .step { position: absolute; top: calc(100% - 6px); width: 48px; height: 44px; border-radius: 22px; font: 500 24px/1 'Archivo', sans-serif; color: var(--solid-ink); background: var(--ink);
   opacity: 0; pointer-events: none; transform: translateY(-14px) scale(.6); transition: opacity .16s, transform .34s cubic-bezier(.3, 1.25, .5, 1); z-index: 3; }
@@ -42,6 +67,10 @@ svg path { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: 
 .minus { left: calc(50% - 52px); } .plus { left: calc(50% + 4px); }
 .field.edit .step { opacity: 1; pointer-events: auto; transform: none; }
 .field.edit .val { transform: translateY(-8px); }
+/* Moving: colour lift without the re-blur (see fly() in workout.js). Fully covered by the rest frost: no backdrop
+ * at all, since two stacked live blurs halved the frame rate and nobody can see the slab through the frost. */
+.stack.fly .slab { --blur: 0px; }
+:root[data-covered] .slab.frost::before { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .slab { transition: padding-bottom .34s cubic-bezier(.3, 1.1, .5, 1); }
 .slab.editing .last { opacity: 0; pointer-events: none; }
 .last { transition: opacity .2s; }
@@ -51,8 +80,6 @@ svg path { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: 
 .last b { font-weight: 600; font-size: 13px; color: var(--ink); }
 .last svg { width: 12px; height: 12px; color: var(--dim); }
 
-.then { margin: 14px 4px 14px; min-height: 40px; text-align: left; font-size: 15px; color: var(--dim); align-self: flex-start; }
-.then b { color: var(--soft); font-weight: 600; }
 
 /* Done: Heat's cream pill. The circle on its left is where the tick happens. */
 .done { justify-content: flex-start; gap: 16px; padding: 0 26px 0 16px; flex: none; }
@@ -100,7 +127,7 @@ svg path { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: 
 .chart .line { fill: none; stroke: var(--g2); stroke-width: 2.4; stroke-linecap: round; filter: drop-shadow(0 0 6px var(--g2)); }
 .chart .area { fill: url(#cg); stroke: none; }
 .chart .dot { fill: var(--hot); }
-.chart .ax { display: flex; justify-content: space-between; color: var(--dim); font-size: 12px; margin-top: 6px; }
+.chart .ax { display: flex; justify-content: space-between; color: var(--dim); font-size: 13px; margin-top: 6px; }
 .howto { counter-reset: s; list-style: none; }
 .howto li { counter-increment: s; display: flex; gap: 12px; align-items: baseline; padding: 6px 0; font-size: 15px; }
 .howto li::before { content: counter(s); font: 600 12px 'Unbounded', sans-serif; color: var(--soft); width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; box-shadow: inset 0 0 0 1px var(--line); flex: none; }
@@ -119,36 +146,86 @@ svg path { fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: 
 .close-hint { display: block; width: 36px; height: 5px; border-radius: 3px; background: color-mix(in srgb, var(--ink) 30%, transparent); margin: 0 auto 14px; }
 
 /* Rest */
-.rest { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px; padding: 20px; }
+.rest { position: fixed; inset: 0; z-index: 20; display: flex; flex-direction: column; align-items: center; gap: 22px; padding: calc(env(safe-area-inset-top) + 112px) 20px 20px; }
 .rest-frost { position: absolute; inset: 0; z-index: -1; background: color-mix(in srgb, var(--base) 30%, transparent); -webkit-backdrop-filter: blur(30px) saturate(1.4); backdrop-filter: blur(30px) saturate(1.4); }
+/* Rest fills the room as a colour level that rises with the time (approved idea), moved only by transform. */
+.level { position: absolute; inset: 0; z-index: -1; pointer-events: none; transform: translateY(100%); will-change: transform;
+  background: linear-gradient(to bottom, transparent 0, color-mix(in srgb, var(--g2) 22%, transparent) 90px, color-mix(in srgb, var(--g1) 30%, transparent) 100%); }
 .ring-wrap { width: 280px; height: 280px; }
 .ring { width: 100%; height: 100%; border-radius: 50%; --veil: 6%; --blur: 20px; transform-origin: 50% 50%; }
 .ring::after { content: ''; position: absolute; inset: -18px; border-radius: 50%; z-index: -2; background: radial-gradient(closest-side, transparent 78%, color-mix(in srgb, var(--g2) 55%, transparent) 90%, transparent 100%); }
 .ring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+/* Frost inside frost: a tint over glass that is already frosted looks the same, and it can fade in with its sheet
+ * (an element that fades can't blur what is behind it, so a nested blur would pop in at the end). */
+.tray .frost::before, .rest .pillbtn.frost::before { -webkit-backdrop-filter: none; backdrop-filter: none; }
 .ring circle { fill: none; stroke-width: 6; }
 .ring .track { stroke: color-mix(in srgb, var(--ink) 12%, transparent); }
 .ring .arc { stroke: var(--hot); stroke-linecap: round; stroke-dasharray: 804.25; }
 .ring-in { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; gap: 6px; }
 .rclock { font-size: 72px; font-weight: 600; letter-spacing: -0.05em; line-height: 1; }
-.rnext { color: var(--soft); font-size: 16px; text-align: center; }
-.rnext b { color: var(--ink); font-weight: 600; }
+/* What you just did, on top: the set you logged sits there while you rest. */
+.rdone { position: absolute; top: calc(env(safe-area-inset-top) + 34px); display: flex; align-items: center; gap: 10px; height: 40px; padding: 0 16px 0 6px; border-radius: 20px;
+  background: color-mix(in srgb, var(--ink) 9%, transparent); box-shadow: inset 0 0 0 0.5px var(--line); font-size: 15px; color: var(--soft); }
+.rdone .ck { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; background: var(--ink); color: var(--solid-ink); }
+.rdone .ck svg { width: 15px; height: 15px; } .rdone .ck path { stroke-width: 2.4; }
+.rdone b { color: var(--ink); font-weight: 600; }
+.rdone.rec .ck { background: var(--gold); color: #2A1500; } .rdone.rec b { color: var(--gold); }
+/* What's next, at the bottom, big enough to read from the bench. A plain tint, not a second blur: the room behind
+ * is already frosted, so a tint looks the same and costs nothing when the level moves under it. */
+.rcard { position: absolute; left: 16px; right: 16px; bottom: calc(env(safe-area-inset-bottom) + 76px); padding: 16px 20px 18px; border-radius: 28px; text-align: left;
+  background: color-mix(in srgb, var(--ink) 8%, transparent); box-shadow: inset 0 0 0 0.5px var(--line); }
+.rc-v { font-size: 34px; font-weight: 600; letter-spacing: -0.04em; margin-top: 6px; line-height: 1.05; }
+.rc-v small { font-size: 15px; font-weight: 500; color: var(--soft); letter-spacing: 0; margin: 0 8px 0 3px; }
+.rc-s { color: var(--soft); font-size: 15px; margin-top: 6px; }
+.rc-s b { color: var(--ink); font-weight: 600; }
+/* The last seconds: six rings of light, offset like petals, pull together into the one ring (Watch Breathe). */
+.ring-wrap { position: relative; }
+.ribbons { position: absolute; inset: 0; pointer-events: none; z-index: 1; }
+.ribbons i { position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--hot) 70%, transparent), 0 0 18px color-mix(in srgb, var(--g2) 40%, transparent); opacity: 0; }
 .rctl { display: flex; gap: 10px; }
+.rest .undo { position: absolute; bottom: calc(env(safe-area-inset-bottom) + 22px); }
 .undo { min-height: 44px; padding: 0 14px; color: var(--soft); font-size: 14px; text-decoration: underline; text-underline-offset: 4px; text-decoration-color: var(--line); }
 
 /* Record */
 .record { position: fixed; inset: 0; z-index: 30; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 24px 20px 20px;
-  color: #2A1500; background: radial-gradient(90% 60% at 50% 40%, #FFE6A6, #F4B544 55%, #C47912); }
-.record .cap { color: rgb(42 21 0 / .6); }
+  color: #FFF1D6; background: radial-gradient(70% 42% at 50% 34%, rgb(255 184 80 / .38), rgb(255 140 40 / .08) 60%, transparent 75%), #0C0805; }
+.record .cap { color: #E8B65A; }
 .medal-stage { perspective: 800px; margin: auto 0 26px; }
-.medal { position: relative; width: 176px; height: 176px; border-radius: 50%; display: grid; place-items: center; overflow: clip;
-  background: linear-gradient(160deg, #3a2a18, #120b05 60%, #2a1c0e); box-shadow: inset 0 0 0 3px #E8B65A, inset 0 0 0 6px #120b05, 0 30px 60px -20px rgb(80 40 0 / .7); }
+.medal { position: relative; width: 196px; height: 196px; border-radius: 50%; display: grid; place-items: center; overflow: clip;
+  background: radial-gradient(circle at 35% 28%, #4a3620, #160d06 62%, #2c1d0e); box-shadow: inset 0 0 0 3px #E8B65A, inset 0 0 0 7px #160d06, inset 0 0 0 8px rgb(232 182 90 / .4), 0 0 80px -10px rgb(255 170 60 / .45), 0 40px 70px -24px #000; }
 .medal .mv { font-size: 70px; font-weight: 800; color: #F6C66A; letter-spacing: -0.05em; text-shadow: 0 0 22px rgb(255 200 100 / .5); }
 .medal .sheen { position: absolute; top: -20%; bottom: -20%; width: 40%; left: -60%; transform: skewX(-18deg); background: linear-gradient(90deg, transparent, rgb(255 236 190 / .55), transparent); }
 .rh { font-size: 38px; line-height: 1.05; margin-top: 8px; }
-.rs { margin-top: 10px; font-size: 16px; color: rgb(42 21 0 / .72); }
-.rgo { margin-top: auto; background: #2A1500; color: #FFE6A6; }
+.rs { margin-top: 10px; font-size: 16px; color: rgb(255 241 214 / .7); }
+.rs b { color: #FFF1D6; }
+.rgo { margin-top: auto; background: linear-gradient(180deg, #FFE6A6, #E8B65A); color: #2A1500; }
 .tray .rec { grid-template-columns: 64px 1fr; padding: 10px 0; }
 .tray .rec .num { font-weight: 500; line-height: 1.5; }
 .alts { overflow: hidden; }
 .alts .row { width: 100%; text-align: left; }
 .alts .serif { font-size: 19px; }
+
+/* Finished: calm, one ring, three thin numbers. */
+.fin { position: fixed; inset: 0; z-index: 25; display: flex; flex-direction: column; align-items: center; text-align: center; padding: calc(env(safe-area-inset-top) + 48px) 20px 20px;
+  background: radial-gradient(80% 46% at 50% 36%, color-mix(in srgb, var(--g2) 30%, transparent), transparent 72%), var(--base); }
+.fring { position: relative; width: 240px; height: 240px; margin-top: auto; }
+.fring svg { position: absolute; inset: 0; transform: rotate(-90deg); }
+.fring circle { fill: none; stroke-width: 3; }
+.fring .ft { stroke: color-mix(in srgb, var(--ink) 10%, transparent); }
+.fring .fa { stroke: var(--hot); stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; }
+.fin-in { position: absolute; inset: 0; display: grid; place-content: center; gap: 4px; }
+.fv { font-size: 54px; font-weight: 300; letter-spacing: -0.04em; line-height: 1; }
+.fin-in small { color: var(--soft); font-size: 14px; }
+.fh { font-size: 40px; margin-top: 26px; }
+.fstats { display: flex; gap: 34px; margin-top: 22px; margin-bottom: auto; }
+.fstats b { display: block; font-size: 30px; font-weight: 300; letter-spacing: -0.03em; }
+.fstats small { color: var(--dim); font-size: 13px; }
+.fgo { margin-top: 24px; width: 100%; justify-content: center; }
+
+/* The record's place in your history: the trend curve with today's point lit (MacroFactor's curve). */
+.rchart { width: 100%; max-width: 340px; margin-top: 22px; }
+.rchart svg { width: 100%; height: 130px; overflow: visible; }
+.rchart .line { fill: none; stroke: rgb(232 182 90 / .7); stroke-width: 2; stroke-linecap: round; }
+.rchart .area { stroke: none; }
+.rchart .dot { fill: #FFE6A6; filter: drop-shadow(0 0 8px #FFB850); }
+.rchart .ax { display: flex; justify-content: space-between; font-size: 13px; color: rgb(255 241 214 / .62); margin-top: 6px; }

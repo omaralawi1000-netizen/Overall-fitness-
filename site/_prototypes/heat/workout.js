@@ -1,10 +1,14 @@
 // Heat workout: a calm surface with the depth one tap away. Each moment is built from one of Omar's hearted clips:
-// tick = Not Boring's dot that swells into a pearl and settles into a check; rest = Apple Watch's button that grows
-// into the timer ring, calmed like Peace Out (the time fades in once the ring has settled); numbers = Push's
+// tick = Not Boring's dot that swells into a pearl and settles into a check; next set = Google's setup steps (the done
+// set folds into a row, the next opens in place, its numbers travel); rest = Apple Watch's button that grows into the
+// timer ring, calmed like Peace Out, with the room filling as a colour level and the last five seconds each their own
+// beat (Push's countdown); numbers = Push's
 // single-digit roll with motion blur; labels = the multi-state badge's blur swap; details = trays that grow out of
 // what you tapped (Family) and the name that grows into its page (card to page); record = Nike's takeover from the
-// logged set, Any Distance's medal turning to catch the light, Fitness Wrapped's count-up that locks in.
+// logged set into a dark room (CRED), Any Distance's medal turning to catch the light, Fitness Wrapped's count-up that
+// locks in; finished = Monument Valley's calm COMPLETE with one ring.
 import { play, SPRINGS, reduced } from '../../round/motion.js';
+const playSpring = play;
 
 const $ = (s, r = document) => r.querySelector(s);
 const $$ = (s, r = document) => [...r.querySelectorAll(s)];
@@ -13,6 +17,9 @@ const mmss = (s) => { const t = Math.max(0, Math.ceil(s)); return `${Math.floor(
 const wait = (ms) => new Promise((r) => setTimeout(r, reduced() ? Math.min(ms, 60) : ms));
 const e1rm = (kg, r) => Math.round(kg * (1 + r / 30) * 10) / 10;
 const root = document.documentElement;
+let viaKeys = false; // programmatic focus shows its ring only if the last input was the keyboard
+addEventListener('keydown', () => { viaKeys = true; }, true); addEventListener('pointerdown', () => { viaKeys = false; }, true);
+const focus = (el) => el?.focus({ preventScroll: true, focusVisible: viaKeys });
 
 /* Grain tile, once. */
 {
@@ -102,10 +109,6 @@ function coach() {
   if (x.name.startsWith('Incline')) return { say: 'Last time 30 × 9 on sets 2 and 3. Get all 10 today and it goes up next week.', why: 'Two sessions at 30 kg so far.' };
   return { say: 'On plan. Nothing to change.', why: 'The Coach speaks up when something is worth changing.' };
 }
-function dotsHTML() {
-  const x = ex();
-  return x.sets.map((p, i) => `<i class="${p.done ? (p.rec ? 'rec' : 'd') : i === W.s ? 'c' : ''} ${!p.done && beats(p, x.best) ? 'goal' : ''}"></i>`).join('');
-}
 /** Where the workout goes after the current set: the next undone set, exercise by exercise.
  *  A superset (W.superset = index of its first exercise) alternates its two exercises set by set. */
 function nextPos() {
@@ -117,22 +120,110 @@ function nextPos() {
   for (let k = 0; k < W.ex.length; k++) { const e = (W.e + k) % W.ex.length, i = undone(e); if (i >= 0) return { e, s: i }; }
   return null;
 }
-function nextLine() {
-  const n = nextPos();
-  if (!n) return 'Last set of the workout';
-  if (n.e === W.e) { const t = ex().sets[n.s]; return `Then set ${n.s + 1} · <b class="num">${fmtKg(t.kg)} × ${t.r}</b>`; }
-  return `${W.superset === W.e && n.e === W.e + 1 ? 'Straight into' : 'Then'} <b>${W.ex[n.e].name}</b>`;
+/** The card at the bottom of the deck: the exercise that comes after this one. */
+function thenCard() {
+  const n = nextPos(), e = n && n.e !== W.e ? n.e : W.e + 1, x = W.ex[e];
+  if (!x || e === W.e) return null;
+  const straight = W.superset === W.e && e === W.e + 1;
+  return { k: `x${e}`, then: true, txt: `${straight ? 'Straight into' : 'Then'} ${x.name}`, n: x.sets.filter((p) => !p.done).length };
 }
-function paint({ animate = false, dir = 1 } = {}) {
+/* ---------- The deck ---------- */
+const CK = '<svg viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg>';
+const PEEK = 50, STEP = 8; // two cards each side show a full row; deeper ones only an edge
+/** Where a card sits, by its place p relative to the set you're on. 0 is the current card. −1, −2… are filed above
+ *  it, so their top row shows. 1, 2… peek out below, so their bottom row shows. Transform only, so moves are cheap. */
+function deckPos(p) {
+  if (p === 0) return { t: 'none', o: 1, z: 10, origin: '50% 50%' };
+  const k = Math.abs(p), y = Math.sign(p) * (Math.min(k, 2) * PEEK + (k > 2 ? STEP : 0));
+  return { t: `translateY(${y}px) scale(${1 - 0.04 * Math.min(k, 3)})`, o: k > 3 ? 0 : k > 2 ? 0.5 : 1, z: 10 - k, origin: p < 0 ? '50% 0' : '50% 100%', deep: k > 2 };
+}
+/** The deck continues across exercises: the one before sits on top of the pile, the one after at the bottom. */
+function deck() {
+  const x = ex(), list = x.sets.map((set, i) => ({ k: `${W.e}-${i}`, p: i - W.s, set, i })), t = thenCard(), b = W.ex[W.e - 1];
+  if (t) list.push({ ...t, p: x.sets.length - W.s });
+  if (b) { const d = b.sets.filter((p) => p.done); list.unshift({ k: `x${W.e - 1}`, then: true, prev: true, txt: b.name, n: d.length, all: d.length === b.sets.length, rec: d.some((p) => p.rec), p: -W.s - 1 }); }
+  return list;
+}
+function place(el, p) {
+  const d = deckPos(p);
+  el.dataset.p = p; el.style.transform = d.t; el.style.zIndex = d.z; el.style.transformOrigin = d.origin;
+  if (!el.classList.contains('slab')) { el.style.opacity = d.o; el.classList.toggle('deep', !!d.deep); } // never on the glass: opacity there turns its blur off
+}
+let deckE = 0; // the exercise the deck is showing
+function renderStack() {
+  const st = $('.stack'), slab = $('.slab'), H = slab.offsetHeight;
+  deckE = W.e;
+  $$('.gc', st).forEach((g) => g.remove());
+  deck().forEach((c) => {
+    if (c.p === 0) { slab.dataset.k = c.k; place(slab, 0); return; }
+    const d = document.createElement('div'), s = c.set;
+    d.className = `gc ${c.p < 0 ? 'past' : 'ahead'}${s?.rec || c.rec ? ' rec' : ''}${c.then ? ' then' : ''}`; d.dataset.k = c.k; d.style.height = `${H}px`;
+    const v = c.prev ? `<span class="sv">${c.txt}</span>${c.all ? `<span class="ck">${CK}</span>` : `<span class="sp">${c.n} sets done</span>`}`
+      : c.then ? `<span class="sv">${c.txt}</span><span class="sp">${c.n} sets</span>`
+      : `<span class="sk">SET ${c.i + 1}</span><span class="sv num">${fmtKg(s.kg)} × ${s.r}</span>` + (s.done ? `<span class="ck">${CK}</span>` : `<span class="sp">last ${s.prev}</span>`);
+    d.innerHTML = `<div class="gr gh">${v}</div><div class="gr gf">${v}</div>`;
+    st.insertBefore(d, slab); place(d, c.p);
+  });
+}
+function renderProg() {
+  $('.segs').innerHTML = W.ex.map((x, e) => `<span style="--n:${x.sets.length}">${x.sets.map((p, i) => `<i class="${e === W.e && i === W.s && !p.done ? 'c' : p.rec ? 'rec' : p.done ? 'd' : ''}"></i>`).join('')}</span>`).join('');
+  const left = W.ex.reduce((t, x) => t + x.sets.filter((p) => !p.done).length, 0);
+  $('.pl').innerHTML = left ? `Exercise <b>${W.e + 1} of ${W.ex.length}</b> · ${left} sets to go · about ${Math.max(1, Math.round(left * 2.2))} min` : `<b>All ${W.ex.length} exercises done</b>`;
+}
+/** Where every card is on screen now, so each one can glide from there. */
+function captureStack() {
+  return { m: new Map($$('.stack > .gc, .stack > .slab').map((el) => [el.dataset.k, +el.dataset.p])) };
+}
+/** The deck follows the workout: within an exercise every card glides one place; a new exercise is dealt in. */
+async function moveDeck(dir) {
+  if (deckE !== W.e) { nameTo(ex().name); await stackTo(); paint({ animate: true, instant: true, dir }); return; }
+  const before = captureStack(); renderStack(); paint({ animate: true, instant: true, dir }); animateStack(before);
+  await wait(reduced() ? 0 : 380);
+}
+/** While the deck moves, the slab keeps its colour lift but drops the blur (the glow behind it is smooth, so the
+ *  difference is about 1%), because re-blurring a moving slab every frame cost a fifth of the frames. */
+function fly(anims) {
+  const st = $('.stack'); st.classList.add('fly');
+  Promise.allSettled(anims.map((a) => a.finished)).then(() => { if (!st.getAnimations({ subtree: true }).some((a) => a.playState === 'running')) st.classList.remove('fly'); });
+}
+/** Every card glides from where it was to its new place (Apple Wallet). The set you finished files up behind the
+ *  next one and the next set rises out of the deck into the middle, its glass settling with a little spring. */
+function animateStack(before) {
+  if (reduced()) return;
+  const now = new Map(deck().map((c) => [c.k, c.p])), anims = [];
+  $$('.stack > .gc, .stack > .slab').forEach((el) => {
+    const to = now.get(el.dataset.k), from = before.m.get(el.dataset.k);
+    if (from === undefined || to === undefined || from === to) return;
+    const a = deckPos(from), b = deckPos(to), glass = el.classList.contains('slab');
+    el.style.transformOrigin = from !== 0 ? a.origin : b.origin;
+    // The card you finished appears behind the rising glass only once they've parted, so nothing shows doubled.
+    const kf = glass ? [{ transform: a.t }, { transform: b.t }] : from === 0 ? [{ transform: a.t, opacity: 0 }, { opacity: 0, offset: 0.3 }, { transform: b.t, opacity: b.o }] : [{ transform: a.t, opacity: a.o }, { transform: b.t, opacity: b.o }];
+    anims.push(playSpring(el, kf, glass ? SPRINGS.lift : SPRINGS.set));
+  });
+  fly(anims);
+}
+/** Next exercise: the deck is dealt away to the left and the new one dealt in from the right, card by card, with the
+ *  name (Md Vinyl's next). Transform only: an opacity fade on the deck would switch the glass's blur off. */
+async function stackTo() {
+  const st = $('.stack'), cardsOf = () => $$('.stack > .gc, .stack > .slab').sort((a, b) => parseFloat(b.style.zIndex) - parseFloat(a.style.zIndex));
+  st.classList.add('fly');
+  if (!reduced()) await Promise.all(cardsOf().map((el, i) => el.animate([{ transform: el.style.transform }, { transform: `translateX(-120%) rotate(-5deg) ${el.style.transform.replace('none', '')}` }],
+    { duration: 240, delay: i * 22, easing: 'cubic-bezier(.5,0,.8,.3)', fill: 'forwards' }).finished.catch(() => {})));
+  $('.slab').getAnimations().forEach((a) => a.cancel());
+  renderStack();
+  fly(cardsOf().map((el, i) => playSpring(el, [{ transform: `translateX(120%) rotate(6deg) ${el.style.transform.replace('none', '')}` }, { transform: el.style.transform }], SPRINGS.set, { delay: i * 45 })));
+}
+function paint({ animate = false, dir = 1, instant = false } = {}) {
   const x = ex(), c = set();
-  if (!animate) { $('.nm').textContent = x.name; $('.kg').textContent = ''; $('.reps').textContent = ''; }
+  if (!animate) $('.nm').textContent = x.name;
+  if (!animate || instant) { $('.kg').textContent = ''; $('.reps').textContent = ''; }
   roll($('.kg'), fmtKg(c.kg), dir); roll($('.reps'), c.r, dir);
   $('.kg').classList.toggle('over', beats(c, x.best));
-  $('.dots').innerHTML = dotsHTML();
+  if (!animate) renderStack();
+  renderProg();
   const b = `Set ${W.s + 1} of ${x.sets.length}`;
   if (animate) swapText($('.bt'), b); else $('.bt').textContent = b;
   $('.lt').innerHTML = x.last ? `Last time <b class="num">${x.last.sets[W.s] ?? x.last.sets.at(-1)}</b>` : `Best <b class="num">${fmtKg(x.best.kg)} × ${x.best.r}</b>`;
-  $('.th').innerHTML = nextLine();
   $('.ds').textContent = `Set ${W.s + 1}`;
   $('.coach').classList.toggle('quiet', !coach().use && !W.used);
 }
@@ -167,7 +258,6 @@ $$('.field').forEach((f) => {
       W.used = null; navigator.vibrate?.(4);
       roll($('.kg'), fmtKg(c.kg), d); roll($('.reps'), c.r, d);
       $('.kg').classList.toggle('over', beats(c, ex().best));
-      $('.dots').innerHTML = dotsHTML(); $('.th').innerHTML = nextLine();
       $('.coach').classList.toggle('quiet', !coach().use);
       clearTimeout(editT); editT = setTimeout(closeEdit, 5000);
     });
@@ -179,8 +269,10 @@ document.addEventListener('pointerdown', (e) => { if (!e.target.closest('.field'
 const tray = $('.tray'), tin = $('.tray-in'), scrim = $('.scrim');
 let open = null;
 const CHECK = '<svg class="ok" viewBox="0 0 16 16"><path d="M3.5 8.5l3 3 6-7"/></svg>';
-function chartSVG(x) {
-  const v = x.hist.map(([kg, r]) => e1rm(kg, r)), lo = Math.min(...v) - 2, hi = Math.max(...v) + 2, W_ = 320, H = 110;
+function chartSVG(x, extra = null, gid = 'cg') {
+  let v = (extra ? [...x.hist, extra] : x.hist).map(([kg, r]) => e1rm(kg, r));
+  if (extra) v = v.map((y, i) => Math.max(...v.slice(0, i + 1))); // on a record: your best so far, so the climb reads clearly
+  const lo = Math.min(...v) - 2, hi = Math.max(...v) + 2, W_ = 320, H = 110;
   const pts = v.map((y, i) => [i * (W_ / (v.length - 1)), H - ((y - lo) / (hi - lo)) * H]);
   let d = `M${pts[0][0]},${pts[0][1]}`;
   for (let i = 0; i < pts.length - 1; i++) { // a smooth curve through the points (Catmull-Rom as Béziers)
@@ -188,9 +280,9 @@ function chartSVG(x) {
     d += ` C${p1[0] + (p2[0] - p0[0]) / 6},${p1[1] + (p2[1] - p0[1]) / 6} ${p2[0] - (p3[0] - p1[0]) / 6},${p2[1] - (p3[1] - p1[1]) / 6} ${p2[0]},${p2[1]}`;
   }
   const end = pts.at(-1);
-  return `<svg viewBox="0 0 ${W_} ${H}" preserveAspectRatio="none"><defs><linearGradient id="cg" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--g2)" stop-opacity=".35"/><stop offset="1" stop-color="var(--g2)" stop-opacity="0"/></linearGradient></defs>
-    <path class="area" d="${d} L${W_},${H} L0,${H}Z"/><path class="line" d="${d}" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1"/><circle class="dot" cx="${end[0]}" cy="${end[1]}" r="4"/></svg>
-    <div class="ax"><span>${x.dates[0]}</span><span>Est. best ${v.at(-1)} kg</span><span>${x.dates[1]}</span></div>`;
+  return `<svg viewBox="0 0 ${W_} ${H}" preserveAspectRatio="none"><defs><linearGradient id="${gid}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${extra ? '#E8B65A' : 'var(--g2)'}" stop-opacity=".35"/><stop offset="1" stop-color="${extra ? '#E8B65A' : 'var(--g2)'}" stop-opacity="0"/></linearGradient></defs>
+    <path class="area" d="${d} L${W_},${H} L0,${H}Z" style="fill:url(#${gid})"/><path class="line" d="${d}" pathLength="1" style="stroke-dasharray:1;stroke-dashoffset:1"/><circle class="dot" cx="${end[0]}" cy="${end[1]}" r="4"/></svg>
+    <div class="ax"><span>${x.dates[0]}</span><span>Est. best ${v.at(-1)} kg</span><span>${extra ? 'Today' : x.dates[1]}</span></div>`;
 }
 /** Everything you can change about the exercise sits at the bottom of its own page: one door, not two. */
 function tools() {
@@ -224,13 +316,6 @@ const VIEWS = {
       <div style="margin-top:10px">${x.last.sets.map((t, i) => `<div class="row"><span class="p">Set ${i + 1}</span><span class="num">${t}</span><span></span></div>`).join('')}</div>
       <p class="why">Best ${fmtKg(x.best.kg)} × ${x.best.r} on ${x.best.date}</p>`;
   },
-  sets() {
-    const x = ex();
-    return `<p class="cap">${x.name}</p>
-      <div class="row" style="border:0;color:var(--dim);font-size:12px;min-height:30px"><span>Set</span><span>Last time</span><span>Today</span></div>
-      ${x.sets.map((p, i) => `<div class="row ${i === W.s ? 'now' : ''}"><span class="k">${i + 1}</span><span class="p num">${p.prev}</span>
-        <span class="num" style="display:flex;align-items:center;gap:8px">${p.done ? CHECK : ''}${fmtKg(p.kg)} × ${p.r}${!p.done && beats(p, x.best) ? '<span class="tag">BEST</span>' : ''}${p.rec ? '<span class="tag">NEW BEST</span>' : ''}</span></div>`).join('')}`;
-  },
   workout() {
     const mins = Math.round((Date.now() - W.start) / 60000);
     return `<p class="cap">Push · ${mins} min in · about 24 min left</p>
@@ -259,10 +344,18 @@ function placeTray(kind, a) {
   if (r.top + r.height / 2 < innerHeight / 2) tray.style.top = `${Math.round(r.bottom + 8)}px`;
   else tray.style.bottom = `${Math.round(innerHeight - r.top + 8)}px`;
 }
+/** The glass grows out of what you tapped by its outline only: a clip on the frost layer itself. Scaling or fading
+ *  the tray instead made Chrome drop the blur until the motion ended, so sheets showed clear, then turned frosted. */
+const GLASS = { pseudoElement: '::before' };
 function grow(a, from = true) {
+  const r = a.getBoundingClientRect(), t = tray.getBoundingClientRect(), rad = Math.min(r.height / 2, 30);
+  const small = `inset(${r.top - t.top}px ${t.right - r.right}px ${t.bottom - r.bottom}px ${r.left - t.left}px round ${rad}px)`, full = 'inset(0px 0px 0px 0px round 30px)';
+  return from ? [{ clipPath: small }, { clipPath: full }] : [{ clipPath: full }, { clipPath: small }];
+}
+/** The contents travel with the glass from the side it grew from. */
+function contentFrom(a) {
   const r = a.getBoundingClientRect(), t = tray.getBoundingClientRect();
-  const k = `translate(${r.left - t.left}px, ${r.top - t.top}px) scale(${r.width / t.width}, ${r.height / t.height})`;
-  return from ? [{ transform: k, opacity: 0.6 }, { transform: 'none', opacity: 1 }] : [{ transform: 'none', opacity: 1 }, { transform: k, opacity: 0 }];
+  return `translateY(${Math.max(-40, Math.min(40, (r.top + r.height / 2) - (t.top + t.height / 2)) / 3)}px) scale(.97)`;
 }
 function openTray(kind, anchor) {
   if (busy) return;
@@ -273,8 +366,8 @@ function openTray(kind, anchor) {
   tray.hidden = scrim.hidden = false; $('#screen').inert = true;
   tin.tabIndex = -1; tin.focus({ preventScroll: true });
   placeTray(kind, anchor);
-  play(tray, grow(anchor), SPRINGS.lift);
-  tin.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 200, delay: reduced() ? 0 : 90, fill: 'backwards' });
+  play(tray, grow(anchor), SPRINGS.lift, GLASS);
+  if (!reduced()) play(tin, [{ transform: contentFrom(anchor), opacity: 0 }, { transform: 'none', opacity: 1 }], SPRINGS.set, { delay: 70 });
   scrim.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 220 });
   const line = $('.chart .line', tin);
   if (line) line.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 900, delay: 260, easing: 'cubic-bezier(.3,.7,.2,1)', fill: 'forwards' });
@@ -284,7 +377,7 @@ function morph(kind) {
   const h0 = tray.getBoundingClientRect().height;
   tin.innerHTML = VIEWS[kind](); open.kind = kind;
   const h1 = tray.getBoundingClientRect().height;
-  if (!reduced() && Math.abs(h1 - h0) > 1) play(tray, [{ clipPath: `inset(0 0 ${Math.max(0, h1 - h0)}px 0 round 30px)` }, { clipPath: 'inset(0 0 0 0 round 30px)' }], SPRINGS.set);
+  if (!reduced() && Math.abs(h1 - h0) > 1) play(tray, [{ clipPath: `inset(0px 0px ${Math.max(0, h1 - h0)}px 0px round 30px)` }, { clipPath: 'inset(0px 0px 0px 0px round 30px)' }], SPRINGS.set, GLASS);
   tin.animate([{ opacity: 0, filter: 'blur(4px)' }, { opacity: 1, filter: 'blur(0)' }], { duration: 240, easing: 'ease-out' });
 }
 async function closeTray() {
@@ -292,11 +385,11 @@ async function closeTray() {
   const { anchor } = open; open = null;
   const note = $('.note', tin); if (note) ex().note = note.value;
   scrim.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 180, fill: 'forwards' });
-  tin.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 90, fill: 'forwards' });
-  await play(tray, grow(anchor, false), SPRINGS.set, { fill: 'forwards' }).finished.catch(() => {});
-  tray.getAnimations().forEach((a) => a.cancel()); scrim.getAnimations().forEach((a) => a.cancel()); tin.getAnimations().forEach((a) => a.cancel());
+  tin.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 110, fill: 'forwards' });
+  await play(tray, grow(anchor, false), SPRINGS.set, { fill: 'forwards', ...GLASS }).finished.catch(() => {});
+  tray.getAnimations({ subtree: true }).forEach((a) => a.cancel()); scrim.getAnimations().forEach((a) => a.cancel()); tin.getAnimations().forEach((a) => a.cancel());
   tray.hidden = scrim.hidden = true; $('#screen').inert = false;
-  anchor.focus?.({ preventScroll: true });
+  focus(anchor);
 }
 $$('[data-open]').forEach((b) => { press(b, 0.97); b.addEventListener('click', () => openTray(b.dataset.open, b)); });
 scrim.addEventListener('click', closeTray);
@@ -305,8 +398,8 @@ tray.addEventListener('click', (e) => {
   const b = e.target.closest('[data-a]'); if (!b) return;
   const a = b.dataset.a, x = ex();
   if (a === 'close') closeTray();
-  if (a === 'use') { W.used = { kg: coach().use, was: set().kg }; set().kg = W.used.kg; roll($('.kg'), fmtKg(set().kg), 1); $('.kg').classList.toggle('over', beats(set(), x.best)); $('.dots').innerHTML = dotsHTML(); morph('coach'); }
-  if (a === 'unuse') { set().kg = W.used.was; W.used = null; roll($('.kg'), fmtKg(set().kg), -1); $('.kg').classList.toggle('over', beats(set(), x.best)); $('.dots').innerHTML = dotsHTML(); morph('coach'); }
+  if (a === 'use') { W.used = { kg: coach().use, was: set().kg }; set().kg = W.used.kg; roll($('.kg'), fmtKg(set().kg), 1); $('.kg').classList.toggle('over', beats(set(), x.best)); morph('coach'); }
+  if (a === 'unuse') { set().kg = W.used.was; W.used = null; roll($('.kg'), fmtKg(set().kg), -1); $('.kg').classList.toggle('over', beats(set(), x.best)); morph('coach'); }
   if (a === 'replace') { // the choices unfold right under the row you tapped
     const nx = b.nextElementSibling;
     if (nx && nx.classList.contains('alts')) { nx.remove(); return; }
@@ -319,9 +412,9 @@ tray.addEventListener('click', (e) => {
     const n = b.dataset.v, k = SWAPS[n] || { kit: '', kg: x.sets[0].kg, best: x.best.kg };
     Object.assign(x, { name: n, kit: k.kit, last: null, hist: null, how: null, alts: null, note: '', best: { kg: k.best, r: x.sets[0].r, date: 'earlier' } });
     x.sets = x.sets.map((p) => S(k.kg, p.r, '–')); W.s = 0; W.used = null;
-    closeTray().then(() => { nameTo(n); paint({ animate: true, dir: -1 }); });
+    closeTray().then(() => { nameTo(n); stackTo(); paint({ animate: true, dir: -1, instant: true }); });
   }
-  if (a === 'superset') { W.superset = W.superset === W.e ? null : W.e; $('.ss', tin).innerHTML = W.superset === W.e ? CHECK : ''; $('.th').innerHTML = nextLine(); }
+  if (a === 'superset') { W.superset = W.superset === W.e ? null : W.e; $('.ss', tin).innerHTML = W.superset === W.e ? CHECK : ''; renderStack(); }
   if (a === 'rest-' || a === 'rest+') { W.rest = Math.max(30, Math.min(300, W.rest + (a === 'rest+' ? 15 : -15))); roll($('.rv', tin), mmss(W.rest), a === 'rest+' ? 1 : -1); }
 });
 tray.addEventListener('input', (e) => { if (e.target.classList.contains('note')) ex().note = e.target.value; });
@@ -355,12 +448,32 @@ async function pearlIn(gold) {
 }
 function pearlOut() { [$('.ball', pearl), $('svg path', pearl)].forEach((e) => { e.getAnimations().forEach((a) => a.cancel()); e.style.transform = ''; e.style.strokeDashoffset = ''; }); pearl.classList.remove('gold'); }
 
-/** Every set is done: the pill says so and stops taking taps. */
+/** Every set is done: a calm "complete" (Monument Valley), then the pill says Finished and stops taking taps. */
 function finish() {
   $('.dl').textContent = 'Finished'; $('.ds').textContent = ''; pill.disabled = true;
-  $('.th').textContent = `Workout done · ${W.ex.length} exercises`; $('.coach').classList.add('quiet');
+  $('.coach').classList.add('quiet');
+  renderStack(); renderProg();
+  const all = W.ex.flatMap((x) => x.sets.filter((p) => p.done)), kg = Math.round(all.reduce((t, p) => t + p.kg * p.r, 0));
+  const fin = $('.fin'), fv = $('.fv');
+  $('.ft1').textContent = mmss((Date.now() - W.start) / 1000); $('.ft2').textContent = all.length; $('.ft3').textContent = all.filter((p) => p.rec).length;
+  fin.hidden = false; $('#screen').inert = true; root.dataset.phase = 'done';
+  const fmt = (n) => n.toLocaleString('en-GB');
+  if (reduced()) { fv.textContent = fmt(kg); $('.fa').style.strokeDashoffset = 0; } else {
+    fin.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 600, easing: 'ease-out' });
+    $('.fa').animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 1600, delay: 300, easing: 'cubic-bezier(.4,0,.2,1)', fill: 'both' });
+    const t0 = performance.now() + 300; // count up on the ring's clock, then lock in
+    const step = (now) => { const k = Math.min(1, Math.max(0, (now - t0) / 1600)), e = 1 - (1 - k) ** 3; fv.textContent = fmt(Math.round(kg * e)); if (k < 1 && !fin.hidden) requestAnimationFrame(step); };
+    requestAnimationFrame(step);
+    $$('.fh, .fstats, .fgo', fin).forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: 600, delay: 1200 + i * 160, easing: 'cubic-bezier(.2,.8,.2,1)', fill: 'backwards' }));
+  }
+  focus($('.fgo'));
   busy = false; // the details stay open to look back at
 }
+$('.fgo').addEventListener('click', async () => {
+  const fin = $('.fin');
+  if (!reduced()) await fin.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: 'forwards' }).finished;
+  fin.getAnimations().forEach((a) => a.cancel()); fin.hidden = true; $('#screen').inert = false; delete root.dataset.phase;
+});
 async function tick() {
   if (busy || !rest.hidden || pill.disabled) return; busy = true; closeEdit();
   const x = ex(), c = set(), rec = beats(c, x.best), g = gen;
@@ -374,74 +487,101 @@ async function tick() {
   if (!n) { finish(); return; }
   const straight = W.superset === W.e && n.e === W.e + 1; // first half of a superset: no rest, go straight on
   W.e = n.e; W.s = n.s;
-  if (straight) { undoTo = null; pearlOut(); await nameTo(ex().name); paint({ animate: true }); busy = false; return; }
+  if (straight) { undoTo = null; pearlOut(); await moveDeck(1); busy = false; return; }
+  await moveDeck(1); // the set files away while you watch, then the pill opens into the rest
+  if (g !== gen) return;
   await startRest();
 }
 
 /* ---------- Rest: the pill grows into the ring; the time fades in once it settles (Watch + Peace Out) ---------- */
 const rest = $('.rest'), ring = $('.ring'), arc = $('.arc'), pill = $('.done');
-let iv = 0, endsAt = 0, arcAnim = null, total = 90;
+let iv = 0, endsAt = 0, arcAnim = null, levelAnim = null, total = 90;
+const level = $('.level');
+/** The Done pill's outline grows into the ring (clip on the frost layer, so it is frosted from the first frame), the
+ *  arc flies out of the pill, and the halo fades up. */
 function pillToRing(dir) {
-  const p = pill.getBoundingClientRect(), r = $('.ring-wrap').getBoundingClientRect();
-  const k = `translate(${p.left + p.width / 2 - (r.left + r.width / 2)}px, ${p.top + p.height / 2 - (r.top + r.height / 2)}px) scale(${p.width / r.width}, ${p.height / r.height})`;
-  const f = [{ transform: k, opacity: 0.4 }, { transform: 'none', opacity: 1 }];
-  return play(ring, dir > 0 ? f : f.reverse(), dir > 0 ? SPRINGS.lift : SPRINGS.set, { fill: 'forwards' });
+  const p = pill.getBoundingClientRect(), r = ring.getBoundingClientRect();
+  const small = `inset(${p.top - r.top}px ${r.right - p.right}px ${r.bottom - p.bottom}px ${p.left - r.left}px round 38px)`, full = 'inset(0px 0px 0px 0px round 140px)';
+  const k = `translate(${p.left + p.width / 2 - (r.left + r.width / 2)}px, ${p.top + p.height / 2 - (r.top + r.height / 2)}px) scale(.28)`;
+  const way = (f) => (dir > 0 ? f : [...f].reverse()), sp = dir > 0 ? SPRINGS.lift : SPRINGS.set, o = { fill: 'forwards' };
+  play($('.ring svg'), way([{ transform: `${k} rotate(-90deg)`, opacity: 0 }, { transform: 'rotate(-90deg)', opacity: 1 }]), sp, o);
+  play(ring, way([{ transform: k, opacity: 0 }, { transform: 'none', opacity: 1 }]), sp, { ...o, pseudoElement: '::after' });
+  return play(ring, way([{ clipPath: small }, { clipPath: full }]), sp, { ...o, ...GLASS });
+}
+let ribbonsOn = false;
+/** Six rings of light, offset like petals, pull into the one ring over the last seconds (Watch Breathe).
+ *  Transform and opacity only, above the blur, and only for these few seconds. */
+function ribbons(left) {
+  ribbonsOn = true; if (reduced()) return;
+  $$('.ribbons i').forEach((el, k) => {
+    const a = k * 60;
+    el.animate([{ transform: `rotate(${a}deg) translateX(30px) scale(1.12)`, opacity: 0 }, { opacity: 0.85, offset: 0.25 },
+      { transform: `rotate(${a + 40}deg) translateX(0) scale(1)`, opacity: 0.9, offset: 0.92 }, { transform: `rotate(${a + 40}deg) translateX(0) scale(1)`, opacity: 0 }],
+      { duration: left * 1000, easing: 'cubic-bezier(.45,0,.25,1)', fill: 'forwards' });
+  });
 }
 function runArc() {
   arcAnim?.cancel();
+  ribbonsOn = false; $$('.ribbons i').forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
   const left = Math.max(0, endsAt - performance.now());
   arc.style.strokeDashoffset = 804.25;
   // The arc moves in small steps (5 a second, about 2 px each): it looks continuous, but the frost behind it is
   // re-blurred 5 times a second instead of every frame. A smooth arc over two layers of live blur dropped to ~25 fps.
   arcAnim = arc.animate([{ strokeDashoffset: 0 }, { strokeDashoffset: 804.25 }], { duration: total * 1000, easing: `steps(${Math.round(total * 5)})` });
   arcAnim.currentTime = total * 1000 - left;
+  levelAnim?.cancel(); // the room fills as a colour level, in the same steps as the arc: a level moving every frame over
+  // the full-screen blur cost half the frames (43 fps rest, 23 fps fold at 4x slower CPU); stepped it holds 60.
+  levelAnim = level.animate([{ transform: 'translateY(100%)' }, { transform: 'translateY(0%)' }], { duration: total * 1000, easing: `steps(${Math.round(total * 5)})`, fill: 'forwards' });
+  levelAnim.currentTime = total * 1000 - left;
 }
 function tickClock() {
   const left = (endsAt - performance.now()) / 1000;
   const t = mmss(left), rc = $('.rclock');
-  if (rc.textContent !== t) rc.textContent = t;
+  if (rc.textContent !== t) {
+    rc.textContent = t;
+    // The last five seconds are each their own beat (Push's countdown).
+    if (left > 0 && left <= 5 && !reduced()) { rc.animate([{ transform: 'scale(1.22)', opacity: 0.4, filter: 'blur(3px)' }, { transform: 'none', opacity: 1, filter: 'blur(0)' }], { duration: 420, easing: 'cubic-bezier(.2,.8,.2,1)' }); navigator.vibrate?.(4); }
+  }
+  if (left > 0.5 && left <= 6 && !ribbonsOn) ribbons(left);
   if (left <= 0) endRest(true);
 }
 async function startRest() {
   const n = set(), sameEx = undoTo && undoTo.e === W.e;
-  $('.rnext').innerHTML = sameEx ? `Next · set ${W.s + 1} · <b class="num">${fmtKg(n.kg)} × ${n.r}</b>` : `Next · <b>${ex().name}</b> · <span class="num">${fmtKg(n.kg)} × ${n.r}</span>`;
+  const was = undoTo && W.ex[undoTo.e].sets[undoTo.s], x = ex(), lt = x.last && (x.last.sets[W.s] ?? x.last.sets.at(-1));
+  $('.rdone').className = `rdone${was?.rec ? ' rec' : ''}`;
+  $('.rdone').innerHTML = was ? `<span class="ck">${CK}</span>${was.rec ? 'New best' : `Set ${undoTo.s + 1} done`} · <b class="num">${fmtKg(was.kg)} × ${was.r}</b>` : '';
+  $('.rc-v').innerHTML = `${fmtKg(n.kg)}<small>kg</small>× ${n.r}<small>reps</small>`;
+  $('.rc-s').innerHTML = sameEx ? `Set ${W.s + 1} of ${x.sets.length}${lt ? ` · last time <b class="num">${lt}</b>` : ''}` : `<b>${x.name}</b> · set 1 of ${x.sets.length}`;
   total = W.rest; endsAt = performance.now() + total * 1000; tickClock();
   rest.hidden = false; root.dataset.phase = 'rest';
   runArc();
-  $('.rest-frost').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, easing: 'ease-out' });
-  pill.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' });
+  $('.rest-frost').animate([{ opacity: 0 }, { opacity: 1 }], { duration: 320, easing: 'ease-out' }).finished.then(() => { if (!rest.hidden && !rest.dataset.closing) root.dataset.covered = ''; }, () => {});
+  pill.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, delay: reduced() ? 0 : 80, fill: 'forwards' }); // the pill hands over to its glass outline
   pillToRing(1);
   $('.ring-in').animate([{ opacity: 0, filter: 'blur(6px)' }, { opacity: 1, filter: 'blur(0)' }], { duration: 420, delay: reduced() ? 0 : 380, fill: 'backwards', easing: 'ease-out' });
-  $$('.rnext, .rctl, .undo', rest).forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 300, delay: reduced() ? 0 : 300 + i * 50, fill: 'backwards', easing: 'cubic-bezier(.2,.8,.2,1)' }));
+  $$('.rdone, .rctl, .rcard, .undo', rest).forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], { duration: 300, delay: reduced() ? 0 : 300 + i * 50, fill: 'backwards', easing: 'cubic-bezier(.2,.8,.2,1)' }));
   iv = setInterval(tickClock, 200);
-  $('#screen').inert = true; $('[data-a=skip]').focus({ preventScroll: true }); // nothing behind the rest can be pressed
+  $('#screen').inert = true; focus($('[data-a=skip]')); // nothing behind the rest can be pressed
   busy = false;
 }
 async function endRest(advance) {
   if (rest.hidden || rest.dataset.closing) return;
   rest.dataset.closing = '1';
   const g = gen;
-  clearInterval(iv); root.dataset.phase = '';
-  const prevE = undoTo?.e;
+  clearInterval(iv); delete root.dataset.phase; delete root.dataset.covered;
   $('.rest-frost').animate([{ opacity: 1 }, { opacity: 0 }], { duration: 300, fill: 'forwards' });
-  $$('.rnext, .rctl, .undo, .ring-in', rest).forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, fill: 'forwards' }));
+  $$('.rdone, .rctl, .rcard, .undo, .ring-in, .level, .ribbons i', rest).forEach((el) => el.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 160, fill: 'forwards' }));
   await pillToRing(-1).finished.catch(() => {});
   if (g !== gen) return; // the demo was reset while the ring closed
-  [ring, $('.rest-frost'), ...$$('.rnext, .rctl, .undo, .ring-in', rest)].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
-  arcAnim?.cancel(); rest.hidden = true; delete rest.dataset.closing;
+  [$('.rest-frost'), ...$$('.rdone, .rctl, .rcard, .undo, .ring-in, .level, .ribbons i', rest)].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
+  arcAnim?.cancel(); levelAnim?.cancel(); ring.getAnimations({ subtree: true }).forEach((a) => a.cancel()); rest.hidden = true; delete rest.dataset.closing;
   pill.getAnimations().forEach((a) => a.cancel());
   pearlOut();
-  if (advance) {
-    // The ring has gone back into the pill; now the screen moves to the next set: the dot fills, the badge
-    // blurs to the new set, only the digits that change roll.
-    if (prevE !== W.e) await nameTo(ex().name);
-    paint({ animate: true });
-    const d = $$('.dots i')[Math.max(0, W.s - 1)];
-    if (d && prevE === W.e) play(d, [{ transform: 'scale(1.7)' }, { transform: 'none' }], SPRINGS.press);
-  } else paint({ animate: true, dir: -1 });
+  // The deck already moved when you tapped Done. Undo takes the set back out of the pile.
+  if (!advance) await moveDeck(-1);
   undoTo = null;
   if (g !== gen) return;
-  $('#screen').inert = false; pill.focus({ preventScroll: true }); // only once the next set is on screen
+  $('#screen').inert = false; focus(pill); // only once the next set is on screen
 }
 function undoSet() {
   if (!undoTo) return;
@@ -464,8 +604,14 @@ function recordMoment(c) {
     const from = `inset(${slab.top}px ${innerWidth - slab.right}px ${innerHeight - slab.bottom}px ${slab.left}px round 34px)`;
     $('.mv').textContent = fmtKg(c.kg);
     $('.rs').innerHTML = `${ex().name} · <b class="num">${fmtKg(c.kg)} kg × ${c.r}</b><br>${fmtKg(c.kg - ex().best.kg) || 0} kg over your best from ${ex().best.date}`;
+    const rc = $('.rchart', rec);
+    rc.innerHTML = ex().hist ? chartSVG(ex(), [c.kg, c.r], 'rg') : '';
     rec.hidden = false; root.dataset.phase = 'record';
-    const parts = [$('.cap', rec), $('.rh', rec), $('.rs', rec), $('.rgo', rec)];
+    const parts = [$('.cap', rec), $('.rh', rec), $('.rs', rec), rc, $('.rgo', rec)];
+    const rl = $('.line', rc), rd = $('.dot', rc);
+    if (rl && !reduced()) { rl.animate([{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], { duration: 1100, delay: 1100, easing: 'cubic-bezier(.3,.7,.2,1)', fill: 'forwards' });
+      rd.animate([{ transform: 'scale(0)' }, { transform: 'scale(1.6)', offset: 0.6 }, { transform: 'scale(1)' }], { duration: 600, delay: 2100, fill: 'backwards', easing: 'ease-out' }); rd.style.transformOrigin = 'center'; rd.style.transformBox = 'fill-box'; }
+    else if (rl) rl.style.strokeDashoffset = 0;
     if (reduced()) { rec.style.clipPath = ''; } else {
       rec.animate([{ clipPath: from }, { clipPath: 'inset(0 0 0 0 round 0)' }], { duration: 560, easing: 'cubic-bezier(.65,0,.2,1)' });
       play($('.medal'), [{ transform: 'rotateY(84deg) scale(.9)', opacity: 0 }, { transform: 'rotateY(84deg) scale(.9)', opacity: 1, offset: 0.05 }, { transform: 'none', opacity: 1 }], { damping: 0.8, response: 0.9 }, { delay: 380, fill: 'backwards' });
@@ -489,18 +635,19 @@ function recordMoment(c) {
 /* ---------- Demo controls from the page around it ---------- */
 function reset() {
   gen++;
-  clearInterval(iv); arcAnim?.cancel(); rest.hidden = true; delete rest.dataset.closing; $('.record').hidden = true; $('#screen').inert = false;
+  clearInterval(iv); arcAnim?.cancel(); levelAnim?.cancel(); rest.hidden = true; delete rest.dataset.closing; $('.record').hidden = true; $('.fin').hidden = true; $('#screen').inert = false;
   if (open) { open = null; tray.hidden = scrim.hidden = true; $('#screen').inert = false; }
-  [pill, ring, $('.rest-frost'), ...$$('.rest *, .record *')].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
-  root.dataset.phase = ''; busy = false; undoTo = null; pearlOut(); pill.disabled = false; $('.dl').textContent = 'Done';
+  [pill, ring, $('.rest-frost'), ...$$('.rest *, .record *, .fin, .fin *')].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
+  delete root.dataset.phase; delete root.dataset.covered; busy = false; undoTo = null; pearlOut(); pill.disabled = false; $('.dl').textContent = 'Done';
   const start = W.start; W = fresh(); W.start = start;
 }
 function jump(m) {
   reset();
   if (m === 'record') { W.ex[1].sets[2].done = true; W.s = 3; W.ex[1].sets[3].kg = 85; }
   if (m === 'next') { W.ex[1].sets.forEach((p) => { p.done = true; }); W.s = 3; }
+  if (m === 'finish') { W.ex.forEach((x) => x.sets.forEach((p) => { p.done = true; })); W.ex[1].sets[2].rec = true; W.e = 5; W.s = 2; W.ex[5].sets[2].done = false; }
   paint();
-  if (m === 'rest' || m === 'record' || m === 'next') requestAnimationFrame(() => requestAnimationFrame(tick));
+  if (m === 'rest' || m === 'record' || m === 'next' || m === 'finish') requestAnimationFrame(() => requestAnimationFrame(tick));
 }
 addEventListener('message', (e) => {
   const d = e.data || {};

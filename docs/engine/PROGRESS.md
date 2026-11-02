@@ -61,7 +61,7 @@ Tests live in `tests/engine/`. "untested" is said plainly.
 | Reading a phrase saves nothing | `e2e` phrase box ("nothing was saved by reading") | tested in Chromium |
 | Memory cards (scope, valid-from/until, last-seen) and the Coach ladder | model types, import of old memory notes | shape only: used in the Coach phase |
 
-## Test inventory (262 tests: 82 engine, 180 parser)
+## Test inventory (796 tests: 82 engine, 714 parser)
 Fewer tests than rules looks thin, but each property test runs 25 to 200 random cases, so the real count of checked cases is in the thousands.
 
 **Property tests (12):**
@@ -142,3 +142,34 @@ Codex's eleventh look at #51 (2 findings, reproduced, fixed): "80x8" and "8 x80"
 Codex's twelfth look at #51 (1 finding, reproduced, fixed): spoken compound numbers in food rows ("two hundred grams oats", "to hundrede gram havregryn") are one quantity, not a count of 2; "two thousand grams" is refused and listed as unread. Also fixed a flaky property test ("5 at 5, no 5" has one reading, so there is nothing to choose).
 
 Codex's thirteenth look at #51 (1 new finding, fixed; the other was already covered by the twelfth fix and now has a test): a counted unit in a portion label matches whole words only, so "2 cans" no longer lands on "1 cup canned tomatoes" and asks for grams instead.
+
+## Dictation test (2 Nov 2026, Omar: "but you can test that???")
+`tests/parse/dictation.corpus.ts` holds 515 made-up phrases written the way Omar dictates: no punctuation, filler ("uh", "like", "altså"), Danish and English mixed, decimal commas and "komma/point", numbers as words ("one forty", "to og firs"), run-ons, half-said phrases and plain talk that must never log. Each row says what a careful person would log, or that nothing may be logged. `dictation.test.ts` runs every row.
+
+| Batch | Phrases | Read right before fixing | After |
+|---|---|---|---|
+| 1 (written first) | 243 | 158 (65%) | all |
+| 2 (written after round 1, measured blind) | 128 | 120 (94%) | all |
+| 3 (written last, measured blind) | 55 | 53 (96%) | all |
+| 4 (a typical gym-goer, not Omar's style, measured blind) | 91 | 86 (95%) | all |
+
+What the batches found: filler and lead-ins ("uh", "i did"), number words that are more than one word, decimal words ("point", "komma"), "no wait" as a correction, many ways to say same/done/skip/undo/add time, "80 kg and 8 reps", several sets in one phrase ("80 for 8, 80 for 7, 75 for 6"), runs ("ran 5 km in 25 minutes"), food rows run together ("200 gram kylling 150 gram ris"), Danish halves ("et halvt kilo"), and junk food rows from set talk ("8 reps at", "30 seconds", "one hundred kilos" read as 100 000 g). Weakness: the phrases are still my guesses at how Omar talks, and batch 1 was tuned against. Real dictation will find more; each miss becomes a row.
+
+## Proposed, not built: "heard 18" history check (Omar, 2 Nov 2026)
+Speech-to-text often turns 80 into 18 (or 50 into 15). If the person's usual weight for that exercise is 80 kg and the parser hears 18, the app logs **80** and shows a small "heard 18" chip on that set. One tap on the chip swaps the weight to 18.
+- Zero taps when the correction is right, one tap when it is wrong. No "did you mean" question first.
+- Tapping the chip only edits the weight of that same set. The set stays logged with the same reps and position. It is never an Undo or a delete (Omar: when I undo, it just doesn't count the set, I don't want that).
+- It needs history, so it belongs with the Coach / history phase, not the parser. The parser stays text-only. The existing `guardSet` and `fixMisheard` helpers are the starting point (they already know the 18/80 slip).
+- Not in the parser tests: it needs a user's real past sets.
+
+## Generated phrases: millions of combinations (2 Nov 2026, Omar)
+`tests/parse/gen/grammar.ts` is a seeded phrase grammar. It builds spoken phrases with the answer known in advance: sets in 9 orders, corrections ("no", "nej vent", "sorry"), same/done/skip/undo, rest time, water, body weight, food rows with meals, plain talk that must never log, half-said phrases, and random word soup. Numbers come as digits, English words, Danish words ("et hundrede og fem og tyve"), decimals ("82,5", "82 point five", "62 og en halv"), mixed languages, filler and lead-ins. `tests/parse/generated.test.ts` runs it and checks four things: the known answer, talk and half-said phrases never log, no impossible number is ever logged (a 0-rep set, 5 tonnes of food, a 12 kg body), and nothing freezes (250 ms limit per phrase).
+
+- Every normal test run checks 30 000 phrases (seed 1, a few seconds). A deep run: `GEN_N=1000000 GEN_SEED=<n> npx vitest run tests/parse/generated.test.ts`.
+- First run, before fixes: 100 000 phrases, 1 186 wrong (1.19%). Worst: half-said phrases 7.9%, talk 2.9%, body weight 1.7%.
+- After fixes: 3 000 000 phrases in three deep runs plus 1 000 000 in smaller runs, 1 wrong in 4 million (a rest of "+ 82,5 minutes"), now fixed and tested. 0 impossible numbers, 0 freezes.
+- What it found: Danish "hundrede og fem og tyve", "and a half" after a number word, a bare "0" logging a 0-rep set, "27 people are in the gym" read as food, "83 x" read as food, rests of hours.
+- Limit: it can only find what its grammar can say. It proves the parser is consistent on those shapes, not that Omar never says something else. Real misses still go in as rows of `dictation.corpus.ts`.
+
+## Proposed, not built: personal phrase memory (Omar, 2 Nov 2026)
+When Omar corrects a misread, or the app says it did not get something, store his exact phrase and what he meant. After the same correction has happened 2 or 3 times, apply it automatically, with the visible "heard X" tag from the history check above. Stored on his phone with the rest of his data, readable by the Coach. No model training: it is a small lookup of his own phrases.
