@@ -8,7 +8,7 @@ import type { Session } from '../engine/model';
 import { CATALOG } from '../engine/data/exercises';
 import { dayKeyAt, deviceTz, fmtClock, fmtDurationLong } from '../engine/time';
 import { abandonSession, addSet, adjustRest, discardSession, elapsedMs, finishSession, openDrafts, pauseSession, restLeftMs, resumeSession, setsOf, skipRest, startSession, tickSet, untickSet, updateAllowed } from '../engine/workout';
-import { backupName, exportBackup, parseBackup, previewRestore, restore, type BackupFile } from '../engine/backup';
+import { backupName, countKinds, exportBackup, parseBackup, previewRestore, restore, summarise, type BackupFile } from '../engine/backup';
 import { dryRun, mapOld, readOldBackup, readOldLocal, runImport, type Report } from '../engine/importOld';
 import { keepWhenUseful, usage } from '../engine/storage';
 
@@ -154,6 +154,7 @@ async function onRestore(mode: 'merge' | 'replace' | 'cancel') {
   $('restore').innerHTML = '';
   if (!b || mode === 'cancel') return;
   say(explain(await restore(e, b, mode), `Restored (${mode}). One Undo in the history takes it back.`));
+  void keepWhenUseful(e).then(() => status());
 }
 
 // ── import from old Aven ──────────────────────────────────
@@ -184,6 +185,7 @@ async function onImport(go: boolean) {
   $('import').innerHTML = '';
   if (!r || !go) return;
   say(explain(await runImport(e, r), 'Imported. One Undo in the history takes it all back.'));
+  void keepWhenUseful(e).then(() => status());
 }
 
 // ── page ──────────────────────────────────────────────────
@@ -195,7 +197,19 @@ async function status() {
   $('status').innerHTML = `${counts.workouts} workouts · ${counts.sets} sets done · ${counts.foods} foods · ${counts.records} records in a2.data · storage kept: ${kept === true ? 'yes' : kept === false ? 'no' : 'not asked yet'}${u ? ` · ${(u.used / 1e6).toFixed(1)} MB used` : ''}${e.readOnly ? ' · <b class="bad">READ-ONLY (saved by a newer version)</b>' : ''}`;
 }
 
+/** What is stored, so imported or restored data can be seen after a reload (not only counted). */
+function renderSaved(): string {
+  const live = e.allRecords().filter((r) => !r.deleted);
+  if (!live.length) return '<p class="muted">Nothing saved yet.</p>';
+  const workouts = e.all('session').filter((s) => s.state !== 'discarded').sort((a, b) => (b.day ?? '').localeCompare(a.day ?? '')).slice(0, 5);
+  const foods = e.all('food').sort((a, b) => b.at - a.at).slice(0, 5);
+  return `<p>${esc(summarise(countKinds(live)))}</p>
+    ${workouts.length ? `<p><b>Latest workouts</b></p><ul>${workouts.map((s) => `<li>${esc(s.day)} · ${esc(s.name)} · ${setsOf(live, s.id).reduce((n, x) => n + x.sets.filter((t) => t.done).length, 0)} sets done</li>`).join('')}</ul>` : ''}
+    ${foods.length ? `<p><b>Latest food</b></p><ul>${foods.map((f) => `<li>${esc(f.day)} · ${esc(f.name)}${f.nutrients?.kcal !== undefined ? ` · ${Math.round(f.nutrients.kcal)} kcal` : ''}</li>`).join('')}</ul>` : ''}`;
+}
+
 function render() {
+  $('saved').innerHTML = renderSaved();
   $('workout').innerHTML = renderWorkout();
   $('history').innerHTML = renderHistory();
   const f = e.failures();
@@ -233,6 +247,7 @@ async function main() {
   const drafts = openDrafts(e.allRecords());
   if (drafts.length) message = `Workout in progress: ${esc(drafts[0].name)}. Resume, finish or discard it below.`;
   render();
+  void keepWhenUseful(e).then(() => status()); // data already here (an import before this fix): ask to keep it now
   requestAnimationFrame(frame);
 }
 

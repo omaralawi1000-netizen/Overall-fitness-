@@ -26,12 +26,15 @@ export interface Envelope {
   createdAt: number;
   updatedAt: number;
   rev: number;
+  /**
+   * Which write made this state: the action id, unique on every phone. A copy (restore, import) keeps the stamp of the
+   * state it copies. Derived things record the stamps they were built from (`derived.ts`).
+   */
+  stamp?: string;
   /** soft delete: hidden, kept */
   deleted?: { at: number; by: string };
-  /** derived things: the facts they were built from */
-  basedOn?: string[];
-  /** one of those facts was deleted or changed */
-  stale?: boolean;
+  /** derived things: the stamp of each fact they were built from (`derived.ts` works out whether they are stale) */
+  builtFrom?: Record<string, string>;
 }
 
 /** What someone typed, when it wasn't the stored unit ("180 lb", "2 dl"). */
@@ -227,4 +230,4 @@ export interface Action {
 }
 
 /** Fields of the envelope the engine owns: callers never set them in a patch. */
-export const ENGINE_FIELDS = ['id', 'kind', 'v', 'createdAt', 'updatedAt', 'rev'] as const;
+export const ENGINE_FIELDS = ['id', 'kind', 'v', 'createdAt', 'updatedAt', 'rev', 'stamp'] as const;
