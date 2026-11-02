@@ -196,3 +196,16 @@ describe('Codex review of #51, round 10', () => {
     expect(rowQuantity(parseFood('1 dåse tun').rows[0], tuna).qty).toEqual({ amount: 1, unit: 'portion', portionId: 'd' });
   });
 });
+
+describe('Codex review of #51, round 12', () => {
+  it('compound number words are one quantity', () => {
+    expect(parseFood('two hundred grams oats').rows[0]).toMatchObject({ amount: 200, dim: 'g', query: 'oats' });
+    expect(parseFood('two hundred and fifty grams skyr').rows[0]).toMatchObject({ amount: 250, dim: 'g' });
+    expect(parseFood('twenty five grams oats').rows[0]).toMatchObject({ amount: 25, dim: 'g' });
+    expect(parseFood('to hundrede gram havregryn').rows[0]).toMatchObject({ amount: 200, dim: 'g' });
+  });
+  it('a number word left in the food name is handed back unread', () => {
+    expect(parseFood('two thousand grams oats').rows).toEqual([]);
+    expect(parseFood('two thousand grams oats').unread).toEqual(['two thousand grams oats']);
+  });
+});

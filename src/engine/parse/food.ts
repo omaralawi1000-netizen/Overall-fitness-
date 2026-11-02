@@ -5,7 +5,7 @@
  *  - a row needs an amount said out loud ("a banana" counts, a bare "banana" does not: that could be anything);
  *  - the unit table also understands Danish spellings after æøå folding ("dåse", "håndfuld").
  */
-import { fold } from './words';
+import { fold, NUMBER_WORDS } from './words';
 
 const WORD_NUM: Record<string, number> = {
   a: 1, an: 1, one: 1, en: 1, et: 1, two: 2, to: 2, three: 3, tre: 3, four: 4, fire: 4, five: 5, fem: 5,
@@ -52,16 +52,37 @@ export interface FoodRow {
 }
 
 export function splitSegments(text: string): string[] {
-  const t = text.replace(/(\d),(\d)/g, '$1.$2').replace(/\s+/g, ' ').trim();
+  // "two hundred and fifty" is one number, not two foods
+  const t = text.replace(/(\d),(\d)/g, '$1.$2').replace(/\b(hundred|hundrede)\s+(?:and|og)\s+/gi, '$1 ').replace(/\s+/g, ' ').trim();
   return t
     .split(/\s*(?:[,;]|\.\s+|\.$|\band\b|\bog\b|\bplus\b|\bthen\b|\bsamt\b)\s*/i)
     .map((s) => s.trim())
     .filter(Boolean);
 }
 
+const TENS = new Set(['twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety', 'tyve', 'tredive', 'fyrre', 'halvtreds', 'tres', 'halvfjerds', 'firs', 'halvfems']);
+const HUNDRED = new Set(['hundred', 'hundrede']);
+const isNumberWord = (w: string) => HUNDRED.has(w) || TENS.has(w) || (w in NUMBER_WORDS && NUMBER_WORDS[w] < 20);
+/** "twenty five" → 25, "two hundred and fifty" → 250: a run of spoken number words becomes one digit word (otherwise only the first would count). A single word is left alone. */
+function mergeNumberWords(words: string[]): string[] {
+  const out: string[] = [];
+  for (let i = 0; i < words.length; i++) {
+    if (!isNumberWord(words[i])) { out.push(words[i]); continue; }
+    let j = i, total = 0, hundreds = false;
+    for (; j < words.length; j++) {
+      let w = words[j];
+      if ((w === 'and' || w === 'og') && hundreds && isNumberWord(words[j + 1] ?? '')) w = words[++j];
+      if (!isNumberWord(w)) break;
+      if (HUNDRED.has(w)) { total = (total || 1) * 100; hundreds = true; } else total += NUMBER_WORDS[w] ?? 0;
+    }
+    if (j - i >= 2 || HUNDRED.has(words[i])) { out.push(String(total)); i = j - 1; } else out.push(words[i]);
+  }
+  return out;
+}
+
 /** One spoken segment as a row, or null when no amount was said or no food was named. */
 function readRow(seg: string): FoodRow | null {
-  const words = seg.toLowerCase().replace(/[.]$/, '').split(/\s+/);
+  const words = mergeNumberWords(seg.toLowerCase().replace(/[.]$/, '').split(/\s+/));
   let i = 0;
   let amount: number | undefined;
   const numTok = words[i];
@@ -90,6 +111,7 @@ function readRow(seg: string): FoodRow | null {
   const query = words.slice(i).join(' ').trim();
   if (!query || !(amount > 0)) return null;
   if (/^\d+(?:[./]\d+)?(?:\s|$)/.test(query)) return null; // a second quantity left in the name was not understood
+  if (words.slice(i).some((t) => HUNDRED.has(t) || t === 'thousand' || t === 'tusind')) return null; // a big number word left over was not understood
   if (hasAmount(words.slice(i))) return null; // another amount and unit inside the name ("skyr 60 grams oats") was not understood
   return { raw: seg, amount: Math.round(amount * factor * 1000) / 1000, dim, ...(countWord ? { countWord } : {}), query, ...(weak ? { weak: true as const } : {}) };
 }

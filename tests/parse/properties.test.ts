@@ -88,6 +88,7 @@ describe('the rules for a set', () => {
   });
   it('a bare number against reps and kilos always asks, with two different readings', () => {
     fc.assert(fc.property(reps, kg, fc.integer({ min: 1, max: 29 }), (r1, k1, n) => {
+      fc.pre(!(r1 === n && k1 === n)); // "5 at 5, no 5": both readings are the same set, so there is nothing to choose
       const c = parseSetCommand(`${r1} at ${fmt(k1)}, no ${n}`);
       expect(c?.kind).toBe('ask');
       if (c?.kind === 'ask') {
