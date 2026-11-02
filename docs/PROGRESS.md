@@ -194,7 +194,11 @@ can really do on Android and iPhone. Nothing built.
 - Phone page with every clip and a ♥ button: https://claude.ai/artifact/5qeq9tDy2qe2fmJsyWVNHg (store collection `loves`).
 - Gaps: no great "next set becomes active", proposal dismiss/undo, or a Today that changes through the day.
 
+- Round 2 (2 Nov): Omar's 36 hearts went into keepers.md. Four more helpers, aimed at what he loved and the gaps, plus
+  games and OS motion: 51 more clips (Round 2 tab on the same page). Today-through-the-day gap now covered (sky scrubbers);
+  next set and undo still only partly.
+
 ## Next step
-Omar hearts the clips he loves (and answers the taste test). Read both stores (ArtifactData list: `loves` on the motion
-library, `answers` on the taste test), write only his picks into docs/keepers.md, then start the next design round from
-the keepers and the recipe in docs/research/taste-2026-11-01.md.
+Omar hearts round 2 on the motion-library page. Read the store (ArtifactData list, collection `loves`; round-2 ids start
+with `r2`), add only his new hearts to docs/keepers.md, then start the next design round from the keepers and the recipe
+in docs/research/taste-2026-11-01.md.
