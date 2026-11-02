@@ -11,7 +11,7 @@ export interface WorkoutSet { kg?: number; reps?: number; durationSec?: number; 
 export interface WorkoutRow { raw: string; query: string; sets: WorkoutSet[] }
 
 /** Only the number words that cannot be ordinary words ("to", "en" and "et" are left out: "back to back"). */
-const W: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, twelve: 12, fifteen: 15, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90, tyve: 20, tredive: 30, fyrre: 40, halvtreds: 50, tres: 60, halvfjerds: 70, firs: 80, halvfems: 90, tre: 3, fire: 4, fem: 5, seks: 6, syv: 7, otte: 8, ni: 9, ti: 10 };
+const W: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, elleve: 11, tolv: 12, tretten: 13, fjorten: 14, femten: 15, seksten: 16, sytten: 17, atten: 18, nitten: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90, tyve: 20, tredive: 30, fyrre: 40, halvtreds: 50, tres: 60, halvfjerds: 70, firs: 80, halvfems: 90, tre: 3, fire: 4, fem: 5, seks: 6, syv: 7, otte: 8, ni: 9, ti: 10 };
 
 /** Number words are digits only where they are a quantity: next to a unit, a set word or a connector, or next to another number. "One-arm Dumbbell Row" keeps its "one". */
 const QTY_AFTER = /^\s*(?:kg|kilos?|kilograms?|lbs?|pounds?|reps?|gange|sets?|saet|sæt|x|×|for|by|at|@|times|seconds?|secs?|minutes?|mins?|km|miles?|\d)/;
@@ -57,7 +57,7 @@ export function parseWorkoutSegment(seg: string): WorkoutRow | null {
   if (!sets.length) {
     m = rest.match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(${UNIT})?\\s*(?:x|for|by|gange)\\s*(\\d+)(?:\\s*x\\s*(\\d+))?(?!\\s*(?:min|sec|s\\b))`));
     // "80 x 8" with no unit cannot say which is the weight (3-term "80 x 8 x 3" is weight x reps x sets)
-    if (m && !m[2] && !m[4] && /\s(?:x|by)\s/.test(m[0])) m = null;
+    if (m && !m[2] && !m[4] && /\d\s*(?:x|by)\s*\d/.test(m[0])) m = null;
     if (m) {
       const times = m[4] ? Math.min(Number(m[4]), MAX_SETS) : 1;
       for (let i = 0; i < times; i++) sets.push({ ...load(Number(m[1]), m[2]), reps: Number(m[3]) });

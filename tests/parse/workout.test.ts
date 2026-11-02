@@ -117,3 +117,17 @@ describe('Codex review of #51, round 9', () => {
     expect(parseWorkoutText('bench press 80 for 8 and 60 kg').rows).toEqual([]);
   });
 });
+
+describe('Codex review of #51, round 11', () => {
+  it('compact multiplication is as ambiguous as spaced', () => {
+    expect(parseWorkoutText('bench 80x8').rows).toEqual([]);
+    expect(parseWorkoutText('bench 8 x80').rows).toEqual([]);
+    expect(sets('bench 80kg x8')).toEqual([[80, 8]]);
+    expect(sets('squat 100 x 5 x 3')).toEqual([[100, 5], [100, 5], [100, 5]]);
+  });
+  it('all the teens are number words', () => {
+    expect(sets('bench eleven reps at eighty kg')).toEqual([[80, 11]]);
+    expect(sets('bench nineteen reps at sixty kg')).toEqual([[60, 19]]);
+    expect(sets('bænkpres femten gange på firs kilo')).toEqual([[80, 15]]);
+  });
+});
