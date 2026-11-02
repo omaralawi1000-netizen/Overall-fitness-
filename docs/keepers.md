@@ -108,3 +108,7 @@ The idea, not the reference's look.
 - **Rest as a colour level filling the screen behind the big number** (`web-headspace-breathing`).
 
 Not hearted on the page (a signal, not a no): the slide-to-approve concept (clip 17) and ChatGPT's listening orb.
+
+### From the taste test (2 Nov 2026)
+Picks from https://claude.ai/artifact/3F55dCusNya4BDpNacPhZA; the noes and reasons are in `docs/taste-log.md`.
+- **Italic serif for names and titles** (Pull, Breakfast, Today), as in old Aven, over bold sans.
