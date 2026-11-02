@@ -239,3 +239,30 @@ describe('schema and snapshots', () => {
     expect(s[0].records).toHaveLength(1);
   });
 });
+
+describe('persistent storage', () => {
+  it('is asked for only once there is real data, and the answer is kept', async () => {
+    const { keepWhenUseful } = await import('../../src/engine/storage');
+    const { e } = await eng();
+    let asked = 0;
+    const nav = { storage: { persisted: async () => false, persist: async () => { asked++; return true; } } } as unknown as Navigator;
+    expect(await keepWhenUseful(e, nav)).toBeNull();
+    expect(asked).toBe(0);
+    await e.commit({ type: 'x', label: 'x', ops: [water('w1', 250)] });
+    expect(await keepWhenUseful(e, nav)).toBe(true);
+    expect(asked).toBe(1);
+    expect(await e.meta('persisted')).toBe(true);
+  });
+});
+
+describe('exactly once, as a property', () => {
+  it('any mix of repeated taps writes each tap once', async () => {
+    await fc.assert(fc.asyncProperty(fc.array(fc.integer({ min: 0, max: 5 }), { minLength: 1, maxLength: 25 }), async (taps) => {
+      const { e } = await fresh();
+      await Promise.all(taps.map((t) => e.commit({ id: `tap${t}`, type: 'w', label: 'w', ops: [water(`w${t}`, 100)] })));
+      const ok = e.all('water').length === new Set(taps).size && e.actions().length === new Set(taps).size;
+      e.close();
+      return ok;
+    }), { numRuns: 30 });
+  });
+});

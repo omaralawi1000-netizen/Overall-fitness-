@@ -14,10 +14,54 @@ Branch: `claude/project-thread-dkkklx`. The main `docs/PROGRESS.md` is for desig
 | E2 (proposal) | fix the Coach exam; test Haiku 5.5 vs Gemini on his real kinds of conversations | later | |
 
 ## Rule → proof
-Filled in as each rule gets its test. "untested" is said plainly.
+Tests live in `tests/engine/`. "untested" is said plainly.
 
 | Rule | Proof | Status |
 |---|---|---|
+| Day start: a 01:30 snack with a 04:00 start is yesterday; time zones; clock-change night | `time-units` (ported + new, 2 property tests) | tested |
+| Units: kg/lb round trip, "82,5" and "82.5" | `time-units` (ported + 2 property tests) | tested |
+| Every record has time, zone, day, source, schema version | `engine` "a change and its action land together" | tested |
+| One action log; records and action in one transaction | `engine` "action log" block | tested |
+| Exactly once: same tap id twice, two tabs at once, any mix of repeated taps | `engine` (incl. a property test) | tested |
+| A double tap on a set logs once and starts one rest | `workout` | tested |
+| Multi-step changes all or nothing | `engine` "a multi-step change", restore "fails half-way" | tested |
+| Undo reverses only its own change; stops on conflict; never restores a whole old state | `engine` Undo block, `workout` "undoing set 1 never touches set 2" | tested |
+| apply → undo sequences return to the start | `engine` property test (40 random runs) | tested |
+| Deletes are soft | `engine` | tested |
+| Deleting or correcting a fact marks what was built on it stale (chains), Undo clears it | `engine` "derived facts" | tested with a stand-in summary; real summaries come with the Coach |
+| Never "saved" while pending or failed; full disk rolls back and waits with Retry | `engine` "saving states" (quota error injected) | tested in Node; a real full phone untested |
+| Session states planned/active/paused/resumed/abandoned/discarded/deleted; discarded never comes back on reload | `workout` | tested |
+| Planned vs done kept apart; unticked never counted as done (also on import) | `workout`, `backup-import` | tested |
+| Rest timer stores the end time; reload, pause/resume, ±15, Skip; never jumps back | `workout` (incl. a property test); page check in headless Chrome (1:29 before and after reload) | tested |
+| No app update during a workout or a pending save | `workout` "app updates" (`updateAllowed`) | rule tested; not wired, no service worker yet (app-shell phase) |
+| IndexedDB under `a2` only; refuses other names | `isolation` | tested |
+| Old Aven's "Delete everything" and Beta's copy can't touch a2 | `isolation` (old code replayed from a copied fixture) | tested |
+| Aven 2's delete-everything removes only a2 | `isolation` | tested |
+| Separate offline cache and service-worker scope | none | untested: no service worker yet (paths already differ: `/Overall-fitness-/` vs `/The-new-Claude-gym-app/`) |
+| Persistent storage asked once there is data | `engine` "persistent storage" | tested with a fake browser; the real grant needs the phone |
+| Data from a newer version opens read-only | `engine` "schema and snapshots" | tested |
+| Migrations deterministic and repeatable; last-known-good copy before migration, restore, import | `backup-import` "migrations", `engine` snapshots | tested (no real migration exists yet: schema 1) |
+| Backup: versioned, checksum; damaged, cut-off, edited, wrong, newer files refused | `backup-import` | tested |
+| Restore: preview, merge (newer wins, phone deletes stay), replace, one Undo | `backup-import` | tested |
+| Import from old Aven: file and one-tap copy, read only, dry-run report, skipped with reasons, damaged items counted | `backup-import`; page check in headless Chrome with a made-up old Aven on the same site (`aven.v1` unchanged) | tested |
+| Re-import never duplicates; deleted here stays deleted; one Undo takes the import back | `backup-import` | tested |
+| Missing is never zero (food nutrients, watch numbers) | `backup-import` (import), model types | tested on import; sums come with the Food phase |
+| A logged day isn't assumed complete | `dayNote.foodComplete` in the model | shape only: averages come with the Food phase |
+| Exercise variations are separate exercises | catalogue keeps one id per variation | shape only: records and plateaus come with the Workout phase |
+| Memory cards (scope, valid-from/until, last-seen) and the Coach ladder | model types, import of old memory notes | shape only: used in the Coach phase |
+
+## What's still untested or open
+- Real phone: persistent-storage grant, a truly full disk, IndexedDB under memory pressure, Chrome killing the tab mid-write.
+- No service worker yet, so "no update mid-workout" and cache separation are rules without wiring.
+- Two tabs were tested with two engines on one database in Node, not two real Chrome tabs.
+- Old Aven's real backup format was tested with a made-up file built from its types; Omar's own file is the real test.
+
+## Done
+- Step 0 (2 Nov): `old-logic-map.md`.
+- E1a-1 (2 Nov): `DATA-MODEL.md`, `src/engine/` model, plan (pure action logic), engine (IndexedDB, action log, Undo), workout and timers, isolation tests.
+- E1a-2 (2 Nov): backup, restore, migrations, import from old Aven, exercise catalogue ported.
+- E1a-3 (2 Nov): debug page at `/engine/` (`src/debug/`), checked in headless Chrome at 384 px.
 
 ## Next step
-Step 0: write `old-logic-map.md`.
+E1b on **Sonnet** (Omar switches the model): the parser and `docs/parser-examples.md`, then a phrase box on `/engine/`.
+Start from `old-logic-map.md` "Port now" E1b rows and the self-correction rule in `SPEC.md` (contradiction 3).

@@ -10,6 +10,11 @@ Read this first to find anything. Then open only the file for the topic you're w
 - `docs/concepts.md`: the twelve concepts in words. `docs/blur-test-plan.md`: how blur is tested (both go when their pages in `site/` are archived).
 - `.claude/agents/`: the judges. `.claude/skills/`: design and motion skills.
 
+## Engine (logic, data and tests; no design)
+- `docs/engine/SPEC.md`: the engine spec, its review and decisions. `docs/engine/PROGRESS.md`: plan, rule → test table, next step.
+- `docs/engine/DATA-MODEL.md`: the data model in plain words. `docs/engine/old-logic-map.md`: every old-Aven module, port or drop.
+- Code `src/engine/`, debug page `src/debug/` (live at `/engine/`), tests `tests/engine/`. `npm run verify` checks all.
+
 ## Design
 - `docs/inspiration/notes.md`: what Omar likes. `docs/inspiration/web-references.md`: his web links. The numbered images are screenshots.
 - `docs/inspiration/motion-library.md`: 117 watched animations in two rounds, sorted by motion job, top 3 per job, links and notes (clips and design stills in the shared folder).
@@ -32,6 +37,7 @@ Base: https://omaralawi1000-netizen.github.io/Overall-fitness-/
 - `/looks/` (`site/looks/`): three clickable looks, Ink, Ink rich, Heat (history: superseded by /round/).
 - `/concepts/` (`site/concepts/`): the concept prototypes.
 - `/blurtest/` (`site/blurtest/`): blur tests for his phone.
+- `/engine/` (built from `src/debug/` into `dist/engine/`): the engine's bare debug page. Uses only `a2` storage.
 
 ## Shared project folder (outside the repo)
 Lives in the project's shared folder under `aven2/`. Not in git.
