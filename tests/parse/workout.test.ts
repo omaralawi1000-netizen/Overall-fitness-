@@ -46,7 +46,7 @@ describe('finding the exercise', () => {
 
 describe('Codex review of #51', () => {
   it('a second set with its own weight is not read as more reps', () => {
-    expect(parseWorkoutText('bench press 80 for 8 and 60 for 10').rows).toEqual([]);
+    expect(sets('bench press 80 for 8 and 60 for 10')).toEqual([[80, 8], [60, 10]]); // a second set with its own weight is its own set
     expect(sets('bench press 80 for 8, 8 and 6')).toEqual([[80, 8], [80, 8], [80, 6]]);
   });
   it('durations and distances use whole units', () => {
@@ -113,7 +113,6 @@ describe('Codex review of #51, round 6', () => {
 describe('Codex review of #51, round 9', () => {
   it('a rep label at the end of a continuation list is fine', () => {
     expect(sets('bench 80 for 8, 8 and 6 reps')).toEqual([[80, 8], [80, 8], [80, 6]]);
-    expect(parseWorkoutText('bench press 80 for 8 and 60 for 10').rows).toEqual([]);
     expect(parseWorkoutText('bench press 80 for 8 and 60 kg').rows).toEqual([]);
   });
 });

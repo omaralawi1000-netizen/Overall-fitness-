@@ -14,7 +14,7 @@ export interface WorkoutRow { raw: string; query: string; sets: WorkoutSet[] }
 const W: Record<string, number> = { one: 1, two: 2, three: 3, four: 4, five: 5, six: 6, seven: 7, eight: 8, nine: 9, ten: 10, eleven: 11, twelve: 12, thirteen: 13, fourteen: 14, fifteen: 15, sixteen: 16, seventeen: 17, eighteen: 18, nineteen: 19, elleve: 11, tolv: 12, tretten: 13, fjorten: 14, femten: 15, seksten: 16, sytten: 17, atten: 18, nitten: 19, twenty: 20, thirty: 30, forty: 40, fifty: 50, sixty: 60, seventy: 70, eighty: 80, ninety: 90, tyve: 20, tredive: 30, fyrre: 40, halvtreds: 50, tres: 60, halvfjerds: 70, firs: 80, halvfems: 90, tre: 3, fire: 4, fem: 5, seks: 6, syv: 7, otte: 8, ni: 9, ti: 10 };
 
 /** Number words are digits only where they are a quantity: next to a unit, a set word or a connector, or next to another number. "One-arm Dumbbell Row" keeps its "one". */
-const QTY_AFTER = /^\s*(?:kg|kilos?|kilograms?|lbs?|pounds?|reps?|gange|sets?|saet|sæt|x|×|for|by|at|@|times|seconds?|secs?|minutes?|mins?|km|miles?|\d)/;
+const QTY_AFTER = /^\s*(?:kg|kilos?|kilograms?|lbs?|pounds?|reps?|gange|gentagelser|sets?|saet|sæt|x|×|for|by|at|@|times|seconds?|secs?|minutes?|minutter|mins?|km|kilomet\w+|miles?|\d)/;
 const QTY_BEFORE = /(?:\b(?:for|at|x|by|of|af|and|og|with|med|på|paa|then)|[,&@×]|\d)\s*$/;
 const NUMBER_RE = new RegExp(`\\b(${Object.keys(W).join('|')})\\b`, 'g');
 function normaliseNumbers(s: string): string {
@@ -48,10 +48,16 @@ export function parseWorkoutSegment(seg: string): WorkoutRow | null {
   let rest = s;
   const sets: WorkoutSet[] = [];
   // "3 sets of 8 at 80 kg"
-  let m = rest.match(new RegExp(`(\\d+)\\s*(?:sets?|saet|sæt)\\s*(?:of|a|af)?\\s*(\\d+)\\s*(?:reps?|gange)?\\s*(?:at|with|@|med|paa|på)\\s*(\\d+(?:\\.\\d+)?)\\s*(${UNIT})?`));
+  let m = rest.match(new RegExp(`(\\d+)\\s*(?:sets?|saet|sæt)\\s*(?:of|a|af)?\\s*(\\d+)\\s*(?:reps?|gange|gentagelser)?\\s*(?:at|with|@|med|paa|på)\\s*(\\d+(?:\\.\\d+)?)\\s*(${UNIT})?`));
   if (m) {
     for (let i = 0; i < Math.min(Number(m[1]), MAX_SETS); i++) sets.push({ ...load(Number(m[3]), m[4]), reps: Number(m[2]) });
     rest = rest.replace(m[0], ' ');
+  }
+  // "80 kg 8 reps" / "80 kg and 8 reps" / "8 reps of 80 kg": both labelled, so nothing is ambiguous
+  if (!sets.length) {
+    m = rest.match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(${UNIT})\\s*(?:and|og|with|med|for|,)?\\s*(\\d+)\\s*(?:reps?|gange|gentagelser)\\b`))
+      ?? null;
+    if (m) { sets.push({ ...load(Number(m[1]), m[2]), reps: Number(m[3]) }); rest = rest.replace(m[0], ' '); }
   }
   // "80 kg x 8 x 3" / "80 for 8, 8 and 6"
   if (!sets.length) {
@@ -68,11 +74,18 @@ export function parseWorkoutSegment(seg: string): WorkoutRow | null {
         for (const r of more[0].match(/\d+/g) ?? []) sets.push({ ...sets[0], reps: Number(r) });
         rest = rest.replace(more[0], ' ');
       }
+      // "80 for 8, 80 for 7, 75 for 6": every further "weight for reps" is its own set
+      for (;;) {
+        const nx = rest.match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*(${UNIT})?\\s*(?:for|gange)\\s*(\\d+)\\b(?!\\s*(?:min|sec|s\\b))`));
+        if (!nx) break;
+        sets.push({ ...load(Number(nx[1]), nx[2]), reps: Number(nx[3]) });
+        rest = rest.replace(nx[0], ' ');
+      }
     }
   }
   // "8, 8 and 6 reps at 80 kg"
   if (!sets.length) {
-    m = rest.match(new RegExp(`(\\d+(?:(?:\\s*(?:,|&|and|og)\\s*|\\s+)\\d+)*)\\s*(?:reps?|gange)\\s*(?:at|with|@|med|paa|på)\\s*(\\d+(?:\\.\\d+)?)\\s*(${UNIT})?`));
+    m = rest.match(new RegExp(`(\\d+(?:(?:\\s*(?:,|&|and|og)\\s*|\\s+)\\d+)*)\\s*(?:reps?|gange|gentagelser)\\s*(?:at|of|af|with|@|med|paa|på)\\s*(\\d+(?:\\.\\d+)?)\\s*(${UNIT})?`));
     if (m) {
       for (const r of m[1].match(/\d+/g) ?? []) sets.push({ ...load(Number(m[2]), m[3]), reps: Number(r) });
       rest = rest.replace(m[0], ' ');
@@ -81,7 +94,7 @@ export function parseWorkoutSegment(seg: string): WorkoutRow | null {
   // time and distance: "plank 60 seconds", "run 5 km in 25 minutes"
   if (!sets.length) {
     const dist = rest.match(/(\d+(?:\.\d+)?)\s*(km|kilometers?|kilometres?|miles?|mi|meters?|metres?|m)\b/);
-    const dur = rest.match(/(\d+(?:\.\d+)?)\s*(seconds?|secs?|sek|minutes?|mins?|min|hours?|timer?|h\b)/);
+    const dur = rest.match(/(\d+(?:\.\d+)?)\s*(seconds?|secs?|sek|sekunder|minutes?|minutter|minut|mins?|min|hours?|timer?|h\b)/);
     if (dist || dur) {
       const set: WorkoutSet = {};
       if (dist) {
@@ -89,7 +102,7 @@ export function parseWorkoutSegment(seg: string): WorkoutRow | null {
         set.distanceM = /^km|kilo/.test(dist[2]) ? v * 1000 : /^mi/.test(dist[2]) ? v * M_PER_MI : v;
         rest = rest.replace(dist[0], ' ');
       }
-      const d2 = rest.match(/(\d+(?:\.\d+)?)\s*(seconds?|secs?|sek|minutes?|mins?|min|hours?|timer?|h\b)/);
+      const d2 = rest.match(/(\d+(?:\.\d+)?)\s*(seconds?|secs?|sek|sekunder|minutes?|minutter|minut|mins?|min|hours?|timer?|h\b)/);
       if (d2) {
         const v = Number(d2[1]);
         set.durationSec = /^(sec|sek)/.test(d2[2]) ? v : /^(h|hour|time)/.test(d2[2]) ? v * 3600 : v * 60;
@@ -100,15 +113,15 @@ export function parseWorkoutSegment(seg: string): WorkoutRow | null {
   }
   // "10 reps" alone (bodyweight)
   if (!sets.length) {
-    m = rest.match(/(\d+)\s*(?:reps?|gange)/);
+    m = rest.match(/(\d+)\s*(?:reps?|gange|gentagelser)/);
     if (m) { sets.push({ reps: Number(m[1]) }); rest = rest.replace(m[0], ' '); }
   }
   const words = rest.replace(/\b(at|with|for|of|did|i did|log|add|a|an|the|reps?|sets?|in|i|og|and|på|paa|x)\b/g, ' ').replace(/[,&@]+/g, ' ').replace(/\s+/g, ' ').trim();
   // a number left over was not understood (a second set, a stray amount): do not drop it silently
   if (/\d/.test(words)) return null;
   const query = words.replace(/\./g, ' ').replace(/\s+/g, ' ').trim();
-  if (!query || !sets.length) return null; // an exercise with no sets, or sets with no exercise, is not a workout phrase
-  return { raw: seg, query, sets };
+  if (!sets.length) return null; // an exercise with no sets is not a workout phrase
+  return { raw: seg, query, sets }; // sets with no exercise ("80 for 7" after "bench 80 for 8, then") belong to the one before
 }
 
 export function parseWorkoutText(text: string): { rows: WorkoutRow[]; unread: string[] } {
@@ -116,7 +129,11 @@ export function parseWorkoutText(text: string): { rows: WorkoutRow[]; unread: st
   const unread: string[] = [];
   for (const seg of splitExerciseSegments(text)) {
     const r = parseWorkoutSegment(seg);
-    if (r) rows.push(r); else unread.push(seg);
+    if (r && !r.query) {
+      // sets with no exercise name carry on from the exercise just before; with none before, they are not read
+      const prev = rows[rows.length - 1];
+      if (prev) { prev.sets.push(...r.sets); prev.raw = `${prev.raw}; ${r.raw}`; } else unread.push(seg);
+    } else if (r) rows.push(r); else unread.push(seg);
   }
   return { rows, unread };
 }
@@ -132,6 +149,7 @@ const LIFT_ALIASES: Record<string, string> = {
   row: 'barbell row', rows: 'barbell row', 'bent over row': 'barbell row', 'bent over rows': 'barbell row', roning: 'barbell row',
   curl: 'barbell curl', curls: 'barbell curl', 'bicep curl': 'barbell curl', 'bicep curls': 'barbell curl', 'biceps curl': 'barbell curl', 'biceps curls': 'barbell curl',
   'skull crusher': 'skullcrusher', 'skull crushers': 'skullcrusher', skullcrushers: 'skullcrusher',
+  ran: 'run', running: 'run', jog: 'run', jogged: 'run', jogging: 'run', lob: 'run', walked: 'walk', gaatur: 'walk', 'went for a run': 'run',
   dodloft: 'deadlift', 'dead lift': 'deadlift', deadlifts: 'deadlift',
 };
 const aliasOf = (q: string) => LIFT_ALIASES[fold(q).replace(/\s+/g, ' ').trim()];

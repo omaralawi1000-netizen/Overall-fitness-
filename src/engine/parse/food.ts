@@ -5,7 +5,7 @@
  *  - a row needs an amount said out loud ("a banana" counts, a bare "banana" does not: that could be anything);
  *  - the unit table also understands Danish spellings after æøå folding ("dåse", "håndfuld").
  */
-import { fold, NUMBER_WORDS } from './words';
+import { fold, NUMBER_WORDS, mergeNumberWords as mergeWords } from './words';
 
 const WORD_NUM: Record<string, number> = {
   a: 1, an: 1, one: 1, en: 1, et: 1, two: 2, to: 2, three: 3, tre: 3, four: 4, fire: 4, five: 5, fem: 5,
@@ -21,7 +21,7 @@ const UNITS: Record<string, Dim> = {
   cl: { kind: 'ml', f: 10 }, dl: { kind: 'ml', f: 100 }, deciliter: { kind: 'ml', f: 100 }, l: { kind: 'ml', f: 1000 },
   liter: { kind: 'ml', f: 1000 }, litre: { kind: 'ml', f: 1000 }, liters: { kind: 'ml', f: 1000 }, litres: { kind: 'ml', f: 1000 },
   tsp: { kind: 'ml', f: 5 }, teaspoon: { kind: 'ml', f: 5 }, tsk: { kind: 'ml', f: 5 }, teske: { kind: 'ml', f: 5 },
-  tbsp: { kind: 'ml', f: 15 }, tablespoon: { kind: 'ml', f: 15 }, spsk: { kind: 'ml', f: 15 }, spiseske: { kind: 'ml', f: 15 },
+  tbsp: { kind: 'ml', f: 15 }, tablespoon: { kind: 'ml', f: 15 }, spsk: { kind: 'ml', f: 15 }, spiseske: { kind: 'ml', f: 15 }, spiseskefuld: { kind: 'ml', f: 15 }, spiseskefulde: { kind: 'ml', f: 15 }, teskefuld: { kind: 'ml', f: 5 }, teskefulde: { kind: 'ml', f: 5 },
   slice: { kind: 'count', word: 'slice' }, slices: { kind: 'count', word: 'slice' }, skive: { kind: 'count', word: 'slice' }, skiver: { kind: 'count', word: 'slice' },
   piece: { kind: 'count' }, pieces: { kind: 'count' }, stk: { kind: 'count' }, stykke: { kind: 'count' }, stykker: { kind: 'count' },
   handful: { kind: 'count', word: 'handful' }, handfuls: { kind: 'count', word: 'handful' }, handfulde: { kind: 'count', word: 'handful' },
@@ -54,35 +54,24 @@ export interface FoodRow {
 export function splitSegments(text: string): string[] {
   // "two hundred and fifty" is one number, not two foods
   const t = text.replace(/(\d),(\d)/g, '$1.$2').replace(/\b(hundred|hundrede)\s+(?:and|og)\s+/gi, '$1 ').replace(/\s+/g, ' ').trim();
-  return t
+  const AMOUNT_UNIT = '\\d+(?:\\.\\d+)?\\s?(?:g|gr|gram|grams|kg|ml|cl|dl|l|liter|litre|tbsp|tsp|spsk|tsk)\\b';
+  // a second "150 gram …" after a first one that already has its amount starts a new row: "200 gram kylling 150 gram ris"
+  const t2 = t.replace(new RegExp(`^(${AMOUNT_UNIT}\\s+[^\\d,;]+?)\\s+(?=${AMOUNT_UNIT})`, 'i'), '$1, ');
+  return t2
     .split(/\s*(?:[,;]|\.\s+|\.$|\band\b|\bog\b|\bplus\b|\bthen\b|\bsamt\b)\s*/i)
     .map((s) => s.trim())
     .filter(Boolean);
 }
 
-const TENS = new Set(['twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety', 'tyve', 'tredive', 'fyrre', 'halvtreds', 'tres', 'halvfjerds', 'firs', 'halvfems']);
-const HUNDRED = new Set(['hundred', 'hundrede']);
-const isNumberWord = (w: string) => HUNDRED.has(w) || TENS.has(w) || (w in NUMBER_WORDS && NUMBER_WORDS[w] < 20);
-/** "twenty five" → 25, "two hundred and fifty" → 250: a run of spoken number words becomes one digit word (otherwise only the first would count). A single word is left alone. */
-function mergeNumberWords(words: string[]): string[] {
-  const out: string[] = [];
-  for (let i = 0; i < words.length; i++) {
-    if (!isNumberWord(words[i])) { out.push(words[i]); continue; }
-    let j = i, total = 0, hundreds = false;
-    for (; j < words.length; j++) {
-      let w = words[j];
-      if ((w === 'and' || w === 'og') && hundreds && isNumberWord(words[j + 1] ?? '')) w = words[++j];
-      if (!isNumberWord(w)) break;
-      if (HUNDRED.has(w)) { total = (total || 1) * 100; hundreds = true; } else total += NUMBER_WORDS[w] ?? 0;
-    }
-    if (j - i >= 2 || HUNDRED.has(words[i])) { out.push(String(total)); i = j - 1; } else out.push(words[i]);
-  }
-  return out;
-}
+/** Counted things that are never food: "8 reps", "30 seconds", "2 minutes", "80 kroner". */
+const NOT_FOOD = new Set(['rep', 'reps', 'set', 'sets', 'second', 'seconds', 'sec', 'secs', 'sekund', 'sekunder', 'minute', 'minutes', 'min', 'mins', 'minut', 'minutter', 'hour', 'hours', 'time', 'times', 'timer', 'day', 'days', 'dag', 'dage', 'week', 'weeks', 'uge', 'uger', 'year', 'years', 'aar', 'kr', 'kroner', 'dkk', 'euro', 'dollar', 'dollars', 'km', 'kilometer', 'kilometers', 'kilometre', 'kilometres', 'meter', 'meters', 'mile', 'miles', 'views', 'likes', 'comments', 'subscribers', 'followers', 'gange', 'gentagelser', 'repetitions']);
+const PREPOSITION = new Set(['for', 'at', 'with', 'and', 'to', 'til', 'med', 'på', 'paa', 'in', 'i', 'og', 'on', 'by', 'from', 'fra']);
+/** The most one row can hold (grams or ml): 5 kg. Above that a weight or a slip, not a meal. */
+const MAX_AMOUNT = 5000;
 
 /** One spoken segment as a row, or null when no amount was said or no food was named. */
 function readRow(seg: string): FoodRow | null {
-  const words = mergeNumberWords(seg.toLowerCase().replace(/[.]$/, '').split(/\s+/));
+  const words = mergeWords(seg.toLowerCase().replace(/[.]$/, '').split(/\s+/), true);
   let i = 0;
   let amount: number | undefined;
   const numTok = words[i];
@@ -92,6 +81,9 @@ function readRow(seg: string): FoodRow | null {
   else if (/^\d+(\.\d+)?$/.test(numTok)) { amount = Number(numTok); i++; }
   else if (glued && UNITS[fold(glued[2])]) { amount = Number(glued[1]); words.splice(i, 1, glued[1], glued[2]); i++; }
   else if (WORD_NUM[numTok] !== undefined && words.length > 1) { amount = WORD_NUM[numTok]; i++; }
+  else if (NUMBER_WORDS[numTok] !== undefined && words.length > 1) { amount = NUMBER_WORDS[numTok]; i++; } // "tyve gram", "twenty grams"
+  // "et halvt kilo", "en halv liter": a Danish half is one word after the article
+  if (amount === 1 && /^(?:en|et)$/.test(numTok) && /^halv[te]?$/.test(words[i] ?? '')) { amount = 0.5; i++; }
   // "1 1/2 cups": a whole number and a fraction are one quantity
   const mixed = amount !== undefined && Number.isInteger(amount) && words[i]?.match(/^(\d+)\/(\d+)$/);
   if (mixed && Number(mixed[2]) > 0) { amount! += Number(mixed[1]) / Number(mixed[2]); i++; }
@@ -111,7 +103,11 @@ function readRow(seg: string): FoodRow | null {
   const query = words.slice(i).join(' ').trim();
   if (!query || !(amount > 0)) return null;
   if (/^\d+(?:[./]\d+)?(?:\s|$)/.test(query)) return null; // a second quantity left in the name was not understood
-  if (words.slice(i).some((t) => HUNDRED.has(t) || t === 'thousand' || t === 'tusind')) return null; // a big number word left over was not understood
+  if (/\b(?:for|at|på|paa|med|with)\s+(?:\d|(?:one|two|three|four|five|six|seven|eight|nine|ten|en|et|to|tre|fire|fem|seks|syv|otte|ni|ti)\b)/.test(query)) return null; // "for three", "at 80": the end of a set phrase, not a food
+  if (PREPOSITION.has(words[i] ?? '')) return null; // "80 for", "8 at …": the rest of a sentence, not a food
+  if (NOT_FOOD.has(words[i] === 'of' ? '' : fold(words[i] ?? ''))) return null; // "8 reps", "30 seconds", "2 minutes": a count of something that is not food
+  if ((dim === 'g' || dim === 'ml') && amount * factor > MAX_AMOUNT) return null; // 100 000 g is a weight lifted, not a meal
+  if (words.slice(i).some((t) => /^(?:hundred|hundrede|thousand|tusind)$/.test(t))) return null; // a big number word left over was not understood
   if (hasAmount(words.slice(i))) return null; // another amount and unit inside the name ("skyr 60 grams oats") was not understood
   return { raw: seg, amount: Math.round(amount * factor * 1000) / 1000, dim, ...(countWord ? { countWord } : {}), query, ...(weak ? { weak: true as const } : {}) };
 }

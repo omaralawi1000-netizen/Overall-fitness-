@@ -14,7 +14,7 @@ export const GLASS_ML = 250;
 export const BOTTLE_ML = 500;
 
 const WATER_WORD = '(?:water|vand)';
-const FILLER = /\b(?:i|jeg|just|lige|had|drank|drink|drikker|har|drukket|log|add|tilføj|tilfoej|please|some|noget|lidt|of|af|med|with|a bit of)\b/g;
+const FILLER = /\b(?:i dag|idag|today|now|nu|i|jeg|just|lige|had|drank|drak|drink|drikker|har|drukket|log|add|tilføj|tilfoej|please|some|noget|lidt|of|af|med|with|a bit of)\b/g;
 
 function clean(text: string): string {
   let s = ` ${text.toLowerCase()} `.replace(/(\d),(\d)/g, '$1.$2').replace(/[!?;:,"“”]/g, ' ').replace(/\.(?!\d)/g, ' ');
@@ -25,14 +25,16 @@ function clean(text: string): string {
 /** "500 ml water", "1.5 l water", "2 dl vand", "a glass of water", "two bottles of water". Null when it isn't one. */
 export function readWater(text: string): BodyRead<WaterRead> {
   const s = clean(text).replace(FILLER, ' ').replace(/\s+/g, ' ').trim();
-  let m = s.match(new RegExp(`^(\\d+(?:\\.\\d+)?) ?(ml|cl|dl|l|liter|litre|liters|litres) ${WATER_WORD}$`));
+  const AMOUNT = '(\\d+(?:\\.\\d+)?|(?:a|an|en|et)(?: half| halv| halvt)?|(?:half|halv|halvt)(?: (?:a|an|en|et))?)';
+  const count = (a: string) => (/half|halv/.test(a) ? 0.5 : /^(?:a|an|en|et)$/.test(a) ? 1 : Number(a));
+  let m = s.match(new RegExp(`^${AMOUNT} ?(ml|milliliters?|millilitres?|cl|dl|deciliters?|l|liter|litre|liters|litres) ${WATER_WORD}$`));
   if (m) {
-    const f = { ml: 1, cl: 10, dl: 100 }[m[2] as 'ml'] ?? 1000;
-    return water(Number(m[1]) * f);
+    const f = { ml: 1, cl: 10, dl: 100 }[m[2].replace(/^milli.*/, 'ml').replace(/^deci.*/, 'dl') as 'ml'] ?? 1000;
+    return water(count(m[1]) * f);
   }
-  m = s.match(new RegExp(`^(?:(\\d+(?:\\.\\d+)?|a|an|en|et|(?:half|halv)(?: (?:a|an|en|et))?) )?(glass|glasses|glas|bottle|bottles|flaske|flasker) ${WATER_WORD}$`));
+  m = s.match(new RegExp(`^${AMOUNT}? ?(glass|glasses|glas|bottle|bottles|flaske|flasker) ${WATER_WORD}$`));
   if (m) {
-    const k = m[1] === undefined || /^(a|an|en|et)$/.test(m[1]) ? 1 : /^(half|halv)/.test(m[1]) ? 0.5 : Number(m[1]);
+    const k = m[1] === undefined ? 1 : count(m[1]);
     const bottle = /^(bottle|flaske)/.test(m[2]);
     return water(k * (bottle ? BOTTLE_ML : GLASS_ML), `${bottle ? 'a bottle' : 'a glass'} counted as ${bottle ? BOTTLE_ML : GLASS_ML} ml`);
   }
@@ -44,7 +46,7 @@ function water(ml: number, assumed?: string): BodyRead<WaterRead> {
   return { ml: v, ...(assumed ? { assumed } : {}) };
 }
 
-const WEIGHT_CUE = '(?:(?:(?:i|jeg) )?(?:weigh|weighed|weigh in at|vejer|vejede)|(?:my )?(?:body ?weight|morning weight|weight|kropsvaegt|vaegt|min vaegt|morgenvaegt))(?: is| was| er| var| at)?';
+const WEIGHT_CUE = '(?:(?:(?:i|jeg) )?(?:weigh|weighed in at|weighed|weigh in at|vejer|vejede)|(?:my )?(?:body ?weight|morning weight|weight|kropsvaegten|kropsvaegt|vaegten|vaegt|min vaegt|morgenvaegt))(?: is| was| er| var| at)?';
 
 /** "I weigh 82.5", "bodyweight 180 lb", "vægt 82,5 kg". Null when no weight word was said. */
 export function readBodyweight(text: string): BodyRead<BodyweightRead> {
