@@ -13,8 +13,16 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 - **Treat as open, not as noes:** rest, tick, finish, the big number, logging. The rejections there are of those two versions. Several look like execution (Heat's flat colour field, a reading app's bloom out of context), not the idea, because he hearted similar ideas in the motion library.
 - **Tension to watch:** themes vs "fewer knobs, done perfectly" (his brief). Old Aven grew 8 palettes. One theme done perfectly first, more later.
 - He rejects whole looks quickly but loves single moments. Show him moments.
+- **After the Pick list (2 Nov):** he picks mechanics he can picture using (trays, rolling digits, card to page, records as objects) and leaves atmosphere (skies, light floods) at "maybe". Prove atmosphere inside a real moment before building on it.
 
 ## Entries
+
+### 2 Nov 2026: motion library, round 3 and the Pick list
+Round 3 (32 clips, 29 design screens): hearted 2 clips, `r3-next-cred-swipe-to-pay` (a slide whose light rises and floods the room, then a check) and `r3-warm-replay-orange-mesh-digits` (a giant number locking in on a warm field). No design screens hearted.
+His words: "Many of round three … I'm a little confused about … mostly I'm a little uncertain on, I need like a better explanation or a better use case … I think some of them could be good. I don't know."
+Pick list: he picked 48 of his 73 hearts (ids in the page store `picks3`; the list is in `keepers.md`).
+Hearted but not picked: every sky-through-the-day clip (Solar Dial, Good Air, Lumy, Tides), every Coach light that floods the room (orb sunrise, Ultrahuman, Apple Intelligence, Wabi, Playground, Bevel), the Push countdown, Peace Out's rest ring, Google's next step, Md Vinyl, Monument Valley's quiet finish, and the stills of WHOOP's orb and Sleep Cycle's ring.
+Reading: his picks lean to concrete mechanics he can picture using (Family trays, digits that roll, cards that grow into pages, Delete turning into Confirm, records as objects) over atmosphere (skies, room-filling light). Atmosphere is a "maybe" until he feels it in a real moment. Round 3 confused him because many clips were mood, not a job; a clip needs a use case next to it.
 
 ### 2 Nov 2026: taste test, 11 this-or-that pairs
 Page: https://claude.ai/artifact/3F55dCusNya4BDpNacPhZA (store `answers`). What each pair decides: `docs/research/taste-2026-11-01.md`. His notes are dictated; quoted as saved. He asked that these be read as signal from a sparring partner, not as rules ("don't treat it as he must like this").

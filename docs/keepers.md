@@ -35,6 +35,59 @@ He hearted 35 of the 51 round-2 clips (ids in the page store `loves`, starting `
 - **Records:** CRED's dark room with a metal badge and its own glow (`r2-tick-games-cred-milestone-glow`), the edge-lit medal (`r2-tick-games-anydistance-medal`), Apple's badge flip, Not Boring's gold piece, Supersonic's card lift, Opal's gem crack, Monument Valley's calm COMPLETE.
 - **Today through the day:** the sky and labels following time (`r2n-solar-dial-day-scrub`, `r2n-good-air-sky-scrub`, `r2n-lumy-sunrise-scrub`, `r2n-tides-sky-follows-scrub`), and a pill whose colour takes over the room (`r2-moods-pills-expand`).
 
+### Omar's picks from his hearts (2 Nov 2026, Pick list)
+From all 73 hearts he picked 48 (page store `picks3`). These are the strongest signal so far. Use them first when a moment needs a reference; the motion map below still says where each one fits.
+- `60fps-apple-effort-slider-colour`
+- `60fps-family-keypad-digits`
+- `60fps-family-sheet-morph`
+- `60fps-fitness-wrapped-count-up`
+- `60fps-not-boring-hold-to-tick`
+- `60fps-push-rep-digit-roll`
+- `code-motion-family-dialog`
+- `code-motion-multi-state-badge`
+- `code-motion-notifications-stack`
+- `code-mv-progress-button`
+- `code-numberflow-shuffle`
+- `galleries-chatgpt-creating-image`
+- `galleries-dribbble-grow-sheet`
+- `galleries-watch-breath-countdown`
+- `own-09-card-expand-collapse`
+- `own-12-today-cards-expand`
+- `own-13-swipe-actions`
+- `own-15-timeline-dial`
+- `own-22-glass-tip-morph`
+- `own-23-download-pill`
+- `r2-apple-glass-toggle`
+- `r2-days-card-to-page`
+- `r2-eimi-card-sheet-to-list`
+- `r2-family-approval-unfolds`
+- `r2-family-continue-confirm`
+- `r2-family-menu-to-speedup`
+- `r2-family-trash-bin`
+- `r2-family-tray-heights`
+- `r2-fivecents-delete-sheet`
+- `r2-tick-games-anydistance-medal`
+- `r2-tick-games-apple-badge-flip`
+- `r2-tick-games-cred-milestone-glow`
+- `r2-tick-games-nb-gold-piece`
+- `r2-tick-games-opal-gem-crack`
+- `r2-tick-games-supersonic-card-lift`
+- `r2n-health-emotion-bloom-slider`
+- `r2n-outsiders-sleep-goal-colour`
+- `r2n-revolut-glow-graph-scrub`
+- `r2n-runmo-days-stepper`
+- `r2n-world-live-digit-trail`
+- `still-01`
+- `still-02`
+- `still-03`
+- `still-22`
+- `still-28`
+- `web-dribbble-halden-ask-bar`
+- `web-opal-gem-reveal`
+- `web-tiimo-slide-unlock`
+
+Round 3 hearts (not picked yet, both new): `r3-next-cred-swipe-to-pay` (slide to commit; the light rises and floods the room, then one check) and `r3-warm-replay-orange-mesh-digits` (a giant number locking in on a warm field, for a month recap).
+
 ### Motion map: which heart goes where (2 Nov 2026)
 Omar (2 Nov): "I love many of them… they can be many other different interactions in the app. They don't all have to
 look the same." So there is no one-per-job pick. Every moment in the app gets its own reference from his hearts. They
