@@ -22,7 +22,7 @@ An old test is ported only if its behaviour is still wanted. Old tests that chec
 | `types.ts` | 501 | E1a | The old data shape the importer reads. The new model (`DATA-MODEL.md`) is written fresh from it: planned vs done sets, session states, sport sessions, sources, time zones, schema versions. |
 | `state/defaults.ts` | 111 | E1a | `normaliseData`: the defensive reading of an old or hand-edited backup. The importer uses the same care. |
 | `data/exercises*.ts` | 400 | E1a | The exercise catalogue (about 120 lifts, English and Danish names). Old workouts refer to these ids, so they stay. Variations (machine, grip, range of motion) are already separate entries; the new model adds which ones are siblings. |
-| `setCommand.ts` | 116 | E1b | "8 at 80", "80 for 8", Danish number words, "same again", done, skip, rest, undo, a dropped digit (`guardSet`, `fixMisheard`). Changed: a bare "no" inside a phrase becomes a self-correction ("80… no, 60"), not Undo. |
+| `setCommand.ts` | 116 | E1b, done | "8 at 80", "80 for 8", Danish number words, "same again", done, skip, rest, undo, a dropped digit (`guardSet`, `fixMisheard`). Changed: a bare "no" inside a phrase becomes a self-correction ("80… no, 60"), not Undo. |
 | `workoutText.ts` | 144 | E1b | Whole-workout dictation ("80 for 8, 8 and 6", "3 sets of 8 at 80", "then"), and lift nicknames (bench, RDL, bænk). |
 | `foodText.ts` | 422 | E1b | Only the word side: folding æøå, splitting "200 g skyr og to æg", amounts, units, counted words, density, estimate flags. Food search and resolving to a database food are port later (Food phase). |
 

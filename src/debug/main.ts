@@ -11,6 +11,7 @@ import { abandonSession, addSet, adjustRest, discardSession, elapsedMs, finishSe
 import { backupName, countKinds, exportBackup, parseBackup, previewRestore, restore, summarise, type BackupFile } from '../engine/backup';
 import { dryRun, mapOld, readOldBackup, readOldLocal, runImport, type Report } from '../engine/importOld';
 import { keepWhenUseful, usage } from '../engine/storage';
+import { understand, show } from '../engine/parse';
 
 const $ = (id: string) => document.getElementById(id)!;
 const esc = (s: unknown) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -252,3 +253,17 @@ async function main() {
 }
 
 main().catch((err) => { document.body.insertAdjacentHTML('afterbegin', `<p class="bad">The engine could not start: ${esc(err?.message ?? err)}</p>`); });
+
+// ── Phrase box: the instant parser, read-only (nothing is saved) ──
+function readPhrase() {
+  const text = (document.getElementById('phrase') as HTMLInputElement).value;
+  const open = (document.getElementById('phraseOpen') as HTMLInputElement).checked;
+  const out = $('phraseOut');
+  if (!text.trim()) { out.innerHTML = ''; return; }
+  const r = understand(text, { workoutOpen: open });
+  const cls = r.kind === 'ask' ? 'bad' : r.kind === 'ignored' ? 'muted' : 'ok';
+  out.innerHTML = `<p class="${cls}" id="phraseSays"><b>${r.kind}</b>: ${esc(show(r))}</p><details><summary class="muted">Details</summary><pre id="phraseJson">${esc(JSON.stringify(r, (k, v) => (k === 'instructions' || k === 'muscles' ? undefined : v), 1))}</pre></details>`;
+}
+$('phrase').addEventListener('input', readPhrase);
+$('phraseOpen').addEventListener('change', readPhrase);
+$('phraseClear').addEventListener('click', () => { (document.getElementById('phrase') as HTMLInputElement).value = ''; readPhrase(); $('phrase').focus(); });

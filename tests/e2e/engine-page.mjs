@@ -186,6 +186,32 @@ const toSec = (t) => { const m = /(\d+):(\d+)/.exec(t); return m ? Number(m[1]) 
   check('killed browser: an import is all or nothing, never half', partial === 0, `${whole} whole, ${none} none, ${partial} half`);
 }
 
+// 6. Phrase box: typed phrases are read, nothing is saved, talk logs nothing
+{
+  const { ctx, open, errors } = await fresh();
+  const p = await open();
+  const says = async (t) => { await p.fill('#phrase', t); return txt(p, '#phraseOut'); };
+  check('phrase: a set', /command.*8 reps at 80 kg/.test(await says('8 at 80')));
+  check('phrase: a self-correction', /9 reps at 80 kg/.test(await says('8 at 80, no 9 reps')));
+  check('phrase: a bare number against reps and kilos asks', /Not sure which number/.test(await says('8 at 80, no 85')));
+  check('phrase: a lone no asks, it does not undo', /Not sure: "no" to what/.test(await says('no')));
+  check('phrase: water', /water.*500 ml/.test(await says('500 ml water')));
+  check('phrase: body weight', /82.5 kg/.test(await says('I weigh 82,5')));
+  check('phrase: food', /200 g skyr/.test(await says('200 grams of skyr and one banana')));
+  check('phrase: an exercise with sets', /Barbell Bench Press: 8 reps at 80 kg/.test(await says('bench press 80 for 8, 8 and 6')));
+  check('phrase: talk logs nothing', /Nothing logged/.test(await says('can you spot me')));
+  await p.uncheck('#phraseOpen');
+  check('phrase: no workout open, no set', /no workout is open/.test(await says('8 at 80')));
+  await p.check('#phraseOpen');
+  check('phrase: the details show the raw reading', (await p.textContent('#phraseJson')).includes('"kind"'));
+  await p.click('#phraseClear');
+  check('phrase: clear empties it', (await txt(p, '#phraseOut')) === '' && (await p.inputValue('#phrase')) === '');
+  const d = await db(p);
+  check('phrase: nothing was saved by reading', d.records.length === 0 && d.actions.length === 0);
+  check('phrase: no page errors', errors.length === 0, errors.join('; '));
+  await ctx.close();
+}
+
 await browser.close();
 const failed = results.filter((r) => !r.ok);
 console.log(`\n${results.length - failed.length}/${results.length} passed`);
