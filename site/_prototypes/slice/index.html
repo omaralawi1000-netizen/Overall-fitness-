@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0a0809">
+<meta name="robots" content="noindex">
+<title>Aven 2 · workout slice</title>
+<link rel="preload" href="fonts/newsreader-italic.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="fonts/geist.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="slice.css">
+</head>
+<body>
+<div class="glow" aria-hidden="true"></div>
+<main class="screen">
+  <header class="top">
+    <p class="session"><em>Push</em><span class="clock">18:42</span></p>
+    <button class="coach" aria-label="Coach" aria-expanded="false"><span class="coach-dot"></span></button>
+  </header>
+  <div class="coach-tray" role="status" hidden>
+    <span class="coach-bg"></span>
+    <p class="coach-text">Same as last week so far. Your last set is 85 kg, more than you've ever done for 6.</p>
+  </div>
+
+  <h1 class="ex">Bench press</h1>
+  <p class="ex-sub">Best <span class="best">82.5 kg × 6</span></p>
+
+  <section class="done-zone" aria-label="Done sets"></section>
+
+  <section class="card" aria-label="Current set">
+    <div class="card-head">
+      <span class="set-label">Set <span class="roll set-no"></span><span class="of"> of 4</span></span>
+      <span class="last"></span>
+    </div>
+    <div class="vals">
+      <div class="val"><span class="roll big w"></span><span class="unit">kg</span></div>
+      <div class="val"><span class="roll big r"></span><span class="unit">reps</span></div>
+    </div>
+    <div class="steps">
+      <div class="pair"><button class="step" data-k="w" data-d="-2.5" aria-label="Less weight">−</button><button class="step" data-k="w" data-d="2.5" aria-label="More weight">+</button></div>
+      <div class="pair"><button class="step" data-k="r" data-d="-1" aria-label="One rep less">−</button><button class="step" data-k="r" data-d="1" aria-label="One rep more">+</button></div>
+    </div>
+    <div class="dial">
+      <svg class="ticks" viewBox="0 0 200 200" aria-hidden="true"></svg>
+      <span class="track"></span>
+      <span class="arc warm"><span class="half r"><span class="seg"></span></span><span class="half l"><span class="seg"></span></span></span>
+      <span class="arc cool"><span class="half r"><span class="seg"></span></span><span class="half l"><span class="seg"></span></span></span>
+      <span class="full"></span>
+      <button class="tick" aria-label="Set done">
+        <span class="pearl"></span>
+        <svg class="check c-hot" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 16.5l5.2 5.2L24 10.5"/></svg>
+        <svg class="check c-dark" viewBox="0 0 32 32" aria-hidden="true"><path d="M8 16.5l5.2 5.2L24 10.5"/></svg>
+        <span class="rest-face" aria-hidden="true"><span class="rest-word">rest</span><span class="roll count"></span><svg class="check c-small" viewBox="0 0 32 32"><path d="M8 16.5l5.2 5.2L24 10.5"/></svg></span>
+      </button>
+    </div>
+    <div class="foot">
+      <span class="hint">Tap when the set is done</span>
+      <button class="skip">Skip rest</button>
+    </div>
+    <div class="summary" hidden>
+      <p class="sum-title">Bench press, done.</p>
+      <p class="sum-line"></p>
+      <button class="again">Start over</button>
+    </div>
+  </section>
+
+  <section class="next-zone" aria-label="Next sets"></section>
+
+  <footer class="then">
+    <span>Then <em>Incline dumbbell press</em></span>
+    <button class="restart">Start over</button>
+  </footer>
+</main>
+
+<div class="reward" hidden>
+  <div class="reward-dim"></div>
+  <div class="reward-glow"></div>
+  <div class="medal-pos">
+    <div class="medal">
+      <div class="face front">
+        <span class="m-top">Bench press</span>
+        <span class="m-num"></span>
+        <span class="m-sub"></span>
+        <span class="sheen"></span>
+      </div>
+      <div class="face back"><span class="m-back">Aven<br>2 · 11 · 2026</span></div>
+    </div>
+  </div>
+  <div class="reward-text">
+    <p class="r-title">New best</p>
+    <p class="r-line"></p>
+    <p class="r-max">Estimated max <span class="roll est"></span> kg</p>
+    <button class="keep">Keep going</button>
+  </div>
+</div>
+
+<script type="module" src="slice.js"></script>
+</body>
+</html>
