@@ -10,7 +10,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&display=swap">
 <style>
-  :root { color-scheme: dark; --ink: #f5f7fa; --ink2: rgba(245, 247, 250, .62); --ink3: rgba(245, 247, 250, .36);
+  :root { color-scheme: dark; --ink: #f5f7fa; --ink2: rgba(245, 247, 250, .62); --ink3: rgba(245, 247, 250, .46);
     --now: #7dffe8; --gold: #ffd98a; --pad: 24px; }
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { margin: 0; height: 100%; background: #000; overflow: hidden; overscroll-behavior: none; }
@@ -44,9 +44,9 @@
   .cursor { position: absolute; left: 0; bottom: 0; width: 26px; height: 2px; border-radius: 1px; background: var(--now);
     box-shadow: 0 0 10px var(--now); }
 
-  .stage { flex: 1; display: grid; min-height: 0; position: relative; }
+  .stage { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr); min-height: 0; position: relative; }
   .stage > * { grid-area: 1 / 1; }
-  .editor { display: flex; flex-direction: column; justify-content: center; gap: 14px; padding-bottom: 6%; }
+  .editor { display: flex; flex-direction: column; justify-content: center; gap: 14px; padding-bottom: 16%; }
   .row { display: flex; align-items: center; justify-content: space-between; }
   .num { display: flex; align-items: baseline; touch-action: none; cursor: ns-resize; min-width: 0; }
   .roll { display: inline-flex; font-size: 96px; line-height: 1; font-weight: 250; letter-spacing: -.05em;
@@ -65,13 +65,16 @@
 
   .rest { display: flex; flex-direction: column; align-items: center; justify-content: center; padding-bottom: 14%; pointer-events: none; }
   #digits { width: 100%; color: transparent; text-align: center; font-weight: 220; font-variant-numeric: tabular-nums; line-height: 1.18; }
-  .note { margin: 14px 0 0; font-size: 17px; font-weight: 450; color: rgba(245, 247, 250, .8); text-align: center; text-wrap: balance; }
+  .note { margin: 6px 0 0; min-height: 48px; padding: 0 12px; font-size: 17px; font-weight: 450; color: rgba(245, 247, 250, .8);
+    text-align: center; text-wrap: balance; pointer-events: auto; }
+  .note .chg { font-weight: 600; color: #fff; }
+  .note:disabled { cursor: default; }
   .note, .rec { text-shadow: 0 1px 14px rgba(0, 0, 0, .28); }
   .rec { margin: 10px 0 0; text-align: center; }
   .rec b { display: block; font-size: 18px; font-weight: 600; color: #fff; letter-spacing: -.01em; }
   .rec span { display: block; margin-top: 4px; font-size: 15px; color: rgba(255, 255, 255, .8); }
 
-  .dock { display: flex; flex-direction: column; gap: 12px; }
+  .dock { display: flex; flex-direction: column; gap: 18px; }
   .restBtns { display: flex; gap: 12px; }
   .restBtns button { flex: 1; height: 50px; border-radius: 25px; font-size: 16px; font-weight: 550; text-shadow: 0 1px 10px rgba(0, 0, 0, .3); }
   #done { height: 66px; border-radius: 33px; font-size: 18px; font-weight: 600; letter-spacing: -.01em; color: rgba(0, 0, 0, .86); }
@@ -126,7 +129,7 @@
     <section class="rest layer" id="rest">
       <div id="digits" role="timer"></div>
       <div class="rec" id="rec" aria-live="polite"></div>
-      <p class="note" id="note"></p>
+      <button class="note" id="note"></button>
     </section>
   </div>
   <footer class="dock">

@@ -18,7 +18,7 @@ const STRINGS = {
     record: 'New best: {w} kg × {r}', recordSub: 'Beats {w} kg × {r} from {date}', finished: 'Workout done',
     minutes: 'minutes', sets: 'sets', lifted: 'kg lifted', best1: 'new best', bestN: 'new bests', again: 'Start again',
     lessW: 'Less weight', moreW: 'More weight', lessR: 'One rep fewer', moreR: 'One rep more', elapsed: 'Workout time {t}',
-    left: '{t} rest left',
+    left: '{t} rest left', change: 'Change', restT: 'Rest {t}',
   },
   da: {
     set: 'Sæt {n}', done: 'Færdig med sæt {n}', last: 'Sidst {w} {u} × {r}', kg: 'kg', kgEach: 'kg hver', reps: 'reps',
@@ -26,7 +26,7 @@ const STRINGS = {
     record: 'Ny rekord: {w} kg × {r}', recordSub: 'Slår {w} kg × {r} fra {date}', finished: 'Træning færdig',
     minutes: 'minutter', sets: 'sæt', lifted: 'kg løftet', best1: 'ny rekord', bestN: 'nye rekorder', again: 'Start forfra',
     lessW: 'Mindre vægt', moreW: 'Mere vægt', lessR: 'Én rep færre', moreR: 'Én rep mere', elapsed: 'Træningstid {t}',
-    left: '{t} pause tilbage',
+    left: '{t} pause tilbage', change: 'Ret', restT: 'Pause {t}',
   },
 };
 const S = STRINGS[lang];
@@ -50,7 +50,7 @@ const timers = [];
 const later = (ms, fn) => timers.push({ at: now + ms, fn });
 
 // ---------- state ----------
-let data, exI, setI, rest, finished, pendingSwitch, startedAt;
+let data, exI, setI, rest, finished, pendingSwitch, startedAt, editing = 0;
 const ex = () => data.exercises[exI];
 const cur = () => ex().sets[setI];
 const unit = (e = ex()) => (e.each ? S.kgEach : S.kg);
@@ -152,11 +152,17 @@ function measure() {
   tide.W = W;
   if (renderer) renderer.resize(W, H, scale);
   R = { done: rectOf($('done')), add: rectOf($('add')), skip: rectOf($('skip')), sets: rectOf($('sets')) };
-  L.base = H - R.done.y + 38;
+  L.base = baseLevel();
   L.max = H - (R.sets.y + R.sets.h + 14);
   L.finish = H * 0.36;
   if (digitMetrics) layoutDigits();
   placeCursor(true);
+}
+// The settled pool sits just above Done and rises a little with every set ticked, so it fills as you work.
+function baseLevel() {
+  const all = data ? data.exercises.flatMap((e) => e.sets) : [];
+  const done = all.filter((s) => s.done).length;
+  return H - R.done.y + 48 + (all.length ? (90 * done) / all.length : 0);
 }
 function glassRects() {
   const vis = (r, s, dy, radius, kind, alpha) => ({
@@ -186,7 +192,7 @@ function rollTo(el, text, dir, unitEl) {
   if (old === text) return;
   el.dataset.text = text;
   if (!old || !dir || reduced) { el.replaceChildren(...[...text].map(cell)); return; }
-  const k = 0.42 * 96;
+  const k = 0.42 * parseFloat(getComputedStyle(el).fontSize);
   if (old.length === text.length) {
     [...text].forEach((ch, i) => {
       if (ch === old[i]) return;
@@ -236,6 +242,20 @@ function renderEditor(dirW = 0, dirR = 0) {
   $('unitW').textContent = unit();
   $('unitR').textContent = S.reps;
   $('done').textContent = tr('done', { n: setI + 1 });
+  fitNumbers();
+}
+// 142.5 kg or "26 kg hver" must not push the steppers off screen: step the size down until the row fits.
+function fitNumbers() {
+  for (const row of document.querySelectorAll('.row')) {
+    const roll = row.querySelector('.roll');
+    const unitEl = row.querySelector('.unit');
+    const avail = row.clientWidth - row.querySelector('.steps').offsetWidth - 12;
+    // Only the digits in flow count, not the outgoing copy that is still rolling away.
+    const need = () => [...roll.children].reduce((w, c) => w + (c.classList.contains('c') ? c.offsetWidth : 0), 0) + unitEl.offsetWidth + 10;
+    let fs = 96;
+    roll.style.fontSize = '';
+    while (need() > avail && fs > 56) { fs -= 8; roll.style.fontSize = `${fs}px`; }
+  }
 }
 function setVal(s) { return `${kg(s.w)} × ${s.r}`; }
 function renderExercise() {
@@ -274,6 +294,8 @@ function updateSetRow(i) {
 }
 
 function bump(field, n) {
+  if (finished || (rest && !editing)) return;
+  if (editing) editing = now + 4000;
   const s = cur();
   const before = field === 'w' ? s.w : s.r;
   if (field === 'w') s.w = Math.max(0, Math.round((s.w + n * ex().step) * 100) / 100);
@@ -282,6 +304,7 @@ function bump(field, n) {
   if (after === before) return;
   renderEditor(field === 'w' ? Math.sign(n) : 0, field === 'r' ? Math.sign(n) : 0);
   updateSetRow(setI);
+  if (rest && !pendingSwitch) setNote(nextNote(), true);
   buzz(5);
 }
 
@@ -296,6 +319,7 @@ function tickSet() {
   const s = cur();
   s.done = true;
   s.record = isRecord(e, s);
+  L.base = baseLevel();
   const i = setI;
   updateSetRow(i);
   const path = $('sets').children[i].querySelector('.tick');
@@ -325,10 +349,39 @@ function switchExercise() {
   layers.sets.v.set(0);
   later(40, () => { layers.ex.v.t = 1; });
   later(120, () => { layers.sets.v.t = 1; });
-  if (rest) $('note').textContent = nextNote();
+  if (rest) { setNote(nextNote(), true); if (digitMetrics) layoutDigits(); }
 }
 
 const nextNote = () => tr('nextSet', { n: setI + 1, w: kg(cur().w), u: S.kg, r: cur().r });
+function setNote(text, changeable) {
+  const el = $('note');
+  el.textContent = text;
+  el.disabled = !changeable;
+  if (changeable) { const c = document.createElement('span'); c.className = 'chg'; c.textContent = S.change; el.append(' ', c); }
+}
+
+// Change the next set during the rest: the countdown steps aside (it moves to the header), the liquid keeps
+// draining, and after 4 s without a touch the countdown comes back.
+function editDuringRest() {
+  if (!rest || pendingSwitch || editing) return;
+  editing = now + 4000;
+  renderEditor();
+  digitA.w = 20;
+  digitA.t = 0;
+  layers.rest.v.w = 20;
+  layers.rest.v.t = 0;
+  layers.editor.v.w = 14;
+  layers.editor.v.t = 1;
+}
+function stopEditing() {
+  if (!editing) return;
+  editing = 0;
+  if (!rest) return;
+  layers.editor.v.w = 20;
+  layers.editor.v.t = 0;
+  layers.rest.v.w = 10;
+  later(140, () => { if (rest && !editing) { layers.rest.v.t = 1; digitA.w = 9; digitA.t = 1; } });
+}
 
 function surge(strength) {
   tide.level.t = L.max;
@@ -341,18 +394,21 @@ function surge(strength) {
 
 function startRest(sec, s, e) {
   const wasResting = !!rest;
+  editing = 0;
+  keepAwake();
   rest = { total: sec, end: now + sec * 1000, shown: -1 };
   colorP.set(0);
   goldS.set(s.record ? 1 : 0);
   surge(s.record ? 1.15 : 1);
-  tide.fizz = s.record ? 0.08 : 0.26;
-  tide.fizzTarget = s.record ? 0.03 : 0.06;
+  tide.fizz = s.record ? 0 : 0.12;
+  tide.fizzTarget = s.record ? 0 : 0.03;
   buzz(s.record ? [14, 50, 14, 50, 36] : 16);
   setDigits(mmss(sec), wasResting);
   $('done').textContent = tr('done', { n: setI + 1 });
   layers.editor.v.w = 28;
   layers.editor.v.t = 0;
   digitA.w = 9;
+  layers.rest.v.w = 10;
   later(180, () => { if (rest) { layers.rest.v.t = 1; digitA.t = 1; } });
   later(260, () => { if (rest) layers.restBtns.v.t = 1; });
   const rec = $('rec');
@@ -361,7 +417,9 @@ function startRest(sec, s, e) {
     rec.innerHTML = `<b>${tr('record', { w: kg(s.w), r: s.r })}</b><span>${tr('recordSub', {
       w: kg(prev.w), r: prev.r, date: dateFmt.format(new Date(prev.date)) })}</span>`;
   } else rec.replaceChildren();
-  $('note').textContent = pendingSwitch ? tr('nextEx', { name: data.exercises[exI + 1].name[lang] }) : nextNote();
+  if (pendingSwitch) setNote(tr('nextEx', { name: data.exercises[exI + 1].name[lang] }), false);
+  else setNote(nextNote(), true);
+  if (digitMetrics) layoutDigits(); // the lines under the digits changed, and the block is centred
 }
 
 // why: 'time' (it ran out), 'skip', or 'done' (the next set was ticked during the rest)
@@ -369,13 +427,16 @@ function endRest(why) {
   if (!rest) return;
   switchExercise();
   rest = null;
+  const wasEditing = editing;
+  editing = 0;
   if (why === 'done') return;
   tide.level.t = L.base;
   colorP.t = 1;
   goldS.t = 0;
-  tide.fizzTarget = 0.04;
-  digitA.w = 20;
+  tide.fizzTarget = 0.02;
+  digitA.w = 32;
   digitA.t = 0;
+  layers.rest.v.w = 24;
   layers.rest.v.t = 0;
   layers.restBtns.v.t = 0;
   if (why === 'time') {
@@ -384,7 +445,8 @@ function endRest(why) {
   } else tide.splash(W / 2, -220, 90);
   renderEditor();
   layers.editor.v.w = 13;
-  later(why === 'time' ? 160 : 60, () => { if (!rest && !finished) layers.editor.v.t = 1; });
+  if (wasEditing) return;
+  later(why === 'time' ? 170 : 140, () => { if (!rest && !finished) layers.editor.v.t = 1; });
 }
 
 function addTime() {
@@ -411,8 +473,11 @@ function finish(record) {
   tide.level.v += 700;
   tide.splash(W / 2, 700, 80);
   tide.stir(120);
-  tide.fizz = 0.4;
-  tide.fizzTarget = 0.1;
+  tide.fizz = bests ? 0 : 0.1;
+  tide.fizzTarget = bests ? 0 : 0.03;
+  editing = 0;
+  wake?.release().catch(() => {});
+  wake = null;
   buzz(record ? [14, 50, 14, 50, 36] : [20, 60, 30]);
   for (const k of ['ex', 'sets', 'editor', 'rest', 'restBtns']) layers[k].v.t = 0;
   digitA.w = 30;
@@ -435,7 +500,7 @@ function startAgain() {
   tide.level.t = L.base;
   colorP.t = 1;
   goldS.t = 0;
-  tide.fizzTarget = 0.04;
+  tide.fizzTarget = 0.02;
   tide.splash(W / 2, -200, 100);
   for (const [k, d] of [['ex', 200], ['sets', 280], ['editor', 360]]) later(d, () => { layers[k].v.t = 1; });
 }
@@ -454,10 +519,11 @@ pressable('done', () => {
   tickSet();
 });
 pressable('add', addTime);
+$('note').addEventListener('click', editDuringRest);
 pressable('skip', () => endRest('skip'));
 
 for (const b of document.querySelectorAll('.step')) {
-  b.addEventListener('click', () => { if (!rest && !finished) bump(b.dataset.f, Number(b.dataset.d)); });
+  b.addEventListener('click', () => bump(b.dataset.f, Number(b.dataset.d)));
 }
 // Drag a number up or down to change it, one step per 22 px.
 for (const n of document.querySelectorAll('.num')) {
@@ -499,9 +565,10 @@ addEventListener('devicemotion', (e) => {
   const lin = e.acceleration;
   if (lin && lin.x != null && !reduced) tide.slope.v += -sgn * lin.x * 0.02;
 });
-addEventListener('pointerdown', () => {
+// iOS asks for motion access, and only from a real activation (a click, not a touch-start).
+addEventListener('click', () => {
   if (typeof DeviceMotionEvent !== 'undefined' && DeviceMotionEvent.requestPermission) DeviceMotionEvent.requestPermission().catch(() => {});
-}, { once: true, passive: true });
+}, { once: true, capture: true });
 function tiltTarget() {
   if (!grav || reduced || (screen.orientation && screen.orientation.angle !== 0)) return 0;
   const m = Math.hypot(grav.x, grav.y) / 9.81;
@@ -510,7 +577,15 @@ function tiltTarget() {
   return -Math.tan(ang) * w * w * (3 - 2 * w);
 }
 
-addEventListener('resize', () => { measure(); });
+addEventListener('resize', () => { measure(); fitNumbers(); });
+
+// Keep the screen on through a workout, so the rest can end with a buzz instead of a locked phone.
+let wake = null;
+function keepAwake() {
+  if (wake || !navigator.wakeLock || document.visibilityState !== 'visible') return;
+  navigator.wakeLock.request('screen').then((w) => { wake = w; w.addEventListener('release', () => { wake = null; }); }).catch(() => {});
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !finished && data && data.exercises.some((e) => e.sets.some((s) => s.done))) keepAwake(); });
 
 // ---------- the frame ----------
 const perf = { js: new Float32Array(600), dt: new Float32Array(600), n: 0 };
@@ -567,8 +642,9 @@ function frame(ms, draw = true) {
   const cursor = $('sets').querySelector('.cursor');
   if (cursor) cursor.style.transform = `translate3d(${cursorX.x.toFixed(2)}px,0,0)`;
 
-  const el = mmss((now - startedAt) / 1000);
-  if (el !== clockShown) { $('clock').textContent = el; $('clock').setAttribute('aria-label', tr('elapsed', { t: el })); clockShown = el; }
+  if (editing && now > editing) stopEditing();
+  const el = editing && rest ? tr('restT', { t: mmss(Math.ceil(Math.max(0, rest.end - now) / 1000)) }) : mmss((now - startedAt) / 1000);
+  if (el !== clockShown) { $('clock').textContent = el; $('clock').setAttribute('aria-label', editing ? el : tr('elapsed', { t: el })); clockShown = el; }
 
   const color = paletteAt(colorP.x, goldS.x);
   if (renderer && draw) {

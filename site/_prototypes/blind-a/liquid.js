@@ -153,7 +153,8 @@ vec3 bodyColor(float depth) {
   vec3 c = mix(uSurf, uDeep, pow(dn, .75));
   return c + uGlow * (.42 * exp(-depth / 12.) + .16 * exp(-depth / 70.));
 }
-vec3 spillColor(float above) { return uGlow * (.30 * exp(-above / 30.) + .085 * exp(-above / 140.)); }
+// Light the liquid throws into the dark above it: a hot band at the surface and a wide wash that colours the room.
+vec3 spillColor(float above) { return uGlow * (.30 * exp(-above / 30.) + .085 * exp(-above / 140.) + .05 * exp(-above / 420.)); }
 
 // The scene as frosted glass would see it: the same liquid, with every edge and detail softened. No blur pass needed.
 vec3 frostScene(vec2 p) {
@@ -232,7 +233,7 @@ void main() {
       bool milk = rp.y > 1.5;
       // Clear glass darkens over bright liquid so its white label stays readable.
       float lum = dot(g, vec3(.2126, .7152, .0722));
-      vec3 glass = milk ? mix(g, vec3(.95, .956, .966), .8) : g * (.8 - .36 * smoothstep(.15, .6, lum)) + vec3(.05) + uGlow * .02;
+      vec3 glass = milk ? mix(g, vec3(.955, .96, .968), .9) + uGlow * .04 : g * (.8 - .36 * smoothstep(.15, .6, lum)) + vec3(.05) + uGlow * .02;
       float top = clamp(1. - (p.y - r.y) / r.w, 0., 1.);
       glass += exp(-abs(sd) / .9) * (.05 + .32 * top * top) * (milk ? .55 : 1.);
       col = mix(col, glass, m);
