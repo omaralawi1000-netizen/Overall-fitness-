@@ -198,6 +198,6 @@ can really do on Android and iPhone. Nothing built.
   next set and undo still only partly.
 
 ## Next step
-Omar hearts round 2 on the motion-library page. Read the store (ArtifactData list, collection `loves`; round-2 ids start
-with `r2`), add only his new hearts to docs/keepers.md, then start the next design round from the keepers and the recipe
-in docs/research/taste-2026-11-01.md.
+Omar's hearts are all in docs/keepers.md, and "Motion map" there assigns them to moments across the app. He doesn't
+want to pick one per job in the abstract. Next design round: build the prototype from the keepers, using the motion map
+for its moments, and let him react on his phone. Recipe: docs/research/taste-2026-11-01.md.

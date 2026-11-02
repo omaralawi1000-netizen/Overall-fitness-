@@ -35,6 +35,69 @@ He hearted 35 of the 51 round-2 clips (ids in the page store `loves`, starting `
 - **Records:** CRED's dark room with a metal badge and its own glow (`r2-tick-games-cred-milestone-glow`), the edge-lit medal (`r2-tick-games-anydistance-medal`), Apple's badge flip, Not Boring's gold piece, Supersonic's card lift, Opal's gem crack, Monument Valley's calm COMPLETE.
 - **Today through the day:** the sky and labels following time (`r2n-solar-dial-day-scrub`, `r2n-good-air-sky-scrub`, `r2n-lumy-sunrise-scrub`, `r2n-tides-sky-follows-scrub`), and a pill whose colour takes over the room (`r2-moods-pills-expand`).
 
+### Motion map: which heart goes where (2 Nov 2026)
+Omar (2 Nov): "I love many of them… they can be many other different interactions in the app. They don't all have to
+look the same." So there is no one-per-job pick. Every moment in the app gets its own reference from his hearts. They
+don't need to look alike, only to feel like one app (rules below). This is a starting map, not a spec: he judges it on his phone in
+the next prototype, where reacting is easy. Don't ask him to pick in the abstract again.
+
+**One app, many moments: the shared feel**
+- **One timing:** the same spring everywhere. Quick (about 250–400 ms), at most one soft settle, never bouncy.
+- **One light:** colour lives in the room's one glow. A reference with its own colourful look gets re-lit in Aven's light.
+- **One reward ladder:** set ticked (tiny) < next set (small) < workout finished (calm) < record (full screen) < rare
+  milestone (once in months). Bigger moments must stay rarer.
+- **Blur budget:** at most one heavy-blur moment on screen at a time (Coach light, room flood, hold-to-commit). Each is
+  tested at 120 Hz on his phone first.
+
+**In a workout**
+- Start: 3-2-1 where each number is its own event (`60fps-push-countdown-takeover`).
+- Tick a set: the dot swells under the thumb and settles into a check (`60fps-not-boring-hold-to-tick`, `r2-apple-glass-toggle`).
+- Next set opens: the done set folds to a one-line row and the next one opens in place (`r2-tick-games-google-setup-steps`).
+- Change weight or reps: only the changed digit rolls (`r2n-runmo-days-stepper`, `60fps-push-rep-digit-roll`).
+- Rest starts: the tapped button grows into the rest ring (approved idea), and colour pulls into a calm ring (`r2-tick-games-peaceout-conic-rest`); rest fills as a colour level (approved idea).
+- Last seconds of rest: light ribbons pull into one line (`galleries-watch-breath-countdown`).
+- Next exercise: the old one slides out and the room's colour shifts to the new one (`r2-md-vinyl-next`).
+- Finish workout: hold to commit, then a quiet "complete" with one ring (approved idea, `r2-tick-games-monument-valley-complete`).
+- A record: grows from the logged set into a full-screen moment (approved idea), staged as a lit object on black (`r2-tick-games-cred-milestone-glow`).
+
+**Coach**
+- Ask: the Ask bar becomes the conversation (`web-dribbble-halden-ask-bar`).
+- Listening: one soft light that is born and breathes (approved idea), with light running round its rim (`r2-playground-glass-bubble`).
+- Thinking: a thin lit arc drawing while the words change (`r2-ultrahuman-light-orb-floods-room`), or a soft drifting card (`galleries-chatgpt-creating-image`).
+- Answering: the light floods the room (`own-01-orb-sunrise-flood`, `r2-appleintel-ring-blooms-to-gradient`).
+- A proposal arrives: a tray unfolds from where you are (`r2-family-approval-unfolds`). Several at once: a stack that fans out (`code-motion-notifications-stack`).
+- Accept a small change: the button grows into the confirm (`code-motion-family-dialog`). Accept a big one: hold to commit (approved idea).
+- Dismiss and undo: Delete turns into Confirm in place (`r2-fivecents-delete-sheet`), and removed things go to a bin you can open (`r2-family-trash-bin`).
+- An accepted change lands in the plan: the card glides into its place in the list (`r2-eimi-card-sheet-to-list`).
+- Coach modes (gym, food, wrestling) each colour the room (`r2-bevel-coach-persona-glow`).
+
+**Food**
+- Typing an amount: each new digit lands and the amount re-centres (`60fps-family-keypad-digits`).
+- Logging a meal: its number travels into the day's total (`r2-family-continue-confirm`), and totals roll (`code-numberflow-shuffle`).
+- Choosing a portion or options: options unfold out of the button (`own-22-glass-tip-morph`).
+
+**Today**
+- The day as a sky that moves from morning to night, coloured by day type (`r2n-solar-dial-day-scrub`, `r2n-good-air-sky-scrub`, `r2n-lumy-sunrise-scrub`, `r2n-tides-sky-follows-scrub`, approved idea).
+- Recovery per muscle: ring, number, word and colour shift together as you swipe (`60fps-train-recovery-pager-colour`).
+- Check-in (effort, mood, energy): one drag moves the colour of the screen (`60fps-apple-effort-slider-colour`, `r2n-health-emotion-bloom-slider`, `code-mv-mood-slider`, `r2-moods-pills-expand`).
+- A card opens into its page and back (`r2-days-card-to-page`, `own-12-today-cards-expand`, `own-09-card-expand-collapse`).
+
+**Progress**
+- Scrub a chart: a hairline follows the finger and the line glows near it (`r2n-revolut-glow-graph-scrub`); the trend is a smooth curve (still 22).
+- Scrub history by date: a dial whose date rolls (`own-15-timeline-dial`).
+- Goals with a range: a wedge that widens as you drag (`r2n-outsiders-sleep-goal-colour`).
+- Live totals during a session: only the last digits tick (`r2n-world-live-digit-trail`).
+- Badge shelf: tap a badge and it lifts and turns to catch the light (`r2-tick-games-supersonic-card-lift`, `r2-tick-games-apple-badge-flip`, `r2-tick-games-anydistance-medal`).
+- Rare milestones only (e.g. 100 workouts): crack it open or build the trophy (`r2-tick-games-opal-gem-crack`, `web-opal-gem-reveal`, `r2-tick-games-nb-gold-piece`). Month or year recap: the big number counts up (`60fps-fitness-wrapped-count-up`).
+
+**Everywhere**
+- Sheets: one tray that changes height and content in place (`r2-family-tray-heights`, `60fps-family-sheet-morph`, `r2-family-menu-to-speedup`).
+- The Log (+) button opens its menu out of itself (`r2-vibes-menu-fab`, `galleries-dribbble-grow-sheet`).
+- Buttons with states (Save → Saved, Syncing): the label blurs across and the pill resizes (`code-motion-multi-state-badge`), with progress filling inside it (`code-mv-progress-button`, `own-23-download-pill`).
+- The one main button (Start): a soft glow that drifts, blooming on tap (`own-06-read-button-bloom`).
+- Swipe a row for actions (`own-13-swipe-actions`); slide to unlock for a deliberate step (`web-tiimo-slide-unlock`).
+- Coach visuals reference: the orb on a dusk sky (`r2-wabi-glass-sphere-dusk-sky`).
+
 ### Ideas Omar approved from the motion library (2 Nov 2026, his words)
 The idea, not the reference's look.
 - **The screen's glow changes colour with the state, and the number flips at the same moment** (`60fps-ultrahuman-score-colour-shift`). Colour by type of day (training, rest, wrestling), never as a judgment score.
