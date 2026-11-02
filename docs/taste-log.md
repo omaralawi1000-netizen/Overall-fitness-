@@ -7,7 +7,12 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 - **After every test, prototype or rejection:** add a dated entry. His words go in quotes. Our reading of them is marked "Reading".
 - **Rounds alternate:** a wide search (Sonnet), then one small polished slice (Opus).
 
-## What it suggests now (2 Nov 2026, after the taste test)
+## What it suggests now (2 Nov 2026, after he named his motion language)
+- **He has a language now, in his own words: physical and continuous.** Numbers with weight, things that transform, big decisions made with the hand, colour inside controls, a quiet Coach, calm screens with one big number. Build from that, not from the older map.
+- **Atmosphere is out as a signature.** Skies and room-filling light were "maybe" twice and then dropped. The glow stays as background, not as the event.
+- **Show him one finished moment, not more options.** Next: one small polished slice (the workout) in this language, then one change per round.
+
+## What it suggested before (2 Nov 2026, after the taste test)
 - **Pictures can't decide most of it.** 8 of 11 pairs got "neither". Several of his notes say "it depends" more than "no": themes, a day that "can change dynamically based on me", rest "could be good, but also, vice versa". Settle these by feeling them on his phone, inside a real moment, not with another A/B of stills.
 - **Firm so far:** italic serif names, and the Coach showing up as light that fills the screen (he'd still explore). Data you can feel (water that tilts) is a yes for later, for hydration.
 - **Treat as open, not as noes:** rest, tick, finish, the big number, logging. The rejections there are of those two versions. Several look like execution (Heat's flat colour field, a reading app's bloom out of context), not the idea, because he hearted similar ideas in the motion library.
@@ -16,6 +21,12 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 - **After the Pick list (2 Nov):** he picks mechanics he can picture using (trays, rolling digits, card to page, records as objects) and leaves atmosphere (skies, light floods) at "maybe". Prove atmosphere inside a real moment before building on it.
 
 ## Entries
+
+### 2 Nov 2026: his motion language, from the 48 picks
+His words: "My narrowing in the Motion Library ("picks3", 48 kept) is my real taste. Note what I DROPPED: every sky/time item and almost every whole-room colour flood. Round 3 leaned on skies, and I only hearted 2 of 32. So drop "time is a sky" and "light owns the room" as signatures."
+"My language, from what I kept: physical and continuous. (1) Numbers have weight (rolls, counters, dials). (2) Things transform instead of being replaced (trays, unfolding approvals, cards to pages, controls turning into choices). (3) Big decisions are committed with the hand (hold, slide, toggle); one tap still ticks a set. (4) Colour lives in controls and follows their value, not flooding the room. (5) The Coach is quiet (a dot, an ask bar that becomes the conversation). (6) Calm hero screens with one big number (Oura, MacroFactor, Copilot)."
+Reward: he wrote "ONE reward style: [medal that flips and catches the light / an object you crack open]" without choosing. We use the medal flip, provisionally. On the Opal crack: "That's actually fun … We can implement that in another way. The badges or medals or something else." It's kept for rare milestones.
+Reading: this is his first taste statement written as rules rather than reactions. It overrides the motion map in `keepers.md` where they disagree.
 
 ### 2 Nov 2026: the Coach clips
 His words: "I haven't ticked many of them. It's because I'm still a little confused about those, like what they do, or maybe I can do a combination or anything, I don't know."

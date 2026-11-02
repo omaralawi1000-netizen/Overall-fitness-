@@ -197,7 +197,33 @@ can really do on Android and iPhone. Nothing built.
   games and OS motion: 51 more clips (Round 2 tab on the same page). Today-through-the-day gap now covered (sky scrubbers);
   next set and undo still only partly.
 
+## Session 10: one polished workout slice (2 Nov 2026)
+Omar named his motion language (physical and continuous, six rules; in `docs/keepers.md` and `docs/taste-log.md`).
+Build plan, one screen, prototype only (`site/_prototypes/slice/`, live at /_prototypes/slice/, no storage):
+- **Room:** near-black, one soft warm glow drawn dithered, clear glass card, italic serif names (Newsreader), thin
+  sans numbers (Geist), orange only on the thing to tap. Layout new: one lit card in the middle, done sets stack above
+  it as slim rows, next sets wait below. No table grid like old Aven.
+- **Tick (one tap):** the button swells under the thumb (`r2-apple-glass-toggle`), an orange pearl fills it and settles
+  into a check (`60fps-not-boring-hold-to-tick`).
+- **Next set (transform, not replace):** the done set's numbers fly up and become a slim row; the next set's row rises
+  into the card (`r2-tick-games-google-setup-steps`, `r2-eimi-card-sheet-to-list`).
+- **Numbers with weight:** weight and reps steppers roll only the changed digit (`60fps-push-rep-digit-roll`,
+  `r2n-runmo-days-stepper`, `code-numberflow-shuffle`); the rest countdown rolls each second.
+- **Rest:** the tick button grows a ring that fills over the rest; its colour moves from cool to orange as time runs
+  out (`60fps-apple-effort-slider-colour`, `r2n-outsiders-sleep-goal-colour`). No full-screen flood. Tapping it any
+  time ticks the next set; "Skip" ends rest.
+- **New record, once:** the room dims, a metal medal flips in and a light runs over its face as it settles
+  (`r2-tick-games-apple-badge-flip`, `r2-tick-games-anydistance-medal`), then shrinks into the set's row.
+- **Coach:** a quiet dot; tapping it unfolds one line and folds back.
+- Motion: compositor only (transform, opacity), springs from `site/round/motion.js`.
+
+- Built and live at /_prototypes/slice/ (no storage). Judges, one round (Sonnet): design 7/10, motion 6/10. Fixed after:
+  the summary hiding the record, faint small text, thumb-size steppers, a clearer medal in the row, "tap when done"
+  on the rest disc, plain copy, and the motion bugs (Coach line vanishing on reopen, tray and medal restarting from
+  zero when interrupted, a dim-layer flash, rows jumping back, the rest ring snapping empty, interrupted digit rolls).
+- Needs phone: smoothness of the ring under the glass card at 120 Hz, the medal flip edges, tick feel and haptics, banding.
+
 ## Next step
-Omar's hearts are all in docs/keepers.md, and "Motion map" there assigns them to moments across the app. He doesn't
-want to pick one per job in the abstract. Next design round: build the prototype from the keepers, using the motion map
-for its moments, and let him react on his phone. Recipe: docs/research/taste-2026-11-01.md.
+Omar tries /_prototypes/slice/ on his phone and answers "Is this better than anything so far?" plus the one thing that
+bugs him most. Log it in docs/taste-log.md, then change one design thing per round (bugs and jank freely). Two yeses
+in a row: propose writing DESIGN.md.
