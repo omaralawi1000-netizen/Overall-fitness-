@@ -36,6 +36,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 Base: https://omaralawi1000-netizen.github.io/Overall-fitness-/
 - `/_prototypes/workout/` (`site/_prototypes/workout/`): the workout screen where the picture is this set's equipment, drawn live in 3D (the bar with the exact plates, dumbbells, or a cable stack with the pin), sharp on top and blurring into the colour field under the numbers; the depth sits one tap away. `thumbs.html` redraws the small pictures in `thumbs/`.
 - `/_prototypes/heat/` (`site/_prototypes/heat/`): one workout screen in the Heat look with frosted glass and six colour themes; every moment is built from a hearted clip, and the depth (Coach, last time, all sets, whole workout, the exercise page) sits one tap away. `/_prototypes/slice/` and `/_prototypes/premium/` are the earlier workout prototypes; the rejected frost round (`/_prototypes/frost/`) stays only because `/_prototypes/today/` uses its files; the wide round is in Git history.
+- `/_prototypes/blind-c/` (`site/_prototypes/blind-c/`): "Sand", a blind workout screen (2 Nov): every number is poured from lit sand grains in WebGL2, the rest countdown drains into today's strata, a record turns gold and does a medal turn. `?rest=8` shortens rests, `?lang=da` is Danish.
 - `/round/` (`site/round/`): the final design round: Day line, Rooms and the Ordinary control.
 - `/looks/` (`site/looks/`): three clickable looks, Ink, Ink rich, Heat (history: superseded by /round/).
 - `/concepts/` (`site/concepts/`): the concept prototypes.
