@@ -51,9 +51,17 @@ Tests live in `tests/engine/`. "untested" is said plainly.
 | Missing is never zero (food nutrients, watch numbers) | `backup-import` (import), model types | tested on import; sums come with the Food phase |
 | A logged day isn't assumed complete | `dayNote.foodComplete` in the model | shape only: averages come with the Food phase |
 | Exercise variations are separate exercises | catalogue keeps one id per variation | shape only: records and plateaus come with the Workout phase |
+| The parser never guesses: unsure means ask or ignore; talk logs nothing | `parse/router`, `parse/properties` (1000 random talk phrases), `parse/examples` (docs/parser-examples.md, every row) | tested |
+| A "no" inside a phrase is a correction ("80… no, 60" is 60); a lone "no" asks; only "undo"/"fortryd" undoes | `parse/set`, `parse/properties` (undo never comes from anything else) | tested |
+| A bare number against reps and kilos ("8 at 80, no 85") asks with both readings | `parse/set`, `parse/properties` | tested |
+| Pounds are kept as said and stored as kilos | `parse/set`, `parse/workout`, `parse/food` (bodyweight), `parse/properties` | tested |
+| Water and body weight need their own word; a number that cannot be a body or a drink asks | `parse/food` | tested |
+| Food needs an amount said out loud; unread pieces are listed, never dropped | `parse/food`, `parse/router` | tested |
+| A misheard digit is fixed only for the slips speech makes (18↔80, 8↔80, 800↔80) | `parse/set` (ported) | tested |
+| Reading a phrase saves nothing | `e2e` phrase box ("nothing was saved by reading") | tested in Chromium |
 | Memory cards (scope, valid-from/until, last-seen) and the Coach ladder | model types, import of old memory notes | shape only: used in the Coach phase |
 
-## Test inventory (78 tests)
+## Test inventory (262 tests: 82 engine, 180 parser)
 Fewer tests than rules looks thin, but each property test runs 25 to 200 random cases, so the real count of checked cases is in the thousands.
 
 **Property tests (12):**
@@ -70,12 +78,14 @@ Fewer tests than rules looks thin, but each property test runs 25 to 200 random 
 - `core.test.ts` "elapsed excludes paused time" (`workout`).
 - `beta.test.ts`: its rules (writes only `beta:` keys, copies only `aven…` keys, deletes only its own) are replayed with old Beta's real code next to `a2` data, in 2 tests (`isolation`).
 - `behaviour2.test.ts` "a hand-edited backup never crashes" becomes the import property test above.
-- E1b ports: listed in `old-logic-map.md`.
+- E1b ports (`tests/parse/`): old `handsfree` (set reading, `guardSet`), `corrections` and `fixMisheard`, `foodText` quantities (`rowQuantity`, density, the "corn cake" placeholder portion) and `workoutText` (`bench press 80 kilos for 8, 8 and 6`, `squat 100 x 5 x 3`, plank and run). One expectation changed on purpose: a bare "no" is no longer Undo, it asks.
+
+**E1b property tests (11, in `parse/properties`):** never crashes on any text; case and spaces do not matter; ordinary words never log; undo only from undo words; reps-at-weight reads back exactly; pounds convert; a whole second set replaces the first; a named weight or rep count changes only itself; a bare number asks with two different readings; grams, decimal commas and water read back exactly; no amount, no food row.
 
 **Still untested:** see below.
 
 ## Browser check (real Chromium, made-up data)
-`node --experimental-strip-types tests/e2e/engine-page.mjs [url]` runs 25 checks on the `/engine/` page (default: the live page) in fresh browser profiles:
+`node --experimental-strip-types tests/e2e/engine-page.mjs [url]` runs 39 checks on the `/engine/` page (default: the live page) in fresh browser profiles:
 - Import from old Aven, then reload: the workout and food are listed, old Aven is unchanged, and importing again adds nothing.
 - Export, delete everything, then restore with a preview; an edited file is refused.
 - A double tap on Tick ticks once.
@@ -83,6 +93,7 @@ Fewer tests than rules looks thin, but each property test runs 25 to 200 random 
 - Undo survives a reload.
 - Two tabs both save and both show each other's ticks.
 - The browser killed with SIGKILL in the middle of an import leaves all or nothing, never half (8 runs).
+- The phrase box reads sets, corrections, asks, water, weight, food and exercises, ignores talk, honours "a workout is open", and saves nothing.
 
 Run it after every page or engine change, and again against the live page after the deploy. Omar is asked only for what needs his own phone or his own file.
 
@@ -92,6 +103,7 @@ Run it after every page or engine change, and again against the live page after 
 - Old Aven's real backup format was tested with a made-up file built from its types; Omar's own file is the real test.
 
 ## Done
+- E1b (2 Nov): `src/engine/parse/` (set, food, workout, body, router, `show()`), `docs/parser-examples.md` checked by a test, the phrase box on `/engine/`.
 - Step 0 (2 Nov): `old-logic-map.md`.
 - E1a-1 (2 Nov): `DATA-MODEL.md`, `src/engine/` model, plan (pure action logic), engine (IndexedDB, action log, Undo), workout and timers, isolation tests.
 - E1a-2 (2 Nov): backup, restore, migrations, import from old Aven, exercise catalogue ported.
@@ -100,5 +112,33 @@ Run it after every page or engine change, and again against the live page after 
 - Codex review of PR #44 (2 Nov, after the merge): 4 real findings, all reproduced by a failing test, then fixed: undoing a creation now stops if a field was added since; Undo never makes a stale summary look fresh; a repeated tap after a newer change shows the database; replace also removes records another tab just added. Codex's look at #45 found a 5th: Undo also restored an old `stale` value when the change touched other fields too; fixed the same way. Its look at that fix found a 6th (#45 was merged before that look finished, against this rule): undoing a recount left the old value looking fresh; now it comes back stale (#46). Three staleness bugs in a row meant the design was wrong: a stored `stale` flag that Undo had to treat specially. Redesigned in #46: staleness is worked out from the stamps of the facts (`derived.ts`; a stamp is the id of the write that made a state, unique across phones) and never stored, so Undo needs no special case; a property test checks random edit/delete/Undo/recount runs. Codex's review of the redesign found 3 more edge cases (a shared ancestor read as a loop, older derived records, equal revision numbers on two phones), all fixed with tests; revision counters were replaced by stamps for that. Plus 5 property tests and 1 ported test (77 tests).
 
 ## Next step
+E1b is built (parser, `docs/parser-examples.md`, phrase box); it waits on Codex's review, then merge and a check of the live page. Then propose E2 to Omar. The old note follows.
+
 E1a is finished and Omar has tried it on his phone (2 Nov): everything worked. E1b waits for Omar to say "go E1b" and to switch to **Sonnet**.
 It covers the parser and `docs/parser-examples.md` (not written yet), then a phrase box on `/engine/`. Start from `old-logic-map.md` "Port now" E1b rows and the self-correction rule in `SPEC.md` (contradiction 3).
+
+Codex's first look at #51 (7 findings, all reproduced by a failing test, then fixed): "80 x 8" no longer picks reps or weight (asks; a unit settles it); an "undo" inside a correction no longer undoes; fractional reps refused in the two labelled forms; "80 for 8 and 60 for 10" is no longer read as 60 reps; "plank 1 minute" and "run 1 mile" no longer match the prefix "mi"; "extension" keeps its x; a named unit ("2 cups") with no matching portion is no longer swapped for another portion.
+
+Codex's second look at #51 (4 findings, all reproduced, then fixed): the rep-list pattern could take seconds on a long digit string (a pasted number could freeze the phrase box; now separators are required, phrases over 300 characters are ignored, and a timing property test covers it); `skyr,60g oats` without a space after the comma is split; a portion that stands for several items ("2 slices (50 g)") counts per item; "1/2 cup" is 120 ml, not 480.
+
+Codex's third look at #51 (2 findings, reproduced, fixed): plural units ("2 teaspoons", "tablespoons") now keep their volume; a food measured in ml is weighed like a liquid, never with a dry ingredient's density ("100 g oat milk" is not oats).
+
+Codex's fourth look at #51 (4 new findings; a 5th, plural units, was already fixed in the commit before): number words stay in exercise names ("One-arm Dumbbell Row") and are digits only where they are a quantity; a full stop at the end no longer hides the meal word; "jeg vejer 82,5 kg" works.
+
+Codex's fifth look at #51 (2 findings, reproduced, fixed): reps are only auto-corrected when a usual rep count is known ("80 reps" with nothing to go by is asked about, not turned into 8); "80 kilograms" is matched whole in workout phrases.
+
+Codex's sixth look at #51 (2 new findings; the reps one was already fixed in 5755c40): "twenty five" is one number in workout phrases; ".5 km" keeps its decimal point instead of becoming 5 km.
+
+Codex's seventh look at #51 (2 findings, reproduced, fixed): "1 1/2 cups" is one quantity (and a second quantity left in a food name is handed back unread); a rep count is auto-corrected only when the fix lands within 10 % of the usual reps (the same limit as weight).
+
+Codex's eighth look at #51 (2 findings, reproduced, fixed): "half a glass of water" is water; a mixed fraction in a portion label ("1 1/2 cups") is one quantity.
+
+Codex's ninth look at #51 (2 findings, reproduced, fixed): "80 for 8, 8 and 6 reps" keeps its closing rep label; "200 grams skyr 60 grams oats" (no separator) is handed back unread instead of one food named "skyr 60 grams oats".
+
+Codex's tenth look at #51 (2 findings, reproduced, fixed): "eighty two kg" and "eighty two ml water" are read; a Danish portion label ("1 skive", "1 dåse") matches the counted word.
+
+Codex's eleventh look at #51 (2 findings, reproduced, fixed): "80x8" and "8 x80" are as ambiguous as "80 x 8" (asked, not chosen); all the teens are number words in workout phrases.
+
+Codex's twelfth look at #51 (1 finding, reproduced, fixed): spoken compound numbers in food rows ("two hundred grams oats", "to hundrede gram havregryn") are one quantity, not a count of 2; "two thousand grams" is refused and listed as unread. Also fixed a flaky property test ("5 at 5, no 5" has one reading, so there is nothing to choose).
+
+Codex's thirteenth look at #51 (1 new finding, fixed; the other was already covered by the twelfth fix and now has a test): a counted unit in a portion label matches whole words only, so "2 cans" no longer lands on "1 cup canned tomatoes" and asks for grams instead.

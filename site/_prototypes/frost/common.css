@@ -1,0 +1,79 @@
+/* Frost round: shared tokens. Heat's DNA (one hot light from below, Unbounded numbers, a cream pill) in six themes,
+   with much more frost: every pane is live blur plus a white veil and a fine grain, over something bright enough
+   to be blurred. */
+@font-face { font-family: 'Unbounded'; font-weight: 200 900; font-display: block; src: url(../../round/fonts/unbounded.woff2) format('woff2'); }
+@font-face { font-family: 'Archivo'; font-weight: 100 900; font-display: block; src: url(../../round/fonts/archivo.woff2) format('woff2'); }
+@font-face { font-family: 'Newsreader'; font-style: italic; font-weight: 200 800; font-display: block; src: url(../slice/fonts/newsreader-italic.woff2) format('woff2'); }
+
+/* Registered so a theme or phase change glides instead of snapping. */
+@property --bg { syntax: '<color>'; inherits: true; initial-value: #0E0604; }
+@property --g1 { syntax: '<color>'; inherits: true; initial-value: #FF4816; }
+@property --g2 { syntax: '<color>'; inherits: true; initial-value: #FFAC3C; }
+@property --g3 { syntax: '<color>'; inherits: true; initial-value: #96200A; }
+@property --hot { syntax: '<color>'; inherits: true; initial-value: #FFECC8; }
+
+:root {
+  /* Heat (default). w = work light, r = rest light. */
+  --w1: #FF4816; --w2: #FFAC3C; --w3: #96200A; --wh: #FFECC8;
+  --r1: #0A9486; --r2: #6EECCE; --r3: #083A4C; --rh: #E2FFF6;
+  --base: #0E0604; --ink: #FFF4EC; --gold: #FFD27A; --solid-ink: #1C0A04;
+  --soft: color-mix(in srgb, var(--ink) 74%, transparent);
+  --dim: color-mix(in srgb, var(--ink) 56%, transparent);
+  --line: color-mix(in srgb, var(--ink) 16%, transparent);
+  --bg: var(--base); --g1: var(--w1); --g2: var(--w2); --g3: var(--w3); --hot: var(--wh);
+  transition: --bg 1.1s ease, --g1 1.1s ease, --g2 1.1s ease, --g3 1.1s ease, --hot 1.1s ease;
+}
+:root[data-phase='rest'] { --g1: var(--r1); --g2: var(--r2); --g3: var(--r3); --hot: var(--rh); }
+:root[data-phase='record'] { --g1: #E07A12; --g2: var(--gold); --hot: #FFF6DA; }
+:root[data-theme='glacier'] { --w1: #2F6BFF; --w2: #7FD3FF; --w3: #1B1F6B; --wh: #EAFBFF; --r1: #7A3CFF; --r2: #C9A8FF; --r3: #20104A; --rh: #F3EAFF; --base: #03060E; --ink: #F2F8FF; --solid-ink: #06112A; }
+:root[data-theme='volt'] { --w1: #2FA51A; --w2: #C8FF3A; --w3: #0E4A2A; --wh: #F6FFD8; --r1: #0E7A9C; --r2: #6FE3FF; --r3: #062A3A; --rh: #E6FBFF; --base: #040703; --ink: #F4FFE6; --solid-ink: #0D1A04; }
+:root[data-theme='violet'] { --w1: #8A2BFF; --w2: #FF4FD8; --w3: #2A0A6E; --wh: #FFE3FA; --r1: #1E46FF; --r2: #7FB8FF; --r3: #0A1450; --rh: #E8F1FF; --base: #07030E; --ink: #FBF2FF; --solid-ink: #1A0630; }
+:root[data-theme='rose'] { --w1: #FF3D63; --w2: #FFB38A; --w3: #5A1030; --wh: #FFF0E6; --r1: #6B4DFF; --r2: #C7B8FF; --r3: #1E124A; --rh: #F1ECFF; --base: #120508; --ink: #FFF3EE; --solid-ink: #2A0812; }
+:root[data-theme='chrome'] { --w1: #5E6672; --w2: #DCE3EC; --w3: #22262E; --wh: #FFFFFF; --r1: #2F5A70; --r2: #A8D8EA; --r3: #0E1C26; --rh: #F0FAFF; --base: #07080A; --ink: #F5F7FA; --solid-ink: #0B0D10; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+body { background: var(--bg); color: var(--ink); font: 17px/1.35 'Archivo', system-ui, sans-serif; -webkit-font-smoothing: antialiased; -webkit-text-size-adjust: 100%; user-select: none; -webkit-user-select: none; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+[hidden] { display: none !important; }
+.num { font-family: 'Unbounded', sans-serif; font-variant-numeric: tabular-nums; letter-spacing: -0.03em; }
+.serif { font-family: 'Newsreader', Georgia, serif; font-style: italic; font-weight: 400; letter-spacing: -0.01em; }
+.cap { font-family: 'Unbounded', sans-serif; font-size: 11px; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--dim); }
+
+/* The light: Heat's field, recoloured by the theme. Grain on top so the soft falloff never rings. */
+.light { position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: clip;
+  background:
+    radial-gradient(60% 34% at 50% 104%, var(--hot) 0%, transparent 70%),
+    radial-gradient(90% 56% at 50% 92%, var(--g2) 0%, transparent 72%),
+    radial-gradient(130% 80% at 50% 88%, var(--g1) 0%, transparent 74%),
+    radial-gradient(70% 40% at 8% 0%, var(--g3) 0%, transparent 80%),
+    var(--bg); }
+.grain { position: fixed; inset: 0; z-index: 50; pointer-events: none; background-image: var(--grain); background-size: 128px; opacity: 0.5; }
+
+/* The frost. Heavier than Heat's: more blur, a white veil, a lit top edge, grain inside the pane. */
+.frost { position: relative; isolation: isolate; }
+.frost::before { content: ''; position: absolute; inset: 0; z-index: -1; border-radius: inherit; pointer-events: none;
+  background: color-mix(in srgb, var(--ink) var(--veil, 10%), transparent) var(--grain); background-size: 128px;
+  -webkit-backdrop-filter: blur(var(--blur, 34px)) saturate(1.7); backdrop-filter: blur(var(--blur, 34px)) saturate(1.7);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 45%, transparent), inset 0 0 0 0.5px color-mix(in srgb, #fff 22%, transparent), 0 40px 80px -36px rgb(0 0 0 / 0.7); }
+
+/* The one thing to tap: Heat's cream pill. */
+.go { position: relative; display: flex; align-items: center; justify-content: space-between; width: 100%; height: 76px; padding: 0 28px; border-radius: 38px;
+  background: var(--ink); color: var(--solid-ink); font-family: 'Unbounded', sans-serif; font-size: 18px; font-weight: 700; letter-spacing: 0.02em; text-transform: uppercase;
+  box-shadow: 0 24px 50px -20px rgb(0 0 0 / 0.6); }
+.go small { font-family: 'Archivo', sans-serif; font-size: 16px; font-weight: 600; text-transform: none; letter-spacing: 0; opacity: 0.7; }
+.go.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--ink) 50%, transparent); }
+.down { transition: none !important; }
+
+/* Rolling digits: one clipped column per character, only changed characters roll. */
+.roll { display: inline-flex; }
+.roll .c { position: relative; display: inline-block; overflow: clip; overflow-clip-margin: 0.08em; }
+.roll .d { display: inline-block; }
+.roll .d.out { position: absolute; left: 0; top: 0; }
+
+.medal-flash { position: fixed; inset: 0; z-index: 40; pointer-events: none; opacity: 0;
+  background: radial-gradient(60% 40% at 50% 60%, color-mix(in srgb, var(--gold) 70%, transparent), transparent 70%); }
+
+@media (prefers-reduced-motion: reduce) { :root { transition: none; } }
+:root[data-idle] *, :root[data-idle] *::before, :root[data-idle] *::after { animation-play-state: paused !important; }

@@ -14,7 +14,8 @@ Read this first to find anything. Then open only the file for the topic you're w
 - `docs/engine/SPEC.md`: the engine spec, its review and decisions. `docs/engine/PROGRESS.md`: plan, rule → test table, next step.
 - `docs/engine/DATA-MODEL.md`: the data model in plain words. `docs/engine/old-logic-map.md`: every old-Aven module, port or drop.
 - Code `src/engine/`, debug page `src/debug/` (live at `/engine/`), tests `tests/engine/`. `npm run verify` checks all.
-- Browser check: `tests/e2e/engine-page.mjs` (25 checks in real Chromium; see `docs/engine/PROGRESS.md`).
+- `docs/parser-examples.md`: what the instant parser reads, row by row (checked by a test). Code `src/engine/parse/`, tests `tests/parse/`.
+- Browser check: `tests/e2e/engine-page.mjs` (39 checks in real Chromium; see `docs/engine/PROGRESS.md`).
 
 ## Design
 - `docs/inspiration/notes.md`: what Omar likes. `docs/inspiration/web-references.md`: his web links. The numbered images are screenshots.
@@ -33,7 +34,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 
 ## Live pages (`site/`, published by `.github/workflows/pages.yml`)
 Base: https://omaralawi1000-netizen.github.io/Overall-fitness-/
-- `/_prototypes/heat/` (`site/_prototypes/heat/`): one workout screen in the Heat look with frosted glass and six colour themes; every moment is built from a hearted clip, and the depth (Coach, last time, all sets, whole workout, the exercise page) sits one tap away. `/_prototypes/slice/` and `/_prototypes/premium/` are the earlier workout prototypes; the rejected frost and wide rounds are in Git history.
+- `/_prototypes/heat/` (`site/_prototypes/heat/`): one workout screen in the Heat look with frosted glass and six colour themes; every moment is built from a hearted clip, and the depth (Coach, last time, all sets, whole workout, the exercise page) sits one tap away. `/_prototypes/slice/` and `/_prototypes/premium/` are the earlier workout prototypes; the rejected frost round (`/_prototypes/frost/`) stays only because `/_prototypes/today/` uses its files; the wide round is in Git history.
 - `/round/` (`site/round/`): the final design round: Day line, Rooms and the Ordinary control.
 - `/looks/` (`site/looks/`): three clickable looks, Ink, Ink rich, Heat (history: superseded by /round/).
 - `/concepts/` (`site/concepts/`): the concept prototypes.

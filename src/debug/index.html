@@ -25,6 +25,12 @@
   <div id="status" class="muted"></div>
   <div id="fail"></div>
   <section><h2>Saved in Aven 2</h2><div id="saved"></div></section>
+  <section><h2>Phrase box (type or dictate)</h2>
+    <p class="muted">Reads the phrase and shows what it understood. Nothing is saved. On a phone, tap the microphone on the keyboard.</p>
+    <div class="row"><input id="phrase" type="text" placeholder="8 at 80   ·   500 ml water   ·   I weigh 82,5" autocomplete="off" autocapitalize="off" spellcheck="false" style="flex:1;min-width:200px"><button id="phraseClear">Clear</button></div>
+    <label class="muted"><input type="checkbox" id="phraseOpen" checked style="min-height:0"> a workout is open</label>
+    <div id="phraseOut" aria-live="polite"></div>
+  </section>
   <section><h2>Workout</h2><div id="workout"></div></section>
   <section><h2>History (newest first)</h2><div id="history"></div></section>
   <section><h2>Backup</h2>

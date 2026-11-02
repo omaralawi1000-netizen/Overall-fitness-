@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Fluted</title>
+<link rel="stylesheet" href="common.css">
+<style>
+/* Fluted: one tall pane of reeded glass with a hot sun behind it. The ribs split the sun into bars of light.
+   During rest the sun rolls across the ribs from left to right, so you watch the time pass through the glass. */
+.ui { position: fixed; inset: 0; z-index: 2; display: flex; flex-direction: column; padding: calc(env(safe-area-inset-top) + 14px) 12px 22px; }
+.top { display: flex; justify-content: space-between; padding: 4px 8px 0; }
+.pane { position: relative; margin-top: 12px; flex: 1; border-radius: 36px; overflow: clip; isolation: isolate; }
+.sun { position: absolute; z-index: -2; top: 50%; left: 50%; width: 300px; height: 300px; margin: -150px 0 0 -150px; border-radius: 50%; will-change: transform;
+  background: radial-gradient(closest-side, var(--hot) 0%, var(--g2) 38%, var(--g1) 72%, color-mix(in srgb, var(--g1) 0%, transparent) 100%); transition: --g1 1s; }
+.rec .sun { background: radial-gradient(closest-side, #FFF6DA 0%, var(--gold) 40%, #E08A1E 74%, transparent 100%); }
+.ribs { position: absolute; inset: 0; z-index: -1; border-radius: inherit;
+  background:
+    repeating-linear-gradient(90deg, rgb(255 255 255 / .2) 0 1px, rgb(255 255 255 / .07) 2px, rgb(255 255 255 / 0) 9px, rgb(0 0 0 / .14) 19px, rgb(0 0 0 / .22) 23px, rgb(255 255 255 / .12) 24px),
+    color-mix(in srgb, var(--ink) 6%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.7); backdrop-filter: blur(16px) saturate(1.7);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / .45), inset 0 0 0 .5px rgb(255 255 255 / .25); }
+.ribs::after { content: ''; position: absolute; inset: 0; background: var(--grain); background-size: 128px; border-radius: inherit; }
+.face { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 22px 22px 20px; }
+.name { font-size: 34px; line-height: 1; }
+.last { color: var(--soft); font-size: 14px; margin-top: 6px; }
+.last .num { font-size: 12px; }
+.mid { margin: auto 0; display: grid; justify-items: center; text-shadow: 0 2px 24px rgb(0 0 0 / .25); }
+.w { font-size: 120px; font-weight: 700; line-height: 1; letter-spacing: -0.05em; }
+.unit { display: flex; gap: 14px; align-items: baseline; margin-top: 6px; }
+.r { font-size: 46px; font-weight: 600; }
+.unit small { font-size: 16px; color: var(--soft); font-weight: 600; }
+.t { font-size: 110px; font-weight: 700; line-height: 1; letter-spacing: -0.05em; }
+.restline { color: var(--soft); margin-top: 8px; }
+.restline b { color: var(--ink); font-weight: 600; }
+.recline { font-size: 24px; color: var(--gold); margin-top: 6px; }
+.sets { display: flex; gap: 8px; margin: 14px 0; }
+.sets li { list-style: none; flex: 1; height: 46px; border-radius: 23px; display: grid; place-items: center; font-size: 13px; font-weight: 600; color: var(--dim); --veil: 6%; --blur: 20px; }
+.sets li.done { color: var(--ink); --veil: 18%; }
+.sets li.cur { color: var(--ink); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.sets li.rec { color: var(--gold); box-shadow: inset 0 0 0 1.5px var(--gold); }
+.acts { display: flex; gap: 10px; }
+.acts .go.ghost { width: auto; padding: 0 22px; font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="light"></div>
+<main class="ui">
+  <div class="top"><span class="cap">Push · 41 min</span><span class="cap setof"></span></div>
+  <div class="pane">
+    <i class="sun" aria-hidden="true"></i>
+    <i class="ribs" aria-hidden="true"></i>
+    <div class="face">
+      <h1 class="name serif">Bench press</h1>
+      <p class="last">Last time <span class="num">82.5 × 5</span> · best <span class="num">82.5 × 6</span></p>
+      <div class="mid work"><div class="w num"></div><div class="unit"><small>kg</small><span class="r num"></span><small>reps</small></div></div>
+      <div class="mid rest" hidden aria-live="polite"><div class="t num">1:30</div><p class="recline serif" hidden>New record</p><p class="restline">Next <b class="num nx"></b></p></div>
+    </div>
+  </div>
+  <ol class="sets"></ol>
+  <div class="acts">
+    <button type="button" class="go" data-a="tick"><span>Done</span><small class="gl"></small></button>
+    <button type="button" class="go ghost" data-a="undo" hidden>Undo</button>
+    <button type="button" class="go" data-a="skip" hidden><span>Go</span><small>skip rest</small></button>
+  </div>
+</main>
+<div class="medal-flash"></div>
+<div class="grain"></div>
+<script type="module">
+import { session, roll, press, play, SPRINGS, fmtKg, mmss, $, REST } from './common.js';
+const sun = $('.sun'), work = $('.work'), rest = $('.rest'), sets = $('.sets');
+let drift = null;
+const label = (p) => `${fmtKg(p.kg)}×${p.r}`;
+function drawSets(s) {
+  sets.innerHTML = s.plan.map((p, i) => {
+    const done = i < s.cur || (i === s.cur && s.phase === 'rest');
+    return `<li class="frost num ${done ? 'done' : i === s.cur ? 'cur' : ''} ${done && s.record && i === s.cur ? 'rec' : ''}">${label(p)}</li>`;
+  }).join('');
+}
+function face(s, dir) {
+  const p = s.plan[s.cur];
+  roll($('.w'), fmtKg(p.kg), dir); roll($('.r'), p.r, dir);
+  $('.setof').textContent = `Set ${s.cur + 1} / ${s.plan.length}`;
+  $('.gl').textContent = `Set ${s.cur + 1} of ${s.plan.length}`;
+}
+const btns = (ph) => { $('[data-a=tick]').hidden = ph !== 'set'; $('[data-a=undo]').hidden = $('[data-a=skip]').hidden = ph !== 'rest'; };
+function home() {
+  // The sun comes back to the middle from wherever it is, on a spring.
+  const m = getComputedStyle(sun).transform;
+  sun.getAnimations().forEach((a) => a.cancel()); drift = null;
+  play(sun, [{ transform: m === 'none' ? 'none' : m }, { transform: 'none' }], SPRINGS.lift);
+}
+const api = session({
+  render(s) { sun.getAnimations().forEach((a) => a.cancel()); document.body.classList.remove('rec'); face(s, 0); drawSets(s); work.hidden = false; rest.hidden = true; btns('set'); },
+  tick(s) {
+    drawSets(s); btns('rest'); this.second(s);
+    const n = s.plan[s.cur + 1];
+    $('.nx').textContent = n ? `${fmtKg(n.kg)} × ${n.r}` : 'Incline dumbbell';
+    $('.recline').hidden = !s.record;
+    document.body.classList.toggle('rec', s.record);
+    // The tap pulses the sun, then it rolls to the left edge and starts its slow trip across the ribs.
+    const W = innerWidth;
+    play(sun, [{ transform: 'scale(1)' }, { transform: 'scale(1.18)', offset: 0.3 }, { transform: `translateX(${-W * 0.5}px) scale(${s.record ? 1.1 : 0.82})` }], { damping: 1, response: 0.9 }, { fill: 'forwards' })
+      .finished.then(() => {
+        if (s.phase !== 'rest') return;
+        drift = sun.animate([{ transform: `translateX(${-W * 0.5}px) scale(${s.record ? 1.1 : 0.82})` }, { transform: `translateX(${W * 0.5}px) scale(0.82)` }], { duration: Math.max(1000, s.left * 1000), easing: 'linear', fill: 'forwards' });
+      }, () => {});
+    work.hidden = true; rest.hidden = false;
+    play(rest, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set);
+    if (s.record) play($('.medal-flash'), [{ opacity: 0 }, { opacity: 1, offset: 0.25 }, { opacity: 0 }], { damping: 1, response: 1.4 });
+  },
+  second(s) { $('.t').textContent = mmss(s.left); },
+  next(s) {
+    home(); document.body.classList.remove('rec');
+    face(s, 1); drawSets(s); btns('set');
+    rest.hidden = true; work.hidden = false;
+    play(work, [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], SPRINGS.set);
+  },
+  undo(s) { const m = getComputedStyle(sun).transform; this.render(s); play(sun, [{ transform: m }, { transform: 'none' }], SPRINGS.lift); },
+});
+['tick', 'skip', 'undo'].forEach((a) => press($(`[data-a=${a}]`)));
+$('[data-a=tick]').onclick = () => api.tick();
+$('[data-a=skip]').onclick = () => api.next();
+$('[data-a=undo]').onclick = () => api.undo();
+</script>
+</body>
+</html>
