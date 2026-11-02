@@ -7,7 +7,13 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 - **After every test, prototype or rejection:** add a dated entry. His words go in quotes. Our reading of them is marked "Reading".
 - **Rounds alternate:** a wide search (Sonnet), then one small polished slice (Opus).
 
-## What it suggests now (2 Nov 2026, after he named his motion language)
+## What it suggests now (2 Nov 2026, before the wide workout round)
+- **He judges looks fast and moments slowly.** Whole looks get a quick no; single moments get hearts. So this round shows four whole workout screens, each different in layout, and asks per screen what he likes.
+- **Light beat dark, but "plain" is the real enemy.** Daylight beat Volt, yet both were "plain". Richness (light, depth, material) matters more than light vs dark. This round has two light and two dark, so he can say.
+- **A workout screen has to look like a workout.** The premium still read as a Today screen. Each version now answers "what is the weight, how many reps, where am I, what's my record" with gym things (drums, plates, set rows, a keypad), not a hero gauge.
+- **Motion is a keeper, but ours is far from his clips.** Keep it light and only where it can match the clip. Look and layout lead.
+
+## What it suggested before that (2 Nov 2026, after he named his motion language)
 - **He has a language now, in his own words: physical and continuous.** Numbers with weight, things that transform, big decisions made with the hand, colour inside controls, a quiet Coach, calm screens with one big number. Build from that, not from the older map.
 - **Atmosphere is out as a signature.** Skies and room-filling light were "maybe" twice and then dropped. The glow stays as background, not as the event.
 - **Show him one finished moment, not more options.** Next: one small polished slice (the workout) in this language, then one change per round.
@@ -21,6 +27,18 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 - **After the Pick list (2 Nov):** he picks mechanics he can picture using (trays, rolling digits, card to page, records as objects) and leaves atmosphere (skies, light floods) at "maybe". Prove atmosphere inside a real moment before building on it.
 
 ## Entries
+
+### 2 Nov 2026: wide workout round, four layouts (/_prototypes/wide/)
+Ask (Omar): "Can we try to build 3 or 4 different versions? Do you know a little what I like? Just give me something. I can maybe tell you."
+Two corrections while it was being built. On motion: "I think you took animation too seriously. I still see them as very clear, not even beta." Then: "I like the motions. It's just on the clips, they're not even done. … some of them are exceptional, yes."
+Reading: he likes the motion idea and the clips; our prototypes' motion is nowhere near the clips. So look and layout lead this round, and motion stays small (springs, rolling digits, one tick) rather than imitating clips badly.
+Built, one swipe page, same session in all four (Bench press, set 3 of 4), each with Set, Rest, Where, Record:
+1. **Dial** (warm light): weight and reps are two drums you spin; the tick grows into a ring around a clock; title opens the whole workout from the top; record is a gold medal.
+2. **Bar** (night + metal): the screen is the barbell, weight drawn as plates you tap on (plate maths done for you); rest is light running along the bar, with the next set's plates shown as outlines; whole workout is a bottom sheet; record is a lit metal medal.
+3. **Path** (cool mist): the whole workout is one column; finished lifts fold to a line, today's lift is a card with set rows; rest unfolds under the set you just did; record is a gold row and a medal inside the card.
+4. **Keypad** (deep green): logging is typing on a big gym keypad; today's sets against last week's as bars; rest is a tank draining; whole workout is a ribbon that opens into tiles; record is giant digits on a warm field.
+Our honest score: 6.5/10. Weakness: all four are gradients and glass, no real scene or photo depth, so they may still read "plain" against Oura. Blur, grain and banding are unchecked on his phone.
+Verdict: pending. Ask per version what he likes and doesn't; then update `keepers.md` from his words only.
 
 ### 2 Nov 2026: the workout slice (round 2, Volt and Daylight)
 Verdict: no. His words: "I'm just saying, I don't like the design. It feels very plain."

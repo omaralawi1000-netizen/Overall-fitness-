@@ -1,0 +1,20 @@
+/* Aven 2 · wide workout round (2 Nov). Four layouts, one shared kit: fonts, reset, grain, rolling digits. */
+@font-face { font-family: 'Newsreader'; src: url(../slice/fonts/newsreader-italic.woff2) format('woff2'); font-style: italic; font-weight: 200 800; font-display: block; }
+@font-face { font-family: 'Geist'; src: url(../slice/fonts/geist.woff2) format('woff2'); font-weight: 100 900; font-display: block; }
+:root { --sans: 'Geist', system-ui, sans-serif; --serif: 'Newsreader', Georgia, serif; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html { font-family: var(--sans); -webkit-text-size-adjust: 100%; background: var(--page); color: var(--tx); }
+body { height: 100dvh; overflow: hidden; position: relative; user-select: none; -webkit-user-select: none; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; touch-action: manipulation; }
+.stage { position: relative; height: 100dvh; max-width: 480px; margin: 0 auto; overflow: hidden; isolation: isolate; }
+/* grain over every gradient, so the phone's Chrome shows no rings */
+.grain { position: absolute; inset: 0; z-index: 50; pointer-events: none; opacity: .07; mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 1 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>"); }
+.num { font-variant-numeric: tabular-nums; }
+.hide { visibility: hidden; }
+/* rolling digits: each character is a clipped column; a changed character rolls out and the new one rolls in */
+.roll { display: inline-flex; line-height: 1; vertical-align: baseline; }
+.roll .c { position: relative; display: inline-block; overflow: hidden; height: 1.18em; padding-top: .09em; margin-top: -.09em; }
+.roll .c .d { display: block; white-space: pre; line-height: 1; will-change: transform; }
+.roll .c .d.out { position: absolute; left: 0; top: .09em; width: 100%; text-align: center; }
+.roll .c .d.nb { white-space: pre; }
