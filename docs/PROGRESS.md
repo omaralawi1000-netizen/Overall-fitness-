@@ -193,7 +193,6 @@ can really do on Android and iPhone. Nothing built.
 - Notes and links: docs/inspiration/motion-library.md. Clips, frames and stills only in the shared folder (copyright).
 - Phone page with every clip and a ♥ button: https://claude.ai/artifact/5qeq9tDy2qe2fmJsyWVNHg (store collection `loves`).
 - Gaps: no great "next set becomes active", proposal dismiss/undo, or a Today that changes through the day.
-
 - Round 2 (2 Nov): Omar's 36 hearts went into keepers.md. Four more helpers, aimed at what he loved and the gaps, plus
   games and OS motion: 51 more clips (Round 2 tab on the same page). Today-through-the-day gap now covered (sky scrubbers);
   next set and undo still only partly.

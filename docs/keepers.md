@@ -24,4 +24,13 @@ He hearted these on the motion-library page (https://claude.ai/artifact/5qeq9tDy
 - **Reward:** many small taps, then one clean reveal of a glowing object on black (`web-opal-gem-reveal`).
 - **Stills:** Oura's thin number on a photo glow, its serif insight and its "Almost there" (stills 01–03), WHOOP's particle orb (07), Sleep Cycle's glass ring and serif-on-night-sky (18, 19), MacroFactor's smooth trend curve (22), Copilot's answer with a chart inside it (28). Files: `aven2/design-inspiration-2026-11-02/`.
 
-Not hearted, even though they were in my top 3 (a signal, not a no): Gemini's falling-glow listening band, the Apple Watch timer ring, Headspace breathing, the slide-to-approve concept (clip 17), Alma hold-to-commit, Nike's achievement takeover, Ultrahuman's colour shift, ChatGPT's listening orb.
+### Ideas Omar approved from the motion library (2 Nov 2026, his words)
+The idea, not the reference's look.
+- **The screen's glow changes colour with the state, and the number flips at the same moment** (`60fps-ultrahuman-score-colour-shift`). Colour by type of day (training, rest, wrestling), never as a judgment score.
+- **The Coach listening as one soft light that's born and breathes** (`60fps-gemini-voice-aurora`). Heavy (large blur): test at 120 Hz first.
+- **The tapped button grows into the full-screen rest ring** (`galleries-watch-timer-preset-ring`).
+- **A record grows from the logged set into a full-screen colour moment**, calm motion, no confetti (`60fps-nike-achievement-takeover`).
+- **Hold to commit: the world blurs, one calm check**, for finishing a workout or accepting a big Coach change (`60fps-alma-hold-to-commit`). Heavy (animated blur): test at 120 Hz first.
+- **Rest as a colour level filling the screen behind the big number** (`web-headspace-breathing`).
+
+Not hearted on the page (a signal, not a no): the slide-to-approve concept (clip 17) and ChatGPT's listening orb.
