@@ -194,6 +194,24 @@ describe('derived facts', () => {
     expect(stale(e, 'sum')).toBe(true);
   });
 
+  it('a record built on a summary and on a notice built on that summary is fresh while nothing changed (shared ancestor, no loop)', async () => {
+    const { e } = await eng();
+    await e.commit({ type: 'x', label: 'x', ops: [water('w1', 250)] });
+    await e.commit({ type: 'x', label: 'x', ops: [sumOf(e, 'sum', ['w1'], 's')] });
+    await e.commit({ type: 'x', label: 'x', ops: [sumOf(e, 'notice', ['sum'], 'n')] });
+    await e.commit({ type: 'x', label: 'x', ops: [sumOf(e, 'both', ['sum', 'notice'], 'b')] });
+    expect(stale(e, 'both')).toBe(false);
+    await e.commit({ type: 'x', label: 'x', ops: [{ op: 'update', id: 'w1', set: { ml: 1 } }] });
+    expect(stale(e, 'both')).toBe(true);
+  });
+
+  it('a derived record in the older shape (basedOn or a stored stale flag) counts as stale until rebuilt', () => {
+    const base = { id: 'old', kind: 'coachItem', v: 1, at: 1, tz: TZ, source: 'tap', createdAt: 1, updatedAt: 1, rev: 1 };
+    expect(isStale({ ...base, basedOn: ['w1'] } as never, () => undefined)).toBe(true);
+    expect(isStale({ ...base, stale: true } as never, () => undefined)).toBe(true);
+    expect(isStale(base as never, () => undefined)).toBe(false);
+  });
+
   it('property: no mix of edits, deletes, Undos, redos and recounts leaves a summary fresh unless its facts are exactly as it last saw them', async () => {
     type Step = { t: 'edit' | 'del' | 'undo' | 'recount'; i: number; ml: number };
     const stepArb = fc.record({ t: fc.constantFrom<Step['t']>('edit', 'del', 'undo', 'recount'), i: fc.integer({ min: 0, max: 20 }), ml: fc.integer({ min: 1, max: 9 }) });
@@ -202,10 +220,10 @@ describe('derived facts', () => {
       const facts = ['a', 'b', 'c'];
       await e.commit({ type: 'x', label: 'x', ops: facts.map((f) => water(f, 1)) });
       await e.commit({ type: 'x', label: 'x', ops: [sumOf(e, 'sum', facts, 't0')] });
-      // every state each fact has been in, by revision: a revision must never stand for two different states
+      // every state each fact has been in, by stamp: a stamp must never stand for two different states
       const seen = new Map<string, unknown>();
       const look = (k: string) => { const r = e.get<'water'>(k); return r ? { ml: r.ml, deleted: !!r.deleted } : null; };
-      const note = () => { for (const k of facts) { const r = e.get(k); if (!r) continue; const key = `${k}@${r.rev}`, v = look(k); if (seen.has(key)) expect(seen.get(key)).toEqual(v); else seen.set(key, v); } };
+      const note = () => { for (const k of facts) { const r = e.get(k); if (!r) continue; const key = `${k}@${r.stamp}`, v = look(k); if (seen.has(key)) expect(seen.get(key)).toEqual(v); else seen.set(key, v); } };
       note();
       for (const s of steps) {
         const f = facts[s.i % 3];
@@ -216,7 +234,7 @@ describe('derived facts', () => {
         note();
         // the rule: a summary that looks fresh saw exactly the facts as they are now
         const sum = e.get('sum')!;
-        if (!sum.deleted && !stale(e, 'sum')) for (const [k, rev] of Object.entries(sum.builtFrom!)) expect(seen.get(`${k}@${rev}`)).toEqual(look(k));
+        if (!sum.deleted && !stale(e, 'sum')) for (const [k, st] of Object.entries(sum.builtFrom!)) expect(seen.get(`${k}@${st}`)).toEqual(look(k));
       }
     }), { numRuns: 60 });
   });

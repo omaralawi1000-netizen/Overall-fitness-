@@ -19,7 +19,8 @@ Whatever it is (a set, a meal, a memory card), a record has:
 | `createdAt`, `updatedAt` | Bookkeeping times. |
 | `rev` | Goes up by one on every change. |
 | `deleted` | Present when deleted: `{ at, by }` (the action that deleted it). Deletes are soft: the record stays, hidden. |
-| `builtFrom` | For anything derived (a summary, a reminder, a Coach notice): the revision of each fact it was built from. It is stale (rebuild it or don't show it) whenever any of those facts now has another revision, is deleted, or is itself stale. Staleness is worked out, never stored (`src/engine/derived.ts`). |
+| `stamp` | Which write made this state: that action's id, unique on every phone. A copy (restore, import) keeps the stamp of the state it copies. |
+| `builtFrom` | For anything derived (a summary, a reminder, a Coach notice): the stamp of each fact it was built from. It is stale (rebuild it or don't show it) whenever any of those facts now has another stamp, is deleted, or is itself stale. Staleness is worked out, never stored (`src/engine/derived.ts`). |
 
 **Units.** Every number field has one fixed unit, written in its name or in the table below: kg, g, ml, kcal, seconds,
 metres, cm. Nothing is ever stored in lb, dl or minutes. When someone typed another unit, what they typed is kept beside
@@ -147,11 +148,12 @@ Monday), display units (`kg`/`lb`, `km`/`mi`, `cm`/`in`), `restDefaultSec`, food
   this"), instead of overwriting newer work. Undoing a creation also stops if a field was added since (a set created by
   "start workout" and then ticked). Undo is itself an action, so it can be undone too. Nothing ever restores an
   old whole-state copy over newer edits.
-- **Deleting or changing a fact invalidates what was built on it.** Every write raises a record's revision (`rev`),
-  also an Undo, a restore or an import, and revisions never go back. A derived record is stale whenever a fact's
-  revision differs from the one in its `builtFrom`. Because nothing stores "stale", no mix of changes and Undos can make
-  an old value look fresh: only building it again from the facts as they are now does. Undoing a recount puts back the
-  old `builtFrom`, so the old value is stale again.
+- **Deleting or changing a fact invalidates what was built on it.** Every write gives a record a new `stamp` (the
+  action's id), also an Undo; a restore or import keeps the stamp of the state it copies. A derived record is stale
+  whenever a fact's stamp differs from the one in its `builtFrom`. Stamps are unique across phones, so two phones that
+  each edited a fact can never look alike (revision counters could). Because nothing stores "stale", no mix of
+  changes, Undos and restores can make an old value look fresh: only building it again from the facts as they are now
+  does. Undoing a recount puts back the old `builtFrom`, so the old value is stale again.
 - **Saving shows its true state.** A change is shown at once as **pending** (the tap is never blocked), becomes
   **saved** only after the database confirms the transaction, and becomes **failed** (kept, with Retry) if the write
   fails, for example a full disk. "Saved" is never shown early.

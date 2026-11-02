@@ -31,13 +31,13 @@ export class EngineError extends Error {
 }
 
 /** Fields that are bookkeeping, never part of what a change "is" (and never restored by Undo). */
-const BOOK = ['rev', 'updatedAt'];
+const BOOK = ['rev', 'updatedAt', 'stamp'];
 
-function setFields(rec: Rec, set: Record<string, unknown>, now: number): Rec {
-  const out: Rec = { ...rec };
+function setFields(rec: Rec, set: Record<string, unknown>, ctx: Ctx): Rec {
+  const out: Rec = { ...rec, stamp: ctx.actionId };
   for (const [k, v] of Object.entries(set)) { if (v === null || v === undefined) delete out[k]; else out[k] = structuredClone(v); }
   out.rev = rec.rev + 1;
-  out.updatedAt = now;
+  out.updatedAt = ctx.now;
   return out;
 }
 
@@ -82,8 +82,8 @@ export function planOps(ops: Op[], current: Map<string, Rec | undefined>, ctx: C
       const cur = get(r.id);
       if (cur && op.when === 'absent') continue;
       if (cur && op.when === 'newer' && (cur.deleted || !((r.updatedAt as number) > (cur.updatedAt as number)))) continue;
-      // above both the phone's and the file's revision, so a revision never stands for two different states (derived.ts)
-      const rec = { ...r, rev: Math.max(cur?.rev ?? 0, typeof r.rev === 'number' && Number.isFinite(r.rev) ? r.rev : 0) + 1 } as Rec;
+      // a copy keeps the stamp of the state it copies (derived.ts); a record without one gets this write's
+      const rec = { ...r, rev: (cur?.rev ?? 0) + 1, stamp: typeof r.stamp === 'string' && r.stamp ? r.stamp : ctx.actionId } as Rec;
       const bad = checkRecord(rec);
       if (bad) throw new EngineError('invalid', `${r.id}: ${bad}`);
       if (cur && cur.kind !== rec.kind) throw new EngineError('invalid', `${r.id}: kind changes`);
@@ -105,7 +105,7 @@ export function planOps(ops: Op[], current: Map<string, Rec | undefined>, ctx: C
       for (const f of ENGINE_FIELDS) if (f !== 'id' && f !== 'kind' && r[f] !== undefined) throw new EngineError('engineField', `create sets ${f}`);
       if (typeof r.id !== 'string' || !r.id) throw new EngineError('invalid', 'a new record needs an id');
       if (get(r.id)) throw new EngineError('exists', `${r.id} already exists`);
-      const rec = { at: ctx.now, tz: ctx.tz, source: ctx.source, ...structuredClone(r), v: SCHEMA, createdAt: ctx.now, updatedAt: ctx.now, rev: 1 } as unknown as Rec;
+      const rec = { at: ctx.now, tz: ctx.tz, source: ctx.source, ...structuredClone(r), v: SCHEMA, createdAt: ctx.now, updatedAt: ctx.now, rev: 1, stamp: ctx.actionId } as unknown as Rec;
       for (const k of Object.keys(rec)) if (rec[k] === undefined) delete rec[k];
       const bad = checkRecord(rec);
       if (bad) throw new EngineError('invalid', `${r.id}: ${bad}`);
@@ -135,7 +135,7 @@ export function planOps(ops: Op[], current: Map<string, Rec | undefined>, ctx: C
       after[k] = structuredClone(nv);
     }
     if (!Object.keys(after).length) continue;
-    const rec = setFields(cur, after, ctx.now);
+    const rec = setFields(cur, after, ctx);
     const bad = checkRecord(rec);
     if (bad) throw new EngineError('invalid', `${op.id}: ${bad}`);
     next.set(rec.id, rec);

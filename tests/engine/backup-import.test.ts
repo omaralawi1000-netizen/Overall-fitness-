@@ -104,6 +104,19 @@ describe('backup and restore', () => {
     expect(isStale(other.get('sum')!, (k) => other.get(k))).toBe(true);
   });
 
+  it('two phones that edited the same fact: a merged summary from the other phone is stale, even with equal revisions', async () => {
+    const a = (await eng()).e, b = (await eng()).e;
+    for (const e of [a, b]) await e.commit({ type: 'x', label: 'x', ops: [water('w', 1)] });
+    await a.commit({ type: 'x', label: 'x', ops: [{ op: 'update', id: 'w', set: { ml: 2 } }] }); // revision 2 here: 2 ml
+    await a.commit({ type: 'x', label: 'x', ops: [{ op: 'create', record: { id: 'sum', kind: 'coachItem', stage: 'observation', text: '2 ml', ...buildOn((k) => a.get(k), ['w']) } as NewRecord }] });
+    const file = await exportBackup(a);
+    await b.commit({ type: 'x', label: 'x', ops: [{ op: 'update', id: 'w', set: { ml: 7 } }] }); // revision 2 there too: 7 ml, and newer
+    expect(b.get('w')!.rev).toBe(a.get('w')!.rev);
+    expect((await restore(b, file, 'merge')).status).toBe('saved');
+    expect(b.get<'water'>('w')!.ml).toBe(7); // the newer phone value stays
+    expect(isStale(b.get('sum')!, (k) => b.get(k))).toBe(true);
+  });
+
   it('a restore that fails half-way leaves the phone exactly as it was', async () => {
     const { e } = await eng();
     await e.commit({ type: 'x', label: 'x', ops: [water('keep', 7)] });
