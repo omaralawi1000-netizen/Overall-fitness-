@@ -46,6 +46,8 @@ const MODEL = process.env.EXAM_MODEL ?? 'gemini-3.8-flash';
 const FALLBACK = process.env.EXAM_FALLBACK ?? '';
 const ONLY = process.env.EXAM_ONLY?.split(',').map((s) => s.trim()).filter(Boolean);
 const DRY = !!process.env.EXAM_DRY;
+/** re-run only the code checks on the answers already in EXAM_OUT, with today's checks: no model call, nothing spent */
+const RECHECK = !!process.env.EXAM_RECHECK;
 // a dry run writes only under <EXAM_OUT>/dry: its fake answers must never count as done (or overwrite real ones)
 const OUT = `${process.env.EXAM_OUT ?? '/home/user/Overall-fitness-/reference/exam-v1/before'}${DRY ? '/dry' : ''}`;
 const GAP_MS = Number(process.env.EXAM_GAP_MS ?? 7000);
@@ -297,13 +299,43 @@ const WANT_EFFORT = MODEL.startsWith('claude-') ? EFFORT : undefined;
 /** an answer made with this run's Coach setup (the model asked for, and its effort): only such an answer is kept as done */
 const sameSetup = (r: any) => r.requestedModel === MODEL && (r.effort ?? null) === (WANT_EFFORT ?? null);
 
+/**
+ * The code checks again, on the saved answers (the judges never see them, so their verdicts stay valid). The answer's
+ * own facts are rebuilt the same way as in runOne. Morning pins, errors and dropped actions keep what they had.
+ */
+function recheck(all: Question[]) {
+  let n = 0, changed = 0;
+  const at = new Date().toISOString(); // (now, before the loop moves the fake clock to each question's time)
+  for (const f of readdirSync(OUT).filter((x) => /\.r\d+\.json$/.test(x)).sort()) {
+    const r = JSON.parse(readFileSync(`${OUT}/${f}`, 'utf8'));
+    const q = all.find((x) => x.id === r.id);
+    if (!q || r.error || r.mode === 'morning') continue;
+    const now = nowOf(q);
+    vi.setSystemTime(now);
+    const d = PERSONAS_V1[q.persona](now);
+    q.tweak?.(d, now);
+    const answer = { reply: r.reply, actions: r.actions ?? [] };
+    const check = /^dropped \d+/.test(r.check ?? '') ? r.check : q.check?.(answer) ?? null;
+    const fl = flags(q, r.reply, answer.actions, d);
+    n++;
+    if (check === r.check && JSON.stringify(fl) === JSON.stringify(r.flags ?? [])) continue;
+    changed++;
+    console.log(`${f}: check ${JSON.stringify(r.check)} → ${JSON.stringify(check)}; flags ${JSON.stringify(r.flags ?? [])} → ${JSON.stringify(fl)}`);
+    writeFileSync(`${OUT}/${f}`, JSON.stringify({ ...r, check, flags: fl, rechecked: { at, before: { check: r.check, flags: r.flags } } }, null, 1));
+  }
+  console.log(`recheck ${OUT}: ${n} answers, ${changed} changed`);
+  // (summary.md shows the checks too: rewrite it, so it never says FAIL where the JSON no longer does: Codex, PR #71)
+  writeSummary(`$${new Ledger(LEDGER, Number.MAX_SAFE_INTEGER).spent.toFixed(2)} (a recheck spends nothing)`, `see calls.log (rechecked ${at.slice(0, 16)}Z, ${changed} of ${n} answers changed)`);
+}
+
 it('runs Coach exam v1 (before: old Aven)', async () => {
   vi.useFakeTimers({ toFake: ['Date'] });
-  if (!(CAP > 0)) throw new Error('set EXAM_CAP_USD (the most this run may spend, in US dollars, counting what the ledger already holds)');
+  if (!(CAP > 0) && !RECHECK) throw new Error('set EXAM_CAP_USD (the most this run may spend, in US dollars, counting what the ledger already holds)');
   await loadDanish();
   mkdirSync(OUT, { recursive: true });
-  ledger = new Ledger(LEDGER, CAP);
   const all = [...QUESTIONS_V1, ...QUESTIONS_SAFETY, ...(await heldOut())];
+  if (RECHECK) return recheck(all);
+  ledger = new Ledger(LEDGER, CAP);
   const qs = all.filter((q) => !ONLY || ONLY.includes(q.id));
   // one folder holds one Coach setup: answers from another model or effort would be judged and scored under this one
   if (!DRY) {
@@ -326,7 +358,11 @@ it('runs Coach exam v1 (before: old Aven)', async () => {
   }
   appendFileSync(`${OUT}/calls.log`, `--- run ${MODEL}${DRY ? ' (dry)' : ''}: ${qs.map((q) => q.id).join(', ')}\n${log.join('\n')}\n`);
   if (DRY) writeFileSync(`${OUT}/dry-sizes.jsonl`, `${sizes.join('\n')}\n`);
-  // summary over every file in OUT (so a re-run of a few ids keeps the rest)
+  writeSummary(`$${ledger.spent.toFixed(2)} of $${CAP}`, log.filter((l) => /refused|kept failing/.test(l)).join('; ') || 'none');
+}, 7_200_000);
+
+/** summary.md over every file in OUT (so a re-run of a few ids keeps the rest) */
+function writeSummary(spent: string, fallbacks: string) {
   const rows: string[] = [];
   let ran = 0, errors = 0;
   const models = new Set<string>();
@@ -338,6 +374,6 @@ it('runs Coach exam v1 (before: old Aven)', async () => {
     const cell = (x: string) => x.replace(/\|/g, '/').replace(/\n/g, ' ');
     rows.push(`| ${r.id} | ${r.run} | ${r.persona} | ${r.model} | ${cell(check)} | ${cell((r.flags ?? []).join('; ')) || '–'} | ${cell((r.numbersToCheck ?? []).join(', ')) || '–'} | ${r.usd ?? ''} | ${r.error ? cell(r.error).slice(0, 160) : ''} |`);
   }
-  const md = `# Coach exam v1: ${MODEL}\n\nOld Aven's Coach (agentSystem and its data blocks, look-ups, validateAgent, readableDates, fillFromReply, savePlanFromGoals and its one self-check re-ask) on the conversations of docs/COACH.md §8 plus the safety probes, fake personas (personas-v1.ts), through exam/providers.ts.\n\n- Answers: ${ran} (errors: ${errors})\n- Model(s): ${[...models].join(', ') || 'none'}${MODEL.startsWith('claude-') ? ` (effort ${EFFORT}, plain-JSON mode: the app's answer schema is too big for Claude's strict mode)` : ''}\n- Spent so far (whole ledger): $${ledger.spent.toFixed(2)} of $${CAP}\n- Fallbacks this run: ${log.filter((l) => /refused|kept failing/.test(l)).join('; ') || 'none'}\n- 01 and 02: old Aven has no speak-first chat; the "reply" is what Today's Coach pin shows (findNudges + the once-a-day AI insights, ranked by rankNotes).\n- 17 and 18: the 6-step setup form (as text in the JSON), then the first message to an empty Coach.\n- check = the conversation's own code check (– = none); flags = the general code checks (train lighter when MEMORY says no, body talk, judgy food words, over 150 words, an action on a pure question, an unprompted doctor/age line, unsafe weight-cut help); numbers = numbers in the reply found nowhere in what the Coach was given (often sums: a lead for the judges, not a fail).\n\n| id | run | persona | model | check | flags | numbers | $ | error |\n|---|---|---|---|---|---|---|---|---|\n${rows.join('\n')}\n\n## Call log\n\nEvery retry, wait and fallback of every run is in calls.log next to this file.\n`;
+  const md = `# Coach exam v1: ${MODEL}\n\nOld Aven's Coach (agentSystem and its data blocks, look-ups, validateAgent, readableDates, fillFromReply, savePlanFromGoals and its one self-check re-ask) on the conversations of docs/COACH.md §8 plus the safety probes, fake personas (personas-v1.ts), through exam/providers.ts.\n\n- Answers: ${ran} (errors: ${errors})\n- Model(s): ${[...models].join(', ') || 'none'}${MODEL.startsWith('claude-') ? ` (effort ${EFFORT}, plain-JSON mode: the app's answer schema is too big for Claude's strict mode)` : ''}\n- Spent so far (whole ledger): ${spent}\n- Fallbacks this run: ${fallbacks}\n- 01 and 02: old Aven has no speak-first chat; the "reply" is what Today's Coach pin shows (findNudges + the once-a-day AI insights, ranked by rankNotes).\n- 17 and 18: the 6-step setup form (as text in the JSON), then the first message to an empty Coach.\n- check = the conversation's own code check (– = none); flags = the general code checks (train lighter when MEMORY says no, body talk, judgy food words, over 150 words, an action on a pure question, an unprompted doctor/age line, unsafe weight-cut help); numbers = numbers in the reply found nowhere in what the Coach was given (often sums: a lead for the judges, not a fail).\n\n| id | run | persona | model | check | flags | numbers | $ | error |\n|---|---|---|---|---|---|---|---|---|\n${rows.join('\n')}\n\n## Call log\n\nEvery retry, wait and fallback of every run is in calls.log next to this file.\n`;
   writeFileSync(`${OUT}/summary.md`, md);
-}, 7_200_000);
+}
