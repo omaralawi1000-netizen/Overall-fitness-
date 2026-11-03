@@ -12,6 +12,7 @@
 import type { AnyRecord, Bodyweight, FoodLog, MemoryCard, Settings } from '../engine/model';
 import { addDays, dayKeyAt, diffDays, wallClock, weekdayOf } from '../engine/time';
 import { numbersIn } from './untrusted';
+import { renderTraining, trainingFacts, trainingNumbers, type TrainingFacts } from './training-facts';
 
 /** how far a fact can be trusted */
 export type Confidence = 'measured' | 'partial' | 'estimate';
@@ -41,7 +42,7 @@ export interface FactSheet {
   /** the last 28 days, today not included */
   food28: { daysLogged: number; daysComplete: number; facts: Fact[] };
   weight: { latest?: Fact; latestDay?: string; trend?: Fact; odd: { id: string; kg: number; day: string }[] };
-  training: { sessions7: number; sessions28: number; activities7: Record<string, number> };
+  training: { sessions7: number; sessions28: number; activities7: Record<string, number> } & TrainingFacts;
   /** what the data can't say, in plain words */
   trust: string[];
 }
@@ -262,7 +263,7 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
     },
     food28: { daysLogged: logged.length, daysComplete: done.length, facts: food28 },
     weight: { ...(latest ? { latest, latestDay: lastDay } : {}), ...(trend ? { trend } : {}), odd: odd.map((w) => ({ id: w.id, kg: w.kg, day: dayOf(w, dayStart) })) },
-    training: { sessions7: finishedIn(7), sessions28: finishedIn(28), activities7 },
+    training: { sessions7: finishedIn(7), sessions28: finishedIn(28), activities7, ...trainingFacts(records, { today, dayStart, now: o.now, tz: o.tz }) },
     trust,
   };
 }
@@ -277,7 +278,7 @@ export function sheetNumbers(s: FactSheet): number[] {
   for (const w of s.weight.odd) out.push(w.kg);
   // memory is the person's own words, shown on the sheet: "my old protein target was 215 g" is a number they gave (Codex, PR #73)
   for (const m of [...s.memory, ...s.ended]) out.push(...numbersIn(m.text));
-  out.push(s.food28.daysLogged, s.food28.daysComplete, s.training.sessions7, s.training.sessions28, ...Object.values(s.training.activities7));
+  out.push(s.food28.daysLogged, s.food28.daysComplete, s.training.sessions7, s.training.sessions28, ...Object.values(s.training.activities7), ...trainingNumbers(s.training));
   return out;
 }
 
@@ -299,6 +300,7 @@ export function renderFacts(s: FactSheet): string {
   out.push(`LAST 28 DAYS: food logged ${s.food28.daysLogged} days, ${s.food28.daysComplete} complete; ${s.training.sessions28} sessions (${s.training.sessions7} in the last 7 days)`, ...s.food28.facts.map((f) => line(f, L)));
   const acts = Object.entries(s.training.activities7);
   if (acts.length) out.push(`- activities last 7 days: ${acts.map(([k, v]) => `${k} ${v}`).join(', ')}`);
+  out.push(...renderTraining(s.training));
   out.push('WEIGHT:', ...[s.weight.latest, s.weight.trend].filter((f): f is Fact => !!f).map((f) => line(f, L)));
   if (s.trust.length) out.push('WHAT THE DATA CAN\'T SAY:', ...s.trust.map((t) => `- ${t}`));
   return out.join('\n');

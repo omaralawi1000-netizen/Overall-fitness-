@@ -21,7 +21,7 @@ describe('the fact sheet', () => {
     expect(s.today.food).toEqual([]);
     expect(s.today.left).toEqual([]);
     expect(s.food28.facts).toEqual([]);
-    expect(sheetNumbers(s)).toEqual([2500, 0, 0, 0, 0]); // the target, then counts that really are zero (days logged, sessions)
+    expect(sheetNumbers(s)).toEqual([2500, 0, 0, 0, 0, 0, 0, 0, 0]); // the target, then counts that really are zero (days logged, sessions)
     expect(s.trust.join(' ')).toContain('Food was logged on 0 of the last 28 days');
   });
 
