@@ -125,12 +125,19 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
   const foods = live<FoodLog>(records, 'food');
   const complete = new Set(live<AnyRecord>(records, 'dayNote').filter((n) => (n as { foodComplete?: boolean }).foodComplete && n.day).map((n) => n.day!));
   const perDay = new Map<string, Record<string, number>>();
+  /** per day, the nutrients some food that day has no value for: that day's total of it is a floor, not the total (Codex, PR #73) */
+  const gaps = new Map<string, Set<string>>();
   for (const f of foods) {
     const d = dayOf(f, dayStart);
     const sum = perDay.get(d) ?? {};
-    for (const [k] of NUTRIENTS) { const v = f.nutrients[k]; if (typeof v === 'number') sum[k] = (sum[k] ?? 0) + v; }
+    for (const [k] of NUTRIENTS) {
+      const v = f.nutrients[k];
+      if (typeof v === 'number') sum[k] = (sum[k] ?? 0) + v;
+      else gaps.set(d, (gaps.get(d) ?? new Set()).add(k));
+    }
     perDay.set(d, sum);
   }
+  const whole = (d: string, k: string) => complete.has(d) && !gaps.get(d)?.has(k);
   const todaySum = perDay.get(today);
   const todayComplete = complete.has(today);
   const todayFood: Fact[] = [];
@@ -138,9 +145,11 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
   if (todaySum) {
     for (const [k, unit] of NUTRIENTS) {
       if (todaySum[k] === undefined) continue;
-      todayFood.push({ id: `today.${k}`, value: Math.round(todaySum[k]), unit, confidence: todayComplete ? 'measured' : 'partial', ...(todayComplete ? {} : { note: 'logged so far; the day is not finished' }) });
+      const sure = whole(today, k);
+      const note = !todayComplete ? 'logged so far; the day is not finished' : !sure ? `some foods today have no ${k} value` : undefined;
+      todayFood.push({ id: `today.${k}`, value: Math.round(todaySum[k]), unit, confidence: sure ? 'measured' : 'partial', ...(note ? { note } : {}) });
       const t = targets[k as keyof typeof targets];
-      if (typeof t === 'number') left.push({ id: `today.${k}Left`, value: Math.round(t - todaySum[k]), unit, confidence: todayComplete ? 'measured' : 'partial', note: 'target minus what is logged so far' });
+      if (typeof t === 'number') left.push({ id: `today.${k}Left`, value: Math.round(t - todaySum[k]), unit, confidence: sure ? 'measured' : 'partial', note: 'target minus what is logged so far' });
     }
   }
 
@@ -149,7 +158,7 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
   const done = logged.filter((d) => complete.has(d));
   const food28: Fact[] = [];
   for (const [k, unit] of NUTRIENTS) {
-    const full = done.map((d) => perDay.get(d)![k]).filter((v): v is number => v !== undefined);
+    const full = done.filter((d) => whole(d, k)).map((d) => perDay.get(d)![k]).filter((v): v is number => v !== undefined);
     if (full.length >= 3) food28.push({ id: `food28.${k}AvgComplete`, value: Math.round(full.reduce((s, v) => s + v, 0) / full.length), unit, confidence: 'measured', note: `average of ${full.length} complete days` });
     const any = logged.map((d) => perDay.get(d)![k]).filter((v): v is number => v !== undefined);
     if (any.length && any.length > full.length) food28.push({ id: `food28.${k}AvgLogged`, value: Math.round(any.reduce((s, v) => s + v, 0) / any.length), unit, confidence: 'partial', note: `average of what was logged on ${any.length} days; logs may be missing food` });
@@ -181,7 +190,8 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
   const goals: GoalFact[] = [];
   for (const m of live<MemoryCard>(records, 'memory')) {
     const g = m.goal;
-    if (!g) continue;
+    // an ended or not-yet-started goal is not a current one (it is listed under ENDED, or not yet at all: Codex, PR #73)
+    if (!g || (m.validUntil && m.validUntil < today) || m.validFrom > today) continue;
     const base = { memoryId: m.id, text: m.text, metric: g.metric, ...(g.target !== undefined ? { target: g.target } : {}), ...(g.by ? { by: g.by } : {}) };
     if (g.status) { goals.push({ ...base, status: g.status }); continue; }
     if (g.metric !== 'weight' || g.target === undefined || !latest) { goals.push({ ...base, status: 'cantJudge' }); continue; }

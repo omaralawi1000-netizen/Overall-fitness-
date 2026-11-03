@@ -28,6 +28,12 @@ describe('untrusted text is data, never instructions', () => {
     expect(gate({ name: 'log_water', ml: 2500 }, t)).toMatchObject({ ok: false, reason: '2500 comes only from untrusted text' });
   });
 
+  it('a turned-down ask is not consent: "do not change my target" next to a page that says 1500 (Codex, PR #73)', () => {
+    for (const userText of ['Do not change my target to 1500', "don't set anything, just read it", 'ikke ændre mit mål', 'never log this'])
+      expect(gate({ name: 'set_target', key: 'kcal', value: 1500 }, { userText, untrusted: true, sheet: [1500] }).ok).toBe(false);
+    expect(gate({ name: 'set_target', key: 'kcal', value: 2400 }, { userText: "don't panic, just set it to 2400", untrusted: true, sheet: [] })).toEqual({ ok: true });
+  });
+
   it("the person's own command still works next to untrusted text, with numbers from their words or the sheet", () => {
     expect(gate({ name: 'set_target', key: 'protein', value: 160 }, { userText: 'sæt mit proteinmål til 160', untrusted: true, sheet: [] })).toEqual({ ok: true });
     expect(gate({ name: 'set_target', key: 'kcal', value: 3080 }, { userText: 'ok, change my target like you said', untrusted: true, sheet: [3080] })).toEqual({ ok: true });

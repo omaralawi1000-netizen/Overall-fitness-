@@ -33,7 +33,7 @@ export type Proposal =
 export type Mode = 'command' | 'proposal';
 
 export type Checked =
-  | { ok: true; proposal: Proposal; preview: boolean; label: string; ops: Op[] }
+  | { ok: true; proposal: Proposal; mode: Mode; preview: boolean; label: string; ops: Op[] }
   | { ok: false; reason: string };
 
 export interface Did { actionId: string; label: string; undo: true }
@@ -73,6 +73,7 @@ export function readProposal(raw: unknown): Proposal | { error: string } {
 export function check(p: Proposal, mode: Mode, o: { records: AnyRecord[]; now: number; tz: string }): Checked {
   const settings = o.records.find((r): r is Settings => r.kind === 'settings' && !r.deleted);
   const day = dayKeyAt(o.now, o.tz, settings?.dayStartHour ?? 0);
+  const ok = (preview: boolean, label: string, ops: Op[]): Checked => ({ ok: true, proposal: p, mode, preview, label, ops });
   switch (p.name) {
     case 'set_target': {
       const [lo, hi] = TARGET_RANGE[p.key];
@@ -81,29 +82,33 @@ export function check(p: Proposal, mode: Mode, o: { records: AnyRecord[]; now: n
       if (before === p.value) return { ok: false, reason: `${p.key} target is already ${p.value}` };
       const unit = TARGET_UNIT[p.key];
       const label = `${p.key === 'waterMl' ? 'water' : p.key} target ${before !== undefined ? `${fmt(before)} → ` : ''}${fmt(p.value)} ${unit}`;
+      // no live settings: bring back one Undo removed (an id is never created twice, even deleted: Codex, PR #73), else create
+      const gone = o.records.find((r): r is Settings => r.kind === 'settings' && !!r.deleted);
       const ops: Op[] = settings
         ? [{ op: 'update', id: settings.id, set: { targets: { ...settings.targets, [p.key]: p.value } } }]
-        : [{ op: 'create', record: { id: 'settings', kind: 'settings', language: 'en', dayStartHour: 0, weekStart: 1, units: { weight: 'kg', distance: 'km', length: 'cm' }, restDefaultSec: 120, targets: { [p.key]: p.value } } as NewRecord }];
-      return { ok: true, proposal: p, preview: mode === 'proposal', label, ops };
+        : gone
+          ? [{ op: 'update', id: gone.id, set: { deleted: null, targets: { [p.key]: p.value } } }]
+          : [{ op: 'create', record: { id: 'settings', kind: 'settings', language: 'en', dayStartHour: 0, weekStart: 1, units: { weight: 'kg', distance: 'km', length: 'cm' }, restDefaultSec: 120, targets: { [p.key]: p.value } } as NewRecord }];
+      return ok(mode === 'proposal', label, ops);
     }
     case 'remember': {
       const same = o.records.find((r): r is MemoryCard => r.kind === 'memory' && !r.deleted && r.text.toLowerCase() === p.text.toLowerCase());
       if (same) return { ok: false, reason: 'already remembered' };
       const id = newId('m');
       const record = { id, kind: 'memory', day, text: p.text, topic: p.topic, scope: p.until ? 'oneOff' : 'standing', validFrom: day, lastSeen: o.now, origin: mode === 'command' ? 'said' : 'agreed', ...(p.until ? { validUntil: p.until } : {}) } as NewRecord;
-      return { ok: true, proposal: p, preview: mode === 'proposal', label: `remembered "${p.text}"`, ops: [{ op: 'create', record }] };
+      return ok(mode === 'proposal', `remembered "${p.text}"`, [{ op: 'create', record }]);
     }
     case 'forget': {
       const m = o.records.find((r): r is MemoryCard => r.id === p.memoryId && r.kind === 'memory');
       if (!m || m.deleted) return { ok: false, reason: 'no such memory' };
-      return { ok: true, proposal: p, preview: mode === 'proposal', label: `forgot "${m.text}"`, ops: [{ op: 'delete', id: m.id }] };
+      return ok(mode === 'proposal', `forgot "${m.text}"`, [{ op: 'delete', id: m.id }]);
     }
     case 'log_water':
       if (p.ml < 50 || p.ml > 3000) return { ok: false, reason: `${p.ml} ml is outside 50–3,000` };
-      return { ok: true, proposal: p, preview: false, label: `logged ${fmt(p.ml)} ml water`, ops: [{ op: 'create', record: { id: newId('w'), kind: 'water', day, ml: p.ml } as NewRecord }] };
+      return ok(false, `logged ${fmt(p.ml)} ml water`, [{ op: 'create', record: { id: newId('w'), kind: 'water', day, ml: p.ml } as NewRecord }]);
     case 'log_weight':
       if (p.kg < 30 || p.kg > 300) return { ok: false, reason: `${p.kg} kg is outside 30–300` };
-      return { ok: true, proposal: p, preview: false, label: `logged ${p.kg} kg`, ops: [{ op: 'create', record: { id: newId('bw'), kind: 'bodyweight', day, kg: p.kg } as NewRecord }] };
+      return ok(false, `logged ${p.kg} kg`, [{ op: 'create', record: { id: newId('bw'), kind: 'bodyweight', day, kg: p.kg } as NewRecord }]);
   }
 }
 
@@ -125,12 +130,18 @@ function verify(c: Extract<Checked, { ok: true }>, e: Engine): boolean {
 /**
  * Steps 3 and 4: apply through the action log, then verify. Returns a `Did` only when the change is really there.
  * `actionId` is made once per proposal by the caller, so a retry can never apply it twice.
+ * The proposal is checked again against the records as they are NOW: a preview applied later, or two proposals checked
+ * together, can never write a stale state over a newer change (Codex, PR #73).
  */
-export async function apply(e: Engine, c: Extract<Checked, { ok: true }>, actionId: string): Promise<{ did: Did } | { failed: string }> {
-  const res = await e.commit({ id: actionId, type: `coach.${c.proposal.name}`, label: c.label, source: 'coach', ops: c.ops });
+export async function apply(e: Engine, c: Extract<Checked, { ok: true }>, actionId: string, o: { now: number; tz: string }): Promise<{ did: Did } | { failed: string }> {
+  const done = e.actions().find((a) => a.id === actionId);
+  if (done) return done.undoneBy ? { failed: 'this change was undone' } : { did: { actionId, label: done.label, undo: true } };
+  const fresh = check(c.proposal, c.mode, { records: e.allRecords(), now: o.now, tz: o.tz });
+  if (!fresh.ok) return { failed: fresh.reason };
+  const res = await e.commit({ id: actionId, type: `coach.${fresh.proposal.name}`, label: fresh.label, source: 'coach', ops: fresh.ops });
   if (res.status !== 'saved' && res.status !== 'duplicate') return { failed: res.error?.message ?? res.status };
-  if (!verify(c, e)) return { failed: 'the change is not there after saving' };
-  return { did: { actionId, label: c.label, undo: true } };
+  if (!verify(fresh, e)) return { failed: 'the change is not there after saving' };
+  return { did: { actionId, label: fresh.label, undo: true } };
 }
 
 /** The "Did in the app" lines, written by code from verified results only. */

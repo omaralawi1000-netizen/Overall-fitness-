@@ -45,6 +45,16 @@ describe('the fact sheet', () => {
     expect(s2.food28.facts.find((f) => f.id === 'food28.kcalAvgComplete')).toMatchObject({ value: 850, confidence: 'measured' });
   });
 
+  it('a complete day where some food has no protein value: its protein is partial, kcal still measured (Codex, PR #73)', () => {
+    const recs: AnyRecord[] = [settings({ kcal: 2500, protein: 180 }), food('2026-11-03', 800, 60), food('2026-11-03', 700), complete('2026-11-03')];
+    for (const d of days('2026-10-20', 3)) recs.push(food(d, 2000, 150), food(d, 400), complete(d));
+    const s = buildFacts(recs, { now: NOW, tz: TZ });
+    expect(s.today.food.find((f) => f.id === 'today.kcal')).toMatchObject({ value: 1500, confidence: 'measured' });
+    expect(s.today.food.find((f) => f.id === 'today.protein')).toMatchObject({ value: 60, confidence: 'partial', note: 'some foods today have no protein value' });
+    expect(s.food28.facts.find((f) => f.id === 'food28.kcalAvgComplete')).toBeDefined();
+    expect(s.food28.facts.find((f) => f.id === 'food28.proteinAvgComplete')).toBeUndefined();
+  });
+
   it('counts the days the protein target was hit (the protein-250 answer)', () => {
     const recs: AnyRecord[] = [settings({ protein: 215 })];
     days('2026-10-06', 28).forEach((d, i) => recs.push(food(d, 2500, i < 13 ? 220 : 180)));
@@ -84,6 +94,13 @@ describe('the fact sheet', () => {
     const goal = env('memory', '2026-09-01', { text: 'cut to 83 kg', topic: 'goal', scope: 'standing', validFrom: '2026-09-01', lastSeen: 0, origin: 'said', goal: { metric: 'weight', target: 83, by: '2027-02-28', startDate: '2026-09-01', start: 88 } });
     const recs: AnyRecord[] = [goal, ...days('2026-10-10', 20).map((d) => weigh(d, 82.8))];
     expect(buildFacts(recs, { now: NOW, tz: TZ }).goals[0].status).toBe('reached');
+  });
+
+  it('an ended or not-yet-started goal is not a current goal (Codex, PR #73)', () => {
+    const g = (validFrom: string, validUntil?: string) => env('memory', '2026-09-01', { text: 'cut to 83 kg', topic: 'goal', scope: 'standing', validFrom, lastSeen: 0, origin: 'said', ...(validUntil ? { validUntil } : {}), goal: { metric: 'weight', target: 83, by: '2027-02-28', startDate: '2026-09-01', start: 88 } });
+    expect(buildFacts([g('2026-09-01', '2026-10-01')], { now: NOW, tz: TZ }).goals).toEqual([]);
+    expect(buildFacts([g('2026-12-01')], { now: NOW, tz: TZ }).goals).toEqual([]);
+    expect(buildFacts([g('2026-09-01', '2026-11-03')], { now: NOW, tz: TZ }).goals).toHaveLength(1);
   });
 
   it('goal pace comes from the trend and the date, never guessed', () => {
