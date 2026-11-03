@@ -22,8 +22,8 @@ const ctx = await browser.newContext({ viewport: { width: 430, height: 932 }, de
 const p = await ctx.newPage();
 const errs = [];
 p.on('pageerror', (e) => errs.push(e.message));
-const open = async (q = '') => {
-  await p.goto(base + q); await p.waitForFunction(() => window.__ready, null, { timeout: 90000 }); await sleep(600);
+const open = async (q = '') => { // `nosave` keeps these checks off the saved database; the saving check below turns it on
+  await p.goto(base + q + (q ? '&' : '?') + 'nosave'); await p.waitForFunction(() => window.__ready, null, { timeout: 90000 }); await sleep(600);
 };
 const ev = (s) => p.evaluate(s);
 const out = [];
@@ -67,6 +67,27 @@ let offlineOk = true; try { await p.reload(); await p.waitForFunction(() => wind
 await ctx.setOffline(false);
 check('a saved app opens with no network', sw && offlineOk, { sw, offlineOk });
 await ev(`navigator.serviceWorker.getRegistrations().then(rs => Promise.all(rs.map(r => r.unregister())))`).catch(() => {});
+
+// P5. a workout that saves: log sets, kill the page, come back and resume, finish, and the engine holds a finished session
+await open('?rest=8'); await ev(`indexedDB.deleteDatabase('a2.data')`); await sleep(300);
+await p.goto(base + '?rest=8&nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(400);
+await ev(`__aven.startWorkout()`); await sleep(1000); await ev(`__aven.logSet()`); await sleep(900); await ev(`__aven.endRest(false)`); await sleep(700); await ev(`__aven.logSet()`); await sleep(900);
+await p.waitForFunction(() => !window.__saver.engine.busy(), null, { timeout: 8000 });
+let db = await ev(`(() => { const e = window.__saver.engine, s = e.all('session')[0]; return { state: s?.state, sets: e.all('set').filter(x => x.done).map(x => [x.done.kg, x.done.reps]), total: e.all('set').length, slots: e.all('slot').length } })()`);
+check('two logged sets are saved in the engine as they happen', db.state === 'active' && db.sets.length === 2 && db.total === 16 && db.slots === 5, db);
+await p.goto(base + '?rest=8&nosw'); await p.waitForFunction(() => window.__ready && window.__saver && document.getElementById('live').classList.contains('on'), null, { timeout: 90000 }); await sleep(500);
+r = await ev(`({ idx: __aven.W.idx, done: __aven.W.done[0].length, vol: __aven.W.vol, live: document.getElementById('live').classList.contains('on'), txt: document.getElementById('liveT').textContent })`);
+check('after the page is killed the workout comes back as the live pill with its sets', r.live && r.idx === 2 && r.done === 2 && r.vol === 80 * 8 + 82.5 * 8, r);
+await ev(`__aven.startWorkout()`); await sleep(1000);
+await ev(`__aven.logSet()`); await sleep(900);
+await ev(`__aven.finish()`); await sleep(1200);
+await p.waitForFunction(() => !window.__saver.engine.busy(), null, { timeout: 8000 });
+db = await ev(`(() => { const e = window.__saver.engine, s = e.all('session'); return { n: s.length, state: s[0].state, done: e.all('set').filter(x => x.done).length, skipped: e.all('set').filter(x => x.skipped).length, ended: !!s[0].endedAt } })()`);
+check('finishing saves a finished session and marks the unlogged sets skipped', db.n === 1 && db.state === 'finished' && db.ended && db.done === 3 && db.skipped === 13, db);
+await p.goto(base + '?nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(400);
+r = await ev(`({ live: document.getElementById('live').classList.contains('on'), W: !!__aven.W })`);
+check('a finished workout does not come back as live', !r.live && !r.W, r);
+await ev(`indexedDB.deleteDatabase('a2.data')`);
 
 // 1. two taps on Log inside the 300 ms hand-off log one set
 await open('?rest');

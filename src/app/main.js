@@ -1,3 +1,6 @@
+import { Engine } from '../engine/engine';
+import { keepWhenUseful } from '../engine/storage';
+import { Saver } from './store';
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const phone = $('#phone');
 const ASSET = import.meta.env.BASE_URL; // the photo, mask, hero and thumbnail files sit next to the page
@@ -61,7 +64,7 @@ const T = {
     units:'Units', metric:'Metric · kg', windowG:'The window', placeS:'The real sun, moon and weather', skyS:'Live follows the weather', workoutG:'Workout', hap:'Haptics', preview:'preview',
     credit:'Health, sleep and food numbers in this preview are examples. Photo: Kallur lighthouse, Kalsoy, Faroe Islands, by Olegs Jonins on Unsplash. Light: the real sun and moon over Copenhagen. Weather: the Open-Meteo forecast for Copenhagen, saved on 3 November.',
     set:'Set {a} of {b}', logSet:'Log {w} × {r}', skip:'Skip rest', rest:'Rest', nextSet:'Next set', thenEx:'then', lastEx:'Last exercise. Finish strong.', next:'Next',
-    coachK:'Coach', coachP:'85 kg for sets 3 and 4? Sets 1 and 2 moved fast.', use85:'Use 85 kg', keep:'Keep 82.5', applied:'Sets 3–4 are 85 kg', undo:'Undo',
+    coachK:'Coach', coachP:'85 kg for sets 3 and 4? Sets 1 and 2 moved fast.', use85:'Use 85 kg', keep:'Keep 82.5', applied:'Sets 3–4 are 85 kg', undo:'Undo', noSave:'Not saved. Free up space on the phone.',
     oldBest:'old best', sunAfter:'Sunset {s}, {n} minutes after you finish', continue:'Continue', recK:'Heaviest bench ever', recP:'2.5 kg over your best from 20 October. It is on the bench card in Train now.', repBest:'Rep best',
     whole:'Whole workout', hold:'Hold to finish', holding:'Keep holding…', complete:'Push, done.', partialH:'Push · {a} of {b} sets', skippedL:'Not done today: {l}.', someSets:'a few sets', cTime:'Time', cSets:'Sets', cRec:'Records', cRec1:'Record', kgLifted:'kg lifted', doneB:'Back to Today',
     loggedU:'Logged {w} × {r}', savedPush:'Push saved', liveT:'Push · {ex}', liveS:'Set {a} of {b} · resume', liveR:'Resting · {ex}', restOver:'Rest is over · {ex}, set {a}', dayDone:'Done',
@@ -111,7 +114,7 @@ const T = {
     units:'Enheder', metric:'Metrisk · kg', windowG:'Vinduet', placeS:'Den rigtige sol, måne og vejr', skyS:'Live følger vejret', workoutG:'Træning', hap:'Vibration', preview:'prøve',
     credit:'Tal for helbred, søvn og mad i denne prøve er eksempler. Foto: Kallur fyr, Kalsoy, Færøerne, af Olegs Jonins på Unsplash. Lys: den rigtige sol og måne over København. Vejr: Open-Meteos prognose for København, gemt 3. november.',
     set:'Sæt {a} af {b}', logSet:'Gem {w} × {r}', skip:'Spring pause over', rest:'Pause', nextSet:'Næste sæt', thenEx:'derefter', lastEx:'Sidste øvelse. Slut stærkt.', next:'Næste',
-    coachK:'Coach', coachP:'85 kg i sæt 3 og 4? Sæt 1 og 2 gik hurtigt.', use85:'Brug 85 kg', keep:'Behold 82,5', applied:'Sæt 3–4 er 85 kg', undo:'Fortryd',
+    coachK:'Coach', coachP:'85 kg i sæt 3 og 4? Sæt 1 og 2 gik hurtigt.', use85:'Brug 85 kg', keep:'Behold 82,5', applied:'Sæt 3–4 er 85 kg', undo:'Fortryd', noSave:'Ikke gemt. Frigør plads på telefonen.',
     oldBest:'gl. rekord', sunAfter:'Solnedgang {s}, {n} minutter efter du er færdig', continue:'Fortsæt', recK:'Tungeste bænk nogensinde', recP:'2,5 kg over din bedste fra 20. oktober. Den står nu på bænkkortet i Træn.', repBest:'Rekord i gentagelser',
     whole:'Hele træningen', hold:'Hold for at afslutte', holding:'Bliv ved…', complete:'Push, færdig.', partialH:'Push · {a} af {b} sæt', skippedL:'Ikke lavet i dag: {l}.', someSets:'et par sæt', cTime:'Tid', cSets:'Sæt', cRec:'Rekorder', cRec1:'Rekord', kgLifted:'kg løftet', doneB:'Tilbage til i dag',
     loggedU:'Logget {w} × {r}', savedPush:'Push gemt', liveT:'Push · {ex}', liveS:'Sæt {a} af {b} · fortsæt', liveR:'Pause · {ex}', restOver:'Pausen er slut · {ex}, sæt {a}', dayDone:'Færdig',
@@ -1088,6 +1091,30 @@ $('#toastU').addEventListener('click', () => { const f = undoFn; undoFn = null; 
 const DEV = Q.get('rest') !== null || Q.get('dev') !== null; // test-only switches show only in test mode
 let W = null, SHORT = Q.get('rest') !== null || store.get('short') === '1';
 const restSec = s => SHORT ? 10 : s;
+/* ---------- saving: the screen keeps its own fast state; the engine keeps the workout (src/app/store.ts) ---------- */
+const EXID = { 'Bench press': 'bench-press', 'Incline dumbbell press': 'incline-db-press', 'Overhead press': 'overhead-press', 'Lateral raise': 'lateral-raise', 'Triceps pushdown': 'tricep-pushdown' };
+let SAVER = null, warned = false;
+const snapW = () => ({ name: 'Push', lifts: W.ex.map((e, ei) => ({ exerciseId: EXID[e.n], restSec: e.rest, sets: e.sets.map((s, j) => { const d = W.done[ei][j]; return { kg: d ? d[0] : s[0], reps: d ? d[1] : s[1], done: !!d }; }) })) });
+function persist(label) { // called after every change to the workout; the first call starts the saved session
+  if (!SAVER || !W || W.saved) return;
+  if (!SAVER.id) { SAVER.begin(snapW()); keepWhenUseful(SAVER.engine).catch(() => {}); }
+  SAVER.sync(snapW(), label);
+}
+function saveFailed() { if (warned) return; warned = true; toast(t('noSave')); }
+// a workout the phone still holds as open (the app was closed or killed mid-workout) comes back as the live pill
+function resumeDraft() {
+  const d = SAVER.draft();
+  if (!d || W) return;
+  const ex = d.snap.lifts.map(l => { const base = PUSH.find(p => EXID[p.n] === l.exerciseId); return base && { ...base, sets: l.sets.map(s => [s.kg, s.reps]) }; });
+  if (ex.some(x => !x)) return; // a lift this screen does not know: leave it open in the engine, never guess
+  const done = d.snap.lifts.map(l => { const a = []; for (const s of l.sets) { if (!s.done) break; a.push([s.kg, s.reps]); } return a; });
+  const flags = []; done.forEach((dn, i) => dn.forEach((_, j) => { flags[ex.slice(0, i).reduce((a, x) => a + x.sets.length, 0) + j] = 'd'; }));
+  const e = Math.max(0, done.findIndex((dn, i) => dn.length < ex[i].sets.length)), n = done.flat().length;
+  const total = ex.reduce((a, x) => a + x.sets.length, 0);
+  if (n >= total) return; // everything was logged but the finish never came: it stays in the engine for the history, not as a live workout
+  W = { ex, e, s: done[e].length, idx: n, total, done, t0: d.session.startedAt || Date.now(), rest: null, coach: 0, rec: [], vol: done.flat().reduce((a, x) => a + x[0] * x[1], 0), flags };
+  S.live = true; buildSess(); renderSet(true); $('#live').classList.add('on'); paintLive(); paintCta();
+}
 function freshW() {
   const ex = plan().map(e => ({ ...e, sets: e.sets.map(x => x.slice()) }));
   return { ex, e: 0, s: 0, idx: 0, total: ex.reduce((a, e) => a + e.sets.length, 0), done: ex.map(() => []), t0: Date.now(), rest: null, coach: 0, rec: [], vol: 0, flags: [] };
@@ -1181,7 +1208,7 @@ function startWorkout() {
   if (S.view !== 'today') return;
   if (S.done) return show('fuel');
   closeSheet();
-  if (!W) { W = freshW(); buildSess(); renderSet(true); }
+  if (!W) { W = freshW(); buildSess(); renderSet(true); persist('Started Push'); }
   S.live = true; buzz(12); S.prevTab = S.tab; frameStage();
   // the active screen's glass slides away; the photo pushes in and the workout rises inside it
   const scr = $(`.scr[data-s="${S.tab}"]`);
@@ -1323,7 +1350,7 @@ function logSet() {
   if (W.busy || W.end) return; W.busy = true; // a second tap inside the 300 ms hand-off would log the same set twice and skip the next
   const s = cur(), E = W.ex[W.e], k = W.idx;
   buzz(14); pearl(); bloom($('#pearl'), 'rgba(255,170,120,.5)'); closeSheet(true);
-  W.done[W.e][W.s] = s.slice(); W.vol += s[0] * s[1];
+  W.done[W.e][W.s] = s.slice(); W.vol += s[0] * s[1]; persist('Set logged');
   const heavy = s[0] > E.best[0], repB = !heavy && s[0] >= E.best[0] && s[1] > E.best[1];
   W.flags[k] = heavy || repB ? 'g' : 'd';
   if (heavy || repB) W.rec.push({ e: W.e, w: s[0], r: s[1], heavy });
@@ -1343,7 +1370,7 @@ function logSet() {
 }
 function undoLog(p, k) {
   if (!W || S.view !== 'rest') return;
-  clearRest(); W.e = p.e; W.s = p.s; W.idx = p.idx; W.coach = p.coach; W.vol = p.vol; W.flags[k] = undefined; W.done[p.e].length = p.s;
+  clearRest(); W.e = p.e; W.s = p.s; W.idx = p.idx; W.coach = p.coach; W.vol = p.vol; W.flags[k] = undefined; W.done[p.e].length = p.s; persist('Set undone');
   setView('train'); restFades(false); renderSet(true); resetPearl(); flyInto($('#setB'), k, true); fades(true); moodStage(false);
 }
 let restTm = 0;
@@ -1419,7 +1446,7 @@ function trimLive() {
   if (W.s >= keep[W.e]) { W.e++; W.s = 0; }
   W.ex = nex; W.done = W.done.slice(0, nex.length).map((d, i) => d.slice(0, keep[i])); W.flags = flags; W.rec = W.rec.filter(r => r.e < nex.length);
   W.total = nex.reduce((a, e) => a + e.sets.length, 0); W.idx = n[W.e] + W.s;
-  buildSess(); renderSet(true); if (W.rest) paintRestNext(); paintLive();
+  buildSess(); renderSet(true); if (W.rest) paintRestNext(); paintLive(); persist('Plan trimmed');
 }
 function paintRestNext() { const nx = cur(); $('#rNext').innerHTML = `${t('nextSet')} · <b class="tab">${kgFmt(nx[0])} × ${nx[1]}</b><small>${exN(W.ex[W.e])} · ${t('set', { a: W.s + 1, b: W.ex[W.e].sets.length })}</small>`; }
 function record(s, k) { // a record grows from the logged set into a lit medal on black, then lands on the strip
@@ -1496,6 +1523,7 @@ function bindHold() { // hold to commit: the world goes soft while the button fi
   b.addEventListener('pointerdown', down); b.addEventListener('pointerup', up); b.addEventListener('pointerleave', up); b.addEventListener('pointercancel', up);
 }
 function finish() {
+  if (SAVER && W && !W.saved) { persist('Sets saved'); SAVER.finish(snapW()); W.saved = true; }
   buzz([30, 50, 30]); if (W.rest) clearRest();
   closeSess(); setView('complete'); fades(false); restFades(false);
   if (STG.s) stageDo(() => STG.s.putAway()); // behind the summary, the plates come off and the equipment is put away
@@ -1580,6 +1608,8 @@ async function boot() {
   if (wake) { store.set('morning', day); setTimeout(morning, 450); }
   // the workout's 3D equipment loads once Today has settled; until it is ready the workout shows its numbers on the photo
   setTimeout(() => (window.requestIdleCallback || (f => setTimeout(f, 1)))(loadStage, { timeout: 2500 }), 1800);
+  // the database opens once Today is up (it never holds up the numbers); a workout started before it was ready is saved the moment it is
+  if (Q.get('nosave') === null) Engine.open().then(e => { SAVER = new Saver(e, saveFailed); window.__saver = SAVER; resumeDraft(); if (W && !W.saved) persist('Started Push'); }).catch(err => { console.warn('save', err); saveFailed(); });
   setInterval(() => { if (S.scrub === null && springIdle()) { const n = nowMin(); applyLight(n); placeDot(n); paintHero(n); paintWx(n); } }, 20000);
 }
 const springIdle = () => true;
