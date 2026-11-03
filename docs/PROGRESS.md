@@ -290,13 +290,20 @@ Built as an artifact (artifact https://claude.ai/artifact/2mGPer97P43dNo4Y5Ugjhp
 - Weight and reps sit on one line that shrinks to fit. The dial and the number drag both go "right = heavier".
 - Cold start: fonts don't block rendering. The splash copy sits on the photo, dimmed to the hour. The morning sweep starts from the same minute as the splash.
 - The 3D (three.js) builds only after 1.2 s without a touch. On the PC that takes about 0.45, 0.75 and 0.6 s in long tasks.
-- Omar, 3 Nov 09:01: moving figures go only in Train, beside the exercise name, never on the workout screen.
+- Omar, 3 Nov 09:01: no moving figures on the workout screen. Refined at 09:28: see the figures decision below.
 - Still open: Omar times the cold start on his phone; fonts still show a fallback for a split second.
 Next: Omar times the cold start on his phone, then port Window v15 into the repo.
 
 **Revamp plan "one window" (3 Nov 2026, plan only, not built)** (https://claude.ai/artifact/RBYkz3sWWpXiLEqWLkzUtr)
 - Each tab is a direction you look from inside the same landscape, with a parallax pan between tabs. One rule set covers every screen.
-- Moving line figures, all on one rig, sit beside lift names in Train only.
+- Figures: superseded by the figures decision below (Blender clips in the explainer only; minimal static figure in the Train list).
 - Harsh score: 8/10. Biggest risk: the figures could read as clip art. Step 1 is building and judging the bench figure alone, with a still-pose fallback.
 - The photo is too narrow for a full look-around until Aven's own terrain image exists.
 
+**Figures decision (Omar, 3 Nov 2026, 09:28; supersedes the "line figures" idea)**
+- Omar: "The moving figures are only for explainers, when I tap the name or the exercise, it has the moving figure and all the information: how to do it, how much I progressed, and all that. Besides that, I only want a figure or something that's minimal, or whatever you think is the best."
+- The figures reuse old Aven's rendered Blender clips: the Z-Anatomy clay figure with glowing working muscles. They are not new line figures.
+- The moving clip appears only in the exercise explainer, which opens when you tap a lift name (how to do it, your progress and so on).
+- In the Train list, the figure beside the name is minimal and static.
+- Z-Anatomy is CC BY-SA 4.0, so Settings needs a credit line.
+- Push day still needs bench, incline, OHP and lateral raise rendered.
