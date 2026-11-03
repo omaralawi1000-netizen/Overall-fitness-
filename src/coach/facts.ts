@@ -239,8 +239,11 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
   }
 
   // ── training ──
-  const sessions = live<AnyRecord>(records, 'session') as (AnyRecord & { name: string; state: string })[];
-  const finishedIn = (days: number) => sessions.filter((s) => s.state === 'finished' && diffDays(today, dayOf(s, dayStart)) < days && dayOf(s, dayStart) <= today).length;
+  // a discarded workout is thrown away (unless its discard is undone); a started one belongs to the day it was done, not
+  // the day it was planned for (Codex, PR #73)
+  const sessions = (live<AnyRecord>(records, 'session') as (AnyRecord & { name: string; state: string; startedAt?: number })[]).filter((s) => s.state !== 'discarded');
+  const sessionDay = (s: (typeof sessions)[number]) => (s.startedAt !== undefined ? dayKeyAt(s.startedAt, s.tz, dayStart) : dayOf(s, dayStart));
+  const finishedIn = (days: number) => sessions.filter((s) => s.state === 'finished' && diffDays(today, sessionDay(s)) < days && sessionDay(s) <= today).length;
   const activities7: Record<string, number> = {};
   for (const a of live<AnyRecord>(records, 'activity') as (AnyRecord & { type: string })[]) {
     const d = dayOf(a, dayStart);
@@ -255,7 +258,7 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
       food: todayFood, foodComplete: todayComplete, left,
       ...(water ? { water } : {}),
       ...(lastDay === today && latest ? { weighIn: { ...latest, id: 'today.weighIn' } } : {}),
-      sessions: sessions.filter((s) => dayOf(s, dayStart) === today).map((s) => ({ name: s.name, state: s.state })),
+      sessions: sessions.filter((s) => sessionDay(s) === today).map((s) => ({ name: s.name, state: s.state })),
     },
     food28: { daysLogged: logged.length, daysComplete: done.length, facts: food28 },
     weight: { ...(latest ? { latest, latestDay: lastDay } : {}), ...(trend ? { trend } : {}), odd: odd.map((w) => ({ id: w.id, kg: w.kg, day: dayOf(w, dayStart) })) },

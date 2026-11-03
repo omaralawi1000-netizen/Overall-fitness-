@@ -155,6 +155,13 @@ describe('the fact sheet', () => {
     expect(missed.neededKgPerWeek).toBeUndefined();
   });
 
+  it('a workout counts on the day it was done, and a discarded one not at all (Codex, PR #73)', () => {
+    const session = (day: string, state: string, startedAt?: number) => env('session', day, { name: 'Push', state, ...(startedAt !== undefined ? { startedAt } : {}) });
+    const s = buildFacts([session('2026-10-20', 'finished', at('2026-11-03', '09')), session('2026-11-03', 'discarded', at('2026-11-03', '10'))], { now: NOW, tz: TZ });
+    expect(s.training.sessions7).toBe(1);
+    expect(s.today.sessions).toEqual([{ name: 'Push', state: 'finished' }]);
+  });
+
   it('render lists every number with its id, in the person\'s language', () => {
     const recs = [{ ...settings({ kcal: 3000 }), language: 'da' } as AnyRecord, food('2026-11-03', 1316)];
     const text = renderFacts(buildFacts(recs, { now: NOW, tz: TZ }));

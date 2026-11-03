@@ -35,6 +35,13 @@ const ASK_FOR: Record<Proposal['name'], RegExp> = {
 /** Does the person's own text ask for this kind of action? Turned-down asks are taken out first. */
 export const asksFor = (name: Proposal['name'], text: string) => ASK_FOR[name].test(text.replace(NOT_ASKED, ' '));
 
+/** "0.5 l", "2 dl", "33 cl" also as millilitres: a water log is proposed in ml (Codex, PR #73) */
+const VOLUME = /(\d[\d.,]*)\s*(l|liters?|litres?|liter|dl|cl)(?![\p{L}\p{N}_])/giu;
+const ML: Record<string, number> = { l: 1000, dl: 100, cl: 10 };
+function millilitres(text: string): number[] {
+  return [...text.matchAll(VOLUME)].flatMap((m) => numbersIn(m[1]).map((n) => n * (ML[m[2].toLowerCase()] ?? 1000)));
+}
+
 /** the numbers in a text, with "1,500", "1.500" and "1500" read the same */
 export function numbersIn(text: string): number[] {
   return [...text.matchAll(/\d[\d.,]*/g)].map((m) => {
@@ -69,7 +76,7 @@ export function gate(p: Proposal, t: Turn): { ok: true } | { ok: false; reason: 
   if (!asksFor(p.name, t.userText)) return { ok: false, reason: `the person did not ask to ${p.name.replace('_', ' ')}; the request came from untrusted text` };
   // a proposal's number is rounded the way readProposal rounds it (82.64 kg is logged as 82.6), so trusted numbers are
   // compared at those roundings too (Codex, PR #73)
-  const own = [...numbersIn(t.userText), ...t.sheet].flatMap((x) => [x, Math.round(x), Math.round(x * 10) / 10]);
+  const own = [...numbersIn(t.userText), ...millilitres(t.userText), ...t.sheet].flatMap((x) => [x, Math.round(x), Math.round(x * 10) / 10]);
   const foreign = proposalNumbers(p).filter((n) => !own.some((x) => Math.abs(x - n) < 1e-9));
   if (foreign.length) return { ok: false, reason: `${foreign.join(', ')} comes only from untrusted text` };
   return { ok: true };

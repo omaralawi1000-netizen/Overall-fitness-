@@ -57,6 +57,12 @@ describe('untrusted text is data, never instructions', () => {
     expect(gate({ name: 'log_weight', kg: 86.4 }, t).ok).toBe(false);
   });
 
+  it('litres the person said match a water log in ml (Codex, PR #73)', () => {
+    expect(gate({ name: 'log_water', ml: 500 }, { userText: 'Log 0.5 litres of water', untrusted: true, sheet: [] })).toEqual({ ok: true });
+    expect(gate({ name: 'log_water', ml: 330 }, { userText: 'log 33 cl', untrusted: true, sheet: [] })).toEqual({ ok: true });
+    expect(gate({ name: 'log_water', ml: 1500 }, { userText: 'log 0,5 l vand', untrusted: true, sheet: [] }).ok).toBe(false);
+  });
+
   it("the person's own command still works next to untrusted text, with numbers from their words or the sheet", () => {
     expect(gate({ name: 'set_target', key: 'protein', value: 160 }, { userText: 'sæt mit proteinmål til 160', untrusted: true, sheet: [] })).toEqual({ ok: true });
     // æ, ø, å are letters: "ændr" is an ask, "ikke ændre" a turned-down one (Codex, PR #73)
