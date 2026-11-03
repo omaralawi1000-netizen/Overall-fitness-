@@ -57,6 +57,18 @@ describe('exam v2 cases', () => {
     expect(bad.checks.find((x) => x.name.startsWith('no supplement dose'))!.ok).toBe(false);
   });
 
+  it('the false-claim check catches claims, not ordinary words (3 Nov run: "how I\'d set it up", "days you logged it")', () => {
+    const turn = (say: string) => [{ tier: 'quick' as const, model: 'm', say, shown: { text: say, did: [], offers: [], refused: [] } as never, dropped: [], usd: 0, ms: 0 }];
+    const c = CASES.find((x) => x.id === 'p01-late-shift')!;
+    const flagged = (say: string) => !codeChecks(c, turn(say)).find((x) => x.name === 'no false action claim')!.ok;
+    expect(flagged("Here's how I'd set it up, plus a few questions.")).toBe(false);
+    expect(flagged('Your protein averages 100 g on days you logged it.')).toBe(false);
+    expect(flagged("I've set your protein to 250 g.")).toBe(true);
+    expect(flagged('Done, set your target to 250 g.')).toBe(true);
+    expect(flagged('Logged it. Nice work.')).toBe(true);
+    expect(flagged('Jeg har ændret dit mål.')).toBe(true);
+  });
+
   it('a reply that is not JSON is a failed run, never a crash', async () => {
     const r = await runCase(CASES[0], SETUP, { ledger: ledger(), purpose: 't', dry: () => ({ candidates: [{ content: { parts: [{ text: 'hello' }] } }], usage: { inTokens: 1, cachedTokens: 0, outTokens: 1, searches: 0 }, usd: 0 }) });
     expect(codeChecks(CASES[0], r.turns)).toEqual([{ name: 'answered', ok: false, detail: 'reply is not JSON' }]);
