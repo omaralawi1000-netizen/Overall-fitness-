@@ -13,7 +13,7 @@
  * Claude: AVEN_ANTHROPIC_KEY (Omar's PC) or ANTHROPIC_API_KEY. Nothing here prints a key or a header.
  */
 import Anthropic from '@anthropic-ai/sdk';
-import { appendFileSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 
 // ── prices ──
@@ -288,6 +288,39 @@ const NO_USAGE: Usage = { inTokens: 0, cachedTokens: 0, outTokens: 0, searches: 
 const transient = (e: unknown) => e instanceof CallError && (e.status === -1 || e.status === 429 || e.status === 529 || e.status >= 500);
 export type BatchResult = Map<string, GeminiReply | CallError>;
 
+/** A sent batch whose answers are not in yet: its handle, its reservation and the exact items it holds. */
+export interface PendingBatch { model: string; handle: string; reservedUsd: number; fingerprint: string; ids: string[]; purpose: string; at: string }
+const batchFingerprint = (model: string, xs: { id: string; sent: unknown }[]) =>
+  createHash('sha256').update(JSON.stringify([model, ...[...xs].sort((a, b) => (a.id < b.id ? -1 : 1)).map((x) => [x.id, x.sent])])).digest('hex');
+
+/**
+ * How to split work into batches when a stopped run left some out: each pending batch first, with exactly its own items
+ * (so it is collected, never re-sent under a new id set), then the rest in batches of `size`. A pending batch holding
+ * items this run does not ask for is returned apart (its reservation stays; nothing is sent for it).
+ */
+export function planBatches<T extends { id: string }>(xs: T[], pending: PendingBatch[], size = 100): { chunks: T[][]; orphans: PendingBatch[] } {
+  const byId = new Map(xs.map((x) => [x.id, x]));
+  const chunks: T[][] = [], orphans: PendingBatch[] = [];
+  for (const p of pending) {
+    const mine = p.ids.map((id) => byId.get(id));
+    if (mine.length && mine.every(Boolean)) { chunks.push(mine as T[]); for (const id of p.ids) byId.delete(id); }
+    else orphans.push(p);
+  }
+  const rest = [...byId.values()];
+  for (let i = 0; i < rest.length; i += size) chunks.push(rest.slice(i, i + size));
+  return { chunks, orphans };
+}
+
+/**
+ * The batches a stopped run left out for this model, with the items each holds. The caller sends each one's exact items
+ * to callBatch FIRST (before splitting the rest of the work into new batches), so it is collected, never sent again.
+ */
+export function pendingBatches(model: string, jobDir: string): PendingBatch[] {
+  if (!existsSync(jobDir)) return [];
+  return readdirSync(jobDir).filter((f) => f.startsWith(`batch-${model}-`) && f.endsWith('.json'))
+    .map((f) => JSON.parse(readFileSync(`${jobDir}/${f}`, 'utf8')) as PendingBatch).filter((p) => Array.isArray(p.ids));
+}
+
 /**
  * Sends every request as one batch and waits for all answers. The whole batch's worst case is checked against the cap
  * first and written to the ledger as a reservation the moment the batch is sent; each answer's real (discounted) cost is
@@ -300,18 +333,21 @@ export async function callBatch(model: string, items: { id: string; body: Gemini
   const price = priceOf(model);
   if (new Set(items.map((x) => x.id)).size !== items.length) throw new Error('batch ids must be unique');
   const worst = items.reduce((s, x) => s + estimate(model, x.body, maxOutOf(model, x.body)), 0) * BATCH_DISCOUNT;
-  const jobFile = o.jobDir ? `${o.jobDir}/batch-${model}-${createHash('sha256').update(items.map((x) => x.id).sort().join('\n')).digest('hex').slice(0, 12)}.json` : null;
-  const pending: { handle: string; reservedUsd: number } | null = !o.dry && jobFile && existsSync(jobFile) ? JSON.parse(readFileSync(jobFile, 'utf8')) : null;
-  if (!pending) o.ledger.check(worst, `${o.purpose}: a batch of ${items.length} on ${model}`); // (a pending one is already reserved)
-  const out: BatchResult = new Map();
   const isClaude = model.startsWith('claude-');
   const reqs = items.map((x) => ({ ...x, req: isClaude ? toClaude(model, x.body, o.effort ?? 'medium') : null }));
+  // (a saved batch is reused only for exactly these requests: same ids, same bodies, same effort; anything else is a new batch)
+  const fp = batchFingerprint(model, reqs.map((x) => ({ id: x.id, sent: x.req ?? x.body })));
+  const jobFile = o.jobDir ? `${o.jobDir}/batch-${model}-${fp.slice(0, 16)}.json` : null;
+  const saved: PendingBatch | null = !o.dry && jobFile && existsSync(jobFile) ? JSON.parse(readFileSync(jobFile, 'utf8')) : null;
+  const pending = saved && saved.fingerprint === fp ? saved : null;
+  if (!pending) o.ledger.check(worst, `${o.purpose}: a batch of ${items.length} on ${model}`); // (a pending one is already reserved)
+  const out: BatchResult = new Map();
   if (o.dry) { for (const x of items) out.set(x.id, o.dry(model, x.body)); return out; }
   const sleep = o.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const deadline = Date.now() + (o.maxWaitMs ?? 6 * 3600_000);
   const reserve = (handle: string) => {
     o.ledger.record({ ...entry(model, `${o.purpose}: reserved for batch ${handle}`, worst, NO_USAGE, true), key: `${handle}|reserve` });
-    if (jobFile) writeFileSync(jobFile, JSON.stringify({ model, handle, reservedUsd: worst, purpose: o.purpose, items: items.length, at: new Date().toISOString() }));
+    if (jobFile) writeFileSync(jobFile, JSON.stringify({ model, handle, reservedUsd: worst, fingerprint: fp, ids: items.map((x) => x.id), purpose: o.purpose, at: new Date().toISOString() } satisfies PendingBatch));
     return handle;
   };
   // (after the answers are in the ledger, or the job ended with none: the reservation is given back)

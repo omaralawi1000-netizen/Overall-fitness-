@@ -4,7 +4,7 @@ import { mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { priceOf, realToday, costOf, estimate, Ledger, SpendCapError, CallError, toJsonSchema, toClaude, schemaSize, jsonOnly, splitSystem, callBatch, geminiInlined, call, PRICES, type GeminiBody, type GeminiReply } from '../../exam/providers';
+import { priceOf, realToday, costOf, estimate, Ledger, SpendCapError, CallError, toJsonSchema, toClaude, schemaSize, jsonOnly, splitSystem, callBatch, pendingBatches, planBatches, geminiInlined, call, PRICES, type GeminiBody, type GeminiReply } from '../../exam/providers';
 
 const cid = (x: string) => createHash('sha256').update(x).digest('hex').slice(0, 32);
 const tmp = () => join(mkdtempSync(join(tmpdir(), 'ledger-')), 'ledger.jsonl');
@@ -292,6 +292,34 @@ describe('batches (judges, half price)', () => {
       expect(l.spent).toBeCloseTo(2 * one);
       // and a third read of the ledger (another run) agrees
       expect(new Ledger(file, 5).spent).toBeCloseTo(2 * one);
+    });
+    it('a saved batch is reused only for the very same requests: another effort is a new batch (Codex, PR #66)', async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'jobs-'));
+      const file = tmp();
+      const sentEfforts: string[] = [];
+      const client = (up: boolean) => ({ messages: { batches: {
+        create: async (p: any) => { sentEfforts.push(p.requests[0].params.output_config.effort); return { id: `mb-${sentEfforts.length}`, processing_status: 'in_progress', request_counts: { succeeded: 0, errored: 0 } }; },
+        retrieve: async (id: string) => { if (!up) throw new Error('down'); return { id, processing_status: 'ended', request_counts: { succeeded: 2, errored: 0 } }; },
+        results } } } as any);
+      await expect(callBatch('claude-opus-5-5', items, { ledger: new Ledger(file, 5), purpose: 'judge', client: client(false), jobDir: dir, effort: 'low', ...quick, maxWaitMs: -1 })).rejects.toThrow();
+      expect(pendingBatches('claude-opus-5-5', dir)).toMatchObject([{ handle: 'mb-1', ids: ['a', 'b'] }]);
+      await callBatch('claude-opus-5-5', items, { ledger: new Ledger(file, 5), purpose: 'judge', client: client(true), jobDir: dir, effort: 'high', ...quick });
+      expect(sentEfforts).toEqual(['low', 'high']); // the low-effort batch was not taken for a high-effort answer
+      // the same low-effort requests again: that saved batch is collected, nothing new is sent
+      await callBatch('claude-opus-5-5', items, { ledger: new Ledger(file, 5), purpose: 'judge', client: client(true), jobDir: dir, effort: 'low', ...quick });
+      expect(sentEfforts).toEqual(['low', 'high']);
+      expect(pendingBatches('claude-opus-5-5', dir)).toEqual([]);
+    });
+    it('a pending batch is collected with its own items before the rest is split again (Codex, PR #66)', () => {
+      // 101 to judge; batch 1 (x0–x99) came back with x5 unreadable, batch 2 (x100) was out when the run stopped
+      const xs = Array.from({ length: 101 }, (_, i) => ({ id: `x${i}` }));
+      const left = xs.filter((x) => x.id === 'x5' || x.id === 'x100');
+      const p = { model: 'm', handle: 'mb2', reservedUsd: 1, fingerprint: 'f', ids: ['x100'], purpose: 'exam', at: '' };
+      const plan = planBatches(left, [p]);
+      expect(plan.chunks.map((c) => c.map((x) => x.id))).toEqual([['x100'], ['x5']]);
+      expect(plan.orphans).toEqual([]);
+      // a pending batch whose items are all done already is set apart, never re-sent
+      expect(planBatches([{ id: 'x5' }], [p]).orphans).toEqual([p]);
     });
     it('Claude: a poll that fails on the network is tried again', async () => {
       let polls = 0;

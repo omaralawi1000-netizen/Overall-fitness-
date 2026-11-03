@@ -11,7 +11,7 @@
 import { it } from 'vitest';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { callBatch, CallError, Ledger, SpendCapError, estimate, type GeminiReply } from '../providers';
+import { callBatch, pendingBatches, planBatches, CallError, Ledger, SpendCapError, estimate, type GeminiReply } from '../providers';
 import { CALIBRATION } from './calibration';
 import { judgeBody, judgeOne, readVerdict, finalScore, fromCalibration, fromTranscript, gate, type JudgeInput, type Judged } from './judge';
 import { HARD_10, modelRow, chatModel, topTierWorthIt, examHealth, relativeBias, scoreOf, type Answer } from './report';
@@ -53,9 +53,12 @@ async function judgeAll(judge: string, xs: JudgeInput[], ledger: Ledger, label: 
   let retry = xs;
   if (!SYNC && xs.length) {
     retry = [];
-    for (let i = 0; i < xs.length; i += 100) {
-      const chunk = xs.slice(i, i + 100);
-      const res = await callBatch(judge, chunk.map((x) => ({ id: x.id, body: judgeBody(x) })), { ...o, jobDir: OUT, onPoll: (s) => console.log(`${judge} batch ${i / 100 + 1}: ${s}`) });
+    // batches a stopped run left out go first, with exactly their own items (so they are collected, not sent again);
+    // only then is the rest split into new batches of 100
+    const { chunks, orphans } = planBatches(xs, pendingBatches(judge, OUT));
+    for (const p of orphans) console.log(`${judge}: batch ${p.handle} (${p.purpose}) holds items this run does not ask for; its worst case stays reserved in the ledger`);
+    for (const [n, chunk] of chunks.entries()) {
+      const res = await callBatch(judge, chunk.map((x) => ({ id: x.id, body: judgeBody(x) })), { ...o, jobDir: OUT, onPoll: (s) => console.log(`${judge} batch ${n + 1}: ${s}`) });
       for (const x of chunk) {
         const r = res.get(x.id);
         try {
