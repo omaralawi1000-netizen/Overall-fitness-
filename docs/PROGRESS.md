@@ -282,3 +282,14 @@ Omar: "when the pop-ups appear, they're transparent, then transform to frosted g
 - With the CPU slowed 4x: idle 60, sheets 57, tick to rest 57, rest 60, rest out 59, second tick 59, record 59, finish 57. Headless: all 33 flow steps, a superset tapped through to the finish, keyboard and Escape, with no page errors.
 - Design judge, one round (Sonnet): 7/10. Fixed: numbers showed doubled while the finished card and the rising card crossed (the finished card now appears only once they part); rows blinked in on new cards; the deck touched the Done pill and the name; the pill faded before its outline took over.
 Next: Omar's verdict on his phone (does the deck read at a glance, is the frost there from the first frame, 120 Hz smoothness of the deck move).
+
+## Session 17: Window is the spine, v15 (3 Nov 2026)
+Omar: "Window is the spine. It's the best build so far." The decision (Keep / Bring in / Fix) is in `docs/keepers.md` under "Window is the spine (3 Nov 2026)". The Workout build was stopped; Window v15 now carries the fixes.
+Built as an artifact (artifact https://claude.ai/artifact/2mGPer97P43dNo4Y5Ugjhp; source `/mnt/project-files/aven-window-v15-src.zip`; open list https://claude.ai/artifact/XwwqMHbpWkgiddm4XnLf6m)
+- During a workout, the Workout build's lit studio and 3D equipment replace the photo. Today keeps the photo. Moods: ember for a set; teal for rest (the bar defocuses and a teal level rises); gold for a record, with a light sweep across the bar after the medal lands.
+- Weight and reps sit on one line that shrinks to fit. The dial and the number drag both go "right = heavier".
+- Cold start: fonts don't block rendering. The splash copy sits on the photo, dimmed to the hour. The morning sweep starts from the same minute as the splash.
+- The 3D (three.js) builds only after 1.2 s without a touch. On the PC that takes about 0.45, 0.75 and 0.6 s in long tasks.
+- Omar, 3 Nov 09:01: moving figures go only in Train, beside the exercise name, never on the workout screen.
+- Still open: Omar times the cold start on his phone; fonts still show a fallback for a split second.
+Next: Omar times the cold start on his phone, then port Window v15 into the repo.

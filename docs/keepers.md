@@ -216,6 +216,14 @@ His condition, in his words: "Can you please only use this if it's generally imp
 6. The photo isn't ownable long term: plan Aven's own image.
 7. Check the thin numbers at arm's length at 20% brightness.
 
+**Window v15 (3 Nov 2026)** (artifact https://claude.ai/artifact/2mGPer97P43dNo4Y5Ugjhp; source `/mnt/project-files/aven-window-v15-src.zip`; fixed/open list https://claude.ai/artifact/XwwqMHbpWkgiddm4XnLf6m)
+- During a workout, the Workout build's lit studio and 3D equipment replace the photo. Today keeps the photo. Moods: ember for a set; teal for rest (the bar defocuses and a teal level rises); gold for a record, with a light sweep across the bar after the medal lands.
+- Weight and reps sit on one line that shrinks to fit. The dial and the number drag both go "right = heavier".
+- Cold start: fonts don't block rendering. The splash copy sits on the photo, dimmed to the hour. The morning sweep starts from the same minute as the splash.
+- The 3D (three.js) builds only after 1.2 s without a touch. On the PC that takes about 0.45, 0.75 and 0.6 s in long tasks.
+- Omar, 3 Nov 09:01: moving figures go only in Train, beside the exercise name, never on the workout screen.
+- Still open: Omar times the cold start on his phone; fonts still show a fallback for a split second.
+
 ### Candidates, NOT approved yet (3 Nov 2026, Today)
 Built after his "no rings, readiness in a different way". He has not seen or said yes to either. Do not build from them until he does.
 - **Readiness as a big serif word that fills with light.** The word ("Ready.", with a score such as 82) fills with light as far as you are ready.
