@@ -25,6 +25,9 @@ Plain, short words. He's not a programmer, he dictates (expect misheard words), 
 
 Run them before Omar sees anything visual or any Coach change. Spawn fresh ones every round and iterate until they stop finding real defects. They may suggest an exact fix; you apply it.
 
+## Standing rule (Omar, 3 Nov)
+If anything on a screen looks off, fix it. If something is below the bar (9/10, aiming at 10), improve it without waiting to be asked. Applies to every thread and build.
+
 ## Never
 - Change `The-new-Claude-gym-app` (the old app). Read-only reference, cloned into `reference/` (gitignored).
 - Commit real data or API keys. The Gemini key is injected as a header by the environment (no variable); never put it in code, commits or logs.

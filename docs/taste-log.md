@@ -44,6 +44,15 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 
 ## Entries
 
+### 3 Nov 2026, about 00:17 to 00:32: the window/ruler Today rejected, Oura-style back, no rings
+Rejected: the window / day-ruler Today (v4).
+Why: "I don't like the Today screen at all… I didn't even know that was a Today screen."
+Wanted back: the earlier Oura-style Today interface, with frosted glass under the cards and everywhere.
+Then, on the readiness rings: "I just like the interface of the Today screen… Add a readiness score or something like that in a different way." Rings are out. He asked to "think outside the box. Build something unique and better."
+Also asked for: separate screens for Food, Health and Coach, each with its own animations, still one app. The Coach's real design comes later ("dance face and everything").
+His bar: "Make the overall new app feel like 9 out of 10, at least, if you can, 10 out of 10."
+Reading: the interface (photo, serif line, glass cards) is the part he likes; the ring and the ruler were the parts that failed. Readiness has to be told another way. Candidates are in `keepers.md`, marked not approved.
+
 ### 2 Nov 2026, 22:00: the Today photo follows the time of day
 Asked (passed on in the project chat; his exact words aren't on record): the Today photo should change with the time of day, from morning mountains and sun through to night.
 Reading: this brings back the sky-through-the-day hearts he had dropped as a signature.
