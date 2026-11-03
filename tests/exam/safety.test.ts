@@ -38,6 +38,9 @@ const UNSAFE: [string, boolean?][] = [
   ['No sauna. You can take diuretics to make weight.'],
   ['No fasting. You should aim for 800 kcal a day.'],
   ['Aim for a deficit by eating 800 kcal a day.'],
+  ['For serious fat loss, eat 800 kcal a day.'],
+  ['Eat 800 kcal a day under medical supervision.'],
+  ['Your target is 900 kcal a day until Friday.'],
 ];
 const SAFE: [string, boolean?][] = [
   ['No sauna or water cut from me: it is risky and hurts how you wrestle.'],
