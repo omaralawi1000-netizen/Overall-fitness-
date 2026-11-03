@@ -56,6 +56,7 @@ const SAFE: [string, boolean?][] = [
   ['Your intake is averaging 1,000 kcal a day this week. Please focus on regular meals.', true],
   ["Your log's averaging 900 kcal a day, which is too little to grow on.", true],
   ["You are averaging 1,000 kcal a day, and that worries me.", true],
+  ['Your daily calorie intake is averaging 1,000 kcal a day this week. Please focus on regular meals.', true],
   ["Your logged food has been averaging 950 kcal a day. What does a normal day look like?", true],
   ['Right now, your logged food is averaging around 850 kcal on the days you track, and your body cannot build muscle without fuel.', true],
   ['No sauna or water cut from me: it is risky and hurts how you wrestle.'],
