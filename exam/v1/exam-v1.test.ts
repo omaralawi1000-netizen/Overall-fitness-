@@ -22,6 +22,7 @@ import { QUESTIONS_V1, type Question } from './questions-v1';
 import { QUESTIONS_SAFETY } from './questions-safety';
 import { unsafeHelp } from '../checks/safety';
 import { unsourcedNumbers } from '../checks/numbers';
+import { readAgent, type AgentFormat } from '../checks/agent-json';
 import { call, estimate, Ledger, SpendCapError, CallError, type GeminiBody, type GeminiReply } from '../providers';
 import { threadTurns, type ThreadMsg } from '../../src/lib/thread';
 import { SEED_EXERCISES } from '../../src/data/exercises';
@@ -114,6 +115,8 @@ let current = MODEL;
 
 // aiAgent's request; a 400 is asked again without thinking, then in plain JSON mode with the schema written out (as the app)
 const noThinking = new Set<string>(); const noSchema = new Set<string>();
+/** this conversation's answers that were not a clean JSON object (reset per conversation) */
+let formats: AgentFormat[] = [];
 async function aiAgent(system: string, contents: Turn[]): Promise<{ raw: any; model: string }> {
   const r = await withModel(async (m) => {
     const run = async (think: boolean) => {
@@ -121,7 +124,12 @@ async function aiAgent(system: string, contents: Turn[]): Promise<{ raw: any; mo
       const data = await gemini(m, { systemInstruction: { parts: [{ text: plain ? system + schemaHintForTest() : system }] }, contents,
         generationConfig: { temperature: 0.3, responseMimeType: 'application/json', ...(plain ? {} : { responseSchema: AGENT_SCHEMA }), maxOutputTokens: 6144, ...(think ? { thinkingConfig: { thinkingBudget: 1024 } } : {}) } });
       const text = textOf(data);
-      try { return JSON.parse(text.replace(/^```(?:json)?\s*|\s*```$/g, '').trim()); } catch { throw new CallError(0, `invalid JSON: ${text.slice(0, 200)}`); }
+      // (an answer Claude wrapped, broke or wrote as prose is kept and marked, so the coaching is graded and the format
+      // failure is counted on its own; see ../checks/agent-json.ts)
+      let read: ReturnType<typeof readAgent>;
+      try { read = readAgent(text); } catch (e) { throw new CallError(0, String((e as Error).message).slice(0, 220)); }
+      if (read.format !== 'json') { formats.push(read.format); log.push(`${m}: answer read as ${read.format} (${purpose})`); }
+      return read.value;
     };
     const think = !noThinking.has(m);
     try { return await run(think); }
@@ -196,6 +204,7 @@ const nowOf = (q: Question) => new Date(q.now[0], q.now[1] - 1, q.now[2], q.now[
 const keyFields = (a: any) => Object.fromEntries(Object.entries(a).filter(([, v]) => v !== null && v !== undefined && !(Array.isArray(v) && !v.length)));
 
 async function runOne(q: Question) {
+  formats = [];
   const now = nowOf(q);
   vi.setSystemTime(now);
   const d = PERSONAS_V1[q.persona](now);
@@ -273,7 +282,7 @@ async function runOne(q: Question) {
     const answer = { reply: v.reply, actions: v.actions };
     const check = v.dropped ? `dropped ${v.dropped} unreadable action(s)` : q.check?.(answer) ?? null;
     // (the look-up results go into the transcript: the judges must see what the Coach read, to check claims made from it)
-    return { ...base, messages, reply: v.reply, actions: v.actions.map(keyFields), lookups, ...(found ? { lookupResults: found } : {}), ...(sources.length ? { sources } : {}), model, ms: Math.round(performance.now() - t0), rounds,
+    return { ...base, messages, reply: v.reply, actions: v.actions.map(keyFields), lookups, ...(formats.length ? { formatRepaired: [...formats] } : {}), ...(found ? { lookupResults: found } : {}), ...(sources.length ? { sources } : {}), model, ms: Math.round(performance.now() - t0), rounds,
       check, checked: !!q.check, flags: flags(q, v.reply, v.actions, d), route: routed, ...(selfCheck ? { selfCheck } : {}),
       ...(q.mode === 'setup' ? { setupForm: SETUP_FORM[lang], setupChoices: q.setup } : {}), factSheet };
   } catch (e: any) {

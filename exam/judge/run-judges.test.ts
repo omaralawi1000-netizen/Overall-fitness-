@@ -11,7 +11,7 @@
 import { it } from 'vitest';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { callBatch, pendingBatches, planBatches, CallError, Ledger, SpendCapError, estimate, type GeminiReply } from '../providers';
+import { callBatch, batchWorstUsd, batchSizeFor, pendingBatches, planBatches, CallError, Ledger, SpendCapError, estimate, type GeminiReply } from '../providers';
 import { CALIBRATION } from './calibration';
 import { judgeBody, judgeOne, readVerdict, finalScore, fromCalibration, fromTranscript, transcriptPrint, gate, type JudgeInput, type Judged } from './judge';
 import { HARD_10, modelRow, chatModel, topTierWorthIt, examHealth, relativeBias, scoreOf, type Answer } from './report';
@@ -53,12 +53,10 @@ async function judgeAll(judge: string, xs: JudgeInput[], ledger: Ledger, label: 
   let retry = xs;
   if (!SYNC && xs.length) {
     retry = [];
-    // batches a stopped run left out go first, with exactly their own items (so they are collected, not sent again);
-    // only then is the rest split into new batches of 100
-    const { chunks, orphans } = planBatches(xs, pendingBatches(judge, OUT));
-    for (const p of orphans) console.log(`${judge}: batch ${p.handle} (${p.purpose}) holds items this run does not ask for; its worst case stays reserved in the ledger`);
-    for (const [n, chunk] of chunks.entries()) {
-      const res = await callBatch(judge, chunk.map((x) => ({ id: x.id, body: judgeBody(x) })), { ...o, jobDir: OUT, onPoll: (s) => console.log(`${judge} batch ${n + 1}: ${s}`) });
+    let n = 0;
+    const send = async (chunk: JudgeInput[]) => {
+      n++;
+      const res = await callBatch(judge, chunk.map((x) => ({ id: x.id, body: judgeBody(x) })), { ...o, jobDir: OUT, onPoll: (s) => console.log(`${judge} batch ${n}: ${s}`) });
       for (const x of chunk) {
         const r = res.get(x.id);
         try {
@@ -67,7 +65,19 @@ async function judgeAll(judge: string, xs: JudgeInput[], ledger: Ledger, label: 
           put(x.id, { id: x.id, judge, score: finalScore(verdict), verdict, usd: r.usd });
         } catch { retry.push(x); }
       }
-    }
+    };
+    // batches a stopped run left out go first, with exactly their own items (so they are collected, not sent again)
+    const pending = pendingBatches(judge, OUT);
+    const { chunks, orphans } = planBatches(xs, pending, xs.length);
+    for (const p of orphans) console.log(`${judge}: batch ${p.handle} (${p.purpose}) holds items this run does not ask for; its worst case stays reserved in the ledger`);
+    const collect = chunks.slice(0, pending.length - orphans.length);
+    for (const chunk of collect) await send(chunk);
+    // then the rest, in new batches sized just before each is sent: a batch reserves its whole worst case up front, so
+    // near the cap a smaller batch still fits where 100 would be refused (and what earlier batches really cost counts)
+    const taken = new Set(collect.flat().map((x) => x.id));
+    const rest = xs.filter((x) => !taken.has(x.id));
+    const worstItem = Math.max(0, ...rest.map((x) => batchWorstUsd(judge, judgeBody(x))));
+    while (rest.length) await send(rest.splice(0, batchSizeFor(ledger, worstItem)));
   }
   for (const x of retry) {
     try { put(x.id, await judgeOne(judge, x, o)); }
@@ -182,6 +192,10 @@ function report(rows: Row[], answers: Answer[], judged: any[], gates: Record<str
     '## Scores (the 22; 1–10, mean of both judges)', '',
     '| Coach | mean | worst | under 7 | held-out | safety | re-run drift | errors | $ per answer |', '|---|---|---|---|---|---|---|---|---|',
     ...all.map((r) => `| ${r.coach} | ${f1(r.mean)} | ${f1(r.worst)} | ${r.under7.join(', ') || '–'} | ${f1(r.heldout)} | ${r.safetyPass}/${r.safetyTotal}${r.safetyDisagree.length ? ` (read: ${r.safetyDisagree.join(', ')})` : ''} | ${f1(r.drift)} | ${r.errors}${r.unjudged ? ` (+${r.unjudged} not judged by both)` : ''} | ${usdPer(r.coach).toFixed(4)} |`), '',
+    // (read by ../checks/agent-json.ts: graded for the coaching, but in the app each was an error the person would have seen)
+    '## Answer format', '',
+    ...coaches.map((c) => { const xs = rows.filter((r) => r.coach === c && !r.t.error); const bad = xs.filter((r) => r.t.formatRepaired?.length); return `- ${c}: ${bad.length} of ${xs.length} answers were not a clean JSON object${bad.length ? ` (${[...new Set(bad.flatMap((r) => r.t.formatRepaired))].join(', ')}: ${bad.map((r) => `${r.qid} r${r.run}`).join(', ')})` : ''}.`; }),
+    '', '- Each of these would have been an error in the app. Aven 2 must ask Claude for its answer in a form it always keeps (a tool call or a smaller strict schema).', '',
     '## The hard 10', '', '| Coach | mean | worst |', '|---|---|---|', ...hard.map((r) => `| ${r.coach} | ${f1(r.mean)} | ${f1(r.worst)} |`), '',
     '## Decisions (rules fixed before the run)', '',
     pick ? `- Chat model: **${pick.pick}** (${pick.why}).` : '- Chat model: needs both Flash and Sonnet results.',
