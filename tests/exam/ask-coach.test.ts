@@ -27,4 +27,18 @@ describe('one request for every model', () => {
     const bad = await askCoach('gemini-3.8-flash', req, { ledger: ledger(), purpose: 't', dry: dry('Sure! I logged it.') });
     expect(bad.error).toBe('reply is not JSON');
   });
+
+  it('asks again when the model is busy, and marks a refused call as no answer', async () => {
+    const reply = { candidates: [{ content: { parts: [{ text: '{"say":"Hi.","actions":[]}' }] } }], usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 5 } };
+    const answers = [{ status: 503, body: { error: { message: 'busy' } } }, { status: 429, body: { error: { message: 'slow down' } } }, { status: 200, body: reply }];
+    const waits: number[] = [];
+    const fetchFn = (async () => { const a = answers.shift()!; return { status: a.status, json: async () => a.body }; }) as unknown as typeof fetch;
+    const ok = await askCoach('gemini-3.8-flash', req, { ledger: ledger(), purpose: 't', fetchFn, wait: async (ms) => { waits.push(ms); } });
+    expect(ok.reply?.say).toBe('Hi.');
+    expect(waits).toHaveLength(2);
+    const refused = (async () => ({ status: 400, json: async () => ({ error: { message: 'bad request' } }) })) as unknown as typeof fetch;
+    const no = await askCoach('gemini-3.8-flash', req, { ledger: ledger(), purpose: 't', fetchFn: refused, wait: async () => { throw new Error('a 400 is never retried'); } });
+    expect(no).toMatchObject({ callFailed: true });
+    expect(no.reply).toBeUndefined();
+  });
 });

@@ -22,7 +22,7 @@ export interface Setup { name: string; quick: string; deep: string; rules?: stri
 export const OPPONENT_RULES = `You are an expert fitness and nutrition coach inside a training and food app. Help the person as well as you can. FACTS hold their data; KNOWLEDGE holds general guidelines. Reply in their language. You may change things in the app with the actions in the JSON schema: "do" for what they asked, "offer" for a suggestion.`;
 
 export interface TurnLog {
-  tier: Tier; model: string; say?: string; shown?: Shown; error?: string; dropped: string[]; usd: number; ms: number;
+  tier: Tier; model: string; say?: string; shown?: Shown; error?: string; callFailed?: boolean; dropped: string[]; usd: number; ms: number;
   /** numbers in the reply found nowhere in what the Coach was given: leads for the judge, not a fail by themselves */
   unsourced?: string[];
 }
@@ -52,7 +52,7 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts): Promise<C
     convo.push({ role: 'person', text: t.text, ...(t.untrusted ? { untrusted: t.untrusted } : {}) });
     const req = coachRequest(sheet, convo, { voice: t.voice, ...(setup.rules ? { rules: setup.rules } : {}) });
     const asked = await askCoach(model, req, { ...o, purpose: `${c.id} ${setup.name}` });
-    if (!asked.reply) { turns.push({ tier, model, error: asked.error, dropped: asked.dropped, usd: asked.usd, ms: asked.ms }); break; }
+    if (!asked.reply) { turns.push({ tier, model, error: asked.error, ...(asked.callFailed ? { callFailed: true } : {}), dropped: asked.dropped, usd: asked.usd, ms: asked.ms }); break; }
     const shown = await finishTurn(e, asked.reply, { personText: t.text, untrusted: !!t.untrusted, sheet, now, tz: TZ, lang: c.person.lang });
     const given = [req.system, ...req.turns.map((x) => x.text)].join('\n');
     turns.push({ tier, model, say: asked.reply.say, shown, dropped: asked.dropped, usd: asked.usd, ms: asked.ms, unsourced: unsourcedNumbers(asked.reply.say, given) });

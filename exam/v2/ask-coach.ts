@@ -20,12 +20,27 @@ export function toBody(req: CoachRequest, maxOut = 1200): GeminiBody {
   };
 }
 
-export interface Asked { model: string; reply?: ModelReply; dropped: string[]; error?: string; usd: number; ms: number }
+export interface Asked {
+  model: string; reply?: ModelReply; dropped: string[]; error?: string; usd: number; ms: number;
+  /** the call itself failed (network, refused, cap): no answer from the model, so the run is not saved as finished */
+  callFailed?: boolean;
+}
 
-export async function askCoach(model: string, req: CoachRequest, o: CallOpts): Promise<Asked> {
+/** busy or dropped: worth asking again after a pause (a 4xx other than 429 never is) */
+const busy = (e: CallError) => e.status === -1 || e.status === 429 || e.status === 503 || e.status === 529 || e.status === 500;
+export const RETRY_WAITS_MS = [5_000, 15_000, 40_000, 90_000];
+
+export async function askCoach(model: string, req: CoachRequest, o: CallOpts & { wait?: (ms: number) => Promise<void> }): Promise<Asked> {
   const t0 = performance.now();
+  const wait = o.wait ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   try {
-    const r = await call(model, toBody(req), o);
+    let r;
+    for (let n = 0; ; n++) {
+      try { r = await call(model, toBody(req), o); break; } catch (e) {
+        if (!(e instanceof CallError) || !busy(e) || n >= RETRY_WAITS_MS.length) throw e;
+        await wait(RETRY_WAITS_MS[n]);
+      }
+    }
     const ms = Math.round(performance.now() - t0);
     const text = r.candidates[0]?.content.parts.filter((p) => !p.thought).map((p) => p.text ?? '').join('') ?? '';
     let raw: unknown;
@@ -33,7 +48,7 @@ export async function askCoach(model: string, req: CoachRequest, o: CallOpts): P
     const read = readReply(raw);
     return 'error' in read ? { model, dropped: [], error: read.error, usd: r.usd, ms } : { model, reply: read.reply, dropped: read.dropped, usd: r.usd, ms };
   } catch (e) {
-    if (e instanceof CallError) return { model, dropped: [], error: `${e.status}: ${e.message}`, usd: 0, ms: Math.round(performance.now() - t0) };
+    if (e instanceof CallError) return { model, dropped: [], error: `${e.status}: ${e.message}`, usd: 0, ms: Math.round(performance.now() - t0), callFailed: true };
     throw e;
   }
 }
