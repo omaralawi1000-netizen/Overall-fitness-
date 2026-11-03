@@ -44,6 +44,13 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 
 ## Entries
 
+### 3 Nov 2026, 08:18: Window is the spine; the Workout build is stopped
+Picked: the Window build (artifact https://claude.ai/artifact/2mGPer97P43dNo4Y5Ugjhp).
+Why: "Window is the spine. It's the best build so far."
+The Workout build (React + Motion + three.js bar picture, https://claude.ai/artifact/EpaXDiZtC23VWUZ8WL9VWL) went through harsh judge rounds of 7, 6.5, 7 and 7.5. Build 5 was stopped unjudged by this decision. Source: `/mnt/project-files/aven-workout-src.zip`.
+What he keeps, brings in and wants fixed is in `docs/keepers.md` under "Window is the spine (3 Nov 2026)".
+Reading: the calm, light-led Today with real data beat the heavier 3D picture. He still wants two things from Workout: the big tap-to-edit number and the 3D equipment icons.
+
 ### 3 Nov 2026, about 00:17 to 00:32: the window/ruler Today rejected, Oura-style back, no rings
 Rejected: the window / day-ruler Today (v4).
 Why: "I don't like the Today screen at all… I didn't even know that was a Today screen."
