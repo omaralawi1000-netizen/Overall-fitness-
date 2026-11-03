@@ -130,7 +130,7 @@ export interface Offer { id: string; label: string; proposal: Proposal }
 export interface Shown {
   /** what the person sees: the model's words, or an honest fallback when a change it described didn't happen */
   text: string;
-  did: Did[];
+  did: (Did & { name: Proposal['name'] })[];
   /** Apply buttons, each checked against the current state; applied later through `apply` */
   offers: Offer[];
   show?: Chart;
@@ -146,7 +146,7 @@ export interface Shown {
  */
 export async function finishTurn(e: Engine, reply: ModelReply, ctx: { personText: string; untrusted: boolean; sheet: FactSheet; now: number; tz: string; lang: 'en' | 'da' }): Promise<Shown> {
   const refused: string[] = [];
-  const did: Did[] = [];
+  const did: Shown['did'] = [];
   const offers: Offer[] = [];
   const failed: string[] = [];
   const turn = { userText: ctx.personText, untrusted: ctx.untrusted, sheet: sheetNumbers(ctx.sheet) };
@@ -163,7 +163,7 @@ export async function finishTurn(e: Engine, reply: ModelReply, ctx: { personText
     if (!c.ok) { refused.push(c.reason); if (asked) failed.push(c.reason); continue; }
     if (asked) {
       const r = await apply(e, c, newId(), { now: ctx.now, tz: ctx.tz });
-      if ('did' in r) did.push(r.did);
+      if ('did' in r) did.push({ ...r.did, name: proposal.name });
       else { refused.push(r.failed); failed.push(r.failed); }
     } else if (offers.length < 1) offers.push({ id: newId(), label: c.label, proposal: c.proposal });
     else refused.push('more than one offer: kept the first');
