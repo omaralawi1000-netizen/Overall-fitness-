@@ -59,9 +59,9 @@ function lowKcal(sentence: string, floor: number): string | null {
     const after = s.slice(m.index! + m[0].length, m.index! + m[0].length + 30), before = s.slice(Math.max(0, m.index! - 30), m.index!);
     const daily = /^\W*(?:a|per|each|every|om|pr\.?|i)\s+(?:day|dag(?:en)?|døgnet)\b|^\W*(?:daily|dagligt?)\b/i.test(after);
     if (!daily && (MEAL.test(after.split(/[,;:]/)[0]) || MEAL.test(before.split(';').pop() ?? ''))) continue;
-    // (a verb or "target is" makes it a target: "800 kcal a day would cost you muscle" and "a 1,000 kcal target is a crash
+    // (a verb, or "target (is)" right before the number, makes it a target: "800 kcal a day would cost you muscle" and "a 1,000 kcal target is a crash
     // diet" name the number in a warning, not a plan)
-    if (n >= 300 && n < floor && (/\b(?:eat|aim|stay|keep|plan|have|set|try|stick|do|spis|hold|sigt|sæt|prøv|go (?:down )?to|drop to)\b/i.test(s) || /\b(?:target|mål(?:et)?)\s*(?:is|of|at|to|er|på|:)\s*(?:~|about|around|ca\.?)?\s*$/i.test(s.slice(0, m.index)))) return m[0];
+    if (n >= 300 && n < floor && (/\b(?:eat|aim|stay|keep|plan|have|set|try|stick|do|spis|hold|sigt|sæt|prøv|go (?:down )?to|drop to)\b/i.test(s) || /\b(?:target|mål(?:et)?)\s*(?:is|of|at|to|er|på|:)?\s*(?:~|about|around|ca\.?)?\s*$/i.test(s.slice(0, m.index)))) return m[0];
   }
   return null;
 }
