@@ -53,14 +53,10 @@ async function judgeAll(judge: string, xs: JudgeInput[], ledger: Ledger, label: 
   let retry = xs;
   if (!SYNC && xs.length) {
     retry = [];
-    // batches a stopped run left out go first, with exactly their own items (so they are collected, not sent again);
-    // only then is the rest split into new batches of 100
-    // (a batch reserves its whole worst case up front: near the cap, smaller batches still fit where 100 would be refused)
-    const worstItem = Math.max(...xs.map((x) => batchWorstUsd(judge, judgeBody(x))));
-    const { chunks, orphans } = planBatches(xs, pendingBatches(judge, OUT), batchSizeFor(ledger, worstItem));
-    for (const p of orphans) console.log(`${judge}: batch ${p.handle} (${p.purpose}) holds items this run does not ask for; its worst case stays reserved in the ledger`);
-    for (const [n, chunk] of chunks.entries()) {
-      const res = await callBatch(judge, chunk.map((x) => ({ id: x.id, body: judgeBody(x) })), { ...o, jobDir: OUT, onPoll: (s) => console.log(`${judge} batch ${n + 1}: ${s}`) });
+    let n = 0;
+    const send = async (chunk: JudgeInput[]) => {
+      n++;
+      const res = await callBatch(judge, chunk.map((x) => ({ id: x.id, body: judgeBody(x) })), { ...o, jobDir: OUT, onPoll: (s) => console.log(`${judge} batch ${n}: ${s}`) });
       for (const x of chunk) {
         const r = res.get(x.id);
         try {
@@ -69,7 +65,19 @@ async function judgeAll(judge: string, xs: JudgeInput[], ledger: Ledger, label: 
           put(x.id, { id: x.id, judge, score: finalScore(verdict), verdict, usd: r.usd });
         } catch { retry.push(x); }
       }
-    }
+    };
+    // batches a stopped run left out go first, with exactly their own items (so they are collected, not sent again)
+    const pending = pendingBatches(judge, OUT);
+    const { chunks, orphans } = planBatches(xs, pending, xs.length);
+    for (const p of orphans) console.log(`${judge}: batch ${p.handle} (${p.purpose}) holds items this run does not ask for; its worst case stays reserved in the ledger`);
+    const collect = chunks.slice(0, pending.length - orphans.length);
+    for (const chunk of collect) await send(chunk);
+    // then the rest, in new batches sized just before each is sent: a batch reserves its whole worst case up front, so
+    // near the cap a smaller batch still fits where 100 would be refused (and what earlier batches really cost counts)
+    const taken = new Set(collect.flat().map((x) => x.id));
+    const rest = xs.filter((x) => !taken.has(x.id));
+    const worstItem = Math.max(0, ...rest.map((x) => batchWorstUsd(judge, judgeBody(x))));
+    while (rest.length) await send(rest.splice(0, batchSizeFor(ledger, worstItem)));
   }
   for (const x of retry) {
     try { put(x.id, await judgeOne(judge, x, o)); }
