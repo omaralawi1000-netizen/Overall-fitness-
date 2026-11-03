@@ -5,10 +5,12 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "vite build",
+    "build": "vite build && vite build -c vite.app.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "verify": "tsc --noEmit && vitest run && vite build"
+    "verify": "tsc --noEmit && vitest run && npm run build",
+    "dev:app": "vite --host -c vite.app.config.ts",
+    "test:app": "node tests/e2e/app.mjs"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "0.137.0",

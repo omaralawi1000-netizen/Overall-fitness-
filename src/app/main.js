@@ -11,6 +11,7 @@ const store = { get(k) { try { return localStorage.getItem('a2:' + k); } catch {
 // haptics only where there is a motor: on a desktop the call can hold up a frame for nothing
 const HAPTIC = matchMedia('(pointer: coarse)').matches && 'vibrate' in navigator;
 let HAPON = store.get('hap') !== '0';
+const NAME = (store.get('name') || '').slice(0, 24); // the person's name comes from onboarding (a2:name); nothing about anyone is built in
 const buzz = p => { if (!HAPTIC || !HAPON) return; try { navigator.vibrate(p); } catch {} };
 
 /* ================= words, in English and Danish ================= */
@@ -49,7 +50,7 @@ const T = {
     leadGo:'The Push window is open. Start now and you finish before sunset.', leadAfter:'Push is in. 25 g of protein in the next hour gets the most from it.', leadAfterA:'Log a whey shake · 25 g', leadAfterD:'Whey shake logged · +25 g',
     leadLate:'Push has not happened yet, and the light is going. Thursday has room for it.', leadLateA:'Move Push to Thursday', leadLateD:'Push moved to Thursday',
     p3:'Bed at 23:00 tonight pulls the week’s sleep back over 7 hours.', setIt:'Set it', bedSet:'Bed reminder set for 23:00', bedSetS:'Set for 23:00', weekLine:'{n} of 7 days done this week',
-    coK:'Coach', greetN:'Up late, Omar?', greetEarly:'Early start, Omar.', greetM:'Morning, Omar.', greetA:'Afternoon, Omar.', greetE:'Evening, Omar.', coP:'Ask about training, food or sleep', send:'Ask',
+    coK:'Coach', greetN:'Up late{n}?', greetEarly:'Early start{n}.', greetM:'Morning{n}.', greetA:'Afternoon{n}.', greetE:'Evening{n}.', coP:'Ask about training, food or sleep', send:'Ask',
     q1:'I only have 30 minutes', q2:'What should I eat before Push?', q3:'How is my week?',
     a1:'Then we keep the heavy lifts and cut the small ones. Bench, incline and overhead press, three sets each. About 30 minutes.',
     p1:'Push becomes 30 minutes: bench, incline and overhead press, 3 sets each. Raises and pushdowns move to Thursday.', apply:'Apply', appliedP:'Push is 30 minutes',
@@ -99,7 +100,7 @@ const T = {
     leadGo:'Push-vinduet er åbent. Start nu, så er du færdig før solnedgang.', leadAfter:'Push er klaret. 25 g protein inden for en time får mest ud af den.', leadAfterA:'Log en proteinshake · 25 g', leadAfterD:'Proteinshake logget · +25 g',
     leadLate:'Push er ikke blevet til noget endnu, og lyset går. Torsdag har plads.', leadLateA:'Flyt Push til torsdag', leadLateD:'Push flyttet til torsdag',
     p3:'I seng kl. 23:00 i aften trækker ugens søvn tilbage over 7 timer.', setIt:'Sæt det', bedSet:'Sengepåmindelse sat til 23:00', bedSetS:'Sat til 23:00', weekLine:'{n} af 7 dage klaret denne uge',
-    coK:'Coach', greetN:'Sent oppe, Omar?', greetEarly:'Tidligt oppe, Omar.', greetM:'Godmorgen, Omar.', greetA:'God eftermiddag, Omar.', greetE:'God aften, Omar.', coP:'Spørg om træning, mad eller søvn', send:'Spørg',
+    coK:'Coach', greetN:'Sent oppe{n}?', greetEarly:'Tidligt oppe{n}.', greetM:'Godmorgen{n}.', greetA:'God eftermiddag{n}.', greetE:'God aften{n}.', coP:'Spørg om træning, mad eller søvn', send:'Spørg',
     q1:'Jeg har kun 30 minutter', q2:'Hvad skal jeg spise før Push?', q3:'Hvordan går min uge?',
     a1:'Så beholder vi de tunge løft og dropper de små. Bænk, skrå og skulderpres, tre sæt hver. Cirka 30 minutter.',
     p1:'Push bliver 30 minutter: bænk, skrå og skulderpres, 3 sæt hver. Sideløft og pushdowns flytter til torsdag.', apply:'Gør det', appliedP:'Push er 30 minutter',
@@ -943,7 +944,7 @@ BUILD.coach = () => {
   const m = nowMin(), g = m < 300 ? 'greetN' : m < 375 ? 'greetEarly' : m < 720 ? 'greetM' : m < 1020 ? 'greetA' : 'greetE';
   // the Coach speaks first: one line built from his own numbers, one action, and a quiet way out
   const L = coachLead(m), qs = m < 915 && !S.done ? [1, 2] : [3, 2];
-  $('#sCoach').innerHTML = `<div class="title rise"><div class="k">${t('coK')}</div><div class="greet">${t(g)}</div></div>
+  $('#sCoach').innerHTML = `<div class="title rise"><div class="k">${t('coK')}</div><div class="greet">${t(g, { n: NAME ? ', ' + NAME : '' })}</div></div>
     <div class="lead rise" id="lead"><p class="say">${numSans(L.line)}</p><div class="r"><button class="use" id="leadGo"><span class="lb">${L.act}</span></button><button class="keep" id="leadNo">${t('notNow')}</button></div></div>
     <button class="memo rise" id="memo" aria-expanded="false"><span>${t('remembers', { n: 4 })}</span><svg class="chev" viewBox="0 0 8 13"><path d="M1.5 1.5l5 5-5 5"/></svg></button>
     <div class="mems memL" id="memL">${['mem1', 'mem2', 'mem3', 'mem4'].map(k => `<span class="mem">${t(k)}</span>`).join('')}</div>
@@ -1555,11 +1556,13 @@ async function boot() {
   const m = wake ? Math.max(0, Math.min(now0 - 60, 300)) : now0;
   LIGHT = lightAt(dateAtMin(m));
   buildArc(); placeDot(m); paintCards(); $('#arcHint').textContent = t('arcHint'); if (store.get('arcHint')) $('#arcHint').style.opacity = 0; paintCta(); paintHero(m); paintWx(m);
-  ['train', 'fuel', 'health', 'coach'].forEach(k => { BUILD[k](); built[k] = true; });
   // a cold start shows the numbers at once: a still copy of Today's first screen sits over the veil while the photo loads
-  // and the graphics warm up underneath; then both lift together and the live screen is already in the same place
-  try { await Promise.race([Promise.all(['300 100px Geist', '400 16px Geist', 'italic 40px "Instrument Serif"'].map(f => document.fonts.load(f))), new Promise(r => setTimeout(r, 400))]); } catch {}
-  showSplash();
+  // and the graphics warm up underneath; then both lift together and the live screen is already in the same place.
+  // The type is self-hosted and preloaded, so this wait is normally zero; the cap only matters on a very slow first load.
+  try { await Promise.race([Promise.all(['300 100px Geist', '400 16px Geist', 'italic 40px "Instrument Serif"'].map(f => document.fonts.load(f))), new Promise(r => setTimeout(r, 250))]); } catch {}
+  showSplash(); window.__numbersAt = performance.now();
+  await nf(); // the numbers are painted first; the other four screens, the photo and the warm-up all come after
+  ['train', 'fuel', 'health', 'coach'].forEach(k => { BUILD[k](); built[k] = true; });
   try {
     initGL();
     const [ph, mk] = await Promise.all([loadImg(ASSET + 'photo.jpg'), loadImg(ASSET + 'mask.png')]);
@@ -1570,7 +1573,7 @@ async function boot() {
   try { await Promise.race([Promise.all(['200 100px Geist', '300 20px Geist', '400 16px Geist', '500 16px Geist', 'italic 40px "Instrument Serif"'].map(f => document.fonts.load(f))), new Promise(r => setTimeout(r, 1800))]); } catch {}
   await warmUp();
   window.addEventListener('resize', () => { sizeCanvas(); render(); });
-  $('#veil').classList.add('off'); $('#splash').classList.add('off'); setTimeout(() => { $('#splash').innerHTML = ''; }, 700); window.__ready = true;
+  $('#veil').classList.add('off'); $('#splash').classList.add('off'); setTimeout(() => { $('#splash').innerHTML = ''; }, 700); window.__ready = true; window.__readyAt = performance.now();
   (window.requestIdleCallback || (f => setTimeout(f, 3000)))(() => { if (!rainMade) makeRain(); }, { timeout: 5000 }); // rain tiles ready before any shower
   // the first open: the rings draw, the numbers count, the week grows
   paintReady(m, 'draw'); growBars(true); // from the same minute the screen was painted at, so the count-up never mixes two times
@@ -1657,3 +1660,6 @@ window.__aven = { S, get W() { return W; }, startWorkout, show, logSet: () => $(
     const h = document.createElement('canvas'); h.width = 430; h.height = 280; h.getContext('2d').drawImage(cv, 0, 0, cv.width, cv.height * .3, 0, 0, 430, 280); const e = h.getContext('2d').getImageData(0, 0, 430, 280).data; let stars = 0; for (let i = 0; i < e.length; i += 4) if (e[i] + e[i + 1] + e[i + 2] > 330) stars++;
     return { g, stars }; },
   setWx: w => { WXMODE = w; lastAcc = ''; applyLight(nowMin()); paintWx(nowMin()); paintHero(nowMin()); }, nowMin, openSheet, SP };
+
+// offline and installed: the worker saves the app on the first visit (see public/sw.js)
+if ('serviceWorker' in navigator && Q.get('nosw') === null) window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));

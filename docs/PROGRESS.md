@@ -307,3 +307,17 @@ Next: Omar times the cold start on his phone, then port Window v15 into the repo
 - In the Train list, the figure beside the name is minimal and static.
 - Z-Anatomy is CC BY-SA 4.0, so Settings needs a credit line.
 - Push day still needs bench, incline, OHP and lateral raise rendered.
+
+## Session 18: Window is now the app (3 Nov 2026, Sonnet)
+Window v17 is ported into the repo as the real app: `src/app/`, built to `/app/` (live at https://omaralawi1000-netizen.github.io/Overall-fitness-/app/ once merged). Where everything is and what changed from the artifact: `docs/PORTING.md`.
+- Same screens, same motion, same picture. Moved from one HTML file to Vite: `index.html`, `app.css`, `main.js`; three.js comes from npm and loads as its own file after Today has settled (`stage.js`).
+- Type: Geist and Instrument Serif are self-hosted (Latin only, ~51 KB) and preloaded, so no fallback flash and no request to Google.
+- Cold start: the numbers (a still copy of Today's first screen) are painted before the other four screens, the photo, the GL and the warm-up are built. `window.__numbersAt` and `window.__readyAt` mark the two moments.
+- Installable and offline: manifest, icons, and a small service worker (`a2-app-*` cache, never reloads a page).
+- No person is built in: the greeting uses `a2:name` (to be set by onboarding) or no name.
+- Checks: `npm run build && npm run test:app` (`tests/e2e/app.mjs`): the 10 regression checks of the Window build plus type, cold-start, storage and offline checks. The 6-minute run is software GL, so it proves behaviour, not smoothness.
+- Not done yet, on purpose: the plan, food, sleep and weight are still example numbers, and a finished workout is not yet saved through the engine. Omar's seven fixes (record moment, earned finish, Coach line between sets, Push-vs-wrestling choice, cold start, own image, thin numbers at arm's length) were already in v17; nothing was redesigned here.
+- Needs his phone: cold-start time, frame rate, blur and banding, thin numbers at 20% brightness.
+
+## Next step
+Omar opens `/app/` on his phone (install it, then time the cold start). Then wire the app to the engine, in this order: (1) a finished workout writes a session with its slots and sets (`src/engine/workout.ts`) and Undo works; (2) Train, Today's plan and the Coach line read the engine's plan and facts (`src/coach/facts.ts`) instead of the example Push day; (3) Fuel and Health read food, sleep and weight records; (4) onboarding sets `a2:name` and the units. Clay-figure clips go into the explainer's hero slot when Omar's two zips arrive.

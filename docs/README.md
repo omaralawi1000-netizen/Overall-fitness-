@@ -18,6 +18,10 @@ Read this first to find anything. Then open only the file for the topic you're w
 - `docs/parser-examples.md`: what the instant parser reads, row by row (checked by a test). Code `src/engine/parse/`, tests `tests/parse/`.
 - Browser check: `tests/e2e/engine-page.mjs` (39 checks in real Chromium; see `docs/engine/PROGRESS.md`).
 
+## The app
+- `docs/PORTING.md`: Window as the app: where each file is, what changed from the artifact, and the rules the build must keep.
+- Code `src/app/` (page, styles, `main.js`, `stage.js`, `public/`), built to `dist/app/` and live at `/app/`. Config `vite.app.config.ts`. Browser check: `npm run build && npm run test:app` (`tests/e2e/app.mjs`).
+
 ## Design
 - `docs/inspiration/notes.md`: what Omar likes. `docs/inspiration/web-references.md`: his web links. The numbered images are screenshots.
 - `docs/inspiration/motion-library.md`: 117 watched animations in two rounds, sorted by motion job, top 3 per job, links and notes (clips and design stills in the shared folder).
