@@ -64,6 +64,13 @@ function dayOf(r: AnyRecord, dayStart: number): string { return r.day ?? dayKeyA
  * Pick the weigh-in to trust for each day. Several on one day that differ by more than 1.5 kg are odd: the one closest
  * to the person's recent weight (median of the 7 days before) is kept; with no history to compare, none of them is.
  */
+/** the trusted weigh-in closest to a day, within 14 days of it */
+function nearest(byDay: Map<string, Bodyweight>, day: string): Bodyweight | undefined {
+  let best: [number, Bodyweight] | undefined;
+  for (const [d, w] of byDay) { const gap = Math.abs(diffDays(d, day)); if (gap <= 14 && (!best || gap < best[0])) best = [gap, w]; }
+  return best?.[1];
+}
+
 function trustedWeights(ws: Bodyweight[], dayStart: number): { byDay: Map<string, Bodyweight>; odd: Bodyweight[] } {
   const days = new Map<string, Bodyweight[]>();
   for (const w of [...ws].sort((a, b) => a.at - b.at)) {
@@ -127,8 +134,11 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
   const perDay = new Map<string, Record<string, number>>();
   /** per day, the nutrients some food that day has no value for: that day's total of it is a floor, not the total (Codex, PR #73) */
   const gaps = new Map<string, Set<string>>();
+  /** days with an estimated food: their totals are estimates, never measurements (Codex, PR #73) */
+  const guessed = new Set<string>();
   for (const f of foods) {
     const d = dayOf(f, dayStart);
+    if (f.estimated) guessed.add(d);
     const sum = perDay.get(d) ?? {};
     for (const [k] of NUTRIENTS) {
       const v = f.nutrients[k];
@@ -138,6 +148,8 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
     perDay.set(d, sum);
   }
   const whole = (d: string, k: string) => complete.has(d) && !gaps.get(d)?.has(k);
+  /** a whole total is measured unless an estimated food went into it */
+  const sureness = (ds: string[]): Confidence => (ds.some((d) => guessed.has(d)) ? 'estimate' : 'measured');
   const todaySum = perDay.get(today);
   const todayComplete = complete.has(today);
   const todayFood: Fact[] = [];
@@ -146,10 +158,11 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
     for (const [k, unit] of NUTRIENTS) {
       if (todaySum[k] === undefined) continue;
       const sure = whole(today, k);
-      const note = !todayComplete ? 'logged so far; the day is not finished' : !sure ? `some foods today have no ${k} value` : undefined;
-      todayFood.push({ id: `today.${k}`, value: Math.round(todaySum[k]), unit, confidence: sure ? 'measured' : 'partial', ...(note ? { note } : {}) });
+      const confidence: Confidence = sure ? sureness([today]) : 'partial';
+      const note = !todayComplete ? 'logged so far; the day is not finished' : !sure ? `some foods today have no ${k} value` : confidence === 'estimate' ? 'includes estimated foods' : undefined;
+      todayFood.push({ id: `today.${k}`, value: Math.round(todaySum[k]), unit, confidence, ...(note ? { note } : {}) });
       const t = targets[k as keyof typeof targets];
-      if (typeof t === 'number') left.push({ id: `today.${k}Left`, value: Math.round(t - todaySum[k]), unit, confidence: sure ? 'measured' : 'partial', note: 'target minus what is logged so far' });
+      if (typeof t === 'number') left.push({ id: `today.${k}Left`, value: Math.round(t - todaySum[k]), unit, confidence, note: 'target minus what is logged so far' });
     }
   }
 
@@ -158,8 +171,10 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
   const done = logged.filter((d) => complete.has(d));
   const food28: Fact[] = [];
   for (const [k, unit] of NUTRIENTS) {
-    const full = done.filter((d) => whole(d, k)).map((d) => perDay.get(d)![k]).filter((v): v is number => v !== undefined);
-    if (full.length >= 3) food28.push({ id: `food28.${k}AvgComplete`, value: Math.round(full.reduce((s, v) => s + v, 0) / full.length), unit, confidence: 'measured', note: `average of ${full.length} complete days` });
+    const fullDays = done.filter((d) => whole(d, k) && perDay.get(d)![k] !== undefined);
+    const full = fullDays.map((d) => perDay.get(d)![k]);
+    const est = fullDays.filter((d) => guessed.has(d)).length;
+    if (full.length >= 3) food28.push({ id: `food28.${k}AvgComplete`, value: Math.round(full.reduce((s, v) => s + v, 0) / full.length), unit, confidence: sureness(fullDays), note: `average of ${full.length} complete days${est ? `, ${est} with estimated foods` : ''}` });
     const any = logged.map((d) => perDay.get(d)![k]).filter((v): v is number => v !== undefined);
     if (any.length && any.length > full.length) food28.push({ id: `food28.${k}AvgLogged`, value: Math.round(any.reduce((s, v) => s + v, 0) / any.length), unit, confidence: 'partial', note: `average of what was logged on ${any.length} days; logs may be missing food` });
     const t = targets[k as keyof typeof targets];
@@ -195,7 +210,11 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
     const base = { memoryId: m.id, text: m.text, metric: g.metric, ...(g.target !== undefined ? { target: g.target } : {}), ...(g.by ? { by: g.by } : {}) };
     if (g.status) { goals.push({ ...base, status: g.status }); continue; }
     if (g.metric !== 'weight' || g.target === undefined || !latest) { goals.push({ ...base, status: 'cantJudge' }); continue; }
-    const losing = g.start !== undefined ? g.target < g.start : g.target < latest.value;
+    // the direction comes from where the goal started, never from which side of the target the latest weight is on: a cut
+    // that went past its target is reached, not "behind" (Codex, PR #73). No start and no weigh-in near the start date: can't judge.
+    const startKg = g.start ?? nearest(byDay, g.startDate)?.kg;
+    if (startKg === undefined || startKg === g.target) { goals.push({ ...base, status: 'cantJudge' }); continue; }
+    const losing = g.target < startKg;
     if (losing ? latest.value <= g.target : latest.value >= g.target) { goals.push({ ...base, status: 'reached' }); continue; }
     if (!trend || !g.by) { goals.push({ ...base, status: 'cantJudge' }); continue; }
     const weeks = Math.max(diffDays(g.by, today), 1) / 7;

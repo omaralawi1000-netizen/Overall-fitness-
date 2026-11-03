@@ -12,6 +12,7 @@ const settings = (targets: Record<string, number>) => env('settings', '2026-10-0
 const food = (day: string, kcal: number, protein?: number) => env('food', day, { name: 'x', meal: 'lunch', dataSource: 'reference', portion: { amount: 1, unit: 'portion' }, estimated: false, nutrients: { kcal, ...(protein !== undefined ? { protein } : {}) } });
 const complete = (day: string) => ({ ...env('dayNote', day, { foodComplete: true }), id: `day:${day}` }) as AnyRecord;
 const weigh = (day: string, kg: number, hh = '07') => env('bodyweight', day, { kg }, hh);
+const r1 = (x: number) => Math.round(x * 10) / 10;
 const days = (from: string, count: number) => Array.from({ length: count }, (_, i) => { const d = new Date(Date.parse(`${from}T00:00:00Z`) + i * 86400000); return d.toISOString().slice(0, 10); });
 
 describe('the fact sheet', () => {
@@ -53,6 +54,18 @@ describe('the fact sheet', () => {
     expect(s.today.food.find((f) => f.id === 'today.protein')).toMatchObject({ value: 60, confidence: 'partial', note: 'some foods today have no protein value' });
     expect(s.food28.facts.find((f) => f.id === 'food28.kcalAvgComplete')).toBeDefined();
     expect(s.food28.facts.find((f) => f.id === 'food28.proteinAvgComplete')).toBeUndefined();
+  });
+
+  it('estimated food keeps its label: a complete day of estimates is an estimate, not a measurement (Codex, PR #73)', () => {
+    const guess = (day: string, kcal: number) => ({ ...(food(day, kcal) as object), estimated: true }) as AnyRecord;
+    const recs: AnyRecord[] = [settings({ kcal: 2500 }), guess('2026-11-03', 800), complete('2026-11-03')];
+    for (const d of days('2026-10-20', 3)) recs.push(food(d, 2000), complete(d));
+    recs.push(guess('2026-10-20', 300));
+    const s = buildFacts(recs, { now: NOW, tz: TZ });
+    expect(s.today.food.find((f) => f.id === 'today.kcal')).toMatchObject({ value: 800, confidence: 'estimate', note: 'includes estimated foods' });
+    expect(s.today.left.find((f) => f.id === 'today.kcalLeft')).toMatchObject({ value: 1700, confidence: 'estimate' });
+    expect(s.food28.facts.find((f) => f.id === 'food28.kcalAvgComplete')).toMatchObject({ value: 2100, confidence: 'estimate', note: 'average of 3 complete days, 1 with estimated foods' });
+    expect(renderFacts(s)).toContain('today.kcal: 800 kcal (estimate)');
   });
 
   it('counts the days the protein target was hit (the protein-250 answer)', () => {
@@ -101,6 +114,14 @@ describe('the fact sheet', () => {
     expect(buildFacts([g('2026-09-01', '2026-10-01')], { now: NOW, tz: TZ }).goals).toEqual([]);
     expect(buildFacts([g('2026-12-01')], { now: NOW, tz: TZ }).goals).toEqual([]);
     expect(buildFacts([g('2026-09-01', '2026-11-03')], { now: NOW, tz: TZ }).goals).toHaveLength(1);
+  });
+
+  it('a cut with no start weight takes its direction from the weigh-ins near its start, so going past the target is reached (Codex, PR #73)', () => {
+    const goal = env('memory', '2026-10-06', { text: 'cut to 83 kg', topic: 'goal', scope: 'standing', validFrom: '2026-10-06', lastSeen: 0, origin: 'said', goal: { metric: 'weight', target: 83, by: '2027-02-28', startDate: '2026-10-06' } });
+    const recs: AnyRecord[] = [goal, ...days('2026-10-06', 28).map((d, i) => weigh(d, r1(84.5 - i * 0.07)))];
+    expect(buildFacts(recs, { now: NOW, tz: TZ }).goals[0].status).toBe('reached');
+    // no start weight and no weigh-in near the start date: the direction is unknown, so it can't be judged
+    expect(buildFacts([goal, weigh('2026-11-02', 82.6)], { now: NOW, tz: TZ }).goals[0].status).toBe('cantJudge');
   });
 
   it('goal pace comes from the trend and the date, never guessed', () => {

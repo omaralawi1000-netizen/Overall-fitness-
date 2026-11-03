@@ -34,6 +34,14 @@ describe('untrusted text is data, never instructions', () => {
     expect(gate({ name: 'set_target', key: 'kcal', value: 2400 }, { userText: "don't panic, just set it to 2400", untrusted: true, sheet: [] })).toEqual({ ok: true });
   });
 
+  it('asking for one kind of change never allows another: "log this bottle" cannot forget a memory (Codex, PR #73)', () => {
+    const t = { userText: 'log this bottle, 500 ml', untrusted: true, sheet: [] };
+    expect(gate({ name: 'log_water', ml: 500 }, t)).toEqual({ ok: true });
+    expect(gate({ name: 'forget', memoryId: 'm-health' }, t)).toMatchObject({ ok: false, reason: expect.stringContaining('forget') });
+    expect(gate({ name: 'remember', text: 'wants 900 kcal', topic: 'preference' }, t).ok).toBe(false);
+    expect(gate({ name: 'set_target', key: 'kcal', value: 1500 }, { userText: "don't increase anything, just read it", untrusted: true, sheet: [1500] }).ok).toBe(false);
+  });
+
   it("the person's own command still works next to untrusted text, with numbers from their words or the sheet", () => {
     expect(gate({ name: 'set_target', key: 'protein', value: 160 }, { userText: 'sæt mit proteinmål til 160', untrusted: true, sheet: [] })).toEqual({ ok: true });
     expect(gate({ name: 'set_target', key: 'kcal', value: 3080 }, { userText: 'ok, change my target like you said', untrusted: true, sheet: [3080] })).toEqual({ ok: true });

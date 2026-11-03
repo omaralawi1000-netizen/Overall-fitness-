@@ -92,7 +92,8 @@ export function check(p: Proposal, mode: Mode, o: { records: AnyRecord[]; now: n
       return ok(mode === 'proposal', label, ops);
     }
     case 'remember': {
-      const same = o.records.find((r): r is MemoryCard => r.kind === 'memory' && !r.deleted && r.text.toLowerCase() === p.text.toLowerCase());
+      // only a current card is a duplicate: "exam week" that ended in October can be remembered again for November (Codex, PR #73)
+      const same = o.records.find((r): r is MemoryCard => r.kind === 'memory' && !r.deleted && r.text.toLowerCase() === p.text.toLowerCase() && !(r.validUntil && r.validUntil < day));
       if (same) return { ok: false, reason: 'already remembered' };
       const id = newId('m');
       const record = { id, kind: 'memory', day, text: p.text, topic: p.topic, scope: p.until ? 'oneOff' : 'standing', validFrom: day, lastSeen: o.now, origin: mode === 'command' ? 'said' : 'agreed', ...(p.until ? { validUntil: p.until } : {}) } as NewRecord;

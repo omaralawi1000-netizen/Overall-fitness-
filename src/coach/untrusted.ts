@@ -17,12 +17,19 @@ export function fence(text: string, source: UntrustedSource): string {
 }
 
 /** words a person uses to ask for a change (English and Danish) */
-const ASK_WORDS = 'set|change|update|raise|lower|log|add|track|record|save|remember|note|forget|delete|remove|drop|move|put|make it|sæt|ændr|opdater|hæv|sænk|tilføj|registrer|gem|husk|glem|slet|fjern|flyt|skriv';
-const ASKS = new RegExp(`\\b(?:${ASK_WORDS})\\b`, 'i');
+const ASK_WORDS = 'set|change|update|raise|lower|increase|decrease|bump|keep in mind|log|add|track|record|save|remember|note|forget|delete|remove|drop|move|put|make it|sæt|ændr|opdater|hæv|sænk|tilføj|registrer|gem|husk|glem|slet|fjern|flyt|skriv';
 /** "don't change it", "do not log this", "ikke ændre", "lad være med at …": an ask turned down is not consent (Codex, PR #73) */
 const NOT_ASKED = new RegExp(`\\b(?:don[’']?t|do not|never|not|no need to|without|ikke|aldrig|lad være med at|undlad at)\\s+(?:\\w+\\s+){0,2}?(?:${ASK_WORDS})\\b`, 'gi');
-/** Does the person's own text ask for a change? Turned-down asks are taken out first. */
-export const asksForChange = (text: string) => ASKS.test(text.replace(NOT_ASKED, ' '));
+/** the words that ask for each kind of action: "log this bottle" asks to log, never to forget a memory (Codex, PR #73) */
+const ASK_FOR: Record<Proposal['name'], RegExp> = {
+  set_target: /\b(?:set|change|update|raise|lower|increase|decrease|bump|make it|sæt|ændr|opdater|hæv|sænk)\b/i,
+  remember: /\b(?:remember|note|save|keep in mind|husk|gem|skriv)\b/i,
+  forget: /\b(?:forget|delete|remove|drop|glem|slet|fjern)\b/i,
+  log_water: /\b(?:log|add|track|record|registrer|tilføj|skriv)\b/i,
+  log_weight: /\b(?:log|add|track|record|registrer|tilføj|skriv)\b/i,
+};
+/** Does the person's own text ask for this kind of action? Turned-down asks are taken out first. */
+export const asksFor = (name: Proposal['name'], text: string) => ASK_FOR[name].test(text.replace(NOT_ASKED, ' '));
 
 /** the numbers in a text, with "1,500", "1.500" and "1500" read the same */
 export function numbersIn(text: string): number[] {
@@ -55,7 +62,7 @@ export interface Turn {
 /** May this proposal run in this turn? Returns the reason when it may not. */
 export function gate(p: Proposal, t: Turn): { ok: true } | { ok: false; reason: string } {
   if (!t.untrusted) return { ok: true };
-  if (!asksForChange(t.userText)) return { ok: false, reason: 'the person did not ask for a change; the request came from untrusted text' };
+  if (!asksFor(p.name, t.userText)) return { ok: false, reason: `the person did not ask to ${p.name.replace('_', ' ')}; the request came from untrusted text` };
   const own = [...numbersIn(t.userText), ...t.sheet];
   const foreign = proposalNumbers(p).filter((n) => !own.some((x) => Math.abs(x - n) < 1e-9));
   if (foreign.length) return { ok: false, reason: `${foreign.join(', ')} comes only from untrusted text` };

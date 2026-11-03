@@ -86,6 +86,14 @@ describe('validate → check → apply → verify → Undo', () => {
     expect(check({ name: 'forget', memoryId: 'nope' }, 'command', ctx(f))).toEqual({ ok: false, reason: 'no such memory' });
   });
 
+  it('a one-off that ended can be remembered again for a new period (Codex, PR #73)', async () => {
+    const f = await withTargets({});
+    const old = check({ name: 'remember', text: 'exam week', topic: 'life', until: '2026-10-05' }, 'command', ctx(f));
+    if (!old.ok) throw new Error();
+    await apply(f.e, old, 'a-old', o(f));
+    expect(check({ name: 'remember', text: 'exam week', topic: 'life', until: '2026-11-06' }, 'command', ctx(f)).ok).toBe(true);
+  });
+
   it('a target with no settings yet creates them, and Undo removes them again', async () => {
     const f = await fresh();
     const c = check({ name: 'set_target', key: 'protein', value: 150 }, 'command', ctx(f));
