@@ -89,6 +89,16 @@ describe('the fact sheet', () => {
     expect(s.trust.join(' ')).toContain('88.4 kg on 2026-11-03');
   });
 
+  it('a single typo weigh-in far from recent weight is odd, never the latest weight or the trend (Codex, PR #73)', () => {
+    const recs: AnyRecord[] = [...days('2026-10-13', 20).map((d) => weigh(d, 80)), weigh('2026-11-02', 180)];
+    const s = buildFacts(recs, { now: NOW, tz: TZ });
+    expect(s.weight.latest?.value).toBe(80);
+    expect(s.weight.trend?.value).toBe(0);
+    expect(s.weight.odd).toEqual([expect.objectContaining({ kg: 180 })]);
+    // a real 2 kg drop after a hard week is kept
+    expect(buildFacts([...days('2026-10-13', 20).map((d) => weigh(d, 80)), weigh('2026-11-02', 78)], { now: NOW, tz: TZ }).weight.latest?.value).toBe(78);
+  });
+
   it('two weigh-ins far apart with no history: neither is trusted', () => {
     const s = buildFacts([weigh('2026-11-03', 86.0, '07'), weigh('2026-11-03', 88.4, '08')], { now: NOW, tz: TZ });
     expect(s.weight.latest).toBeUndefined();
@@ -100,7 +110,10 @@ describe('the fact sheet', () => {
     const s = buildFacts([mem('left shoulder sore', '2026-10-20'), mem('takes sets to failure')], { now: NOW, tz: TZ });
     expect(s.memory.map((m) => m.text)).toEqual(['takes sets to failure']);
     expect(s.ended).toEqual([expect.objectContaining({ text: 'left shoulder sore', endedOn: '2026-10-20' })]);
-    expect(renderFacts(s)).toMatch(/ENDED \(past, not current\):\n- left shoulder sore \(ended 2026-10-20\)/);
+    const text = renderFacts(s);
+    expect(text).toMatch(/ENDED \(past, not current\):\n- memory\d+ left shoulder sore \(ended 2026-10-20\)/);
+    // every card shows its id, so a "forget that" can name the card (Codex, PR #73)
+    expect(text).toContain(`- ${s.memory[0].id} [health] takes sets to failure`);
   });
 
   it('a weight goal already reached says so (the stale "cutting" goal)', () => {

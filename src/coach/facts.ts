@@ -60,10 +60,6 @@ function partOfDay(h: number): FactSheet['now']['partOfDay'] {
 /** the day a record belongs to: its own `day`, else worked out from its moment */
 function dayOf(r: AnyRecord, dayStart: number): string { return r.day ?? dayKeyAt(r.at, r.tz, dayStart); }
 
-/**
- * Pick the weigh-in to trust for each day. Several on one day that differ by more than 1.5 kg are odd: the one closest
- * to the person's recent weight (median of the 7 days before) is kept; with no history to compare, none of them is.
- */
 /** the trusted weigh-in closest to a day, within 14 days of it */
 function nearest(byDay: Map<string, Bodyweight>, day: string): Bodyweight | undefined {
   let best: [number, Bodyweight] | undefined;
@@ -71,6 +67,12 @@ function nearest(byDay: Map<string, Bodyweight>, day: string): Bodyweight | unde
   return best?.[1];
 }
 
+/**
+ * Pick the weigh-in to trust for each day. Several on one day that differ by more than 1.5 kg are odd: the one closest
+ * to the person's recent weight (median of the 7 days before) is kept; with no history to compare, none of them is.
+ * A single weigh-in far from that recent weight (more than 3 kg or 4 %, whichever is more) is odd too: a typo like 180 for
+ * 80 must never become the latest weight or bend the trend (Codex, PR #73).
+ */
 function trustedWeights(ws: Bodyweight[], dayStart: number): { byDay: Map<string, Bodyweight>; odd: Bodyweight[] } {
   const days = new Map<string, Bodyweight[]>();
   for (const w of [...ws].sort((a, b) => a.at - b.at)) {
@@ -82,10 +84,14 @@ function trustedWeights(ws: Bodyweight[], dayStart: number): { byDay: Map<string
   for (const d of [...days.keys()].sort()) {
     const list = days.get(d)!;
     const spread = Math.max(...list.map((w) => w.kg)) - Math.min(...list.map((w) => w.kg));
-    if (spread <= 1.5) { byDay.set(d, list[0]); continue; }
     const before = [...byDay.entries()].filter(([k]) => diffDays(d, k) > 0 && diffDays(d, k) <= 7).map(([, w]) => w.kg).sort((a, b) => a - b);
-    if (!before.length) { odd.push(...list); continue; }
-    const median = before[Math.floor(before.length / 2)];
+    const median = before.length ? before[Math.floor(before.length / 2)] : undefined;
+    if (spread <= 1.5) {
+      if (median !== undefined && before.length >= 2 && Math.abs(list[0].kg - median) > Math.max(3, median * 0.04)) { odd.push(...list); continue; }
+      byDay.set(d, list[0]);
+      continue;
+    }
+    if (median === undefined) { odd.push(...list); continue; }
     const keep = [...list].sort((a, b) => Math.abs(a.kg - median) - Math.abs(b.kg - median))[0];
     byDay.set(d, keep);
     odd.push(...list.filter((w) => Math.abs(w.kg - keep.kg) > 1.5));
@@ -271,8 +277,8 @@ export function renderFacts(s: FactSheet): string {
   const out: string[] = [`NOW: ${s.now.day}, ${String(s.now.hour).padStart(2, '0')}:00 (${s.now.partOfDay})`];
   if (s.person.name) out.push(`NAME: ${s.person.name}`);
   out.push('TARGETS:', ...(s.person.targets.length ? s.person.targets.map((f) => line(f, L)) : ['- none set']));
-  out.push('MEMORY (current, in their words):', ...(s.memory.length ? s.memory.map((m) => `- [${m.topic}] ${m.text}${m.until ? ` (until ${m.until})` : ''}`) : ['- none']));
-  if (s.ended.length) out.push('ENDED (past, not current):', ...s.ended.map((m) => `- ${m.text} (ended ${m.endedOn})`));
+  out.push('MEMORY (current, in their words):', ...(s.memory.length ? s.memory.map((m) => `- ${m.id} [${m.topic}] ${m.text}${m.until ? ` (until ${m.until})` : ''}`) : ['- none']));
+  if (s.ended.length) out.push('ENDED (past, not current):', ...s.ended.map((m) => `- ${m.id} ${m.text} (ended ${m.endedOn})`));
   if (s.goals.length) out.push('GOALS:', ...s.goals.map((g) => `- ${g.text}: ${g.status}${g.target !== undefined ? `, target ${fmt(g.target, L)}` : ''}${g.by ? ` by ${g.by}` : ''}${g.neededKgPerWeek !== undefined ? `, needs ${fmt(g.neededKgPerWeek, L)} kg/week` : ''}`));
   out.push(`TODAY (food ${s.today.foodComplete ? 'marked complete' : 'not finished'}):`, ...[...s.today.food, ...s.today.left].map((f) => line(f, L)));
   for (const f of [s.today.water, s.today.weighIn]) if (f) out.push(line(f, L));
