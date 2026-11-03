@@ -95,6 +95,10 @@ describe('the fact sheet', () => {
     expect(s.weight.latest?.value).toBe(80);
     expect(s.weight.trend?.value).toBe(0);
     expect(s.weight.odd).toEqual([expect.objectContaining({ kg: 180 })]);
+    // two typos on one day: the closer one is no more plausible than the other (Codex, PR #73)
+    const two = buildFacts([...days('2026-10-13', 20).map((d) => weigh(d, 80)), weigh('2026-11-02', 180, '07'), weigh('2026-11-02', 182, '08')], { now: NOW, tz: TZ });
+    expect(two.weight.latest?.value).toBe(80);
+    expect(two.weight.odd.map((w) => w.kg)).toEqual([180, 182]);
     // a real 2 kg drop after a hard week is kept
     expect(buildFacts([...days('2026-10-13', 20).map((d) => weigh(d, 80)), weigh('2026-11-02', 78)], { now: NOW, tz: TZ }).weight.latest?.value).toBe(78);
   });
@@ -144,6 +148,11 @@ describe('the fact sheet', () => {
     expect(g.status).toBe('ahead');
     expect(g.neededKgPerWeek).toBeLessThan(0);
     expect(buildFacts([goal], { now: NOW, tz: TZ }).goals[0].status).toBe('cantJudge');
+    // a deadline that passed unreached is missed, with no made-up pace (Codex, PR #73)
+    const late = env('memory', '2026-09-01', { text: 'cut to 75 kg', topic: 'goal', scope: 'standing', validFrom: '2026-09-01', lastSeen: 0, origin: 'said', goal: { metric: 'weight', target: 75, by: '2026-10-31', startDate: '2026-09-01', start: 84 } });
+    const missed = buildFacts([late, ...days('2026-10-14', 21).map((d) => weigh(d, 80))], { now: NOW, tz: TZ }).goals[0];
+    expect(missed).toMatchObject({ status: 'missed' });
+    expect(missed.neededKgPerWeek).toBeUndefined();
   });
 
   it('render lists every number with its id, in the person\'s language', () => {

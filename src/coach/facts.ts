@@ -23,8 +23,8 @@ export interface GoalFact {
   metric: 'weight' | 'lift' | 'other';
   target?: number;
   by?: string;
-  /** reached / onPace / behind / ahead / cantJudge: worked out from the weight trend, never guessed */
-  status: 'reached' | 'onPace' | 'behind' | 'ahead' | 'cantJudge' | 'done' | 'dropped';
+  /** reached / onPace / behind / ahead / cantJudge / missed: worked out from the weight trend, never guessed */
+  status: 'reached' | 'onPace' | 'behind' | 'ahead' | 'cantJudge' | 'missed' | 'done' | 'dropped';
   /** kg a week needed from now to reach the target by its date */
   neededKgPerWeek?: number;
 }
@@ -74,6 +74,9 @@ function nearest(byDay: Map<string, Bodyweight>, day: string): Bodyweight | unde
  * A single weigh-in far from that recent weight (more than 3 kg or 4 %, whichever is more) is odd too: a typo like 180 for
  * 80 must never become the latest weight or bend the trend (Codex, PR #73).
  */
+/** further from recent weight than a body changes between weigh-ins: more than 3 kg or 4 %, whichever is more */
+const far = (kg: number, median: number) => Math.abs(kg - median) > Math.max(3, median * 0.04);
+
 function trustedWeights(ws: Bodyweight[], dayStart: number): { byDay: Map<string, Bodyweight>; odd: Bodyweight[] } {
   const days = new Map<string, Bodyweight[]>();
   for (const w of [...ws].sort((a, b) => a.at - b.at)) {
@@ -88,12 +91,14 @@ function trustedWeights(ws: Bodyweight[], dayStart: number): { byDay: Map<string
     const before = [...byDay.entries()].filter(([k]) => diffDays(d, k) > 0 && diffDays(d, k) <= 7).map(([, w]) => w.kg).sort((a, b) => a - b);
     const median = before.length ? before[Math.floor(before.length / 2)] : undefined;
     if (spread <= 1.5) {
-      if (median !== undefined && before.length >= 2 && Math.abs(list[0].kg - median) > Math.max(3, median * 0.04)) { odd.push(...list); continue; }
+      if (median !== undefined && before.length >= 2 && far(list[0].kg, median)) { odd.push(...list); continue; }
       byDay.set(d, list[0]);
       continue;
     }
     if (median === undefined) { odd.push(...list); continue; }
     const keep = [...list].sort((a, b) => Math.abs(a.kg - median) - Math.abs(b.kg - median))[0];
+    // the closest one must itself be plausible: 180 and 182 after weeks at 80 are both typos (Codex, PR #73)
+    if (far(keep.kg, median)) { odd.push(...list); continue; }
     byDay.set(d, keep);
     odd.push(...list.filter((w) => Math.abs(w.kg - keep.kg) > 1.5));
   }
@@ -223,6 +228,8 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
     if (startKg === undefined || startKg === g.target) { goals.push({ ...base, status: 'cantJudge' }); continue; }
     const losing = g.target < startKg;
     if (losing ? latest.value <= g.target : latest.value >= g.target) { goals.push({ ...base, status: 'reached' }); continue; }
+    // a deadline that passed unreached is missed: no pace is worked out for it until a new date is agreed (Codex, PR #73)
+    if (g.by && g.by < today) { goals.push({ ...base, status: 'missed' }); continue; }
     if (!trend || !g.by) { goals.push({ ...base, status: 'cantJudge' }); continue; }
     const weeks = Math.max(diffDays(g.by, today), 1) / 7;
     const needed = r1((g.target - latest.value) / weeks);

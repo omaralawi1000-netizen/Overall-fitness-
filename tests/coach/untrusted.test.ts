@@ -51,6 +51,12 @@ describe('untrusted text is data, never instructions', () => {
     expect(gate({ name: 'set_target', key: 'protein', value: 215 }, { userText: 'change it back to my previous target', untrusted: true, sheet })).toEqual({ ok: true });
   });
 
+  it('a number the action rounds still matches what the person said: 82.64 kg is logged as 82.6 (Codex, PR #73)', () => {
+    const t = { userText: 'log my weight as 82.64 kg', untrusted: true, sheet: [] };
+    expect(gate({ name: 'log_weight', kg: 82.6 }, t)).toEqual({ ok: true });
+    expect(gate({ name: 'log_weight', kg: 86.4 }, t).ok).toBe(false);
+  });
+
   it("the person's own command still works next to untrusted text, with numbers from their words or the sheet", () => {
     expect(gate({ name: 'set_target', key: 'protein', value: 160 }, { userText: 'sæt mit proteinmål til 160', untrusted: true, sheet: [] })).toEqual({ ok: true });
     expect(gate({ name: 'set_target', key: 'kcal', value: 3080 }, { userText: 'ok, change my target like you said', untrusted: true, sheet: [3080] })).toEqual({ ok: true });

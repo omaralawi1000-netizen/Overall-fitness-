@@ -63,7 +63,9 @@ export interface Turn {
 export function gate(p: Proposal, t: Turn): { ok: true } | { ok: false; reason: string } {
   if (!t.untrusted) return { ok: true };
   if (!asksFor(p.name, t.userText)) return { ok: false, reason: `the person did not ask to ${p.name.replace('_', ' ')}; the request came from untrusted text` };
-  const own = [...numbersIn(t.userText), ...t.sheet];
+  // a proposal's number is rounded the way readProposal rounds it (82.64 kg is logged as 82.6), so trusted numbers are
+  // compared at those roundings too (Codex, PR #73)
+  const own = [...numbersIn(t.userText), ...t.sheet].flatMap((x) => [x, Math.round(x), Math.round(x * 10) / 10]);
   const foreign = proposalNumbers(p).filter((n) => !own.some((x) => Math.abs(x - n) < 1e-9));
   if (foreign.length) return { ok: false, reason: `${foreign.join(', ')} comes only from untrusted text` };
   return { ok: true };
