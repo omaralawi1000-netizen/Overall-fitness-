@@ -114,8 +114,9 @@ describe('Codex retro-review findings', () => {
     ] });
     // more reps of the same exercise still join it
     expect(u('bench press 80 for 8, 8 and 6', closed)).toMatchObject({ kind: 'workout', rows: [{ row: { sets: [{ reps: 8 }, { reps: 8 }, { reps: 6 }] } }] });
+    expect(u('bench 80 for 8. 60 for 10!', closed)).toMatchObject({ kind: 'workout', rows: [{ row: { sets: [{ kg: 80, reps: 8 }, { kg: 60, reps: 10 }] } }] });
     // a connector inside one distance-and-time set does not start a new exercise or set (Codex on #64)
-    for (const t of ['run 5 km, in 25 minutes', 'run 5 km and in 25 minutes', 'løb 5 km på 25 minutter'])
+    for (const t of ['run 5 km, in 25 minutes', 'run 5 km and in 25 minutes', 'løb 5 km på 25 minutter', 'run 5 km, and in 25 minutes', 'run 5 km, and 25 minutes', 'run 5 km. 25 minutes', 'løb 5 km, og på 25 minutter', 'run 5 km. 25 minutes!'])
       expect(u(t, closed)).toMatchObject({ kind: 'workout', rows: [{ row: { sets: [{ distanceM: 5000, durationSec: 1500 }] } }] });
   });
   it('making, getting or buying something is not eating it', () => {

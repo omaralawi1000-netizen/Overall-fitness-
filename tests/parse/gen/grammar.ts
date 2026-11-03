@@ -260,7 +260,7 @@ function liftSets(r: R): { text: string; sets: [number, number][] } {
 function genWorkout(r: R): Phrase {
   if (r.chance(0.2)) { // a run with distance and time: a connector ("in", "på") never splits it in two (Codex on #64)
     const km = r.int(2, 21), min = r.int(10, 120), da = r.chance(0.3);
-    const say = da ? `løb ${km} km${r.pick([' på ', ', på '])}${min} minutter` : `run ${km} km${r.pick([' in ', ', in ', ' and in '])}${min} minutes`;
+    const say = da ? `løb ${km} km${r.pick([' på ', ', på ', ', og på ', ' og '])}${min} minutter` : `run ${km} km${r.pick([' in ', ', in ', ' and in ', ', and in ', ', and ', '. '])}${min} minutes`;
     return { family: 'workout', say: wrap(say, r), open: r.chance(0.5), expect: { run: [km, min * 60] } };
   }
   const n = r.pick([1, 2, 2, 3]);

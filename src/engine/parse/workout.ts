@@ -30,12 +30,26 @@ function normaliseNumbers(s: string): string {
   return out;
 }
 
+/**
+ * Sets that carry on an exercise. A lone time after a lone distance (or the other way round) is the same set:
+ * "run 5 km, and 25 minutes" is one run of 5 km in 25 minutes, however the two halves were split.
+ */
+function addSets(to: WorkoutSet[], more: WorkoutSet[]): void {
+  const last = to[to.length - 1];
+  const only = (x: WorkoutSet, k: keyof WorkoutSet) => Object.keys(x).length === 1 && x[k] !== undefined;
+  if (last && more.length === 1 && ((only(last, 'distanceM') && only(more[0], 'durationSec')) || (only(last, 'durationSec') && only(more[0], 'distanceM')))) {
+    Object.assign(last, more[0]);
+    return;
+  }
+  to.push(...more);
+}
+
 export function splitExerciseSegments(text: string): string[] {
   return text
     // "squat 100 for 5 and front squat 80 for 5": an "and" (or comma) followed by a name and a number starts a new exercise;
-    // a connector is not a name ("run 5 km, in 25 minutes" is one run)
-    .split(/\s*(?:;|\.\s+|\bthen\b|\bnext\b|\bderefter\b|\bdernaest\b|\bdernæst\b|(?:,|\band\b|\bog\b)\s+(?!(?:in|on|at|for|with|of|by|to|then|x|i|på|paa|til|med|af|over|under)\s)(?=(?:[a-zæøå][\p{L}-]*\s+){1,4}\d))\s*/iu)
-    .map((s) => s.trim())
+    // no word of that name may be a connector ("run 5 km, and in 25 minutes" is one run)
+    .split(/\s*(?:;|\.\s+|\bthen\b|\bnext\b|\bderefter\b|\bdernaest\b|\bdernæst\b|(?:,|\band\b|\bog\b)\s+(?=(?:(?!(?:in|on|at|for|with|of|by|to|then|and|og|x|i|på|paa|til|med|af|over|under|about|around|omkring|cirka|ca|just|kun|bare|also|også)\s)[a-zæøå][\p{L}-]*\s+){1,4}\d))\s*/iu)
+    .map((s) => s.trim().replace(/[!?…]+$/u, '').trim()) // "… 60 for 10!": the end of a sentence is not part of a set
     .filter(Boolean);
 }
 
@@ -134,7 +148,7 @@ export function parseWorkoutText(text: string): { rows: WorkoutRow[]; unread: st
     if (r && !r.query) {
       // sets with no exercise name carry on from the exercise just before; with none before, they are not read
       const prev = rows[rows.length - 1];
-      if (prev) { prev.sets.push(...r.sets); prev.raw = `${prev.raw}; ${r.raw}`; } else unread.push(seg);
+      if (prev) { addSets(prev.sets, r.sets); prev.raw = `${prev.raw}; ${r.raw}`; } else unread.push(seg);
     } else if (r) rows.push(r); else unread.push(seg);
   }
   return { rows, unread };
