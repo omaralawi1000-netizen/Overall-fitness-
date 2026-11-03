@@ -293,3 +293,10 @@ Built as an artifact (artifact https://claude.ai/artifact/2mGPer97P43dNo4Y5Ugjhp
 - Omar, 3 Nov 09:01: moving figures go only in Train, beside the exercise name, never on the workout screen.
 - Still open: Omar times the cold start on his phone; fonts still show a fallback for a split second.
 Next: Omar times the cold start on his phone, then port Window v15 into the repo.
+
+**Revamp plan "one window" (3 Nov 2026, plan only, not built)** (https://claude.ai/artifact/RBYkz3sWWpXiLEqWLkzUtr)
+- Each tab is a direction you look from inside the same landscape, with a parallax pan between tabs. One rule set covers every screen.
+- Moving line figures, all on one rig, sit beside lift names in Train only.
+- Harsh score: 8/10. Biggest risk: the figures could read as clip art. Step 1 is building and judging the bench figure alone, with a still-pose fallback.
+- The photo is too narrow for a full look-around until Aven's own terrain image exists.
+
