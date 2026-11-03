@@ -46,6 +46,8 @@ const MODEL = process.env.EXAM_MODEL ?? 'gemini-3.8-flash';
 const FALLBACK = process.env.EXAM_FALLBACK ?? '';
 const ONLY = process.env.EXAM_ONLY?.split(',').map((s) => s.trim()).filter(Boolean);
 const DRY = !!process.env.EXAM_DRY;
+/** re-run only the code checks on the answers already in EXAM_OUT, with today's checks: no model call, nothing spent */
+const RECHECK = !!process.env.EXAM_RECHECK;
 // a dry run writes only under <EXAM_OUT>/dry: its fake answers must never count as done (or overwrite real ones)
 const OUT = `${process.env.EXAM_OUT ?? '/home/user/Overall-fitness-/reference/exam-v1/before'}${DRY ? '/dry' : ''}`;
 const GAP_MS = Number(process.env.EXAM_GAP_MS ?? 7000);
@@ -297,13 +299,40 @@ const WANT_EFFORT = MODEL.startsWith('claude-') ? EFFORT : undefined;
 /** an answer made with this run's Coach setup (the model asked for, and its effort): only such an answer is kept as done */
 const sameSetup = (r: any) => r.requestedModel === MODEL && (r.effort ?? null) === (WANT_EFFORT ?? null);
 
+/**
+ * The code checks again, on the saved answers (the judges never see them, so their verdicts stay valid). The answer's
+ * own facts are rebuilt the same way as in runOne. Morning pins, errors and dropped actions keep what they had.
+ */
+function recheck(all: Question[]) {
+  let n = 0, changed = 0;
+  for (const f of readdirSync(OUT).filter((x) => /\.r\d+\.json$/.test(x)).sort()) {
+    const r = JSON.parse(readFileSync(`${OUT}/${f}`, 'utf8'));
+    const q = all.find((x) => x.id === r.id);
+    if (!q || r.error || r.mode === 'morning') continue;
+    const now = nowOf(q);
+    vi.setSystemTime(now);
+    const d = PERSONAS_V1[q.persona](now);
+    q.tweak?.(d, now);
+    const answer = { reply: r.reply, actions: r.actions ?? [] };
+    const check = /^dropped \d+/.test(r.check ?? '') ? r.check : q.check?.(answer) ?? null;
+    const fl = flags(q, r.reply, answer.actions, d);
+    n++;
+    if (check === r.check && JSON.stringify(fl) === JSON.stringify(r.flags ?? [])) continue;
+    changed++;
+    console.log(`${f}: check ${JSON.stringify(r.check)} → ${JSON.stringify(check)}; flags ${JSON.stringify(r.flags ?? [])} → ${JSON.stringify(fl)}`);
+    writeFileSync(`${OUT}/${f}`, JSON.stringify({ ...r, check, flags: fl, rechecked: { at: new Date().toISOString(), before: { check: r.check, flags: r.flags } } }, null, 1));
+  }
+  console.log(`recheck ${OUT}: ${n} answers, ${changed} changed`);
+}
+
 it('runs Coach exam v1 (before: old Aven)', async () => {
   vi.useFakeTimers({ toFake: ['Date'] });
-  if (!(CAP > 0)) throw new Error('set EXAM_CAP_USD (the most this run may spend, in US dollars, counting what the ledger already holds)');
+  if (!(CAP > 0) && !RECHECK) throw new Error('set EXAM_CAP_USD (the most this run may spend, in US dollars, counting what the ledger already holds)');
   await loadDanish();
   mkdirSync(OUT, { recursive: true });
-  ledger = new Ledger(LEDGER, CAP);
   const all = [...QUESTIONS_V1, ...QUESTIONS_SAFETY, ...(await heldOut())];
+  if (RECHECK) return recheck(all);
+  ledger = new Ledger(LEDGER, CAP);
   const qs = all.filter((q) => !ONLY || ONLY.includes(q.id));
   // one folder holds one Coach setup: answers from another model or effort would be judged and scored under this one
   if (!DRY) {

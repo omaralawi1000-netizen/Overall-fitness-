@@ -27,6 +27,10 @@ to get the "before" score of old Aven's Coach and to choose the Coach model (E2 
    A stopped run resumes: answers already written are kept, errors are redone. One `EXAM_OUT` holds one Coach setup
    (model and effort): the run stops if the folder has answers from another one.
 
+`EXAM_RECHECK=1` (same `EXAM_OUT`, plus `EXAM_HELDOUT=1` if held-out answers are there) runs only the code checks again on
+the saved answers, with today's checks: no model call, no cap needed. Each changed answer keeps what it had under
+`rechecked.before`. The judges never see the checks, so their verdicts stay valid.
+
 ## Judge and report (this repo)
 `EXAM_TRANSCRIPTS=<dir>/gemini-3.8-flash,<dir>/claude-sonnet-5-5,… EXAM_CAP_USD=38 EXAM_LEDGER=<dir>/ledger.jsonl EXAM_JUDGED=<dir>/judged npx vitest run --config exam/vitest.config.ts exam/judge/run-judges.test.ts`
 Calibration first (a judge that fails grades nothing), then both judges through the half-price batch APIs, then
