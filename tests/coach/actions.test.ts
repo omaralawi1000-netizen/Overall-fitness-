@@ -146,6 +146,16 @@ describe('validate → check → apply → verify → Undo', () => {
     expect(f.e.all('water')).toHaveLength(1);
   });
 
+  it('a retry of a change that a later edit replaced is not reported as done (Codex, PR #73)', async () => {
+    const f = await withTargets({ kcal: 2500 });
+    const c = check({ name: 'set_target', key: 'kcal', value: 2600 }, 'command', ctx(f));
+    if (!c.ok) throw new Error();
+    await apply(f.e, c, 'a-k1', o(f));
+    await f.e.commit({ type: 'edit', label: 'edit', ops: [{ op: 'update', id: 'settings', set: { targets: { kcal: 2400 } } }] });
+    expect(await apply(f.e, c, 'a-k1', o(f))).toEqual({ failed: 'this change was replaced by a later one' });
+    expect(f.e.get<'settings'>('settings')!.targets.kcal).toBe(2400);
+  });
+
   it('applying an undone change again does not redo it', async () => {
     const f = await withTargets({ kcal: 2500 });
     const c = check({ name: 'set_target', key: 'kcal', value: 2600 }, 'command', ctx(f));

@@ -14,7 +14,7 @@ import type { Engine } from '../engine/engine';
 import type { AnyRecord, MemoryCard, MemoryTopic, Settings } from '../engine/model';
 import type { NewRecord, Op } from '../engine/plan';
 import { dayKeyAt } from '../engine/time';
-import { newId } from '../engine/util';
+import { deepEqual, newId } from '../engine/util';
 
 export type TargetKey = 'kcal' | 'protein' | 'carbs' | 'fat' | 'fibre' | 'waterMl';
 const TARGET_UNIT: Record<TargetKey, string> = { kcal: 'kcal', protein: 'g', carbs: 'g', fat: 'g', fibre: 'g', waterMl: 'ml' };
@@ -136,8 +136,12 @@ async function saved(e: Engine, actionId: string): Promise<{ did: Did } | { fail
   const a = e.actions().find((x) => x.id === actionId) ?? (await e.allActions()).find((x) => x.id === actionId);
   if (!a) return null;
   if (a.undoneBy) return { failed: 'this change was undone' };
-  const there = a.changes.every((ch) => { const r = e.get(ch.id); return !!r && !!r.deleted === !!ch.after.deleted; });
-  return there ? { did: { actionId, label: a.label, undo: true } } : { failed: 'the change is not there any more' };
+  // every field the action wrote must still hold its value: a target changed again since is superseded, not done (Codex, PR #73)
+  const there = a.changes.every((ch) => {
+    const r = e.get(ch.id) as Record<string, unknown> | undefined;
+    return !!r && !!r.deleted === !!ch.after.deleted && Object.entries(ch.after).every(([k, v]) => deepEqual(r[k] ?? null, v ?? null));
+  });
+  return there ? { did: { actionId, label: a.label, undo: true } } : { failed: 'this change was replaced by a later one' };
 }
 
 /**
