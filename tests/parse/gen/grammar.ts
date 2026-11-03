@@ -281,7 +281,7 @@ const TALK: ((r: R) => string)[] = [
   (r) => `${N(r)} people are in the gym`, (r) => `the bus leaves in ${r.int(2, 30)} minutes`, (r) => `i have ${r.int(2, 9)} more sets`, (r) => `it is ${r.int(10, 30)} degrees outside`,
   () => `no problem`, () => `hey aven`, () => `that felt heavy`, () => `jeg er træt`, () => `what should i eat`, () => `how many sets are left`, () => `good morning`, () => `tak for hjælpen`,
   (r) => `i made ${r.int(2, 6)} sandwiches`, (r) => `i got ${r.int(2, 4)} dogs`, (r) => `i bought ${r.int(2, 12)} eggs`, (r) => `jeg købte ${r.int(2, 6)} bananer`, (r) => `i cooked ${r.int(200, 900)} grams of rice for the kids`, () => `2 eggs i think`,
-  (r) => `${r.int(2, 6)} eggs i ${r.pick(['cooked', 'made', 'bought', 'saw'])}`, (r) => `${r.int(2, 5)} is ${r.pick(['enough', 'plenty', 'fine', 'too many'])}`,
+  (r) => `${r.int(2, 6)} eggs i ${r.pick(['cooked', 'made', 'bought', 'saw'])}`, (r) => `${r.int(2, 5)} is ${r.pick(['enough', 'plenty', 'fine', 'too many'])}`, (r) => `${r.int(2, 6)} ${r.pick(['æg', 'bananer', 'boller'])} de ${r.pick(['smager godt', 'kostede meget', 'lå i køleskabet', 'blev brændt'])}`,
   (r) => `i lost ${r.int(1, 5)} kilos this month`, (r) => `my friend ate ${r.int(100, 400)} grams of pasta`, (r) => `the pizza was ${r.int(80, 150)} kroner`, (r) => `i ran ${r.int(2, 10)} km yesterday`,
 ];
 function genTalk(r: R): Phrase { return { family: 'talk', say: wrap(r.pick(TALK)(r), r), open: r.chance(0.6), expect: { nolog: true } }; }

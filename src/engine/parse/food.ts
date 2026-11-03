@@ -72,7 +72,8 @@ const SENTENCE_WORD = new Set(['are', 'was', 'were', 'am', 'be', 'been', 'have',
 const DISH_AFTER_I = /^(?:karry|karrysovs|sovs|sauce|flødesovs|tomatsovs|tomat|tomater|olie|olivenolie|lage|eddike|fad|ovn|ovnen|skiver|tern|både|strimler|kokosmælk|mælk|smør|svøb|dej|gele|sirup|chili|hvidløg|vaffel)$/;
 /** A first "is" is Danish ice cream only on its own or when the name goes on like a dish ("is med jordbær"), never "2 is enough". */
 const ICE_CREAM_NEXT = /^(?:med|og|i|uden|fra)$/;
-const VERB_AFTER_DE = /^(?:spiste|kommer|tog|ville|gik|er|var|har|skal|vil|kan)$/;
+/** Foreign dish names with "de" ("dulce de leche", "fleur de sel"): what can follow it. Any other "de" is Danish "they". */
+const DISH_AFTER_DE = /^(?:leche|sel|provence|mie|campagne|bruxelles|pollo|queso|gallo|nata|la)$/;
 /**
  * "is", "i" and "de" are sentence words in one language and food words in the other: Danish "is" is ice cream,
  * "kylling i karry" is chicken in curry, "dulce de leche" is a food. They count as food words only in a dish's shape;
@@ -82,7 +83,7 @@ function isClause(name: string[]): boolean {
   return name.some((t, k) => SENTENCE_WORD.has(t)
     || (t === 'is' && (k > 0 || (name.length > 1 && !ICE_CREAM_NEXT.test(name[1])))) // "2 eggs is all", "2 is enough"
     || (t === 'i' && !(k > 0 && k < name.length - 1 && DISH_AFTER_I.test(name[k + 1]))) // "2 eggs i cooked", not "kylling i karry"
-    || (t === 'de' && VERB_AFTER_DE.test(name[k + 1] ?? ''))); // "2 bananer de er gode"
+    || (t === 'de' && !(k > 0 && k < name.length - 1 && DISH_AFTER_DE.test(name[k + 1])))); // "2 bananer de er gode", not "dulce de leche"
 }
 const PREPOSITION = new Set(['for', 'at', 'with', 'and', 'to', 'til', 'med', 'på', 'paa', 'in', 'i', 'og', 'on', 'by', 'from', 'fra']);
 /** The most one row can hold (grams or ml): 5 kg. Above that a weight or a slip, not a meal. */

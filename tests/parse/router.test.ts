@@ -131,7 +131,7 @@ describe('Codex retro-review findings', () => {
     expect(u('100 g dulce de leche', closed)).toMatchObject({ kind: 'food', rows: [{ amount: 100, query: 'dulce de leche' }] });
     expect(u('150 g is med jordbær', closed)).toMatchObject({ kind: 'food', rows: [{ amount: 150, query: 'is med jordbær' }] });
     // still talk: a clause after the amount
-    for (const t of ['27 people are in the gym', 'I have two kids', '2 eggs i think', 'jeg har 3 timer i skole', '2 bananer de er gode', '2 eggs is all i had', '2 eggs i cooked', '2 is enough', '3 eggs i made earlier', '2 is plenty']) {
+    for (const t of ['27 people are in the gym', 'I have two kids', '2 eggs i think', 'jeg har 3 timer i skole', '2 bananer de er gode', '2 eggs is all i had', '2 eggs i cooked', '2 is enough', '3 eggs i made earlier', '2 is plenty', '2 æg de smager godt', '2 bananer de kostede meget']) {
       expect(['ignored', 'ask']).toContain(u(t, closed).kind);
     }
   });
