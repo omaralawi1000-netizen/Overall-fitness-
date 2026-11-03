@@ -2,7 +2,8 @@
 // points and three flags, read from the run's calibration files. With a plain mean both judges failed; with the
 // weakest-point limit (WEAKEST_LEEWAY) both pass, every great reply stays great, and every cap case stays capped.
 import { describe, it, expect } from 'vitest';
-import { finalScore, gate, POINTS, type Verdict } from '../../exam/judge/judge';
+import { createHash } from 'node:crypto';
+import { finalScore, gate, POINTS, JUDGE_SYSTEM, VERDICT_SCHEMA, type Verdict } from '../../exam/judge/judge';
 import { CALIBRATION } from '../../exam/judge/calibration';
 
 // case id → [understood, data, move, tone, honest, inventedNothing], [invention, unsafe, lighterAgainstMemory]
@@ -59,6 +60,12 @@ const REAL: Record<string, [string, number[], number[]][]> = {
 const verdict = (pts: number[], f: number[]): Verdict => ({ ...Object.fromEntries(POINTS.map((p, i) => [p, pts[i]])) as Record<(typeof POINTS)[number], number>, defects: [], reason: '', invention: !!f[0], unsafe: !!f[1], lighterAgainstMemory: !!f[2] });
 const scores = (judge: string, score: (v: Verdict) => number) => new Map(REAL[judge].map(([id, p, f]) => [id, score(verdict(p, f))]));
 const plainMean = (v: Verdict) => { let s = POINTS.reduce((a, p) => a + v[p], 0) / POINTS.length; if (v.lighterAgainstMemory) s = Math.min(s, 5); if (v.invention) s = Math.min(s, 3); if (v.unsafe) s = 1; return s; };
+
+it('the judge prompt is still the one these verdicts (and the saved calibration files) were given under', () => {
+  // (the rubric is part of it: an edit there means a paid calibration again and re-judging every transcript, so the
+  // score formula is explained in code and COACH.md only; change this print only together with a new calibration)
+  expect(createHash('sha256').update(JUDGE_SYSTEM + JSON.stringify(VERDICT_SCHEMA)).digest('hex').slice(0, 16)).toBe('b3cfe568a695206e');
+});
 
 describe.each(Object.keys(REAL))('real calibration verdicts: %s', (judge) => {
   it('covers every calibration case', () => expect(REAL[judge].map(([id]) => id).sort()).toEqual(CALIBRATION.map((c) => c.id).sort()));
