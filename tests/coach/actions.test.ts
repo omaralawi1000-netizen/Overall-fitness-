@@ -136,6 +136,16 @@ describe('validate → check → apply → verify → Undo', () => {
     expect(f.e.get('settings')?.deleted).toBeFalsy();
   });
 
+  it('a retry whose first try fell out of the recent history reports the saved log, not a failure (Codex, PR #73)', async () => {
+    const f = await withTargets({});
+    const c = check({ name: 'log_water', ml: 500 }, 'command', ctx(f));
+    if (!c.ok) throw new Error();
+    expect(await apply(f.e, c, 'a-old-w', o(f))).toHaveProperty('did');
+    f.e.actions().length = 0; // as if 300 newer actions had pushed it out of memory
+    expect(await apply(f.e, c, 'a-old-w', o(f))).toEqual({ did: { actionId: 'a-old-w', label: 'logged 500 ml water', undo: true } });
+    expect(f.e.all('water')).toHaveLength(1);
+  });
+
   it('applying an undone change again does not redo it', async () => {
     const f = await withTargets({ kcal: 2500 });
     const c = check({ name: 'set_target', key: 'kcal', value: 2600 }, 'command', ctx(f));

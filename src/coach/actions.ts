@@ -129,18 +129,32 @@ function verify(c: Extract<Checked, { ok: true }>, e: Engine): boolean {
 }
 
 /**
+ * An action already in the log, from memory or (when it fell out of the recent history) the database: a retry reports
+ * what that action did, verified record by record, and never writes again.
+ */
+async function saved(e: Engine, actionId: string): Promise<{ did: Did } | { failed: string } | null> {
+  const a = e.actions().find((x) => x.id === actionId) ?? (await e.allActions()).find((x) => x.id === actionId);
+  if (!a) return null;
+  if (a.undoneBy) return { failed: 'this change was undone' };
+  const there = a.changes.every((ch) => { const r = e.get(ch.id); return !!r && !!r.deleted === !!ch.after.deleted; });
+  return there ? { did: { actionId, label: a.label, undo: true } } : { failed: 'the change is not there any more' };
+}
+
+/**
  * Steps 3 and 4: apply through the action log, then verify. Returns a `Did` only when the change is really there.
  * `actionId` is made once per proposal by the caller, so a retry can never apply it twice.
  * The proposal is checked again against the records as they are NOW: a preview applied later, or two proposals checked
  * together, can never write a stale state over a newer change (Codex, PR #73).
  */
 export async function apply(e: Engine, c: Extract<Checked, { ok: true }>, actionId: string, o: { now: number; tz: string }): Promise<{ did: Did } | { failed: string }> {
-  const done = e.actions().find((a) => a.id === actionId);
-  if (done) return done.undoneBy ? { failed: 'this change was undone' } : { did: { actionId, label: done.label, undo: true } };
+  const before = await saved(e, actionId);
+  if (before) return before;
   const fresh = check(c.proposal, c.mode, { records: e.allRecords(), now: o.now, tz: o.tz });
   if (!fresh.ok) return { failed: fresh.reason };
   const res = await e.commit({ id: actionId, type: `coach.${fresh.proposal.name}`, label: fresh.label, source: 'coach', ops: fresh.ops });
-  if (res.status !== 'saved' && res.status !== 'duplicate') return { failed: res.error?.message ?? res.status };
+  // a retry racing the first try: the action that was really written is the one to verify, not this new plan (Codex, PR #73)
+  if (res.status === 'duplicate') return (await saved(e, actionId)) ?? { failed: 'saved earlier, but the change cannot be found' };
+  if (res.status !== 'saved') return { failed: res.error?.message ?? res.status };
   if (!verify(fresh, e)) return { failed: 'the change is not there after saving' };
   return { did: { actionId, label: fresh.label, undo: true } };
 }

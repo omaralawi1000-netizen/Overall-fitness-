@@ -16,17 +16,21 @@ export function fence(text: string, source: UntrustedSource): string {
   return `<untrusted source="${source}">\n${safe}\n</untrusted>`;
 }
 
+/** word edges that count æ, ø and å as letters (JavaScript's \\b doesn't: "ændr" never matched. Codex, PR #73) */
+const W0 = '(?<![\\p{L}\\p{N}_])', W1 = '(?![\\p{L}\\p{N}_])';
+const words = (list: string) => new RegExp(`${W0}(?:${list})${W1}`, 'iu');
+
 /** words a person uses to ask for a change (English and Danish) */
-const ASK_WORDS = 'set|change|update|raise|lower|increase|decrease|bump|keep in mind|log|add|track|record|save|remember|note|forget|delete|remove|drop|move|put|make it|sæt|ændr|opdater|hæv|sænk|tilføj|registrer|gem|husk|glem|slet|fjern|flyt|skriv';
+const ASK_WORDS = 'set|change|update|raise|lower|increase|decrease|bump|keep in mind|log|add|track|record|save|remember|note|forget|delete|remove|drop|move|put|make it|sæt|sætte|ændr|ændre|opdater|opdatere|hæv|hæve|sænk|sænke|tilføj|tilføje|registrer|registrere|log|logge|gem|gemme|husk|huske|glem|glemme|slet|slette|fjern|fjerne|flyt|flytte|skriv|skrive';
 /** "don't change it", "do not log this", "ikke ændre", "lad være med at …": an ask turned down is not consent (Codex, PR #73) */
-const NOT_ASKED = new RegExp(`\\b(?:don[’']?t|do not|never|not|no need to|without|ikke|aldrig|lad være med at|undlad at)\\s+(?:\\w+\\s+){0,2}?(?:${ASK_WORDS})\\b`, 'gi');
+const NOT_ASKED = new RegExp(`${W0}(?:don[’']?t|do not|never|not|no need to|without|ikke|aldrig|lad være med at|undlad at)\\s+(?:[\\p{L}\\p{N}_]+\\s+){0,2}?(?:${ASK_WORDS})${W1}`, 'giu');
 /** the words that ask for each kind of action: "log this bottle" asks to log, never to forget a memory (Codex, PR #73) */
 const ASK_FOR: Record<Proposal['name'], RegExp> = {
-  set_target: /\b(?:set|change|update|raise|lower|increase|decrease|bump|make it|sæt|ændr|opdater|hæv|sænk)\b/i,
-  remember: /\b(?:remember|note|save|keep in mind|husk|gem|skriv)\b/i,
-  forget: /\b(?:forget|delete|remove|drop|glem|slet|fjern)\b/i,
-  log_water: /\b(?:log|add|track|record|registrer|tilføj|skriv)\b/i,
-  log_weight: /\b(?:log|add|track|record|registrer|tilføj|skriv)\b/i,
+  set_target: words('set|change|update|raise|lower|increase|decrease|bump|make it|sæt|sætte|ændr|ændre|opdater|opdatere|hæv|hæve|sænk|sænke'),
+  remember: words('remember|note|save|keep in mind|husk|huske|gem|gemme|skriv|skrive'),
+  forget: words('forget|delete|remove|drop|glem|glemme|slet|slette|fjern|fjerne'),
+  log_water: words('log|add|track|record|registrer|registrere|tilføj|tilføje|logge|skriv|skrive'),
+  log_weight: words('log|add|track|record|registrer|registrere|tilføj|tilføje|logge|skriv|skrive'),
 };
 /** Does the person's own text ask for this kind of action? Turned-down asks are taken out first. */
 export const asksFor = (name: Proposal['name'], text: string) => ASK_FOR[name].test(text.replace(NOT_ASKED, ' '));

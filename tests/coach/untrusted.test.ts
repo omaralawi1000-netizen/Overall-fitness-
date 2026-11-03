@@ -59,6 +59,10 @@ describe('untrusted text is data, never instructions', () => {
 
   it("the person's own command still works next to untrusted text, with numbers from their words or the sheet", () => {
     expect(gate({ name: 'set_target', key: 'protein', value: 160 }, { userText: 'sæt mit proteinmål til 160', untrusted: true, sheet: [] })).toEqual({ ok: true });
+    // æ, ø, å are letters: "ændr" is an ask, "ikke ændre" a turned-down one (Codex, PR #73)
+    expect(gate({ name: 'set_target', key: 'protein', value: 160 }, { userText: 'ændr mit proteinmål til 160', untrusted: true, sheet: [] })).toEqual({ ok: true });
+    expect(gate({ name: 'set_target', key: 'protein', value: 160 }, { userText: 'kan du ændre mit proteinmål til 160?', untrusted: true, sheet: [] })).toEqual({ ok: true });
+    expect(gate({ name: 'set_target', key: 'protein', value: 160 }, { userText: 'du må ikke ændre mit mål til 160', untrusted: true, sheet: [] }).ok).toBe(false);
     expect(gate({ name: 'set_target', key: 'kcal', value: 3080 }, { userText: 'ok, change my target like you said', untrusted: true, sheet: [3080] })).toEqual({ ok: true });
     expect(gate({ name: 'remember', text: 'wants an extreme diet', topic: 'preference' }, { userText: 'summarise this page', untrusted: true, sheet: [] }).ok).toBe(false);
   });
