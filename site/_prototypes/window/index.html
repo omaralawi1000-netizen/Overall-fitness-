@@ -1,4 +1,3 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>Aven Window</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -8,7 +7,7 @@
    Fuel, Health, Coach) is its own screen of frosted glass over it, and the workout happens inside the same photo.
    1rem = 10 design px on a 430 x 932 phone. */
 :root{
-  --bg:#05070b; --ink:#f4f1ec; --ink2:rgba(244,241,236,.72); --ink3:rgba(244,241,236,.46); --line:rgba(244,241,236,.13);
+  --bg:#05070b; --ink:#f4f1ec; --ink2:rgba(244,241,236,.72); --ink3:rgba(244,241,236,.6); --line:rgba(244,241,236,.13);
   --ember:#ff8d55; --teal:#46d0c2; --gold:#f2c46a; --sky:#9cc4ff; --mint:#7fe0c0; --amber:#ffbf72; --lilac:#c9b8ff;
   --accent:#efe6da; --accentInk:#15120e; --ground:#06080c; --rimA:135deg; --rimC:255,255,255;
   --serif:'Instrument Serif',Georgia,'Times New Roman',serif;
@@ -27,7 +26,7 @@ button:focus-visible,input:focus-visible{outline:.2rem solid rgba(244,241,236,.9
 @media (min-aspect-ratio:3/4){#phone{height:93.2rem;border-radius:5.6rem;box-shadow:0 0 0 .2rem #1a1f27,0 4rem 12rem rgba(0,0,0,.7)}}
 .tab{font-variant-numeric:tabular-nums}
 .serif{font-family:var(--serif);font-style:italic;font-weight:400}
-.k{font-size:1.2rem;letter-spacing:.16em;text-transform:uppercase;font-weight:500;color:var(--ink2)}
+.k{font-size:1.3rem;letter-spacing:.15em;text-transform:uppercase;font-weight:500;color:var(--ink2)}
 
 /* glass: one recipe, frosted from the first frame, its rim lit on the side facing the sun (or the moon) */
 .glass{position:relative;background:linear-gradient(180deg,rgba(255,255,255,.15),rgba(255,255,255,.05));
@@ -44,6 +43,17 @@ button:focus-visible,input:focus-visible{outline:.2rem solid rgba(244,241,236,.9
 #scene{position:absolute;left:0;top:0;width:43rem;height:93.2rem;display:block;transform-origin:50% 62%;transition:transform 900ms var(--se)}
 #phone[data-tab="train"] #scene{transform:scale(1.05)}
 #phone[data-tab="fuel"] #scene,#phone[data-tab="health"] #scene,#phone[data-tab="coach"] #scene{transform:scale(1.08)}
+/* rain: two sheets of fine streaks behind the glass, moved by the compositor, only while it rains on Today */
+#rainW{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden;opacity:0;transition:opacity .6s ease;
+  -webkit-mask-image:linear-gradient(180deg,#000,#000 56%,transparent 79%);mask-image:linear-gradient(180deg,#000,#000 56%,transparent 79%)}
+#rain{position:absolute;left:-20%;top:-6%;width:140%;height:112%;transform:rotate(8deg)}
+#rain i{position:absolute;left:0;right:0;top:-51.2rem;bottom:0;background-size:30rem 51.2rem;animation:fall .6s linear infinite paused}
+#phone.raining #rain i{will-change:transform} /* only a layer while it rains: dry, it costs no memory */
+#rain i+i{animation-duration:1.05s}
+@keyframes fall{to{transform:translate3d(0,51.2rem,0)}}
+#phone.raining[data-tab="today"][data-v="today"] #rainW{opacity:var(--rainA,.6);transition-duration:1.4s}
+#phone.raining[data-tab="today"][data-v="today"] #rain i{animation-play-state:running}
+@media (prefers-reduced-motion:reduce){#rain i{animation:none}}
 .lay{position:absolute;inset:0;pointer-events:none;opacity:0;transition:opacity .8s ease;z-index:1}
 #dim{background:linear-gradient(180deg,rgba(4,6,10,.35),rgba(4,6,10,.72));opacity:0;z-index:1;pointer-events:none;position:absolute;inset:0;transition:opacity .5s ease}
 #phone:not([data-tab="today"]) #dim{opacity:0!important}
@@ -72,8 +82,14 @@ button:focus-visible,input:focus-visible{outline:.2rem solid rgba(244,241,236,.9
   padding:0 1.6rem calc(env(safe-area-inset-bottom,0px) + 13rem)}
 .scr::-webkit-scrollbar{display:none}
 .scr.on{visibility:visible;pointer-events:auto}
+/* between finger-down and finger-up the next screen is drawn once, almost invisibly, so its first frame needs no raster */
+.scr.warm:not(.on){visibility:visible;opacity:.004}
 #phone:not([data-v="today"]) .scr{pointer-events:none}
-.rise{will-change:transform}
+/* the cards of a screen rise in by CSS transitions, one after another (--d), and drop away together when it is left */
+.scr .rise,.scr .hero>:not(.hdr){opacity:0;transform:translate3d(0,4.4rem,0)}
+.scr.in .rise,.scr.in .hero>:not(.hdr){opacity:1;transform:none;transition:opacity .34s ease var(--d,0ms),transform var(--sd) var(--se) var(--d,0ms)}
+.scr.in.out .rise,.scr.in.out .hero>:not(.hdr){opacity:0;transform:translate3d(0,2.4rem,0);transition:opacity .17s cubic-bezier(.4,0,1,1),transform .2s cubic-bezier(.4,0,1,1)}
+#phone .scr .rise:has(.glass):not(.glass){opacity:1} /* a group that holds glass only moves: a fading parent would turn its frost clear */
 .title{padding-top:calc(env(safe-area-inset-top,0px) + 8.6rem)}
 .title h1{margin:.6rem 0 0;font-family:var(--serif);font-style:italic;font-weight:400;font-size:6.4rem;line-height:.96;letter-spacing:-.005em}
 .title p{margin:1rem 0 0;font-size:1.6rem;line-height:1.4;color:var(--ink2);max-width:36rem}
@@ -81,7 +97,8 @@ button:focus-visible,input:focus-visible{outline:.2rem solid rgba(244,241,236,.9
 
 /* Today */
 
-.hero{position:relative;height:calc(env(safe-area-inset-top,0px) + 76rem);margin:0 -1.6rem}
+/* the hero ends where the first card's header sits just above the dock, so the dock never cuts a row in half */
+.hero{position:relative;height:clamp(calc(env(safe-area-inset-top,0px) + 76rem),calc(100dvh - 14.3rem - env(safe-area-inset-bottom,0px)),calc(env(safe-area-inset-top,0px) + 79rem));margin:0 -1.6rem}
 .hdr{position:absolute;left:2rem;right:2rem;top:calc(env(safe-area-inset-top,0px) + 1.6rem);height:5.2rem;display:flex;align-items:center;justify-content:space-between}
 .circ{width:5.2rem;height:5.2rem;border-radius:50%;display:grid;place-items:center;flex:none}
 .circ svg{width:2.2rem;height:2.2rem;stroke:var(--ink);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
@@ -96,40 +113,55 @@ button:focus-visible,input:focus-visible{outline:.2rem solid rgba(244,241,236,.9
 #rec .tap{margin-top:2.6rem;font-size:1.25rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink3)}
 #phone.recOn #toast{transform:translate3d(-50%,24rem,0)!important}
 .clock{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 25.4rem);text-align:center;pointer-events:none}
-#arcHint{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 21.2rem);text-align:center;font-size:1.2rem;color:var(--ink2);letter-spacing:.02em;pointer-events:none;transition:opacity .6s ease}
-.clock::before{content:'';position:absolute;left:50%;top:50%;width:32rem;height:15rem;transform:translate(-50%,-50%);background:radial-gradient(50% 50% at 50% 50%,rgba(4,6,12,var(--cv,.12)),rgba(4,6,12,calc(var(--cv,.12) * .4)) 45%,transparent 75%);z-index:-1}
+#arcHint{position:absolute;left:0;right:0;top:calc(env(safe-area-inset-top,0px) + 21.2rem);text-align:center;font-size:1.25rem;font-weight:500;color:rgba(244,241,236,.88);letter-spacing:.02em;pointer-events:none;transition:opacity .6s ease}
+.clock::before{content:'';position:absolute;left:50%;top:calc(50% - 2rem);width:34rem;height:21rem;transform:translate(-50%,-50%);background:radial-gradient(50% 50% at 50% 50%,rgba(4,6,12,var(--cv,.12)),rgba(4,6,12,calc(var(--cv,.12) * .4)) 45%,transparent 75%);z-index:-1}
 #kick,#rk,#arcHint{text-shadow:0 0 1rem rgba(0,0,0,.45),0 0 .3rem rgba(0,0,0,.25)}
-#big{font-size:6rem;line-height:1;font-weight:200;letter-spacing:-.045em;white-space:nowrap}
+#big{font-size:4.6rem;line-height:1;font-weight:300;letter-spacing:-.045em;white-space:nowrap}
 #big .u{font-size:.4em;letter-spacing:-.01em;margin:0 .1em 0 .04em;opacity:.82;font-weight:300}
-#kick{margin-top:.5rem;font-size:1.2rem;letter-spacing:.2em;text-transform:uppercase;font-weight:500;color:rgba(244,241,236,.86)}
+#kick{margin-top:.6rem;font-size:1.3rem;letter-spacing:.2em;text-transform:uppercase;font-weight:500;color:rgba(244,241,236,.86)}
 /* readiness: one word that fills with light as far as you are ready */
-.ready{position:absolute;left:1.6rem;right:1.6rem;top:calc(env(safe-area-inset-top,0px) + 40.2rem);text-align:center}
-#rk{font-size:1.2rem;letter-spacing:.2em;text-transform:uppercase;font-weight:500;color:rgba(244,241,236,.86)}
-#rk b{font-weight:500;color:var(--ink);margin-left:.5rem}
-.rw{position:relative;display:inline-block;margin-top:.4rem;font-family:var(--serif);font-style:italic;font-size:10.4rem;line-height:1.04;letter-spacing:-.012em;white-space:nowrap;padding:0 .12em}
-.rw .dim{color:rgba(244,241,236,.2)}
-.ready.moon .lit{color:rgba(205,218,245,.7)}
+/* readiness, the why, the Coach's line and the button flow as one column, so they can never crowd each other */
+.below{position:absolute;left:1.6rem;right:1.6rem;top:calc(env(safe-area-inset-top,0px) + 40.2rem)}
+.ready{position:relative;text-align:center}
+#rk{position:relative;display:flex;width:max-content;margin:0 auto;align-items:baseline;font-size:1.3rem;letter-spacing:.2em;text-transform:uppercase;font-weight:500;color:rgba(244,241,236,.9)}
+/* a local shade under the label, so it reads over the palest far peaks without a box */
+#rk::before{content:'';position:absolute;left:50%;top:50%;width:calc(100% + 14rem);height:6rem;transform:translate(-50%,-50%);background:radial-gradient(50% 50% at 50% 50%,rgba(4,6,12,.2),rgba(4,6,12,.09) 50%,rgba(4,6,12,.03) 75%,transparent);z-index:-1;pointer-events:none}
+/* the score and the word read as one lockup: the number first, then what it means; the word lights up from the left when the day opens */
+.lock{display:flex;align-items:baseline;justify-content:center;gap:1.3rem;margin-top:.3rem}
+#rkN{font-size:7.4rem;font-weight:200;letter-spacing:-.045em;line-height:1;color:var(--ink);text-shadow:0 0 2.4rem rgba(0,0,0,.22)}
+#rkN:empty{display:none}
+.rw{position:relative;display:inline-block;font-family:var(--serif);font-style:italic;font-size:9.2rem;line-height:1.04;letter-spacing:-.012em;white-space:nowrap;padding:0 .12em}
+/* the part of the word not yet lit is an outline, like a glass not yet full, so it reads as a level and never as a fault */
+.rw .dim{color:transparent;-webkit-text-stroke:.1rem rgba(244,241,236,.5)}
+.ready::before{content:'';position:absolute;left:50%;top:58%;width:44rem;height:24rem;transform:translate(-50%,-50%);background:radial-gradient(50% 50% at 50% 50%,rgba(4,6,12,var(--rv,0)),rgba(4,6,12,calc(var(--rv,0) * .45)) 50%,transparent 76%);z-index:-1;pointer-events:none}
+.ready.moon .lit{color:rgba(222,231,250,.92)}
 /* the light fills the letters with a soft edge, like a level of light, never a hard cut through a letter */
 @property --f{syntax:'<percentage>';inherits:false;initial-value:0%}
 .rw .lit{position:absolute;inset:0;padding:0 .12em;color:color-mix(in srgb,var(--accent) 45%,#fff);--f:0%;
-  -webkit-mask-image:linear-gradient(90deg,#000 calc(var(--f) - 9%),transparent calc(var(--f) + 9%));mask-image:linear-gradient(90deg,#000 calc(var(--f) - 9%),transparent calc(var(--f) + 9%))}
+  -webkit-mask-image:linear-gradient(90deg,#000 calc(var(--f) - 2.5%),transparent calc(var(--f) + 2.5%));mask-image:linear-gradient(90deg,#000 calc(var(--f) - 2.5%),transparent calc(var(--f) + 2.5%))}
 .rc{display:flex;justify-content:center;gap:1.6rem;flex-wrap:wrap;margin-top:1rem;font-size:1.35rem;color:var(--ink2)}
 .rc span{display:inline-flex;align-items:center;gap:.6rem}
 .rc i{width:.7rem;height:.7rem;border-radius:50%}
-.mom{position:absolute;left:2rem;right:2rem;top:calc(env(safe-area-inset-top,0px) + 57.2rem);text-align:center}#arc:active{cursor:grabbing}
-#arcT{font-size:12px;font-weight:500;letter-spacing:.06em}
+.mom{position:relative;margin:2.2rem .4rem 0;text-align:center}#arc:active{cursor:grabbing}
+#arcT{font-size:13px;font-weight:500;letter-spacing:.06em}
+/* a faint dark edge painted under the arc's words, so they hold on the brightest noon sky without a box or a blur */
+#arc .halo{paint-order:stroke;stroke:rgba(12,10,8,.4);stroke-width:2.6px;stroke-linejoin:round}
+/* cards on Today carry a faint dark base, so their small grey text holds over the palest noon photo */
+#sToday .card.glass{background:linear-gradient(180deg,rgba(255,255,255,.13),rgba(255,255,255,.04)),rgba(8,10,16,.2)}
 #coach{margin:0 auto;max-width:34rem;font-size:2.1rem;line-height:1.2;color:rgba(244,241,236,.78);min-height:5rem;text-wrap:balance}
 #coach .chip2,.chip2{display:inline-block;margin-top:.8rem;font-style:normal;font-family:var(--sans);font-size:1.3rem;font-weight:500;letter-spacing:.02em;color:var(--ink);background:rgba(255,255,255,.14);padding:.25rem .9rem .35rem;border-radius:1.2rem;white-space:nowrap}
 .swap span{display:inline-block;transition:opacity .26s ease,transform .26s var(--se)}
 .swap.out span{opacity:0;transform:translate3d(0,.5rem,0)}
 .cta{margin-top:2rem;display:flex;justify-content:center}
 .prim{height:5.6rem;padding:0 3rem;border-radius:2.8rem;background:var(--accent);color:var(--accentInk);font-size:1.8rem;font-weight:500;letter-spacing:-.005em;display:inline-flex;align-items:center;gap:1rem;
-  transition:transform .18s var(--se),background-color 1.2s ease;box-shadow:0 1.2rem 4rem rgba(0,0,0,.3);position:relative}
+  transition:transform .18s var(--se),background-color 1.2s ease,opacity .3s ease;box-shadow:0 1.2rem 4rem rgba(0,0,0,.3);position:relative}
 .prim:active{transform:scale(.96)}
 .prim svg{width:1.5rem;height:1.5rem;fill:currentColor}
 .prim small{font-size:1.4rem;font-weight:400;opacity:.6}
 .ch3{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:.6rem}
 .ch3 .serif{font-size:2.4rem}
+/* numbers and ranges are data: the sans, tabular; the serif is kept for titles and the Coach's voice */
+.ch3 .val{font-size:1.75rem;font-weight:400;letter-spacing:-.01em;color:var(--ink)}
 .row{display:grid;grid-template-columns:1fr auto;gap:1rem;align-items:center;padding:1.4rem 0;border-top:.06rem solid var(--line);width:100%;text-align:left}
 .row:first-of-type{border-top:0}
 .row .n{font-size:1.75rem;letter-spacing:-.01em}
@@ -188,28 +220,45 @@ button:focus-visible,input:focus-visible{outline:.2rem solid rgba(244,241,236,.9
 .exc .sx{display:flex;justify-content:space-between;font-size:1.5rem;padding:.55rem 0;color:var(--ink)}
 .exc .sx span:first-child{color:var(--ink3)}
 .spark{width:100%;height:6rem;display:block;margin-top:1rem;overflow:visible}
+/* Train's own hero: the session as a skyline of its sets, then the time it takes against the light that is left */
+.shape{margin-top:2.6rem}
+.shape .bars{display:flex;align-items:flex-end;gap:1.4rem;height:9rem}
+.shape .grp2{position:relative;flex:var(--n,1);display:flex;align-items:flex-end;gap:.45rem;height:100%}
+.shape .grp2 i{flex:1;max-width:1.2rem;border-radius:.6rem;background:linear-gradient(180deg,rgba(255,214,186,.95),rgba(255,141,85,.55));transform-origin:50% 100%;box-shadow:0 0 1.6rem rgba(255,140,80,.25)}
+.shape .grp2 i.dn{background:linear-gradient(180deg,#ffe2a8,#f2c46a)}
+.shape .grp2 span{position:absolute;left:0;top:100%;margin-top:.8rem;font-size:1.3rem;letter-spacing:.06em;color:var(--ink3);white-space:nowrap}
+.shape.mini{margin:1.2rem 0 .4rem;height:3.2rem;overflow:hidden}.shape.mini .bars{height:3.2rem;gap:1.8rem}.shape.mini .grp2{flex:none;gap:.35rem}.shape.mini .grp2 i{flex:none;width:.7rem;box-shadow:none}
+.shape .clk{display:flex;align-items:center;gap:.8rem;margin-top:3.4rem;font-size:1.3rem;color:var(--ink2)}
+.shape .clk i{flex:1;height:.12rem;background:linear-gradient(90deg,rgba(255,170,120,.7),rgba(255,170,120,.15))}
+.shape .clk b{font-weight:500;color:#ffd59a;margin-left:.6rem}
+.spark circle{transform-box:fill-box;transform-origin:center}
 .exc .cl{margin-top:1rem;font-family:var(--serif);font-style:italic;font-size:1.9rem;line-height:1.2;color:rgba(244,241,236,.86)}
 .wk{display:grid;grid-template-columns:repeat(7,1fr);gap:.4rem;margin-top:1rem}
 .wk div{text-align:center;padding:1rem .2rem;border-radius:1.6rem;font-size:1.2rem;color:var(--ink2)}
 .wk div b{display:block;font-weight:500;color:var(--ink);font-size:1.3rem;margin-bottom:.4rem}
 .wk div.now{background:rgba(255,141,85,.18);color:#ffd2bb}
 .wk div.dn b::after{content:' ✓';color:var(--mint)}
-.bigb{width:100%;height:6.4rem;border-radius:3.2rem;background:var(--accent);color:var(--accentInk);font-size:2rem;font-weight:500;display:flex;align-items:center;justify-content:center;gap:1rem;margin-top:2.2rem;transition:transform .18s var(--se),background-color 1.2s;box-shadow:0 1.4rem 4rem rgba(0,0,0,.3)}
+.bigb{width:100%;height:6.4rem;border-radius:3.2rem;background:var(--accent);color:var(--accentInk);font-size:2rem;font-weight:500;display:flex;align-items:center;justify-content:center;gap:1rem;margin-top:2.2rem;transition:transform .18s var(--se),background-color 1.2s,opacity .3s ease;box-shadow:0 1.4rem 4rem rgba(0,0,0,.3)}
 .bigb:active{transform:scale(.97)}
 .bigb svg{width:1.6rem;height:1.6rem;fill:currentColor}
 
 /* Fuel */
 /* the glass fills as you eat: an amber level rises behind the number */
 .jar{position:relative;height:30rem;margin-top:2.2rem;border-radius:3.6rem;overflow:hidden;display:grid;place-items:center;text-align:center}
-.jar .lv{position:absolute;left:0;right:0;bottom:0;height:100%;transform-origin:50% 100%;transform:scaleY(0);background:linear-gradient(180deg,rgba(255,196,120,.5),rgba(255,150,70,.26) 30%,rgba(255,130,60,.14));will-change:transform}
+/* the level moves (never stretches), so its bright surface stays a crisp line; it tilts and settles when food lands */
+.jar .lv{position:absolute;left:-10%;right:-10%;bottom:0;height:100%;transform-origin:50% 0;translate:0 100%;background:linear-gradient(180deg,rgba(255,196,120,.5),rgba(255,150,70,.26) 30%,rgba(255,130,60,.14) 70%,rgba(255,130,60,.1));will-change:translate,rotate}
 .jar .lv::before{content:'';position:absolute;left:0;right:0;top:0;height:.16rem;background:rgba(255,226,180,.9);box-shadow:0 0 2rem rgba(255,200,130,.8)}
 .jar .in{position:relative}
 #fNum{font-size:9.6rem;font-weight:200;letter-spacing:-.05em;line-height:1;white-space:nowrap}
 .jar .l1{font-size:1.5rem;color:var(--ink2);margin-top:.4rem}
 .jar .l2{font-size:1.3rem;color:var(--ink3);margin-top:.9rem}
-.jar .ticks{position:absolute;right:1.8rem;top:2.4rem;bottom:2.4rem;width:1rem;display:flex;flex-direction:column;justify-content:space-between;align-items:flex-end;pointer-events:none}
-.jar .ticks i{display:block;height:.1rem;width:.6rem;background:rgba(255,255,255,.3)}
-.jar .ticks i:nth-child(odd){width:1rem}.mac{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin-top:2.2rem}
+/* the day's meals are marks on the glass, at the protein each one brings you to; the level rises past them */
+.jar .marks{position:absolute;inset:0;pointer-events:none}
+.jar .mk{position:absolute;right:0;display:flex;align-items:center;gap:.7rem;transform:translateY(50%);font-size:1.3rem;letter-spacing:.04em;color:rgba(244,241,236,.5);transition:color .6s ease}
+.jar .mk i{display:block;width:1.4rem;height:.12rem;background:rgba(255,255,255,.35);transition:background-color .6s ease,width .6s var(--se)}
+.jar .mk.on{color:rgba(255,236,214,.95)}.jar .mk.on i{background:rgba(255,226,180,.9);width:2rem}
+
+.mac{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin-top:2.2rem}
 .mac>div{border-radius:2rem;padding:1.2rem 1.3rem}
 .mac b{display:block;font-size:2rem;font-weight:300;letter-spacing:-.02em}
 .mac b small{font-size:1.15rem;color:var(--ink2);margin-left:.2rem}
@@ -233,13 +282,21 @@ button:focus-visible,input:focus-visible{outline:.2rem solid rgba(244,241,236,.9
 .hpan .num{font-size:8rem;font-weight:200;letter-spacing:-.05em;line-height:1;margin-top:.6rem}
 .hpan .num .u{font-size:.34em;opacity:.8;margin-left:.06em;font-weight:300;letter-spacing:0}
 .hpan .rw{font-size:5.2rem;margin-top:.4rem}
-.hpan .rw .lit{color:color-mix(in srgb,var(--pc) 55%,#fff)}
+.hpan .rw .lit{position:static;display:block;padding:0;color:color-mix(in srgb,var(--pc) 55%,#fff);-webkit-mask-image:none;mask-image:none}.hpan .rw .dim{display:none}
 .hpan .sub{font-size:1.35rem;color:var(--ink2);margin-top:.8rem}.pdots{display:flex;justify-content:center;gap:.8rem;margin-top:1.8rem}
 .pdots i{width:.7rem;height:.7rem;border-radius:.35rem;background:rgba(244,241,236,.3);transition:width .3s var(--se),background-color .3s}
 .pdots i.on{width:2.2rem;background:var(--ink)}
-.stg{display:flex;height:1.4rem;border-radius:.7rem;overflow:hidden;gap:.2rem;margin-top:1.2rem}
-.stg i{display:block;height:100%}
-.legend{display:flex;gap:1.4rem;margin-top:1rem;font-size:1.25rem;color:var(--ink2);flex-wrap:wrap}
+.rib{height:2rem;border-radius:1rem;margin-top:1.4rem;box-shadow:0 0 2.4rem rgba(110,150,255,.18)}
+.ribT{display:flex;justify-content:space-between;margin-top:.7rem;font-size:1.3rem;color:var(--ink3)}
+/* seven nights as seven moons: the longer the sleep, the fuller and larger */
+.moons{display:flex;justify-content:space-between;align-items:center;margin-top:1.4rem}
+.moons div{display:flex;flex-direction:column;align-items:center;justify-content:flex-end;gap:.7rem;height:6.4rem;font-size:1.3rem;color:var(--ink3)}
+.moons i{display:block;border-radius:50%;box-shadow:inset 0 0 0 .14rem rgba(156,196,255,.55)}
+.mkey{display:flex;gap:1.8rem;margin-top:1.2rem;font-size:1.3rem;color:var(--ink3)}
+.mkey span{display:inline-flex;align-items:center;gap:.6rem}
+.mkey i{display:block;width:1rem;height:1rem;border-radius:50%;box-shadow:inset 0 0 0 .14rem rgba(156,196,255,.55)}
+.mkey i.full,.moons i.full{background:radial-gradient(circle at 35% 35%,#d8e6ff,#9cc4ff 60%,#7fa6f0);box-shadow:0 0 1.4rem rgba(156,196,255,.35)}
+.legend{display:grid;grid-template-columns:1fr 1fr;gap:.7rem 1.4rem;margin-top:1.1rem;font-size:1.35rem;color:var(--ink2)}
 .legend b{display:inline-block;width:.8rem;height:.8rem;border-radius:.4rem;margin-right:.5rem}
 .bars7{display:flex;gap:.8rem;align-items:flex-end;height:9rem;margin-top:1.4rem}
 .bars7 div{flex:1;text-align:center;font-size:1.2rem;color:var(--ink3)}
@@ -249,7 +306,7 @@ button:focus-visible,input:focus-visible{outline:.2rem solid rgba(244,241,236,.9
 #hair{position:absolute;top:0;bottom:2rem;width:.1rem;background:rgba(244,241,236,.6);opacity:0;transition:opacity .2s;pointer-events:none}
 #bub{position:absolute;top:-3.6rem;transform:translateX(-50%);padding:.5rem 1rem;border-radius:1.2rem;background:rgba(255,255,255,.16);font-size:1.35rem;white-space:nowrap;opacity:0;transition:opacity .2s;pointer-events:none}
 .chart.on #hair,.chart.on #bub{opacity:1}
-.src{font-size:1.25rem;color:var(--ink3);margin-top:1.2rem;line-height:1.5}
+.src{font-size:1.35rem;color:var(--ink3);margin-top:1.2rem;line-height:1.5}
 
 /* Coach */
 #sCoach{padding-bottom:calc(env(safe-area-inset-bottom,0px) + 12rem)}
@@ -280,7 +337,7 @@ button:focus-visible,input:focus-visible{outline:.2rem solid rgba(244,241,236,.9
 
 /* sheets that grow out of what you touched */
 .sheet{position:absolute;left:.8rem;right:.8rem;bottom:calc(env(safe-area-inset-bottom,0px) + .8rem);z-index:30;pointer-events:none;max-height:86%}
-.sheet::before{content:'';position:absolute;inset:0;border-radius:3.6rem;background:linear-gradient(180deg,rgba(40,46,58,.32),rgba(12,15,20,.58));
+.sheet::before{content:'';position:absolute;inset:0;border-radius:3.6rem;background:linear-gradient(180deg,rgba(36,42,54,.42),rgba(12,15,20,.7));
   -webkit-backdrop-filter:blur(3.2rem) saturate(1.6);backdrop-filter:blur(3.2rem) saturate(1.6);clip-path:inset(50% 50% 50% 50% round 3.6rem)}
 .sheet.on{pointer-events:auto}
 .si{position:relative;padding:2.4rem 2.2rem 2.2rem;opacity:0;transform:translate3d(0,1.4rem,0);max-height:inherit;overflow-y:auto;scrollbar-width:none}
@@ -288,20 +345,45 @@ button:focus-visible,input:focus-visible{outline:.2rem solid rgba(244,241,236,.9
 .seg{display:flex;gap:.4rem;background:rgba(255,255,255,.07);border-radius:2.4rem;padding:.4rem;flex-wrap:wrap}
 .seg button{flex:1;height:4rem;border-radius:2rem;font-size:1.4rem;color:var(--ink2);padding:0 1rem;transition:background-color .25s,color .25s}
 .seg button.on{background:rgba(255,255,255,.16);color:var(--ink)}
-.sr{margin-top:2rem}
-.sr h5{margin:0 0 .8rem;font-size:1.15rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink2);font-weight:500}
-.note{font-size:1.3rem;color:var(--ink3);line-height:1.5;margin-top:2rem}
-.gbtn{height:4.6rem;padding:0 1.8rem;border-radius:2.3rem;background:rgba(255,255,255,.1);font-size:1.5rem;font-weight:500}
-#scrim{position:absolute;inset:0;z-index:29;background:rgba(2,4,6,.25);opacity:0;pointer-events:none;transition:opacity .35s ease}
+.note{font-size:1.25rem;color:var(--ink3);line-height:1.5;margin:2rem 1.6rem 0}
+/* settings: grouped rows like the phone's own */
+.grp{margin-top:1.2rem;border-radius:2.2rem;background:rgba(255,255,255,.075);overflow:hidden}
+.gk{margin:2.4rem 1.6rem 0;font-size:1.1rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);font-weight:500}
+.srow{display:flex;align-items:center;gap:1.3rem;min-height:5.6rem;padding:.9rem 1.5rem;width:100%;text-align:left;position:relative;color:var(--ink);transition:background-color .2s ease}
+.srow+.srow::before{content:'';position:absolute;left:5.8rem;right:0;top:0;height:1px;background:rgba(255,255,255,.08)}
+.srow+.srow:not(:has(.ic))::before{left:1.5rem}
+button.srow:active{background:rgba(255,255,255,.07);transition-duration:0s}
+.srow .ic{flex:none;width:3rem;height:3rem;border-radius:.9rem;display:grid;place-items:center;background:rgba(255,255,255,.1)}
+.srow .ic svg{width:1.8rem;height:1.8rem;stroke:var(--accent);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.srow .tx{flex:1;min-width:0;font-size:1.55rem;line-height:1.25}
+.srow .tx small{display:block;font-size:1.22rem;color:var(--ink3);margin-top:.25rem;line-height:1.3}
+.srow .vl{font-size:1.45rem;color:var(--ink2);white-space:nowrap}
+.srow .chev{flex:none;width:.8rem;height:1.3rem;stroke:var(--ink3);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.sw{flex:none;width:5.1rem;height:3.1rem;border-radius:1.55rem;background:rgba(255,255,255,.16);position:relative;transition:background-color .3s ease}
+.sw::after{content:'';position:absolute;left:.25rem;top:.25rem;width:2.6rem;height:2.6rem;border-radius:50%;background:#fff;box-shadow:0 .2rem .6rem rgba(0,0,0,.28);transition:transform var(--sd) var(--se)}
+.sw.on{background:#45b487}
+.sw.on::after{transform:translate3d(2rem,0,0)}
+.seg.sm{flex:none;flex-wrap:nowrap;padding:.3rem;border-radius:1.8rem}
+.seg.sm button{flex:none;height:3.2rem;padding:0 1.2rem;font-size:1.3rem;border-radius:1.5rem}
+.skies{flex:none;display:flex;gap:.5rem}
+.skies button{width:3.8rem;height:3.8rem;border-radius:50%;display:grid;place-items:center;background:rgba(255,255,255,.07);color:var(--ink2);transition:background-color .25s,color .25s}
+.skies button.on{background:rgba(255,255,255,.22);color:var(--ink)}
+.skies svg{width:1.9rem;height:1.9rem;stroke:currentColor;fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.skies .lvt{font-size:1.05rem;font-weight:600;letter-spacing:.04em}
+#scrim{position:absolute;inset:0;z-index:29;background:rgba(2,4,6,.34);opacity:0;pointer-events:none;transition:opacity .35s ease}
 #scrim.on{opacity:1;pointer-events:auto}
+/* under a sheet, the screen's brightest things step back, so they never smear through the frosted glass */
+.scr :is(.ready,#coach){transition:opacity .3s ease}
+#phone.sheetOn .scr.on :is(.prim,.bigb,#arc,#arcHint,.clock,.ready,#coach){opacity:0}
 /* food keypad */
 .amt{text-align:center;margin:.4rem 0 .2rem}
-#aNum{font-size:7.6rem;font-weight:200;letter-spacing:-.05em;line-height:1;display:inline-flex;justify-content:center;min-height:7.6rem}
+#aNum{font-size:6.8rem;font-weight:200;letter-spacing:-.05em;line-height:1;display:inline-flex;justify-content:center;min-height:6.8rem}
 #aNum .dg{display:inline-block}
 .amt .u{font-size:2.4rem;color:var(--ink2);font-weight:300;margin-left:.4rem}
 .amt .pp{font-size:1.45rem;color:var(--ink2);margin-top:.6rem}
-.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem;margin-top:1.6rem}
-.keys button{height:6rem;border-radius:2rem;background:rgba(255,255,255,.08);font-size:2.6rem;font-weight:300;transition:transform .12s var(--se),background-color .2s}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:.7rem;margin-top:1.2rem}
+#logIn{padding-top:1.8rem}#logIn h4{margin-bottom:.8rem}
+.keys button{height:5.3rem;border-radius:2rem;background:rgba(255,255,255,.08);font-size:2.6rem;font-weight:300;transition:transform .12s var(--se),background-color .2s}
 .keys button:active{transform:scale(.94);background:rgba(255,255,255,.16)}
 .foods{display:flex;gap:.8rem;overflow-x:auto;scrollbar-width:none;margin:0 -2.2rem;padding:0 2.2rem}
 .foods::-webkit-scrollbar{display:none}
@@ -326,6 +408,9 @@ button:focus-visible,input:focus-visible{outline:.2rem solid rgba(244,241,236,.9
 #wR{font-size:7.6rem;line-height:1;font-weight:200;letter-spacing:-.04em;cursor:pointer;white-space:nowrap}
 .wnum .u{font-size:2.8rem;color:var(--ink2);font-weight:300;letter-spacing:0}
 .wnum .x{font-size:5rem;color:var(--ink2);font-weight:200;margin-right:.4rem}
+/* a quiet sign that the numbers can be changed (the steppers open from the number or from this) */
+.wnum .adj{align-self:center;flex:none;width:4.8rem;height:4.8rem;border-radius:50%;background:rgba(255,255,255,.16);color:var(--ink2);font-size:1.8rem;line-height:1;margin-left:.4rem;transition:background-color .2s}
+.wnum .adj:active{background:rgba(255,255,255,.2)}
 .stp{position:absolute;left:0;display:flex;gap:1rem;z-index:3;pointer-events:none}
 .stp button{width:9.6rem;height:5.6rem;border-radius:2.8rem;font-size:2rem;font-weight:500;transform:scale(0);transition:transform var(--sd) var(--se);
   background:linear-gradient(180deg,rgba(255,255,255,.24),rgba(255,255,255,.11));box-shadow:0 .8rem 2.4rem rgba(0,0,0,.18)}
@@ -377,6 +462,7 @@ button:focus-visible,input:focus-visible{outline:.2rem solid rgba(244,241,236,.9
 #toast{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 10.4rem);height:5.6rem;border-radius:2.8rem;padding:0 .6rem 0 2.2rem;display:flex;align-items:center;gap:1.4rem;font-size:1.5rem;z-index:40;white-space:nowrap;
   transform:translate3d(-50%,24rem,0);transition:transform var(--sd) var(--se)}
 #toast.on{transform:translate3d(-50%,0,0)}
+#phone[data-v="today"] #toast{bottom:calc(env(safe-area-inset-bottom,0px) + 16.6rem)} /* on the screens it clears the card header that rests on the dock */
 #phone:not([data-v="today"]) #toast{bottom:calc(env(safe-area-inset-bottom,0px) + 11.8rem)}
 #toast button{height:4.4rem;padding:0 1.8rem;border-radius:2.2rem;background:rgba(255,255,255,.16);font-size:1.4rem;font-weight:500}
 #sessT{position:absolute;left:1.2rem;right:1.2rem;top:calc(env(safe-area-inset-top,0px) + 1.2rem);z-index:31;pointer-events:none}
@@ -411,7 +497,8 @@ button:focus-visible,input:focus-visible{outline:.2rem solid rgba(244,241,236,.9
 #recT{margin-top:3.4rem;opacity:0;transform:translate3d(0,1rem,0)}
 #recT .k{color:var(--gold)}
 #recT h2{margin:.8rem 0 0;font-family:var(--serif);font-style:italic;font-weight:400;font-size:4.6rem;line-height:1}
-#recT p{margin:1.2rem auto 0;max-width:30rem;font-size:1.5rem;color:var(--ink2);line-height:1.4}
+#recT p{margin:1.2rem auto 0;max-width:30rem;font-size:1.5rem;color:var(--ink2);line-height:1.4;text-wrap:balance}
+#cmp .cnext{margin:2.6rem auto 0;max-width:30rem;text-align:center;font-size:1.6rem;line-height:1.45;color:var(--ink2);text-wrap:balance}
 #cmp{position:absolute;inset:0;z-index:26;pointer-events:none;padding:calc(env(safe-area-inset-top,0px) + 9rem) 2.4rem 0}
 #cmp.on{pointer-events:auto}
 #cmp .c{opacity:0;transform:translate3d(0,1.6rem,0)}
@@ -444,12 +531,13 @@ button:focus-visible,input:focus-visible{outline:.2rem solid rgba(244,241,236,.9
 
 <div id="stage"><div id="phone" data-v="today" data-tab="today">
   <div id="sceneW"><canvas id="scene" aria-hidden="true"></canvas></div>
+  <div id="rainW" aria-hidden="true"><div id="rain"><i></i><i></i></div></div>
   <div id="dim"></div>
   <div class="lay" id="tTrain"></div><div class="lay" id="tFuel"></div><div class="lay" id="tHealth"></div><div class="lay" id="tH0"></div><div class="lay" id="tH1"></div><div class="lay" id="tH2"></div><div class="lay" id="tCoach"></div><div id="light"></div>
   <div class="lay" id="tEmber"></div><div class="lay" id="tTeal"></div><div id="level"></div>
 
   <!-- Today -->
-  <section class="scr on" id="sToday" data-s="today" aria-label="Today">
+  <section class="scr on in" id="sToday" data-s="today" aria-label="Today">
     <div class="hero">
       <div class="hdr">
         <button class="circ glass" id="setB0" aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M4 8h16M4 16h16"/></svg></button>
@@ -459,11 +547,11 @@ button:focus-visible,input:focus-visible{outline:.2rem solid rgba(244,241,236,.9
       <svg id="arc" viewBox="0 0 430 300" aria-label="Your day. Drag the dot to see the light at any hour."></svg>
       <div id="arcHint"></div>
       <div class="clock"><div id="big" class="tab"></div><div id="kick"></div></div>
-      <div class="ready" id="ready" role="button" tabindex="0" aria-label="Readiness"><div id="rk"></div><div class="rw"><span class="dim" id="rwD"></span><span class="lit" id="rwL" aria-hidden="true"></span></div><div class="rc" id="rc"></div></div>
+      <div class="below"><div class="ready" id="ready" role="button" tabindex="0" aria-label="Readiness"><div id="rk"></div><div class="lock"><b id="rkN" class="tab"></b><div class="rw"><span class="dim" id="rwD"></span><span class="lit" id="rwL" aria-hidden="true"></span></div></div><div class="rc" id="rc"></div></div>
       <div class="mom">
         <div id="coach" class="serif swap"><span></span></div>
         <div class="cta"><button class="prim" id="cta"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg><span id="ctaL"></span><small id="ctaS"></small></button></div>
-      </div>
+      </div></div>
     </div>
     <div class="card glass rise" id="cPlan"></div><div class="sp"></div>
     <div class="card glass rise" id="cFuel"></div><div class="sp"></div>
@@ -504,8 +592,8 @@ button:focus-visible,input:focus-visible{outline:.2rem solid rgba(244,241,236,.9
     <div id="wMid">
       <div class="fade" id="wNameW"><div id="exName" class="serif"></div><div id="exSub"></div></div>
       <div id="setB" class="fade">
-        <div class="wnum"><span id="wW" class="tab" role="button" tabindex="0"></span><span class="u">kg</span></div>
-        <div class="wnum" style="margin-top:.6rem"><span class="x">×</span><span id="wR" class="tab" role="button" tabindex="0"></span><span class="u" data-t="reps"></span></div>
+        <div class="wnum"><span id="wW" class="tab" role="button" tabindex="0"></span><span class="u">kg</span><button class="adj" data-adj="w" aria-label="Change the weight">±</button></div>
+        <div class="wnum" style="margin-top:.6rem"><span class="x">×</span><span id="wR" class="tab" role="button" tabindex="0"></span><span class="u" data-t="reps"></span><button class="adj" data-adj="r" aria-label="Change the reps">±</button></div>
       </div>
       <div class="stp" id="stpW"><button data-d="-2.5">− 2.5</button><button data-d="2.5">+ 2.5</button></div>
       <div class="stp" id="stpR"><button data-r="-1">− 1</button><button data-r="1">+ 1</button></div>
@@ -550,32 +638,33 @@ const mem = new Map();
 const store = { get(k) { return mem.has(k) ? mem.get(k) : null; }, set(k, v) { mem.set(k, v); } };
 // haptics only where there is a motor: on a desktop the call can hold up a frame for nothing
 const HAPTIC = matchMedia('(pointer: coarse)').matches && 'vibrate' in navigator;
-const buzz = p => { if (!HAPTIC) return; try { navigator.vibrate(p); } catch {} };
+let HAPON = store.get('hap') !== '0';
+const buzz = p => { if (!HAPTIC || !HAPON) return; try { navigator.vibrate(p); } catch {} };
 
 /* ================= words, in English and Danish ================= */
 const T = {
   en: { today:'Today', train:'Train', fuel:'Fuel', health:'Health', coach:'Coach', reps:'reps', cph:'Copenhagen',
     rkReady:'Readiness', rReady:'Ready.', rNight:'Rest.', rkNight:'Readiness · after your sleep', rc1:'Slept 7h 42m', rc2:'Heart 3 below normal', rc3:'Legs fresh', rcN1:'Your score comes in when you wake', arcHint:'Drag the dot to see your day',
-    kAlarm:'Until your 06:15 alarm', kPush:'Until Push · 15:15', kOn:'Push is on', kProtein:'Protein left today', kBed:'Until bed · 23:30', kPast:'Past your bedtime',
+    kAlarm:'Until your 06:15 alarm', kPush:'Until Push · 15:15', kPushL:'Until Push · leave at 14:50', kOn:'Left of Push', kSunset:'Until sunset · {t}', kDinner:'Until dinner · 19:00', tomPlan:'See tomorrow’s plan', kProtein:'Protein left today', kBed:'Until bed · 23:30', kPast:'Past your bedtime',
     hNight:'Night.', hBench:'Bench day.', hGo:'Go time.', hLogged:'Push logged.', hRecover:'Refuel.', hWind:'Wind down.', hLate:'Lights out.',
     lNight1:'Past your 23:30 promise. Sleep now and you still get a full night.', lNight2:'Sleep. The rain stops by four, and the sky clears by noon.',
     lMorning:'You hit 80 last week. Today the bar says 82.5.', lMid:'Lunch at 12 is the big one. Bench is 82.5 today.',
-    lAfternoon:'Sunset is at {sunset}. You finish Push in the last light.', lSession:'Five lifts, sixteen sets. Start when you’re warm.',
-    lAfterDone:'{rec} Eat within the hour, then dinner at 19.', rec0:'Push is in.', rec1:'One record.', recN:'{n} records.', lAfter:'Dinner at 19:00 is your big meal. Eat it all.',
+    lAfternoon:'Sunset is at {sunset}. You finish Push in the last light.', lGrey:'A grey afternoon, so Push is the bright part of it. Bench first.', lSession:'Five lifts, sixteen sets. Start when you’re warm.',
+    lAfterDone:'{rec} Eat within the hour, then dinner at 19.', cmpNext:'Next: 40 g of protein within the hour. Pull is on Thursday.', rec0:'Push is in.', rec1:'One record.', recN:'{n} records.', lAfter:'Dinner at 19:00 is your big meal: {p} g of protein still to go.',
     lEvening:'Wrestling tomorrow at 18:00. Bed on time.', lLate:'Tomorrow’s wrestling needs the hours.',
     leave:'Leave 14:50', wake:'Wake', push:'Push', bed:'Bed', sunrise:'Sunrise', sunset:'Sunset', start:'Start Push', resume:'Resume Push', logMeal:'Log a meal',
     clear:'Clear', partly:'Partly cloudy', cloudy:'Cloudy', overcast:'Overcast', drizzle:'Drizzle', rain:'Rain', fog:'Fog',
-    plan:'Plan', planSub:'Push · 5 lifts', vsLast:'vs last', fuelK:'Fuel', weekK:'This week', weekSub:'{n} of 7 sessions', startLate:'Start Push now', planned:'planned 15:15', tapOn:'Tap to continue', todayPlan:'See today’s plan', movePush:'Move Push to tomorrow', tomorrowPush:'Push is tomorrow, 15:15', movedT:'Push moved to tomorrow', memK:'Coach remembers',
+    plan:'Plan', planSub:'Push · 5 lifts', vsLast:'vs last', fuelK:'Fuel', planDone:'Push · done', weekK:'This week', weekSub:'{n} of 7 sessions', startLate:'Start Push now', planned:'planned 15:15', tapOn:'Tap to continue', todayPlan:'See today’s plan', movePush:'Move Push to tomorrow', tomorrowPush:'Push is tomorrow, 15:15', movedT:'Push moved to tomorrow', memK:'Coach remembers',
     mem1:'Bed by 23:30', mem2:'Cutting to 77 kg by December', mem3:'Bench 82.5 × 8 is the number to beat', mem4:'Wrestling Mon and Wed',
-    gLeft:'g protein left', kcalOf:'{k} kcal left of 2,300',
+    gLeft:'g protein left', kcalOf:'{k} kcal left of 2,300', firstUp:'First up: {n} at {m} · {p} g', nextUp:'Next: {n} at {m} · {p} g', allIn:'All four meals are in',
     days1:['M','T','W','T','F','S','S'], dayT:['Wrestle','Push','Wrestle','Pull','Push','Legs','Pull'],
     trK:'Tuesday · 15:15 · about 55 min', trH:'Push', trP:'Chest, shoulders and triceps. Bench is the main lift today.', sets:'sets', last:'Last', best:'Best', target:'Today', trWeek:'Your week',
     trCoach:['The bar moved fast last week. Same tempo, a little more weight.','Elbows in. Last week’s 28 went up easy.','Stand tall, no hip drive. Match last week first.','Light weight, slow on the way down.','Pin the elbows and squeeze at the bottom.'],
     fuK:'Tuesday · cutting', fuH:'Fuel', protein:'Protein', carbs:'Carbs', fat:'Fat', logFood:'Log food', meals:'Today’s meals', quick:'Quick add', logBtn:'Log', logged:'Logged',
     breakfast:'Breakfast', lunch:'Lunch', meal:'After training', dinner:'Dinner', mB:'Skyr, oats, berries', mL:'Chicken, rice, salad', mM:'Whey shake, banana', mD:'Salmon, potatoes, greens',
     lsH:'Log food', lsAdd:'Add {g} g', lsPer:'{p} g protein · {k} kcal',
-    heK:'Tuesday · from your watch', heH:'Health', pSleep:'Sleep', pWeight:'Weight', pRec:'Recovery', wSleep:'Rested', wWeight:'On pace', wRec:'Ready', sSleep:'86 % of the 9 h you need', sWeight:'1.4 kg to go to 77 kg', sRec:'Resting heart rate · 3 below normal',
-    sleepD:'Last night', deep:'Deep', rem:'REM', light:'Light', awake:'Awake', nights:'Seven nights', wTrend:'Two weeks', wNote:'−1.2 kg in two weeks. 77 kg by December is on pace.',
+    heK:'Tuesday · sleep, weight, recovery', heH:'Health', pSleep:'Sleep', pWeight:'Weight', pRec:'Recovery', wSleep:'Rested', wWeight:'On pace', wRec:'Ready', sSleep:'86% of the 9 hours you need', sWeight:'1.4 kg to go to 77 kg', sRec:'Resting heart rate · 3 below normal',
+    sleepD:'Last night', deep:'Deep', rem:'REM', light:'Light', awake:'Awake', moonFull:'7 hours or more', moonLess:'Less than 7', nights:'Seven nights', wTrend:'Two weeks', wNote:'−1.2 kg in two weeks. 77 kg by December is on pace.',
     rhr:'Resting heart rate', hrv:'HRV', recNote:'Resting heart rate is 3 below your normal. Train as planned.', src:'From your Galaxy Watch through Health Connect.',
     coK:'Coach', greetN:'Late night, Omar.', greetM:'Morning, Omar.', greetA:'Afternoon, Omar.', greetE:'Evening, Omar.', coP:'Ask about training, food or sleep', send:'Ask',
     q1:'I only have 30 minutes', q2:'What should I eat before Push?', q3:'How is my week?',
@@ -584,36 +673,37 @@ const T = {
     a2:'Skyr 200 g and oats 80 g about 90 minutes before. That is 31 g protein and slow carbs for the bench.', p2:'Log skyr 200 g and oats 80 g for 13:45?', logIt:'Log it',
     a3:'Monday’s wrestling is done and Push is today. Bench is up 2.5 kg in two weeks. Sleep averaged 6 h 58 min this week, and that is the weak spot.',
     offline:'I’ll answer that in full once I’m connected to your account. For now, try one of the three questions above.', keepS:'Keep',
-    setH:'Settings', lang:'Language', win:'Sky', live:'Live', shortR:'Quick rests for trying it out', replay:'Watch this morning again', on:'On', off:'Off',
-    credit:'Health, sleep and food numbers in this preview are examples. Photo: Blue Ridge Mountains by Wes Hicks on Unsplash. Light: the real sun and moon over Copenhagen. Weather: the Open-Meteo forecast for Copenhagen, saved on 3 November.',
+    setH:'Settings', lang:'Language', win:'Sky', live:'Live', shortR:'Short rests', shortS:'10 seconds, for trying it out', replay:'Watch this morning again', on:'On', off:'Off',
+    units:'Units', metric:'Metric · kg', windowG:'The window', placeS:'The real sun, moon and weather', skyS:'Live follows the weather', workoutG:'Workout', hap:'Haptics', preview:'preview',
+    credit:'Health, sleep and food numbers in this preview are examples. Photo: Kallur lighthouse, Kalsoy, Faroe Islands, by Olegs Jonins on Unsplash. Light: the real sun and moon over Copenhagen. Weather: the Open-Meteo forecast for Copenhagen, saved on 3 November.',
     set:'Set {a} of {b}', logSet:'Log {w} × {r}', skip:'Skip rest', rest:'Rest', nextSet:'Next set', thenEx:'then', lastEx:'Last exercise. Finish strong.', next:'Next',
     coachK:'Coach', coachP:'85 kg for sets 3 and 4? Sets 1 and 2 moved fast.', use85:'Use 85 kg', keep:'Keep 82.5', applied:'Sets 3–4 are 85 kg', undo:'Undo',
     recK:'Heaviest bench ever', recP:'2.5 kg over your best from 20 October. It goes on the shelf.', repBest:'Rep best',
     whole:'Whole workout', hold:'Hold to finish', holding:'Keep holding…', complete:'Push, done.', cTime:'Time', cSets:'Sets', cRec:'Records', cRec1:'Record', kgLifted:'kg lifted', doneB:'Back to Today',
-    loggedU:'Logged {w} × {r}', savedPush:'Push saved', liveT:'Push · {ex}', liveS:'Set {a} of {b} · resume', liveR:'Resting · {ex}', dayDone:'Done',
+    loggedU:'Logged {w} × {r}', savedPush:'Push saved', liveT:'Push · {ex}', liveS:'Set {a} of {b} · resume', liveR:'Resting · {ex}', restOver:'Rest is over · {ex}, set {a}', dayDone:'Done',
     days:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'], months:['January','February','March','April','May','June','July','August','September','October','November','December'] },
   da: { today:'I dag', train:'Træn', fuel:'Mad', health:'Helbred', coach:'Coach', reps:'gange', cph:'København',
     rkReady:'Parathed', rReady:'Klar.', rNight:'Hvil.', rkNight:'Parathed · efter din søvn', rc1:'Sov 7t 42m', rc2:'Puls 3 under normal', rc3:'Friske ben', rcN1:'Din score kommer, når du vågner', arcHint:'Træk prikken for at se din dag',
-    kAlarm:'Til din alarm kl. 06:15', kPush:'Til Push · 15:15', kOn:'Push er nu', kProtein:'Protein tilbage i dag', kBed:'Til sengetid · 23:30', kPast:'Over din sengetid',
+    kAlarm:'Til din alarm kl. 06:15', kPush:'Til Push · 15:15', kPushL:'Til Push · gå kl. 14:50', kOn:'Tilbage af Push', kSunset:'Til solnedgang · {t}', kDinner:'Til aftensmad · 19:00', tomPlan:'Se morgendagens plan', kProtein:'Protein tilbage i dag', kBed:'Til sengetid · 23:30', kPast:'Over din sengetid',
     hNight:'Nat.', hBench:'Bænkdag.', hGo:'Nu.', hLogged:'Push logget.', hRecover:'Fyld op.', hWind:'Rolig nu.', hLate:'Sluk lyset.',
     lNight1:'Du lovede seng kl. 23:30. Sov nu, så får du stadig en hel nat.', lNight2:'Sov. Regnen stopper ved fire, og himlen klarer op ved middag.',
     lMorning:'Du tog 80 i sidste uge. I dag siger stangen 82,5.', lMid:'Frokosten kl. 12 er den store. Bænk er 82,5 i dag.',
-    lAfternoon:'Solen går ned kl. {sunset}. Du slutter Push i det sidste lys.', lSession:'Fem øvelser, seksten sæt. Start når du er varm.',
-    lAfterDone:'{rec} Spis inden for en time, og aftensmad kl. 19.', rec0:'Push er klaret.', rec1:'Én rekord.', recN:'{n} rekorder.', lAfter:'Aftensmaden kl. 19 er dit store måltid. Spis det hele.',
+    lAfternoon:'Solen går ned kl. {sunset}. Du slutter Push i det sidste lys.', lGrey:'En grå eftermiddag, så Push er det lyse i den. Bænk først.', lSession:'Fem øvelser, seksten sæt. Start når du er varm.',
+    lAfterDone:'{rec} Spis inden for en time, og aftensmad kl. 19.', cmpNext:'Næste: 40 g protein inden for en time. Pull er på torsdag.', rec0:'Push er klaret.', rec1:'Én rekord.', recN:'{n} rekorder.', lAfter:'Aftensmaden kl. 19 er dit store måltid: {p} g protein mangler endnu.',
     lEvening:'Brydning i morgen kl. 18. I seng til tiden.', lLate:'Brydning i morgen kræver timerne.',
     leave:'Gå kl. 14:50', wake:'Op', push:'Push', bed:'Seng', sunrise:'Solopgang', sunset:'Solnedgang', start:'Start Push', resume:'Fortsæt Push', logMeal:'Log et måltid',
     clear:'Klart', partly:'Let skyet', cloudy:'Skyet', overcast:'Overskyet', drizzle:'Støvregn', rain:'Regn', fog:'Tåge',
-    plan:'Plan', planSub:'Push · 5 øvelser', vsLast:'mod sidst', fuelK:'Mad', weekK:'Denne uge', weekSub:'{n} af 7 træninger', startLate:'Start Push nu', planned:'planlagt 15:15', tapOn:'Tryk for at fortsætte', todayPlan:'Se dagens plan', movePush:'Flyt Push til i morgen', tomorrowPush:'Push er i morgen, 15:15', movedT:'Push flyttet til i morgen', memK:'Coach husker',
+    plan:'Plan', planSub:'Push · 5 øvelser', vsLast:'mod sidst', fuelK:'Mad', planDone:'Push · klaret', weekK:'Denne uge', weekSub:'{n} af 7 træninger', startLate:'Start Push nu', planned:'planlagt 15:15', tapOn:'Tryk for at fortsætte', todayPlan:'Se dagens plan', movePush:'Flyt Push til i morgen', tomorrowPush:'Push er i morgen, 15:15', movedT:'Push flyttet til i morgen', memK:'Coach husker',
     mem1:'Seng kl. 23:30', mem2:'Ned til 77 kg til december', mem3:'Bænk 82,5 × 8 skal slås', mem4:'Brydning man og ons',
-    gLeft:'g protein tilbage', kcalOf:'{k} kcal tilbage af 2.300',
+    gLeft:'g protein tilbage', kcalOf:'{k} kcal tilbage af 2.300', firstUp:'Først: {n} kl. {m} · {p} g', nextUp:'Næste: {n} kl. {m} · {p} g', allIn:'Alle fire måltider er spist',
     days1:['M','T','O','T','F','L','S'], dayT:['Brydn.','Push','Brydn.','Pull','Push','Ben','Pull'],
     trK:'Tirsdag · 15:15 · cirka 55 min', trH:'Push', trP:'Bryst, skuldre og triceps. Bænk er dagens hovedløft.', sets:'sæt', last:'Sidst', best:'Bedst', target:'I dag', trWeek:'Din uge',
     trCoach:['Stangen gik hurtigt i sidste uge. Samme tempo, lidt mere vægt.','Albuerne ind. 28 gik let i sidste uge.','Stå rank, ingen hofte. Match sidste uge først.','Let vægt, langsomt ned.','Hold albuerne og klem i bunden.'],
     fuK:'Tirsdag · vægttab', fuH:'Mad', protein:'Protein', carbs:'Kulhydrat', fat:'Fedt', logFood:'Log mad', meals:'Dagens måltider', quick:'Tilføj hurtigt', logBtn:'Log', logged:'Logget',
     breakfast:'Morgenmad', lunch:'Frokost', meal:'Efter træning', dinner:'Aftensmad', mB:'Skyr, havregryn, bær', mL:'Kylling, ris, salat', mM:'Proteinshake, banan', mD:'Laks, kartofler, grønt',
     lsH:'Log mad', lsAdd:'Tilføj {g} g', lsPer:'{p} g protein · {k} kcal',
-    heK:'Tirsdag · fra dit ur', heH:'Helbred', pSleep:'Søvn', pWeight:'Vægt', pRec:'Restitution', wSleep:'Udhvilet', wWeight:'På sporet', wRec:'Klar', sSleep:'86 % af de 9 t du behøver', sWeight:'1,4 kg til 77 kg', sRec:'Hvilepuls · 3 under normal',
-    sleepD:'I nat', deep:'Dyb', rem:'REM', light:'Let', awake:'Vågen', nights:'Syv nætter', wTrend:'To uger', wNote:'−1,2 kg på to uger. 77 kg til december er på sporet.',
+    heK:'Tirsdag · søvn, vægt, restitution', heH:'Helbred', pSleep:'Søvn', pWeight:'Vægt', pRec:'Restitution', wSleep:'Udhvilet', wWeight:'På sporet', wRec:'Klar', sSleep:'86 % af de 9 timer, du har brug for', sWeight:'1,4 kg til 77 kg', sRec:'Hvilepuls · 3 under normal',
+    sleepD:'I nat', deep:'Dyb', rem:'REM', light:'Let', awake:'Vågen', moonFull:'7 timer eller mere', moonLess:'Under 7', nights:'Syv nætter', wTrend:'To uger', wNote:'−1,2 kg på to uger. 77 kg til december er på sporet.',
     rhr:'Hvilepuls', hrv:'HRV', recNote:'Hvilepulsen er 3 under din normale. Træn som planlagt.', src:'Fra dit Galaxy Watch via Health Connect.',
     coK:'Coach', greetN:'Sen aften, Omar.', greetM:'Godmorgen, Omar.', greetA:'God eftermiddag, Omar.', greetE:'God aften, Omar.', coP:'Spørg om træning, mad eller søvn', send:'Spørg',
     q1:'Jeg har kun 30 minutter', q2:'Hvad skal jeg spise før Push?', q3:'Hvordan går min uge?',
@@ -622,13 +712,14 @@ const T = {
     a2:'Skyr 200 g og havregryn 80 g cirka 90 minutter før. Det er 31 g protein og langsomme kulhydrater til bænken.', p2:'Log skyr 200 g og havregryn 80 g kl. 13:45?', logIt:'Log det',
     a3:'Mandagens brydning er klaret, og Push er i dag. Bænk er steget 2,5 kg på to uger. Søvnen var i snit 6 t 58 min denne uge, og det er det svage punkt.',
     offline:'Det svarer jeg fuldt på, når jeg er koblet til din konto. Prøv indtil videre et af de tre spørgsmål ovenfor.', keepS:'Behold',
-    setH:'Indstillinger', lang:'Sprog', win:'Himmel', live:'Live', shortR:'Hurtige pauser til at prøve', replay:'Se morgenen igen', on:'Til', off:'Fra',
-    credit:'Tal for helbred, søvn og mad i denne prøve er eksempler. Foto: Blue Ridge Mountains af Wes Hicks på Unsplash. Lys: den rigtige sol og måne over København. Vejr: Open-Meteos prognose for København, gemt 3. november.',
+    setH:'Indstillinger', lang:'Sprog', win:'Himmel', live:'Live', shortR:'Korte pauser', shortS:'10 sekunder, til at prøve', replay:'Se morgenen igen', on:'Til', off:'Fra',
+    units:'Enheder', metric:'Metrisk · kg', windowG:'Vinduet', placeS:'Den rigtige sol, måne og vejr', skyS:'Live følger vejret', workoutG:'Træning', hap:'Vibration', preview:'prøve',
+    credit:'Tal for helbred, søvn og mad i denne prøve er eksempler. Foto: Kallur fyr, Kalsoy, Færøerne, af Olegs Jonins på Unsplash. Lys: den rigtige sol og måne over København. Vejr: Open-Meteos prognose for København, gemt 3. november.',
     set:'Sæt {a} af {b}', logSet:'Log {w} × {r}', skip:'Spring pause over', rest:'Pause', nextSet:'Næste sæt', thenEx:'derefter', lastEx:'Sidste øvelse. Slut stærkt.', next:'Næste',
     coachK:'Coach', coachP:'85 kg i sæt 3 og 4? Sæt 1 og 2 gik hurtigt.', use85:'Brug 85 kg', keep:'Behold 82,5', applied:'Sæt 3–4 er 85 kg', undo:'Fortryd',
     recK:'Tungeste bænk nogensinde', recP:'2,5 kg over din bedste fra 20. oktober. Den kommer på hylden.', repBest:'Rekord i gentagelser',
     whole:'Hele træningen', hold:'Hold for at afslutte', holding:'Bliv ved…', complete:'Push, færdig.', cTime:'Tid', cSets:'Sæt', cRec:'Rekorder', cRec1:'Rekord', kgLifted:'kg løftet', doneB:'Tilbage til i dag',
-    loggedU:'Logget {w} × {r}', savedPush:'Push gemt', liveT:'Push · {ex}', liveS:'Sæt {a} af {b} · fortsæt', liveR:'Pause · {ex}', dayDone:'Færdig',
+    loggedU:'Logget {w} × {r}', savedPush:'Push gemt', liveT:'Push · {ex}', liveS:'Sæt {a} af {b} · fortsæt', liveR:'Pause · {ex}', restOver:'Pausen er slut · {ex}, sæt {a}', dayDone:'Færdig',
     days:['søndag','mandag','tirsdag','onsdag','torsdag','fredag','lørdag'], months:['januar','februar','marts','april','maj','juni','juli','august','september','oktober','november','december'] }
 };
 let LANG = Q.get('lang') === 'da' || store.get('lang') === 'da' ? 'da' : 'en';
@@ -767,7 +858,7 @@ const KEYS = [
   { h: 15, z: '#3f7ebf', hz: '#d4e0ea', gl: '#fff0d8', ga: .35, tint: [1.04, 1.02, 1.0], ex: 1.0, haze: '#cfdbe6', ha: .32, cl: '#a3abb5', acc: '#f2ece3', gr: '#0b0e12' },
   { h: 60, z: '#3f7ebf', hz: '#d4e0ea', gl: '#fff0d8', ga: .3, tint: [1.04, 1.02, 1.0], ex: 1.0, haze: '#cfdbe6', ha: .32, cl: '#a3abb5', acc: '#f2ece3', gr: '#0b0e12' }
 ].map(k => ({ ...k, z: lin(hex(k.z)), hz: lin(hex(k.hz)), gl: lin(hex(k.gl)), haze: lin(hex(k.haze)), cl: lin(hex(k.cl)), accL: lin(hex(k.acc)), grL: lin(hex(k.gr)) }));
-const CAM = 196, HALF = 58, HOR = 372, PXDEG = 14;
+const CAM = 196, HALF = 58, HOR = 432, PXDEG = 15;
 const toScreen = (az, al) => [215 + (az - CAM) / HALF * 215, HOR - al * PXDEG];
 const toHex = c => '#' + c.map(v => Math.round(clamp(Math.pow(v, 1 / 2.2), 0, 1) * 255).toString(16).padStart(2, '0')).join('');
 function lightAt(date) {
@@ -781,7 +872,7 @@ function lightAt(date) {
   const moonVis = sstep(-1, 3, m.alt) * lerp(.28, 1, sstep(4, -6, s.alt));
   const sunCol = mixv(lin(hex('#ff7a3a')), lin(hex('#fff2df')), sstep(0, 18, s.alt));
   return { s, m, wx, frac, cloud, night, moonVis, sunPx: [sx, sy], moonPx: [mx, my], z: K('z'), hz: K('hz'), gl: K('gl'), ga: K('ga') * (1 - cloud * .75), tint: K('tint'), ex: K('ex'), haze: K('haze'), ha: K('ha'), cl: K('cl'), acc: K('accL'), gr: K('grL'), sunCol,
-    disc: (1 - cloud) * sstep(-1.5, .5, s.alt), rim: sstep(-2, 3, s.alt) * (1 - sstep(9, 24, s.alt)) * (1 - cloud), moonLight: moonVis * frac * night * (1 - cloud) };
+    disc: (1 - cloud) * sstep(-1.5, .5, s.alt), rim: sstep(-2, 1.5, s.alt) * (1 - sstep(3, 9, s.alt)) * (1 - cloud) /* only a low sun lights the ridge tops */, moonLight: moonVis * frac * night * (1 - cloud) };
 }
 
 /* ================= the window: one WebGL pass over the real photo ================= */
@@ -814,6 +905,7 @@ void main(){
   float ds = length((p - uSun) / vec2(430., 360.));
   sky += uGl * uGa * (exp(-ds*2.4)*.5 + exp(-ds*8.)*.5);
   sky += uGl * uGa * .55 * exp(-pow((p.y - uHor)/85., 2.)) * exp(-abs(p.x - uSun.x)/320.);
+  vec3 air = sky; // the sky's own light, without stars, moon or sun disc: distant land takes it on
   vec2 g = floor(p / 3.2); float hs = h12(g + 17.);
   vec2 sp = (g + .2 + .6 * vec2(h12(g + 3.1), h12(g + 7.7))) * 3.2;
   float sz = mix(.38, .9, pow(h12(g * 1.7 + 3.), 3.));
@@ -839,27 +931,35 @@ void main(){
   sky = mix(sky, cc, uCloud);
   sky += vec3(.030, .026, .040) * uCloud * uNight * exp(-max(0., uHor - p.y) / 170.);
   sky *= 1. - uRain * .12;
+  air = (mix(air, cc, uCloud) + vec3(.030, .026, .040) * uCloud * uNight * exp(-max(0., uHor - p.y) / 170.)) * (1. - uRain * .12);
   vec3 col = sky;
   vec2 uv = (p - uRect.xy) / uRect.zw;
-  uv.y = min(uv.y, .996);
+  if(uv.y > .998) uv.y = 1.996 - uv.y; // below the photo, its own foreground mirrored (and blurred by the melt), never a stretched last row
   if(uv.y > 0.){
     float lod = smoothstep(uMeltA, uMeltB, p.y) * 4.4;
     vec2 an = vec2(.5, 1.05);
     vec2 uF = an + (uv - an) / (1. + uPush * .07), uN = an + (uv - an) / (1. + uPush * .17);
     float aF = textureLod(uMask, uF, lod * .8).r, aN = textureLod(uMask, uN, lod * .8).g;
     vec3 land = mix(P(uF, lod), P(uN, lod), aN);
-    float a = max(aF, aN);
+    // under cloud the sun's hard light and shadow in the photo soften toward the land's own average (only inside the land, never at its edge)
+    float inner = smoothstep(.9, 1., textureLod(uMask, uF - vec2(0., 10. / uRect.w), 0.).r);
+    land = mix(land, L(textureLod(uPhoto, mix(uF, uN, aN), 4.).rgb), uCloud * .36 * inner);
     float lum = dot(land, vec3(.2126, .7152, .0722));
+    float a = max(aF, aN);
     float far = (1. - aN) * smoothstep(1., .3, uv.y);
     vec3 lt = land * uTint * uExpo;
-    lt = mix(lt, uHaze, clamp(far * uHa, 0., 1.));
-    float above = textureLod(uMask, uF - vec2(0., 2.5 / uRect.w), 0.).r, aF0 = textureLod(uMask, uF, 0.).r;
-    lt += uSunC * aF0 * (1. - above) * exp(-abs(p.x - uSun.x) / 230.) * uRim * 1.1 * (1. - uPush);
+    // aerial perspective: far land fades into the air in front of it, so the range always sits in its own sky (overcast, dawn, night)
+    lt = mix(lt, mix(uHaze, air, .7 + .3 * uCloud), clamp(far * (uHa + .15 * uCloud + .22 * smoothstep(.22, .5, lum)), 0., .92));
+    // where the photo's far range is as pale as its own sky (haze on the cliff tops, the edge of the cut), it takes our sky's
+    // exact colour, so the cut can never show as a second, ghosted ridge
+    lt = mix(lt, air, smoothstep(.43, .58, lum) * (1. - aN) * .94);
+    float above = textureLod(uMask, uF - vec2(0., 1.4 / uRect.w), 0.).r, aF0 = textureLod(uMask, uF, 0.).r;
+    lt += uSunC * aF0 * (1. - above) * exp(-abs(p.x - uSun.x) / 120.) * uRim * .7 * (1. - uPush); // a thin line of light, only near the sun
     lt += vec3(.5, .62, .95) * smoothstep(.28, .72, lum) * uMoonLight * .07;
-    float fm = clamp(uFog * (.3 + .6 * far + .3 * (1. - smoothstep(0., .2, lum))), 0., .92);
+    float fm = clamp(max(uFog * (.3 + .6 * far + .3 * (1. - smoothstep(0., .2, lum))), uFog * .9 * (1. - aN)), 0., .92); // in fog, everything past the near hill goes (the sea too)
     lt = mix(lt, uFogC, fm);
     float ll = dot(lt, vec3(.2126, .7152, .0722));
-    lt = mix(lt, vec3(ll), uCloud * .28) * (1. - uCloud * .16) * (1. - uRain * .14);
+    lt = mix(lt, vec3(ll), uCloud * .3 + uRain * .14) * (1. - uCloud * .16) * (1. - uRain * .14);
     col = mix(sky, lt, a);
   }
   col *= 1. - .16 * smoothstep(420., 640., p.y);
@@ -888,7 +988,7 @@ function tex(img, unit) {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
   return tx;
 }
-const SIZE = [430, 932], RECT = [0, 104, 430, 645];
+const SIZE = [430, 932], RECT = [0, 40, 430, 648.7]; // Kallur, Kalsoy, Faroe Islands: the far peaks start at y 410
 function sizeCanvas() {
   const r = cv.getBoundingClientRect(); const s = parseFloat(getComputedStyle(cv).transform.split('(')[1]) || 1; const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
   const w = Math.round(r.width / s * dpr), h = Math.round(r.height / s * dpr);
@@ -912,14 +1012,33 @@ function draw() {
   gl.drawArrays(gl.TRIANGLES, 0, 3);
 }
 const render = () => { if (!frameReq) frameReq = requestAnimationFrame(draw); };
+// the rain is drawn once into two small tiles (near: long, sparse, fast; far: short, dense, slow) that loop seamlessly
+let rainMade = false;
+function rainTile(n, len, wid, alpha, seed) {
+  const W0 = 300, H0 = 512, d = Math.min(2, window.devicePixelRatio || 1), c = document.createElement('canvas'); c.width = W0 * d; c.height = H0 * d;
+  const x = c.getContext('2d'); x.scale(d, d); x.lineCap = 'round'; x.lineWidth = wid; let s = seed;
+  const rnd = () => (s = (s * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < n; i++) {
+    const px = rnd() * W0, py = rnd() * H0, l = len[0] + rnd() * (len[1] - len[0]), a = alpha * (.35 + .65 * rnd());
+    for (const oy of [0, -H0]) { const g = x.createLinearGradient(0, py + oy, 0, py + oy + l); g.addColorStop(0, 'rgba(235,242,255,0)'); g.addColorStop(1, `rgba(235,242,255,${a.toFixed(3)})`); x.strokeStyle = g; x.beginPath(); x.moveTo(px, py + oy); x.lineTo(px, py + oy + l); x.stroke(); }
+  }
+  return c;
+}
+// the tiles are encoded off the main thread (toBlob), so a shower never stalls a frame
+function makeRain() { rainMade = true; const [a, b] = $$('#rain i'); [[a, rainTile(30, [26, 54], 1.3, .5, 3)], [b, rainTile(120, [9, 20], 1, .3, 11)]].forEach(([el, c]) => c.toBlob(bl => { el.style.backgroundImage = `url(${URL.createObjectURL(bl)})`; })); }
 let lastAcc = '';
 function applyLight(m, cssToo = true) {
   LIGHT = lightAt(dateAtMin(m)); render();
   if (!cssToo) return;
+  const rn = LIGHT.wx.rain; // the rain follows the real hour, not a finger on the dial (a shower starting mid-drag would cost a frame)
+  if (S.scrub === null) phone.classList.toggle('raining', rn > 0);
+  if (rn && S.scrub === null) { if (!rainMade) makeRain(); phone.style.setProperty('--rainA', (rn * (LIGHT.s.alt > 0 ? .95 : .62)).toFixed(2)); }
   const acc = toHex(LIGHT.acc), gr = toHex(LIGHT.gr);
   if (acc === lastAcc) return; lastAcc = acc;
   const st = phone.style;
-  st.setProperty('--accent', acc); st.setProperty('--ground', gr); st.setProperty('--cv', (LIGHT.s.alt > 0 && LIGHT.cloud < .7 ? .08 : .2).toString());
+  st.setProperty('--accent', acc); st.setProperty('--ground', gr); st.setProperty('--cv', (LIGHT.s.alt > 0 && LIGHT.cloud < .7 ? .3 : .22).toString());
+  // a soft shade under the word only where the sky behind it is bright: clear day, sunset, fog
+  st.setProperty('--rv', (LIGHT.wx.fog > .4 ? .26 : LIGHT.s.alt > -2 ? (LIGHT.cloud < .7 ? .17 : .1) : 0).toString());
   const src = LIGHT.s.alt > -4 ? LIGHT.sunPx : LIGHT.moonVis > .2 ? LIGHT.moonPx : [215, -200];
   st.setProperty('--rimA', Math.round(Math.atan2(src[0] - 215, -(src[1] - 420)) / RAD) + 'deg');
   const rc = LIGHT.s.alt > -4 ? LIGHT.sunCol.map(v => Math.round(lerp(255, Math.pow(v / Math.max(...LIGHT.sunCol), 1 / 2.2) * 255, .5))) : [215, 225, 245];
@@ -935,11 +1054,14 @@ const proteinLeftAt = m => Math.max(0, FUEL.target - eatenAt(m).reduce((a, x) =>
 const kcalLeftAt = m => Math.max(0, FUEL.kcal - eatenAt(m).reduce((a, x) => a + x.kc, 0) - FUEL.extraK);
 const S = { done: false, live: false, view: 'today', tab: 'today', scrub: null, trimmed: false };
 const dur = m => { m = Math.max(0, Math.round(m)); const h = Math.floor(m / 60), mm = m % 60, H = LANG === 'da' ? 't' : 'h'; return h ? `${h}${H} ${String(mm).padStart(2, '0')}m` : `${mm}m`; };
+const greyAt = m => { const w = weatherAt(dateAtMin(m)); return w.rain > 0 || w.cloud > .8 || w.fog > .5; }; // no "last light" when there is none
 function heroAt(m) {
   if (m < 375) return { k: t('kAlarm'), n: dur(375 - m), c: m < 60 ? t('lNight1') : t('lNight2') };
-  if (m < 915 && !S.done) return { k: t('kPush'), n: dur(915 - m), h: t('hBench'), c: m < 540 ? t('lMorning') : m < 750 ? t('lMid') : t('lAfternoon', { sunset: hm(sunTimes.set) }), chip: m < 890 ? t('leave') : '' };
-  if (m < 970 && !S.done) return { k: t('kOn'), n: dur(970 - Math.max(m, 915)), h: t('hGo'), c: t('lSession') };
-  if (m < 1260) return { k: t('kProtein'), n: `${proteinLeftAt(m)}g`, h: S.done ? t('hLogged') : t('hRecover'), c: S.done ? t('lAfterDone', { rec: recWord() }) : t('lAfter') };
+  // when to leave lives with the countdown, not as a chip in the sentence below it
+  if (m < 915 && !S.done) return { k: m >= 600 && m < 890 ? t('kPushL') : t('kPush'), n: dur(915 - m), h: t('hBench'), c: m < 540 ? t('lMorning') : m < 750 ? t('lMid') : greyAt(915) ? t('lGrey') : t('lAfternoon', { sunset: hm(sunTimes.set) }) };
+  // the dial only ever counts time; what to eat is said in words below it
+  if (m < 970 && !S.done) return { k: t('kSunset', { t: hm(sunTimes.set) }), n: dur(sunTimes.set - m), h: t('hGo'), c: t('lSession') };
+  if (m < 1140) return { k: t('kDinner'), n: dur(1140 - m), h: S.done ? t('hLogged') : t('hRecover'), c: S.done ? t('lAfterDone', { rec: recWord() }) : t('lAfter', { p: proteinLeftAt(m) }) };
   if (m < 1410) return { k: t('kBed'), n: dur(1410 - m), h: t('hWind'), c: t('lEvening') };
   return { k: t('kPast'), n: dur(m - 1410), h: t('hLate'), c: t('lLate') };
 }
@@ -955,11 +1077,12 @@ function paintHero(m) {
   bigR.set(H.n); if ($('#kick').textContent !== H.k) $('#kick').textContent = H.k; paintReady(m);
   paintCta(m); swapText($('#coach'), H.c + (H.chip ? ` <b class="chip2">${H.chip}</b>` : ''));
 }
-const ctaMode = m => S.live ? 'live' : S.done ? 'done' : S.moved ? 'moved' : m < 300 ? 'night' : m >= 1260 ? 'evening' : m > 970 ? 'late' : 'start';
+// one state drives the button: night first, then what is done, then the day's plan
+const ctaMode = m => S.live ? 'live' : m < 300 ? 'night' : S.done ? (m >= 1260 ? 'eveDone' : 'done') : S.moved ? 'moved' : m >= 1260 ? 'evening' : m >= 915 ? 'late' : 'start';
 function paintCta(m = nowMin()) {
   const md = ctaMode(m); S.cta = md;
   if (paintCta.k === md + LANG) return; paintCta.k = md + LANG;
-  const L = { live: [t('resume'), ''], done: [t('logMeal'), ''], moved: [t('tomorrowPush'), ''], night: [t('todayPlan'), ''], evening: [t('movePush'), ''], late: [t('startLate'), t('planned')], start: [t('start'), '15:15'] }[md];
+  const L = { live: [t('resume'), ''], done: [t('logMeal'), ''], moved: [t('tomorrowPush'), ''], night: [t('todayPlan'), ''], eveDone: [t('tomPlan'), ''], evening: [t('movePush'), ''], late: [t('startLate'), t('planned')], start: [t('start'), '15:15'] }[md];
   $('#ctaL').textContent = L[0]; $('#ctaS').textContent = L[1];
   $('#cta svg').style.display = md === 'start' || md === 'late' || md === 'live' ? '' : 'none';
 }
@@ -973,13 +1096,14 @@ function paintWx(m) {
 
 /* ================= readiness: one word that fills with light as far as you are ready ================= */
 function readyAt(m) {
-  if (m < 375) return { s: null, w: t('rNight'), k: t('rkNight'), f: 1, moon: true, c: [[t('rcN1'), '#9cc4ff']] };
-  return { s: 82, w: t('rReady'), k: t('rkReady'), f: .82, c: [[t('rc1'), '#9cc4ff'], [t('rc2'), '#7fe0c0'], [t('rc3'), '#ffbf72']] };
+  // from 21:30 the day's score has done its job, and the word turns to tonight
+  if (m < 375 || m >= 1290) return { s: null, w: t('rNight'), k: t('rkNight'), f: 1, moon: true, c: [[t('rcN1'), '#9cc4ff']] };
+  return { s: 82, w: t('rReady'), k: t('rkReady'), f: 1, c: [[t('rc1'), '#9cc4ff'], [t('rc2'), '#7fe0c0'], [t('rc3'), '#ffbf72']] };
 }
 let readyF = 0, readyW = '';
 function paintReady(m, anim) {
   const R0 = readyAt(m); $('#ready').classList.toggle('moon', !!R0.moon);
-  const rk = R0.s ? `${R0.k}<b class="tab">${R0.s}</b>` : R0.k; if (paintReady.k !== rk) { paintReady.k = rk; $('#rk').innerHTML = rk; }
+  if (paintReady.k !== R0.k + R0.s) { paintReady.k = R0.k + R0.s; $('#rk').textContent = R0.k; $('#rkN').textContent = R0.s || ''; } // the score itself sits beside the word, at headline size
   const fill = () => {
     const lit = $('#rwL'), fv = `${(R0.f * 100).toFixed(1)}%`;
     if (anim === 'draw') { lit.style.setProperty('--f', fv); go(lit, [{ '--f': '0%' }, { '--f': fv }], { key: 'fill', dur: 1500, delay: 350, drop: true, easing: 'cubic-bezier(.3,.7,.15,1)' }); }
@@ -1009,11 +1133,10 @@ function buildArc() {
   s += `<path id="aSessG" d="${arcPath(915, 970)}" fill="none" stroke="#ff8d55" stroke-width="12" stroke-linecap="round" opacity=".7" filter="url(#gw)"/>`;
   s += `<path id="aSess" d="${arcPath(915, 970)}" fill="none" stroke="#ff9d6a" stroke-width="9" stroke-linecap="round"/>`;
   EVENTS.filter(e => e.meal).forEach(e => { const [x, y] = pt(e.m, R + 22); s += `<circle class="aMeal" data-m="${e.m}" cx="${f1(x)}" cy="${f1(y)}" r="4" fill="none" stroke="rgba(255,255,255,.75)" stroke-width="1.5"/>`; });
-  { const [x, y] = pt(1410, R + 24); s += `<path d="M${f1(x + 3)} ${f1(y - 5)}a5.5 5.5 0 1 0 0 10a4.2 4.2 0 1 1 0-10z" fill="#dfe6f5" opacity=".85"/>`; }
+  { const [x, y] = pt(1410, R + 24); s += `<path d="M${f1(x + 3)} ${f1(y - 5)}a5.5 5.5 0 1 0 0 10a4.2 4.2 0 1 1 0-10z" fill="#f1f4fb" class="halo"/>`; }
   ['rise', 'set'].forEach(k => { const [x, y] = pt(sunTimes[k], R); s += `<circle cx="${f1(x)}" cy="${f1(y)}" r="8" fill="#ffcf8a" opacity=".22"/><circle cx="${f1(x)}" cy="${f1(y)}" r="3.4" fill="#ffd59a"/>`; });
-  s += `<text id="aNext" fill="rgba(255,255,255,.78)" font-size="11" letter-spacing="1.4" text-anchor="middle" font-weight="500" style="font-family:var(--sans)"></text>`;
-  const [lx, ly] = pt(955, R + 44); s += `<text x="${f1(lx)}" y="${f1(ly)}" fill="#ffc7a6" font-size="11.5" letter-spacing="1.6" text-anchor="middle" font-weight="500" style="font-family:var(--sans)" id="aLab">15:15 PUSH</text>`;
-  [[0, -8, '00'], [1440, 8, '24']].forEach(([m, dx, l]) => { const [x, y] = pt(m, R + 2); s += `<text x="${f1(x + dx)}" y="${f1(y + 30)}" fill="rgba(255,255,255,.55)" font-size="12" text-anchor="middle" style="font-family:var(--sans)">${l}</text>`; });
+  s += `<text id="aNext" class="halo" fill="#f4f1ec" font-size="12.5" letter-spacing="1.3" text-anchor="middle" font-weight="600" style="font-family:var(--sans)"></text>`;
+  const [lx, ly] = pt(955, R + 44); s += `<text x="${f1(lx)}" y="${f1(ly)}" fill="#ffe6d6" font-size="12.5" letter-spacing="1.5" text-anchor="middle" font-weight="600" class="halo" style="font-family:var(--sans)" id="aLab">15:15 PUSH</text>`;
   s += `<g id="dot"><circle r="22" fill="url(#dotG)"/><circle r="9.5" fill="#fff"/><circle r="4" fill="#0b0d10"/></g>`;
   s += `<g id="dotT" opacity="0"><rect id="dotTb" x="-28" y="-44" width="56" height="24" rx="12" fill="rgba(255,255,255,.16)"/><text id="arcT" y="-27" text-anchor="middle" fill="#fff" class="tab" style="font-family:var(--sans)"></text></g>`;
   $('#arc').innerHTML = s;
@@ -1021,16 +1144,26 @@ function buildArc() {
 let dotM = 0;
 function labelNext(m) { // the next thing on the day gets a small label on the arc, like Push
   const nx = EVENTS.filter(e => e.k !== 'push' && e.m > m + 10)[0]; const el = $('#aNext'); if (!el) return;
-  if (!nx || Math.abs(nx.m - 915) < 90) { el.textContent = ''; return; }
-  const [x, y] = pt(nx.m, R + 40); el.setAttribute('x', f1(x)); el.setAttribute('y', f1(y)); const tx = hm(nx.m) + ' ' + t(nx.k).toUpperCase(); if (el.textContent !== tx) el.textContent = tx; }
+  if (!nx || nx.k === 'bed' || Math.abs(nx.m - 915) < 90) { if (el.__key) { el.textContent = ''; el.__key = ''; } return; } // bed has its moon, and the clock already names it
+  const [x, y] = pt(nx.m, R + 40), key = LANG + nx.k;
+  if (el.__key !== key) { el.__key = key; el.textContent = hm(nx.m) + ' ' + t(nx.k).toUpperCase(); el.__w = 0; el.__two = false; }
+  if (!el.__w) { // a label that would not fit outside the arc on one line stacks its time over its name, so it never crosses the arc
+    el.__w = el.getComputedTextLength();
+    el.__xy = ''; if (el.__w && (x + el.__w / 2 > 418 || x - el.__w / 2 < 12)) { el.__two = true; el.innerHTML = `<tspan>${hm(nx.m)}</tspan><tspan dy="1.3em">${t(nx.k).toUpperCase()}</tspan>`; el.__w = Math.max(...[...el.children].map(c => c.getComputedTextLength())); }
+  }
+  const hw = el.__w / 2, X = f1(clamp(x, hw + 12, 418 - hw));
+  const Y = f1(el.__two ? y - 22 : y); if (el.__xy === X + Y) return; el.__xy = X + Y; // touched only when it moves: an unchanged label must not repaint the arc
+  el.setAttribute('x', X); el.setAttribute('y', Y); if (el.__two) [...el.children].forEach(c => c.setAttribute('x', X)); }
 function placeDot(m) {
   dotM = m; const [x, y] = pt(m); $('#dot').setAttribute('transform', `translate(${f1(x)} ${f1(y)})`);
   $('#dotT').setAttribute('transform', `translate(${f1(x)} ${f1(y)})`);
   // while you drag, the bubble names what is at that hour
   const near = EVENTS.map(e => ({ m: e.m, l: t(e.k) })).concat([{ m: sunTimes.rise, l: t('sunrise') }, { m: sunTimes.set, l: t('sunset') }]).find(e => Math.abs(e.m - m) < 14);
-  const txt = hm(m) + (near ? ' · ' + near.l : ''); if ($('#arcT').textContent !== txt) { $('#arcT').textContent = txt; const w = Math.max(56, txt.length * 7.4 + 22); const b = $('#dotTb'); b.setAttribute('x', -w / 2); b.setAttribute('width', w); }
+  const txt = hm(m) + (near ? ' · ' + near.l : ''); if ($('#arcT').textContent !== txt) { $('#arcT').textContent = txt; $('#dotTb').setAttribute('width', $('#dotTb').__w = Math.max(56, txt.length * 7.4 + 22)); $('#dotTb').__dx = null; }
+  const bw = $('#dotTb').__w || 56, dx = clamp(x, bw / 2 + 6, 424 - bw / 2) - x; // the bubble slides inward at the ends of the arc
+  if ($('#dotTb').__dx !== dx) { $('#dotTb').__dx = dx; $('#dotTb').setAttribute('x', f1(-bw / 2 + dx)); $('#arcT').setAttribute('x', f1(dx)); }
   $('#aEl').setAttribute('d', m > 4 ? arcPath(0, m) : ''); labelNext(m);
-  $$('.aMeal').forEach(c => { const lit = +c.dataset.m <= m; c.setAttribute('fill', lit ? '#fff' : 'none'); });
+  $$('.aMeal').forEach(c => { const lit = +c.dataset.m <= m; if (c.__lit !== lit) { c.__lit = lit; c.setAttribute('fill', lit ? '#fff' : 'none'); } });
 }
 (() => { // drag the dot: the light, the number and the words follow; let go and the day springs back to now
   const svg = $('#arc'); let id = null, hist = [], lastH = null;
@@ -1070,14 +1203,14 @@ const exN = e => LANG === 'da' ? e.da : e.n;
 const plan = () => S.trimmed ? PUSH.slice(0, 3).map(e => ({ ...e, sets: e.sets.slice(0, 3) })) : PUSH;
 function paintCards() {
   const P = plan();
-  $('#cPlan').innerHTML = `<div class="ch3"><span class="k">${t('plan')}</span><span class="serif">${S.trimmed ? t('appliedP') : t('planSub')}</span></div>` +
+  $('#cPlan').innerHTML = `<div class="ch3"><span class="k">${t('plan')}</span><span class="serif">${S.done ? t('planDone') : S.trimmed ? t('appliedP') : t('planSub')}</span></div>${shapeOf(P, true)}` +
     P.map(e => { const w = e.sets[e.sets.length - 1][0], d = w - e.last[0]; return `<button class="row" data-go="train"><div><div class="n">${exN(e)}</div><div class="d tab">${e.sets.length} × ${e.sets[0][1]}</div></div><div class="r tab">${kgFmt(w)} kg${d > 0 ? `<small>+${kgFmt(d)} ${t('vsLast')}</small>` : ''}</div></button>`; }).join('');
   const m = nowMin(), pl = proteinLeftAt(m), kl = kcalLeftAt(m);
-  $('#cFuel').innerHTML = `<div class="ch3"><span class="k">${t('fuelK')}</span><span class="serif tab" id="cfN">${pl} ${t('gLeft')}</span></div>
+  $('#cFuel').innerHTML = `<div class="ch3"><span class="k">${t('fuelK')}</span><span class="val tab" id="cfN">${pl} ${t('gLeft')}</span></div>
     <div class="lvl"><i style="background:var(--amber);transform:scaleX(${((FUEL.target - pl) / FUEL.target).toFixed(3)})"></i></div><div class="d" style="font-size:1.35rem;color:var(--ink3);margin:.8rem 0 1.4rem">${t('kcalOf', { k: intFmt(kl) })}</div>
     <div class="chips">${QUICK.slice(0, 4).map((q, i) => `<button class="chip" data-q="${i}">${LANG === 'da' ? q.da : q.n}<small>+${q.p} g</small></button>`).join('')}</div>`;
   const D = [[1, .78], [-1, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], wd = new Date().getDay();
-  $('#cWeek').innerHTML = `<div class="ch3"><span class="k">${t('weekK')}</span><span class="serif">${t('weekSub', { n: 1 + (S.done ? 1 : 0) })}</span></div><div class="week">${t('days1').map((d, i) => { const h = [.62, S.done ? .92 : 0, 0, 0, 0, 0, 0][i] || 0; return `<div class="day ${i === 1 ? 'now' : ''}">${d}<div class="b"><i style="background:${i === 0 ? 'linear-gradient(180deg,#d9c6ff,#8f7bd8)' : 'linear-gradient(180deg,#fff,#c6d3df)'}" data-h="${h}"></i></div><div class="t">${t('dayT')[i]}</div></div>`; }).join('')}</div>`;
+  $('#cWeek').innerHTML = `<div class="ch3"><span class="k">${t('weekK')}</span><span class="val tab">${t('weekSub', { n: 1 + (S.done ? 1 : 0) })}</span></div><div class="week">${t('days1').map((d, i) => { const h = [.62, S.done ? .92 : 0, 0, 0, 0, 0, 0][i] || 0; return `<div class="day ${i === 1 ? 'now' : ''}">${d}<div class="b"><i style="background:${i === 0 ? 'linear-gradient(180deg,#d9c6ff,#8f7bd8)' : 'linear-gradient(180deg,#fff,#c6d3df)'}" data-h="${h}"></i></div><div class="t">${t('dayT')[i]}</div></div>`; }).join('')}</div>`;
   $('#cMem').innerHTML = `<div class="ch3"><span class="k">${t('memK')}</span><span class="serif">Aven</span></div><div class="mems">${['mem1', 'mem2', 'mem3', 'mem4'].map(k => `<span class="mem">${t(k)}</span>`).join('')}</div>`;
   growBars(false);
 }
@@ -1085,7 +1218,7 @@ function growBars(anim) { $$('#cWeek .b i').forEach((i, k) => { const h = +i.dat
 $('#sToday').addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) show(g.dataset.go); const q = e.target.closest('[data-q]'); if (q) quickAdd(+q.dataset.q, q, $('#cfN')); });
 $('#cta').addEventListener('click', () => { bloom($('#cta')); const md = S.cta;
   if (md === 'done') return show('fuel');
-  if (md === 'night' || md === 'moved') return show('train');
+  if (md === 'night' || md === 'moved' || md === 'eveDone') return show('train');
   if (md === 'evening') { S.moved = true; paintCta.k = ''; paintCta(); buzz(10); return toast(t('movedT'), () => { S.moved = false; paintCta.k = ''; paintCta(); }); }
   startWorkout(); });
 (() => { const sc = $('#sToday'), dim = $('#dim'); let q = 0; sc.addEventListener('scroll', () => { if (q) return; q = requestAnimationFrame(() => { q = 0; dim.style.transition = 'none'; dim.style.opacity = clamp(sc.scrollTop / (46 * remPx()), 0, 1).toFixed(3); }); }, { passive: true }); })();
@@ -1125,17 +1258,25 @@ function show(tab) {
   const i = ORDER.indexOf(tab); $$('.tb').forEach(b => b.classList.toggle('on', b.dataset.tab === tab));
   if (i >= 0) $('#ind').style.transform = `translate3d(${i * 100}%,0,0)`;
   // the old screen's cards drop away, the new one's rise in one after another (each card fades on its own, never its parent)
-  const outR = [...out.querySelectorAll('.rise,.hero>:not(.hdr)')];
+  // (the cards move by CSS transitions between real styles: a cancelled script fade could leave a card blank on the compositor)
   out.querySelectorAll('.hdr').forEach(el => go(el, [{ transform: 'none' }, { transform: 'translate3d(0,-12rem,0)' }], { key: 'scr', dur: 220, easing: 'cubic-bezier(.4,0,1,1)', keep: true }));
-  outR.forEach((el, k) => go(el, [{ transform: 'none', opacity: 1 }, { transform: 'translate3d(0,2.4rem,0)', opacity: 0 }], { key: 'scr', dur: 170, easing: 'cubic-bezier(.4,0,1,1)', delay: Math.min(k, 4) * 12, keep: true }));
-  setTimeout(() => { if (S.tab !== out.dataset.s) { out.classList.remove('on'); out.querySelectorAll('.rise,.hero>*').forEach(el => el.getAnimations().forEach(a => a.cancel())); } }, 230);
-  inn.classList.add('on'); inn.scrollTop = 0;
-  const inR = [...inn.querySelectorAll('.rise,.hero>:not(.hdr)')];
-  inn.querySelectorAll('.hdr').forEach(el => go(el, [{ transform: 'translate3d(0,-12rem,0)' }, { transform: 'none' }], { key: 'scr', delay: 40, drop: true }));
-  inR.forEach((el, k) => go(el, [{ transform: 'translate3d(0,4.4rem,0)', opacity: 0 }, { transform: 'none', opacity: 1 }], { key: 'scr', delay: 60 + Math.min(k, 7) * 45, drop: true }));
-  ENTER[tab] && ENTER[tab]();
+  out.classList.add('out');
+  setTimeout(() => { if (S.tab !== out.dataset.s) { out.classList.remove('on', 'in', 'out'); out.querySelectorAll('.hdr').forEach(el => el.getAnimations().forEach(a => a.cancel())); } }, 230);
+  // the new screen starts on the next frame, so the tap's own frame only carries the old one away (two light frames, not one heavy one)
+  requestAnimationFrame(() => {
+    if (S.tab !== tab) return;
+    inn.classList.remove('warm', 'out', 'in'); inn.classList.add('on'); inn.scrollTop = 0;
+    inn.querySelectorAll('.rise,.hero>:not(.hdr)').forEach((el, k) => el.style.setProperty('--d', (50 + Math.min(k, 7) * 45) + 'ms'));
+    inn.querySelectorAll('.hdr').forEach(el => go(el, [{ transform: 'translate3d(0,-12rem,0)' }, { transform: 'none' }], { key: 'scr', delay: 30, drop: true }));
+    void inn.offsetWidth; inn.classList.add('in'); // from their resting place below, one after another
+    ENTER[tab] && requestAnimationFrame(() => S.tab === tab && ENTER[tab]()); // and its own moment one frame later still
+  });
 }
 $$('.tb').forEach(b => b.addEventListener('click', () => show(b.dataset.tab)));
+function prewarm(tab) { const sc = $(`.scr[data-s="${tab}"]`); if (!sc || sc.classList.contains('on') || S.view !== 'today') return; sc.classList.add('warm'); clearTimeout(sc.__wt); sc.__wt = setTimeout(() => sc.classList.remove('warm'), 900); }
+$$('.tb').forEach(b => b.addEventListener('pointerdown', () => prewarm(b.dataset.tab)));
+$('#askB').addEventListener('pointerdown', () => prewarm('coach'));
+$('#askX').addEventListener('pointerdown', () => prewarm(S.prevTab || 'today'));
 $('#askB').addEventListener('click', () => show('coach'));
 $('#askX').addEventListener('click', () => show(S.prevTab || 'today'));
 const BUILD = {}, ENTER = {};
@@ -1145,7 +1286,8 @@ BUILD.today = () => {};
 BUILD.train = () => {
   const P = plan(), wd = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
   $('#sTrain').innerHTML = `<div class="title rise"><div class="k">${t('trK')}</div><h1>${t('trH')}</h1><p>${S.trimmed ? t('appliedP') : t('trP')}</p></div>
-    <button class="bigb rise" id="trStart"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>${S.done ? t('dayDone') : S.live ? t('resume') : t('start')}</button><div class="sp"></div>
+    ${shapeOf(P)}
+    <button class="bigb rise" id="trStart"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg>${S.done ? t('dayDone') : S.live ? t('resume') : t('start')}</button><div class="sp" style="height:2.6rem"></div>
     ${P.map((e, i) => `<button class="exc glass rise" data-x="${i}"><div class="top"><span class="nm">${exN(e)}</span><span class="w tab">${kgFmt(e.sets[e.sets.length - 1][0])}<small>kg</small></span></div>
       <div class="meta tab"><span>${e.sets.length} ${t('sets')} × ${e.sets[0][1]}</span><span>${t('last')} ${kgFmt(e.last[0])} × ${e.last[1]}</span></div>
       <div class="dots">${e.sets.map(() => '<i></i>').join('')}</div>
@@ -1155,6 +1297,16 @@ BUILD.train = () => {
   $('#trStart').addEventListener('click', () => S.done ? null : startWorkout());
   $$('#sTrain .exc').forEach(c => c.addEventListener('click', () => toggleExc(c)));
 };
+// the shape of today's session: one bar per set, as tall as the work in it, grouped by lift, laid on the afternoon's clock
+function shapeOf(P, mini) {
+  const vol = P.map(e => e.sets.map(([w, r]) => w * r)), mx = Math.max(...vol.flat()), n = P.reduce((a, e) => a + e.sets.length, 0);
+  const end = 915 + (S.trimmed ? 30 : 55), done = k => S.done || (W && W.flags[k]);
+  let k = 0;
+  if (mini) return `<div class="shape mini" aria-hidden="true"><div class="bars">${P.map((e, i) => `<div class="grp2" style="--n:${e.sets.length}">${vol[i].map(v => `<i class="${done(k++) ? 'dn' : ''}" style="height:${(22 + 78 * v / mx).toFixed(1)}%"></i>`).join('')}</div>`).join('')}</div></div>`; // the same shape, small, on Today's Plan card
+  return `<div class="shape rise" aria-label="${n} ${t('sets')}"><div class="bars">${P.map((e, i) => `<div class="grp2" style="--n:${e.sets.length}">${vol[i].map(v => `<i class="${done(k++) ? 'dn' : ''}" style="height:${(22 + 78 * v / mx).toFixed(1)}%"></i>`).join('')}<span>${shortName(e)}</span></div>`).join('')}</div>
+    <div class="clk tab"><span>15:15</span><i></i><span>${hm(end)}</span><b>${t('sunset')} ${hm(sunTimes.set)}</b></div></div>`;
+}
+ENTER.train = () => { $$('#sTrain .shape .bars i').forEach((b, i) => b.animate([{ transform: 'scaleY(0)' }, { transform: 'none' }], { duration: RM ? 1 : SP.dur + 200, delay: 140 + i * 28, easing: SP.easing, fill: 'backwards' })); };
 function spark(h) {
   const mn = Math.min(...h) - 1, mx = Math.max(...h) + 1, pts = h.map((v, i) => [i / (h.length - 1) * 300, 56 - (v - mn) / (mx - mn) * 50]);
   let d = `M${pts[0][0]} ${pts[0][1]}`; for (let i = 1; i < pts.length; i++) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i]; const cx = (x0 + x1) / 2; d += ` C${cx} ${y0} ${cx} ${y1} ${x1} ${y1}`; }
@@ -1169,8 +1321,13 @@ function toggleExc(card) { // the card opens in place: its glass grows by its ow
   card.classList.toggle('open');
   const h1 = card.offsetHeight;
   list.forEach(el => { const d = before.get(el) - el.getBoundingClientRect().top; if (d && el !== card) go(el, [{ transform: `translate3d(0,${d}px,0)` }, { transform: 'none' }], { key: 'flip' }); });
-  if (opening) { go(card, [{ clipPath: `inset(0 0 ${h1 - h0}px 0 round 2.8rem)` }, { clipPath: 'inset(0 0 0px 0 round 2.8rem)' }], { key: 'clip', drop: true }); go(card.querySelector('.more'), [{ opacity: 0, transform: 'translate3d(0,-1rem,0)' }, { opacity: 1, transform: 'none' }], { key: 'in', delay: 60, drop: true }); }
+  if (opening) { go(card, [{ clipPath: `inset(0 0 ${h1 - h0}px 0 round 2.8rem)` }, { clipPath: 'inset(0 0 0px 0 round 2.8rem)' }], { key: 'clip', drop: true }); go(card.querySelector('.more'), [{ opacity: 0, transform: 'translate3d(0,-1rem,0)' }, { opacity: 1, transform: 'none' }], { key: 'in', delay: 60, drop: true });
+    // the lift's last weeks draw themselves from left to right, and today's point lands last
+    const sv = card.querySelector('.spark'), dot = sv.querySelector('circle');
+    sv.animate([{ clipPath: 'inset(-20% 100% -20% 0)' }, { clipPath: 'inset(-20% 0% -20% 0)' }], { duration: RM ? 1 : 950, delay: 200, easing: 'cubic-bezier(.45,.05,.2,1)', fill: 'backwards' });
+    dot.animate([{ transform: 'scale(0)' }, { transform: 'scale(1.8)', offset: .55 }, { transform: 'none' }], { duration: RM ? 1 : 520, delay: 1080, easing: 'cubic-bezier(.2,.9,.3,1)', fill: 'backwards' }); }
   else go(card, [{ clipPath: `inset(0 0 ${h1 - h0}px 0 round 2.8rem)` }, { clipPath: 'inset(0 0 0px 0 round 2.8rem)' }], { key: 'clip', drop: true });
+  if (opening) { const r = card.getBoundingClientRect(), lim = $('#dock').getBoundingClientRect().top - 2 * remPx(); if (r.bottom > lim) $('#sTrain').scrollBy({ top: Math.min(r.bottom - lim, r.top - 10 * remPx()), behavior: 'smooth' }); } // the whole card clears the dock
 }
 
 /* ---------- Fuel: a glass plate, the day's meals, and a keypad where digits land ---------- */
@@ -1178,26 +1335,33 @@ let fR = null;
 const PLC = 2 * Math.PI * 110;
 BUILD.fuel = () => {
   $('#sFuel').innerHTML = `<div class="title rise"><div class="k">${t('fuK')}</div><h1>${t('fuH')}</h1></div>
-    <div class="jar glass rise" id="plate"><div class="lv" id="jarLv"></div><div class="ticks">${'<i></i>'.repeat(9)}</div>
+    <div class="jar glass rise" id="plate"><div class="lv" id="jarLv"></div>
+      <div class="marks">${MEALS.map((x, i) => `<div class="mk" data-k="${x.k}" style="bottom:${jarAt(MEALS.slice(0, i + 1).reduce((a, y) => a + y.p, 0) / FUEL.target).toFixed(2)}%"><span>${t(x.k)}</span><i></i></div>`).join('')}</div>
       <div class="in"><div id="fNum" class="tab"></div><div class="l1">${t('gLeft')}</div><div class="l2 tab" id="fK"></div></div></div>
-    <div class="mac rise"><div class="glass"><span>${t('protein')}</span><b class="tab" id="mP"></b><div class="lvl"><i id="mPb" style="background:var(--amber)"></i></div></div><div class="glass"><span>${t('carbs')}</span><b class="tab" id="mC"></b><div class="lvl"><i id="mCb" style="background:#ffe1a8"></i></div></div><div class="glass"><span>${t('fat')}</span><b class="tab" id="mF"></b><div class="lvl"><i id="mFb" style="background:#ffd0c0"></i></div></div></div>
+    <div class="mac rise"><div class="glass"><span>kcal</span><b class="tab" id="mP"></b><div class="lvl"><i id="mPb" style="background:var(--amber)"></i></div></div><div class="glass"><span>${t('carbs')}</span><b class="tab" id="mC"></b><div class="lvl"><i id="mCb" style="background:#ffe1a8"></i></div></div><div class="glass"><span>${t('fat')}</span><b class="tab" id="mF"></b><div class="lvl"><i id="mFb" style="background:#ffd0c0"></i></div></div></div>
     <button class="bigb rise" id="logFood">${t('logFood')}</button><div class="sp"></div>
     <div class="card glass rise"><div class="k" style="margin-bottom:.6rem">${t('meals')}</div><div id="mealList"></div></div><div class="sp"></div>
     <div class="card glass rise"><div class="k" style="margin-bottom:1.2rem">${t('quick')}</div><div class="chips">${QUICK.map((q, i) => `<button class="chip" data-q="${i}">${LANG === 'da' ? q.da : q.n}<small>+${q.p} g</small></button>`).join('')}</div></div>`;
   fR = new Roller($('#fNum'));
-  $('#logFood').addEventListener('click', () => openSheet('logS', $('#logFood'), buildLog));
-  $('#sFuel').addEventListener('click', e => { const q = e.target.closest('[data-q]'); if (q) quickAdd(+q.dataset.q, q, $('#fNum')); const l = e.target.closest('[data-log]'); if (l) logMeal(l.dataset.log, l); });
   paintFuelNums(true);
 };
-ENTER.fuel = () => { const l = $('#jarLv'); if (!l) return; l.animate([{ transform: 'scaleY(0)' }, { transform: l.style.transform || 'scaleY(0)' }], { duration: 1300, delay: 160, easing: 'cubic-bezier(.3,.75,.2,1)', fill: 'backwards' }); };
+// delegated once, outside the builder: a rebuild (a language change) must not add a second handler
+$('#sFuel').addEventListener('click', e => { if (e.target.closest('#logFood')) return openSheet('logS', $('#logFood'), buildLog); const q = e.target.closest('[data-q]'); if (q) quickAdd(+q.dataset.q, q, $('#fNum')); const l = e.target.closest('[data-log]'); if (l) logMeal(l.dataset.log, l); });
+// the jar's level and its meal marks share one scale, with room left at the bottom (an empty glass still shows its line) and the top
+const jarAt = f => 3 + clamp(f, 0, 1) * 89;
+ENTER.fuel = () => { const l = $('#jarLv'); if (!l) return; const e = `0 ${100 - jarAt(0)}%`, to = l.__to || e; l.animate([{ translate: '0 100%' }, { translate: to }], { duration: 1300, delay: 160, easing: 'cubic-bezier(.3,.75,.2,1)', fill: 'backwards' }); if (to !== e) slosh(l, 1300); };
+// the surface tips one way, then back, smaller each time, like a glass set down
+function slosh(l, delay = 0) { l.animate([{ rotate: '0deg' }, { rotate: '2.4deg', offset: .18 }, { rotate: '-1.5deg', offset: .42 }, { rotate: '.8deg', offset: .64 }, { rotate: '-.3deg', offset: .84 }, { rotate: '0deg' }], { duration: RM ? 1 : 1500, delay, easing: 'cubic-bezier(.3,.6,.4,1)' }); }
 function paintFuelNums(instant) {
   if (!fR) return; const m = nowMin(), pl = proteinLeftAt(m), kl = kcalLeftAt(m), ea = eatenAt(m);
   fR.set(String(pl), instant ? { instant: true } : {});
-  $('#fK').textContent = t('kcalOf', { k: intFmt(kl) });
-  const lv = $('#jarLv'), to = `scaleY(${((FUEL.target - pl) / FUEL.target).toFixed(3)})`; if (lv.style.transform !== to) { const from = lv.style.transform || 'scaleY(0)'; lv.style.transform = to; if (!instant) lv.animate([{ transform: from }, { transform: to }], { duration: SP.dur + 300, easing: SP.easing }); }
+  const nm = MEALS.find(x => x.m > m && !FUEL.manual.has(x.k)); // nothing eaten yet: say what comes first, not "2,300 left of 2,300"
+  $('#fK').textContent = nm ? t(!ea.length && !FUEL.log.length ? 'firstUp' : 'nextUp', { n: t(nm.k).toLowerCase(), m: hm(nm.m), p: nm.p }) : t('allIn');
+  $$('#plate .mk').forEach(el => el.classList.toggle('on', ea.some(x => x.k === el.dataset.k)));
+  const lv = $('#jarLv'), to = `0 ${(100 - jarAt(1 - pl / FUEL.target)).toFixed(2)}%`; if (lv.__to !== to) { const from = lv.__to || '0 100%'; lv.style.translate = lv.__to = to; if (!instant) { lv.animate([{ translate: from }, { translate: to }], { duration: SP.dur + 300, easing: SP.easing }); slosh(lv, 80); } }
   const p = FUEL.target - pl, cb = ea.reduce((a, x) => a + x.c, 0) + FUEL.extraC, ft = ea.reduce((a, x) => a + x.f, 0) + FUEL.extraF;
-  $('#mP').innerHTML = `${p}<small>/ ${FUEL.target} g</small>`; $('#mC').innerHTML = `${cb}<small>/ ${FUEL.carbs} g</small>`; $('#mF').innerHTML = `${ft}<small>/ ${FUEL.fat} g</small>`;
-  $('#mPb').style.transform = `scaleX(${clamp(p / FUEL.target, 0, 1)})`; $('#mCb').style.transform = `scaleX(${clamp(cb / FUEL.carbs, 0, 1)})`; $('#mFb').style.transform = `scaleX(${clamp(ft / FUEL.fat, 0, 1)})`;
+  const ke = FUEL.kcal - kl; $('#mP').innerHTML = `${intFmt(ke)}<small>/ ${intFmt(FUEL.kcal)}</small>`; $('#mC').innerHTML = `${cb}<small>/ ${FUEL.carbs} g</small>`; $('#mF').innerHTML = `${ft}<small>/ ${FUEL.fat} g</small>`;
+  $('#mPb').style.transform = `scaleX(${clamp(ke / FUEL.kcal, 0, 1)})`; $('#mCb').style.transform = `scaleX(${clamp(cb / FUEL.carbs, 0, 1)})`; $('#mFb').style.transform = `scaleX(${clamp(ft / FUEL.fat, 0, 1)})`;
   $('#mealList').innerHTML = MEALS.map(x => { const done = x.m <= m || FUEL.manual.has(x.k); return `<div class="meal"><span class="tm tab">${hm(x.m)}</span><div><div class="n">${t(x.k)}</div><div class="d">${t(x.d)} · ${x.p} g</div></div><button class="lg ${done ? 'done' : ''}" data-log="${x.k}" ${done ? 'disabled' : ''}>${done ? `<svg viewBox="0 0 20 20"><path d="M4.5 10.5l3.5 3.5 7.5-8"/></svg>${t('logged')}` : t('logBtn')}</button></div>`; }).join('') +
     FUEL.log.map(x => `<div class="meal"><span class="tm tab">${hm(x.m)}</span><div><div class="n">${x.n}</div><div class="d">${x.p} g · ${x.k} kcal</div></div><span class="lg done"><svg viewBox="0 0 20 20"><path d="M4.5 10.5l3.5 3.5 7.5-8"/></svg></span></div>`).join('');
 }
@@ -1256,15 +1420,24 @@ BUILD.health = () => {
 };
 let WT = [];
 function healthTint(x) { [0, 1, 2].forEach(i => { $('#tH' + i).style.opacity = clamp(1 - Math.abs(x - i), 0, 1).toFixed(3); }); }
-ENTER.health = () => { const pg = $('#pager'); healthTint(pg ? pg.scrollLeft / pg.clientWidth : 0); $$('#sHealth .hl').forEach((l, i) => { const to = `${(+l.dataset.f * 100).toFixed(1)}%`; l.style.setProperty('--f', to); l.animate([{ '--f': '0%' }, { '--f': to }], { duration: 1400, delay: 200 + i * 60, easing: 'cubic-bezier(.3,.7,.15,1)', fill: 'backwards' }); }); };
+ENTER.health = () => { const pg = $('#pager'); healthTint(pg ? pg.scrollLeft / pg.clientWidth : 0);
+  const rb = $('#sHealth .rib'); if (rb) rb.animate([{ clipPath: 'inset(0 100% 0 0 round 1rem)' }, { clipPath: 'inset(0 0% 0 0 round 1rem)' }], { duration: RM ? 1 : 1300, delay: 320, easing: 'cubic-bezier(.45,.05,.2,1)', fill: 'backwards' }); /* the night passes left to right */
+ $$('#sHealth .hl').forEach((l, i) => { const to = `${(+l.dataset.f * 100).toFixed(1)}%`; l.style.setProperty('--f', to); l.animate([{ '--f': '0%' }, { '--f': to }], { duration: 1400, delay: 200 + i * 60, easing: 'cubic-bezier(.3,.7,.15,1)', fill: 'backwards' }); }); };
+// last night as one ribbon, coloured by how deep you slept from minute to minute (not bars by stage)
+const NIGHT = [['l', 20], ['d', 30], ['l', 25], ['r', 15], ['a', 5], ['l', 30], ['d', 25], ['l', 20], ['r', 25], ['l', 35], ['d', 17], ['l', 25], ['r', 30], ['a', 10], ['l', 35], ['r', 44], ['a', 15], ['l', 56]];
+function ribbon() {
+  const C = { d: '#4f6fd8', r: '#9cc4ff', l: 'rgba(156,196,255,.34)', a: 'rgba(255,246,230,.8)' }, tot = NIGHT.reduce((a, x) => a + x[1], 0); let at = 0;
+  // one colour stop at the middle of each stretch, so the night flows from one depth to the next instead of striping
+  return 'linear-gradient(90deg,' + NIGHT.map(([k, m]) => { const c = (at + m / 2) / tot * 100; at += m; return `${C[k]} ${c.toFixed(1)}%`; }).join(',') + ')';
+}
 function hDetail(i, instant) {
   const box = $('#hDet');
-  const html = i === 0 ? `<div class="ch3"><span class="k">${t('sleepD')}</span><span class="serif tab">23:58 – 07:40</span></div>
-      <div class="stg"><i style="flex:1.2;background:#6f8fe0"></i><i style="flex:1.9;background:#9cc4ff"></i><i style="flex:4.1;background:rgba(156,196,255,.45)"></i><i style="flex:.5;background:rgba(255,255,255,.25)"></i></div>
-      <div class="legend"><span><b style="background:#6f8fe0"></b>${t('deep')} 1h 12m</span><span><b style="background:#9cc4ff"></b>${t('rem')} 1h 54m</span><span><b style="background:rgba(156,196,255,.45)"></b>${t('light')} 4h 06m</span><span><b style="background:rgba(255,255,255,.25)"></b>${t('awake')} 30m</span></div>
-      <div class="k" style="margin-top:2.2rem">${t('nights')}</div><div class="bars7">${[7.7, 6.6, 7.1, 6.2, 7.0, 6.4, 7.7].map((v, k) => `<div><i style="height:${((v - 5) / 4 * 7).toFixed(2)}rem;background:${v >= 7 ? '#9cc4ff' : 'rgba(156,196,255,.35)'}"></i>${t('days1')[k]}</div>`).join('')}</div><div class="src">${t('src')}</div>`
-    : i === 1 ? `<div class="ch3"><span class="k">${t('wTrend')}</span><span class="serif tab" id="wVal">${num(78.4)} kg</span></div><div class="chart" id="wChart"><svg viewBox="0 0 380 130" preserveAspectRatio="none" id="wSvg"></svg><div id="hair"></div><div id="bub" class="tab"></div></div><div class="src">${t('wNote')}</div>`
-    : `<div class="ch3"><span class="k">${t('rhr')}</span><span class="serif tab">52 bpm</span></div><div class="row"><div class="n">${t('hrv')}</div><div class="r tab">64 ms</div></div><div class="row"><div class="n">${t('rhr')}</div><div class="r tab">52 · 55 · 54 · 53 · 52</div></div><div class="src">${t('recNote')} ${t('src')}</div>`;
+  const html = i === 0 ? `<div class="ch3"><span class="k">${t('sleepD')}</span><span class="val tab">23:58 – 07:40</span></div>
+      <div class="rib" style="background:${ribbon()}"></div><div class="ribT tab"><span>☾ 23:58</span><span>02:00</span><span>04:00</span><span>06:00</span><span>07:40</span></div>
+      <div class="legend"><span><b style="background:#4f6fd8"></b>${t('deep')} 1h 12m</span><span><b style="background:#9cc4ff"></b>${t('rem')} 1h 54m</span><span><b style="background:rgba(156,196,255,.34)"></b>${t('light')} 4h 06m</span><span><b style="background:rgba(255,246,230,.8)"></b>${t('awake')} 30m</span></div>
+      <div class="k" style="margin-top:2.2rem">${t('nights')}</div><div class="moons">${[7.7, 6.6, 7.1, 6.2, 7.0, 6.4, 7.7].map((v, k) => { const d = (1 + (v - 5.5) / 2.5 * 2.4).toFixed(2); return `<div title="${v} h"><i class="${v >= 7 ? 'full' : ''}" style="width:${d}rem;height:${d}rem"></i><span>${t('days1')[k]}</span></div>`; }).join('')}</div><div class="mkey"><span><i class="full"></i>${t('moonFull')}</span><span><i></i>${t('moonLess')}</span></div><div class="src">${t('src')}</div>`
+    : i === 1 ? `<div class="ch3"><span class="k">${t('wTrend')}</span><span class="val tab" id="wVal">${num(78.4)} kg</span></div><div class="chart" id="wChart"><svg viewBox="0 0 380 130" preserveAspectRatio="none" id="wSvg"></svg><div id="hair"></div><div id="bub" class="tab"></div></div><div class="src">${t('wNote')}</div>`
+    : `<div class="ch3"><span class="k">${t('rhr')}</span><span class="val tab">52 bpm</span></div><div class="row"><div class="n">${t('hrv')}</div><div class="r tab">64 ms</div></div><div class="row"><div class="n">${t('rhr')}</div><div class="r tab">52 · 55 · 54 · 53 · 52</div></div><div class="src">${t('recNote')} ${t('src')}</div>`;
   if (instant) { box.innerHTML = html; if (i === 1) wChart(); return; }
   go(box.firstElementChild ? box : box, [{ opacity: 1 }, { opacity: 1 }], { key: 'noop', dur: 1 });
   const kids = [...box.children]; kids.forEach(k => k.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, fill: 'forwards' }));
@@ -1294,8 +1467,8 @@ BUILD.coach = () => {
     <div class="chips rise" style="margin-top:2rem;flex-direction:column;align-items:flex-start"><button class="chip" data-a="1">${t('q1')}</button><button class="chip" data-a="2">${t('q2')}</button><button class="chip" data-a="3">${t('q3')}</button></div>
     <div class="thread" id="thread"></div>`;
   $('#askI').placeholder = t('coP'); $('#askGo').textContent = t('send');
-  $('#sCoach').addEventListener('click', e => { const q = e.target.closest('[data-a]'); if (q) ask(+q.dataset.a, q.textContent); const ap = e.target.closest('[data-apply]'); if (ap) applyProp(+ap.dataset.apply, ap); const ks = e.target.closest('[data-keep]'); if (ks) { ks.closest('.prop').remove(); } });
 };
+$('#sCoach').addEventListener('click', e => { const q = e.target.closest('[data-a]'); if (q) ask(+q.dataset.a, q.textContent); const ap = e.target.closest('[data-apply]'); if (ap) applyProp(+ap.dataset.apply, ap); const ks = e.target.closest('[data-keep]'); if (ks) { ks.closest('.prop').remove(); } });
 ENTER.coach = () => { buzz(8); setTimeout(() => $('#askI').focus({ preventScroll: true }), SP.dur + 200); };
 $('#askBar').addEventListener('submit', e => { e.preventDefault(); const v = $('#askI').value.trim(); if (!v) return; $('#askI').value = ''; $('#askI').blur(); ask(0, v); });
 function ask(n, q) {
@@ -1333,30 +1506,51 @@ let sheetOpen = null;
 function rectInsetIn(el, box, rad) { const r = el.getBoundingClientRect(), b = box.getBoundingClientRect(), u = remPx(); return `inset(${((r.top - b.top) / u).toFixed(2)}rem ${((b.right - r.right) / u).toFixed(2)}rem ${((b.bottom - r.bottom) / u).toFixed(2)}rem ${((r.left - b.left) / u).toFixed(2)}rem round ${rad}rem)`; }
 function openSheet(id, from, build) {
   if (sheetOpen) closeSheet(true);
-  const sh = $('#' + id); build && build(); sh.classList.add('on'); $('#scrim').classList.add('on'); sheetOpen = { sh, from }; buzz(6);
+  const sh = $('#' + id); build && build(); sh.classList.add('on'); $('#scrim').classList.add('on'); phone.classList.add('sheetOn'); sheetOpen = { sh, from }; buzz(6);
   go(sh, [{ clipPath: rectInsetIn(from, sh, 2.4) }, { clipPath: 'inset(0rem 0rem 0rem 0rem round 3.6rem)' }], { pseudo: '::before', key: 'clip' });
   go(sh.firstElementChild, [{ opacity: 0, transform: 'translate3d(0,1.4rem,0)' }, { opacity: 1, transform: 'none' }], { key: 'in', delay: 60 });
 }
 function closeSheet(instant) {
-  if (!sheetOpen) return; const { sh, from } = sheetOpen; sheetOpen = null; sh.classList.remove('on'); $('#scrim').classList.remove('on');
+  if (!sheetOpen) return; const { sh, from } = sheetOpen; sheetOpen = null; sh.classList.remove('on'); $('#scrim').classList.remove('on'); phone.classList.remove('sheetOn');
   go(sh, [{ clipPath: 'inset(0rem 0rem 0rem 0rem round 3.6rem)' }, { clipPath: rectInsetIn(from, sh, 2.4) }], { pseudo: '::before', key: 'clip', dur: instant ? 1 : undefined }).finished.then(x => x.cancel()).catch(() => {});
   go(sh.firstElementChild, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translate3d(0,1.4rem,0)' }], { key: 'in', dur: instant ? 1 : 180 });
 }
 $('#scrim').addEventListener('click', () => { closeSheet(); closeSess(); });
+// settings read like the phone's own: grouped rows, values on the right, switches that move on the shared spring
+const IC = {
+  lang: '<circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.3 3.6 5.2 3.6 8.5s-1.2 6.2-3.6 8.5c-2.4-2.3-3.6-5.2-3.6-8.5s1.2-6.2 3.6-8.5z"/>',
+  units: '<path d="M5 19h14M7.5 19l2-11h5l2 11M12 8V5"/><circle cx="12" cy="4" r="1"/>',
+  place: '<path d="M12 21s-6.5-6-6.5-11a6.5 6.5 0 0113 0c0 5-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/>',
+  rest: '<circle cx="12" cy="13" r="7.5"/><path d="M12 9.5V13l2.3 1.6M9.5 3h5"/>',
+  hap: '<path d="M8 6v12M12 3v18M16 6v12M4 10v4M20 10v4"/>',
+  replay: '<path d="M4 12a8 8 0 108-8 8.2 8.2 0 00-5.7 2.3L4 8.5"/><path d="M4 3.5v5h5"/>'
+};
+const SKY = { live: '', clear: '<circle cx="12" cy="12" r="4"/><path d="M12 3v2M12 19v2M3 12h2M19 12h2M5.6 5.6L7 7M17 17l1.4 1.4M5.6 18.4L7 17M17 7l1.4-1.4"/>', cloudy: '<path d="M7 18a4.5 4.5 0 01.6-9 5.5 5.5 0 0110.6 1.8A3.8 3.8 0 0118 18z"/>', fog: '<path d="M4 9h16M3 13h18M5 17h14"/>', rain: '<path d="M7 15.5a4 4 0 01.5-8 5 5 0 019.6 1.5A3.5 3.5 0 0117 16H7.5"/><path d="M9 19l-1 2M13 19l-1 2M17 19l-1 2"/>' };
+const ico = k => `<span class="ic"><svg viewBox="0 0 24 24">${IC[k]}</svg></span>`;
 function buildSettings() {
   $('#setIn').innerHTML = `<h4>${t('setH')}<button class="circ close" data-close aria-label="Close" style="background:rgba(255,255,255,.1);width:4.6rem;height:4.6rem"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></h4>
-    <div class="sr"><h5>${t('lang')}</h5><div class="seg"><button data-l="en" class="${LANG === 'en' ? 'on' : ''}">English</button><button data-l="da" class="${LANG === 'da' ? 'on' : ''}">Dansk</button></div></div>
-    <div class="sr"><h5>${t('win')}</h5><div class="seg">${['live', 'clear', 'cloudy', 'fog', 'rain'].map(k => `<button data-w="${k}" class="${WXMODE === k ? 'on' : ''}">${k === 'live' ? t('live') : t(k)}</button>`).join('')}</div></div>
-    <div class="sr"><h5>${t('shortR')}</h5><div class="seg"><button data-r="0" class="${SHORT ? '' : 'on'}">${t('off')}</button><button data-r="1" class="${SHORT ? 'on' : ''}">${t('on')}</button></div></div>
-    <div class="sr"><button class="gbtn" id="replay">${t('replay')}</button></div>
-    <div class="note">${t('credit')}</div>`;
+    <div class="grp"><div class="srow">${ico('lang')}<div class="tx">${t('lang')}</div><div class="seg sm"><button data-l="en" class="${LANG === 'en' ? 'on' : ''}">English</button><button data-l="da" class="${LANG === 'da' ? 'on' : ''}">Dansk</button></div></div>
+      <div class="srow">${ico('units')}<div class="tx">${t('units')}</div><span class="vl">${t('metric')}</span></div></div>
+    <div class="gk">${t('windowG')}</div>
+    <div class="grp"><div class="srow">${ico('place')}<div class="tx">${t('cph')}<small>${t('placeS')}</small></div></div>
+      <div class="srow"><div class="tx">${t('win')}</div><div class="skies">${Object.keys(SKY).map(k => `<button data-w="${k}" class="${WXMODE === k ? 'on' : ''}" aria-label="${k === 'live' ? t('live') : t(k)}">${k === 'live' ? `<span class="lvt">${t('live')}</span>` : `<svg viewBox="0 0 24 24">${SKY[k]}</svg>`}</button>`).join('')}</div></div></div>
+    <div class="gk">${t('workoutG')}</div>
+    <div class="grp"><button class="srow" data-sw="short">${ico('rest')}<div class="tx">${t('shortR')}<small>${t('shortS')}</small></div><span class="sw ${SHORT ? 'on' : ''}"></span></button>
+      ${HAPTIC ? `<button class="srow" data-sw="hap">${ico('hap')}<div class="tx">${t('hap')}</div><span class="sw ${HAPON ? 'on' : ''}"></span></button>` : ''}</div>
+    <div class="grp" style="margin-top:2.2rem"><button class="srow" id="replay">${ico('replay')}<div class="tx">${t('replay')}</div><svg class="chev" viewBox="0 0 8 13"><path d="M1.5 1.5l5 5-5 5"/></svg></button></div>
+    <div class="note">${t('credit')}</div><div class="note" style="margin-top:.8rem">Aven 2 · ${t('preview')}</div>`;
 }
 $('#setS').addEventListener('click', e => {
   if (e.target.closest('[data-close]')) return closeSheet();
-  const l = e.target.closest('[data-l]'), w = e.target.closest('[data-w]'), r = e.target.closest('[data-r]');
-  if (l) { LANG = l.dataset.l; store.set('lang', LANG); relabel(); buildSettings(); }
-  if (w) { WXMODE = w.dataset.w; $$('#setS [data-w]').forEach(x => x.classList.toggle('on', x === w)); lastAcc = ''; applyLight(nowMin()); paintWx(nowMin()); paintHero(nowMin()); }
-  if (r) { SHORT = r.dataset.r === '1'; store.set('short', SHORT ? '1' : '0'); $$('#setS [data-r]').forEach(x => x.classList.toggle('on', x === r)); }
+  const l = e.target.closest('[data-l]'), w = e.target.closest('[data-w]'), sw = e.target.closest('[data-sw]');
+  if (l) { if (l.dataset.l === LANG) return; buzz(4); LANG = l.dataset.l; store.set('lang', LANG); relabel(); buildSettings(); }
+  if (w) { buzz(4); WXMODE = w.dataset.w; $$('#setS [data-w]').forEach(x => x.classList.toggle('on', x === w)); lastAcc = ''; applyLight(nowMin()); paintWx(nowMin()); paintHero(nowMin()); }
+  if (sw) {
+    const k = sw.dataset.sw, on = !sw.querySelector('.sw').classList.contains('on'); sw.querySelector('.sw').classList.toggle('on', on);
+    if (k === 'short') { SHORT = on; store.set('short', on ? '1' : '0'); }
+    if (k === 'hap') { HAPON = on; store.set('hap', on ? '1' : '0'); }
+    buzz(6);
+  }
   if (e.target.closest('#replay')) { closeSheet(); setTimeout(morning, SP.dur); }
 });
 function relabel() {
@@ -1421,7 +1615,7 @@ function startWorkout() {
   S.live = true; buzz(12); S.prevTab = S.tab;
   // the active screen's glass slides away; the photo pushes in and the workout rises inside it
   const scr = $(`.scr[data-s="${S.tab}"]`);
-  scr.querySelectorAll('.rise,.hero>:not(.hdr)').forEach((el, k) => go(el, [{ transform: 'none', opacity: 1 }, { transform: 'translate3d(0,3rem,0)', opacity: 0 }], { key: 'scr', dur: 220, easing: 'cubic-bezier(.4,0,1,1)', delay: Math.min(k, 5) * 15, keep: true }));
+  scr.classList.add('out');
   scr.querySelectorAll('.hdr').forEach(el => go(el, [{ transform: 'none' }, { transform: 'translate3d(0,-12rem,0)' }], { key: 'scr', keep: true })); // glass only ever moves
   setView(W.rest ? 'rest' : 'train');
   pushTo(1, 760); fades(true); if (W.rest) restFades(true);
@@ -1430,17 +1624,18 @@ function startWorkout() {
   $('#live').classList.remove('on');
 }
 let pushAnim = 0;
+// the shared spring as a function of progress, for the few motions JS drives itself (the photo push, the morning sweep),
+// stretched to their own length so they glide and settle once, like everything else
+const SPP = SP.easing.slice(7, -1).split(',').map(s => s.trim().split(' ')).map(([y, p]) => [parseFloat(p) / 100, +y]);
+const springAt = k => { let i = 1; while (i < SPP.length - 1 && SPP[i][0] < k) i++; const [x0, y0] = SPP[i - 1], [x1, y1] = SPP[i]; return y0 + (y1 - y0) * ((k - x0) / Math.max(1e-6, x1 - x0)); };
 function pushTo(v, ms) { // the photo pushes in: near ridges grow faster than far ones
   const from = scene.push, t0 = performance.now(), id = ++pushAnim;
-  // sampled from the shared spring, stretched to the push's length so the photo glides and settles once
-  const pts = SP.easing.slice(7, -1).split(',').map(s => s.trim().split(' ')).map(([y, p]) => [parseFloat(p) / 100, +y]);
-  const ease = k => { let i = 1; while (i < pts.length - 1 && pts[i][0] < k) i++; const [x0, y0] = pts[i - 1], [x1, y1] = pts[i]; return y0 + (y1 - y0) * ((k - x0) / Math.max(1e-6, x1 - x0)); };
-  const st = () => { if (id !== pushAnim) return; const k = clamp((performance.now() - t0) / ms, 0, 1); scene.push = lerp(from, v, ease(k)); render(); if (k < 1) requestAnimationFrame(st); };
+  const st = () => { if (id !== pushAnim) return; const k = clamp((performance.now() - t0) / ms, 0, 1); scene.push = lerp(from, v, springAt(k)); render(); if (k < 1) requestAnimationFrame(st); };
   requestAnimationFrame(st);
 }
 function backIn() { // the screen you came from comes back
   const scr = $(`.scr[data-s="${S.tab}"]`);
-  scr.querySelectorAll('.rise,.hero>:not(.hdr)').forEach((el, k) => go(el, [{ transform: 'translate3d(0,3rem,0)', opacity: 0 }, { transform: 'none', opacity: 1 }], { key: 'scr', delay: 120 + Math.min(k, 6) * 40, drop: true }));
+  scr.classList.remove('out');
   scr.querySelectorAll('.hdr').forEach(el => go(el, [{ transform: 'translate3d(0,-12rem,0)' }, { transform: 'none' }], { key: 'scr', delay: 80, drop: true }));
 }
 function minimise() {
@@ -1453,6 +1648,7 @@ $('#live').addEventListener('click', startWorkout);
 function stepper(which) { const el = which === 'w' ? $('#stpW') : $('#stpR'), other = which === 'w' ? $('#stpR') : $('#stpW'); other.classList.remove('on'); el.classList.toggle('on'); buzz(5); }
 $('#wW').addEventListener('click', () => S.view === 'train' && stepper('w'));
 $('#wR').addEventListener('click', () => S.view === 'train' && stepper('r'));
+$$('#setB .adj').forEach(b => b.addEventListener('click', () => S.view === 'train' && stepper(b.dataset.adj)));
 $$('.stp button').forEach(b => b.addEventListener('click', () => {
   const s = cur(); buzz(4);
   if (b.dataset.d) { s[0] = Math.max(0, +(s[0] + +b.dataset.d).toFixed(2)); wR.set(kgFmt(s[0]), { dir: +b.dataset.d }); }
@@ -1474,6 +1670,7 @@ function flyInto(el, k, rev) { // the numbers travel into their tick on the sess
              : go(el, [{ transform: 'none', opacity: 1 }, { transform: end, opacity: 0 }], { key: 'fly', keep: true, dur: SP.dur + 40 });
 }
 function logSet() {
+  if (W.busy) return; W.busy = true; // a second tap inside the 300 ms hand-off would log the same set twice and skip the next
   const s = cur(), E = W.ex[W.e], k = W.idx;
   buzz(14); pearl(); bloom($('#pearl'), 'rgba(255,170,120,.5)'); $('#stpW').classList.remove('on'); $('#stpR').classList.remove('on');
   W.done[W.e][W.s] = s.slice(); W.vol += s[0] * s[1];
@@ -1482,6 +1679,7 @@ function logSet() {
   if (heavy || repB) W.rec.push({ e: W.e, w: s[0], r: s[1], heavy });
   const prev = { e: W.e, s: W.s, idx: W.idx, coach: W.coach, vol: W.vol - s[0] * s[1] };
   setTimeout(() => {
+    W.busy = false;
     flyInto($('#setB'), k);
     const nx = nextOf(W.e, W.s);
     if (!nx) { W.idx++; paintSess(); setTimeout(openSess, 420); return; }
@@ -1527,6 +1725,11 @@ function clearRest() { clearInterval(restTm); W.rest = null; lastSec = -1; $('#l
 function endRest(auto) {
   if (!W || !W.rest) return; const newEx = W.rest.newEx;
   if (auto) buzz([60, 40, 60]);
+  if (S.view !== 'rest') { // minimised, or a record is on screen: the rest ends quietly and the view you are in stays
+    clearRest(); resetPearl(); renderSet(true); $('#setB').getAnimations().forEach(a => a.__k === 'fly' && a.cancel());
+    if (S.view === 'today') toast(t('restOver', { ex: exN(W.ex[W.e]), a: W.s + 1 }));
+    return;
+  }
   clearRest(); setView('train'); restFades(false); resetPearl(); renderSet(false);
   if (newEx) go($('#exName'), [{ transform: 'translate3d(6rem,0,0)', opacity: 0 }, { transform: 'none', opacity: 1 }], { key: 'nm' });
   flyInto($('#setB'), W.idx, true); fades(true);
@@ -1549,13 +1752,13 @@ function closeTray() {
 }
 function useCoach() {
   if (W.coach !== 1) return; W.coach = 2; buzz(10);
-  const prev = W.ex[0].sets.slice(2).map(x => x[0]);
-  W.ex[0].sets[2][0] = 85; W.ex[0].sets[3][0] = 85;
+  const rest = W.ex[0].sets.slice(2), prev = rest.map(x => x[0]); // only the sets that exist (the 30-minute plan keeps three)
+  rest.forEach(x => x[0] = 85);
   const lb = $('#use85 .lb');
   go(lb, [{ filter: 'blur(0)', opacity: 1 }, { filter: 'blur(4px)', opacity: 0 }], { key: 'lb', dur: 140 }).finished.then(() => { lb.textContent = '✓ ' + t('applied'); go(lb, [{ filter: 'blur(4px)', opacity: 0 }, { filter: 'blur(0)', opacity: 1 }], { key: 'lb', dur: 200 }); });
   $('#rNext b').textContent = `${kgFmt(85)} × 8`;
   setTimeout(closeTray, 1300);
-  toast(t('applied'), () => { W.ex[0].sets[2][0] = prev[0]; W.ex[0].sets[3][0] = prev[1]; W.coach = 3; if (W.rest) $('#rNext b').textContent = `${kgFmt(prev[0])} × 8`; else renderSet(); });
+  toast(t('applied'), () => { rest.forEach((x, i) => x[0] = prev[i]); W.coach = 3; if (W.rest) $('#rNext b').textContent = `${kgFmt(prev[0])} × 8`; else renderSet(); });
 }
 function record(s, k) { // a record grows from the logged set into a lit medal on black, then lands on the strip
   setView('record'); buzz([20, 60, 20, 60, 40]); phone.classList.add('recOn');
@@ -1575,7 +1778,9 @@ function landMedal(k) {
   go(m, [{ transform: 'none', opacity: 1 }, { transform: `translate3d(${r1.left + r1.width / 2 - (r0.left + r0.width / 2)}px,${r1.top + r1.height / 2 - (r0.top + r0.height / 2)}px,0) scale(.05)`, opacity: .4 }], { key: 'm', keep: true, dur: SP.dur + 120 });
   go($('#recBg'), [{ opacity: 1 }, { opacity: 0 }], { key: 'o', dur: 420, easing: 'ease', keep: true });
   go($('#recT'), [{ opacity: 1 }, { opacity: 0 }], { key: 'o', dur: 200, keep: true });
-  setTimeout(() => { phone.classList.remove('recOn'); $('#rec').style.pointerEvents = 'none'; [m, $('#recBg'), $('#recT')].forEach(x => { x.getAnimations().forEach(a => a.cancel()); x.style.opacity = ''; x.style.transform = ''; }); m.querySelector('.sh').getAnimations().forEach(a => a.cancel()); if (W && W.rest) setView('rest'); paintSess(); buzz(10); }, SP.dur + 80);
+  setTimeout(() => { phone.classList.remove('recOn'); $('#rec').style.pointerEvents = 'none'; [m, $('#recBg'), $('#recT')].forEach(x => { x.getAnimations().forEach(a => a.cancel()); x.style.opacity = ''; x.style.transform = ''; }); m.querySelector('.sh').getAnimations().forEach(a => a.cancel());
+    if (W && W.rest) setView('rest'); else if (W) { setView('train'); restFades(false); renderSet(false); fades(true); } // the rest ran out under the medal
+    paintSess(); buzz(10); }, SP.dur + 80);
 }
 let sessOpen = false;
 function openSess() {
@@ -1623,7 +1828,8 @@ function finish() {
   const C = $('#cmp'); C.classList.add('on');
   C.innerHTML = `<div class="ring c"><div class="in"><div id="cKg" class="tab"></div><i id="cLine"></i><small>${t('kgLifted')}</small></div></div>
     <h2 class="c">${t('complete')}</h2>
-    <div class="cst c tab"><div>${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}<small>${t('cTime')}</small></div><div>${sets}<small>${t('cSets')}</small></div><div>${W.rec.length}<small>${W.rec.length === 1 ? t('cRec1') : t('cRec')}</small></div></div>
+    <div class="cst c tab"><div>${dur(Math.max(1, Math.round(secs / 60)))}<small>${t('cTime')}</small></div><div>${sets}<small>${t('cSets')}</small></div><div>${W.rec.length}<small>${W.rec.length === 1 ? t('cRec1') : t('cRec')}</small></div></div>
+    <p class="c cnext">${t('cmpNext')}</p>
     <div class="medals c">${W.rec.map((r, i) => `<div><button class="md" data-md="${i}">${kgFmt(r.w)}</button><div class="mdl">${shortName(W.ex[r.e])} × ${r.r}</div></div>`).join('')}</div>
     <button id="doneB">${t('doneB')}</button>`;
   $$('#cmp .c').forEach((el, i) => go(el, [{ opacity: 0, transform: 'translate3d(0,1.6rem,0)' }, { opacity: 1, transform: 'none' }], { key: 'c', delay: 120 + i * 90, keep: true }));
@@ -1640,14 +1846,15 @@ function backToday() {
   setTimeout(() => { C.innerHTML = ''; $('#soft').getAnimations().forEach(a => a.cancel()); $('#soft').style.opacity = 0; }, 520);
   setView('today'); pushTo(0, 700); backIn();
   $('#aSess').setAttribute('stroke', '#f2c46a'); $('#aSessG').setAttribute('stroke', '#f2c46a'); $('#aLab').textContent = '15:15 PUSH ✓'; $('#aLab').setAttribute('fill', '#ffe2a8');
-  paintCards(); paintCta(); $('#coach').__h = null; paintHero(nowMin()); built.train = false; if (S.tab === 'train') { BUILD.train(); built.train = true; }
+  // the cards and words catch up a moment later, while the screen is still gliding back, so the hand-off frame stays light
+  setTimeout(() => { paintCards(); paintCta(); $('#coach').__h = null; paintHero(nowMin()); built.train = false; if (S.tab === 'train') { BUILD.train(); built.train = true; } }, SP.dur + 60);
   toast(t('savedPush'));
 }
 
 /* ================= the morning: the night you slept through runs past ================= */
 function morning() {
   const end = nowMin(), start = Math.max(0, Math.min(end - 60, 300)), t0 = performance.now(), ms = 1700; springId++;
-  const st = () => { const k = clamp((performance.now() - t0) / ms, 0, 1), e = k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2; const m = lerp(start, end, e); placeDot(m); applyLight(m, k === 1); paintHero(k === 1 ? end : Math.round(m / 10) * 10); if (k < 1) requestAnimationFrame(st); };
+  const st = () => { const k = clamp((performance.now() - t0) / ms, 0, 1), e = springAt(k); const m = lerp(start, end, e); placeDot(m); applyLight(m, k === 1); paintHero(k === 1 ? end : Math.round(m / 10) * 10); if (k < 1) requestAnimationFrame(st); };
   requestAnimationFrame(st);
 }
 
@@ -1673,6 +1880,7 @@ async function boot() {
   await warmUp();
   window.addEventListener('resize', () => { sizeCanvas(); render(); });
   $('#veil').classList.add('off'); window.__ready = true;
+  (window.requestIdleCallback || (f => setTimeout(f, 3000)))(() => { if (!rainMade) makeRain(); }, { timeout: 5000 }); // rain tiles ready before any shower
   // the first open: the rings draw, the numbers count, the week grows
   paintReady(nowMin(), 'draw'); growBars(true);
   const mm = nowMin();
@@ -1686,15 +1894,16 @@ const springIdle = () => true;
 async function warmUp() {
   const quiet = document.createElement('style'); quiet.textContent = '*,*::before,*::after{transition:none!important;animation-play-state:paused!important}'; document.head.append(quiet);
   const warm = document.createElement('style'); document.head.append(warm);
-  const FULL = '.scr{visibility:visible!important}.sheet::before,#sessT::before,#tray::before{clip-path:inset(0 round 0)!important}.si,.sT,.tr{opacity:1!important;transform:none!important}#soft{opacity:1!important}#toast{transform:translate3d(-50%,0,0)!important}.stp button{transform:none!important}#medal{opacity:1!important;transform:none!important}#recBg{opacity:.5!important}#recT{opacity:1!important}#level{opacity:1!important}#live{transform:none!important}#askBar,#askX{transform:none!important}#light{opacity:1!important;transform:none!important}.lay{opacity:.4!important}';
-  const MID = '.scr{visibility:visible!important}.sheet::before,#sessT::before{clip-path:inset(22% 12% 30% 9% round 2.4rem)!important}#tray::before{clip-path:inset(0 0 45% 0 round 2.6rem)!important}' +
+  const FULL = '#phone .scr .rise,#phone .scr .hero>:not(.hdr){opacity:1;transform:none}.scr{visibility:visible!important}.sheet::before,#sessT::before,#tray::before{clip-path:inset(0 round 0)!important}.si,.sT,.tr{opacity:1!important;transform:none!important}#soft{opacity:1!important}#toast{transform:translate3d(-50%,0,0)!important}.stp button{transform:none!important}#medal{opacity:1!important;transform:none!important}#recBg{opacity:.5!important}#recT{opacity:1!important}#level{opacity:1!important}#live{transform:none!important}#askBar,#askX{transform:none!important}#light{opacity:1!important;transform:none!important}.lay{opacity:.4!important}#phone.raining #rainW{opacity:.7!important}';
+  const MID = '#phone .scr .rise,#phone .scr .hero>:not(.hdr){opacity:.5;transform:translate3d(0,2rem,0)}.scr{visibility:visible!important}.sheet::before,#sessT::before{clip-path:inset(22% 12% 30% 9% round 2.4rem)!important}#tray::before{clip-path:inset(0 0 45% 0 round 2.6rem)!important}' +
     '.si,.sT,.tr{opacity:.5!important;transform:translate3d(0,1rem,0)!important}#soft{opacity:.45!important}#toast{transform:translate3d(-50%,-1rem,0) scale(.97)!important}' +
     '.stp button{transform:scale(.55)!important}.glass{transform:scale(.97)}.rise{opacity:.5;transform:translate3d(0,2rem,0)}#medal{opacity:.7!important;transform:rotateY(-42deg) scale(.8)!important}#medal .sh{transform:translate3d(-10%,0,0)!important}' +
     '#recBg,#recT{opacity:.5!important}#setB{transform:translate3d(3rem,8rem,0) scale(.3)!important;opacity:.5!important}#logL,.lb{filter:blur(.4rem)!important;opacity:.6!important}' +
     '#level{opacity:.6!important;transform:translate3d(0,40%,0)!important}.lay{opacity:.6!important}#light{opacity:.6!important;transform:translate3d(0,20%,0)!important}#scene{transform:scale(1.04)!important}' +
     '.st{transform:scaleY(.4)}.md{transform:rotateY(70deg) translate3d(0,-.6rem,2rem)}#cmp .c{opacity:.5;transform:translate3d(0,1rem,0)}.exc{clip-path:inset(0 0 30% 0 round 2.8rem)}';
   $$('.sheet').forEach(s => s.classList.add('on')); $('#sessT').classList.add('on'); $('#tray').classList.add('on');
-  buildSettings(); buildLog();
+  buildSettings(); buildLog(); if (!rainMade && LIGHT.wx.rain) makeRain(); // raining at load: the rain tiles are drawn here, under the veil
+  $$('.jar .lv').forEach(l => l.style.rotate = '1deg');
   $('#trIn').innerHTML = `<div class="k">${t('coachK')}</div><p>${t('coachP')}</p><div class="r"><button class="use"><span class="lb">${t('use85')}</span></button></div>`;
   $('#cmp').innerHTML = `<div class="ring c"><svg viewBox="0 0 260 260"><circle cx="130" cy="130" r="122" stroke="var(--gold)" stroke-dasharray="766.5" stroke-dashoffset="300"/></svg></div><div class="medals c"><div class="md">85</div></div>`;
   $('#thread').innerHTML = `<div class="me">.</div><div class="think"><i></i></div><div class="prop glass"><p>.</p><div class="r"><button class="use"><span class="lb">.</span></button></div></div>`;
@@ -1719,6 +1928,8 @@ async function warmUp() {
     $$('#scene').forEach(el => A(el, [{ transform: 'scale(1)' }, { transform: 'scale(1.06)' }]));
     $$('#light').forEach(el => A(el, [{ transform: 'translate3d(0,45%,0)', opacity: 0 }, { transform: 'none', opacity: 1 }]));
     $$('.lay').forEach(el => A(el, [{ opacity: 0 }, { opacity: .8 }]));
+    $$('#rain i').forEach(el => A(el, [{ transform: 'none' }, { transform: 'translate3d(0,20rem,0)' }]));
+    $$('.spark').forEach(el => A(el, [{ clipPath: 'inset(-20% 80% -20% 0)' }, { clipPath: 'inset(-20% 0% -20% 0)' }]));
     bloom($('#cta')); bloom($('#pearl'), 'rgba(255,170,120,.5)');
   };
   for (const [v, tab] of [['today', 'today'], ['today', 'train'], ['today', 'fuel'], ['today', 'health'], ['today', 'coach'], ['train', 'today'], ['rest', 'today'], ['record', 'today'], ['complete', 'today']]) {
@@ -1732,7 +1943,8 @@ async function warmUp() {
   warm.remove(); $$('.sheet').forEach(s => s.classList.remove('on')); $('#sessT').classList.remove('on'); $('#tray').classList.remove('on');
   $('#trIn').innerHTML = ''; $('#cmp').innerHTML = ''; $('#thread').innerHTML = ''; fades(false); restFades(false);
   W = null; $('#sess').innerHTML = ''; setView('today'); phone.dataset.tab = 'today'; scene.push = 0; draw();
-  $$('.scr').forEach(s => s.classList.toggle('on', s.dataset.s === 'today'));
+  $$('.jar .lv').forEach(l => l.style.rotate = '');
+  $$('.scr').forEach(s => { s.classList.toggle('on', s.dataset.s === 'today'); s.classList.toggle('in', s.dataset.s === 'today'); s.classList.remove('out'); });
   growBars(false); bigR.set(bigR.s, {}); $('#rwL').style.setProperty('--f', '0%');
   await nf(); await nf(); quiet.remove();
 }
@@ -1741,5 +1953,3 @@ window.__aven = { S, get W() { return W; }, startWorkout, show, logSet: () => $(
   setWx: w => { WXMODE = w; lastAcc = ''; applyLight(nowMin()); paintWx(nowMin()); paintHero(nowMin()); }, nowMin, openSheet, SP };
 })();
 </script>
-
-</body></html>
