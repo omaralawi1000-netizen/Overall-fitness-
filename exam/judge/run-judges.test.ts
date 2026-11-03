@@ -13,7 +13,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, write
 import { createHash } from 'node:crypto';
 import { callBatch, pendingBatches, planBatches, CallError, Ledger, SpendCapError, estimate, type GeminiReply } from '../providers';
 import { CALIBRATION } from './calibration';
-import { judgeBody, judgeOne, readVerdict, finalScore, fromCalibration, fromTranscript, gate, type JudgeInput, type Judged } from './judge';
+import { judgeBody, judgeOne, readVerdict, finalScore, fromCalibration, fromTranscript, transcriptPrint, gate, type JudgeInput, type Judged } from './judge';
 import { HARD_10, modelRow, chatModel, topTierWorthIt, examHealth, relativeBias, scoreOf, type Answer } from './report';
 
 const DIRS = (process.env.EXAM_TRANSCRIPTS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
@@ -76,14 +76,14 @@ async function judgeAll(judge: string, xs: JudgeInput[], ledger: Ledger, label: 
   return out;
 }
 
-interface Row { key: string; coach: string; qid: string; run: number; t: any }
+interface Row { key: string; coach: string; qid: string; run: number; tfp: string; t: any }
 function transcripts(): Row[] {
   const rows: Row[] = [];
   for (const dir of DIRS) for (const f of readdirSync(dir).filter((x) => /\.r\d+\.json$/.test(x))) {
     const t = JSON.parse(readFileSync(`${dir}/${f}`, 'utf8'));
     if (!!t.dry !== DRY) throw new Error(`${dir}/${f} is ${t.dry ? 'from a dry run' : 'a real answer'}: ${DRY ? 'a dry judge run takes only dry transcripts' : 'point EXAM_TRANSCRIPTS at the real run\'s folder, not its dry/ folder'}`);
     const coach = String(t.model ?? dir.split('/').pop());
-    rows.push({ key: `${coach}|${t.id}|r${t.run}`, coach, qid: t.id, run: t.run, t });
+    rows.push({ key: `${coach}|${t.id}|r${t.run}`, coach, qid: t.id, run: t.run, tfp: transcriptPrint(t), t });
   }
   return rows;
 }
@@ -129,12 +129,13 @@ it('judges the Coach exam and writes the report', async () => {
   if ((STEP === 'all' || STEP === 'judge') && rows.length) {
     for (const judge of JUDGES) {
       if (!gates[judge]) { console.log(`${judge} did not pass calibration: it grades nothing`); continue; }
-      const done = new Set(lines(judgedFile).filter((l) => l.judge === judge && current(l) && !l.error).map((l) => l.key));
-      const todo = rows.filter((r) => !r.t.error && !done.has(r.key)).sort((a, b) => a.qid.localeCompare(b.qid));
-      const byId = new Map(todo.map((r) => [opaque(r.key), r]));
-      const res = await judgeAll(judge, todo.map((r) => fromTranscript(r.t, opaque(r.key))), ledger, 'exam', (id, j) => {
+      // (done = a good verdict on this exact transcript: one judged before its answer was regenerated counts for nothing)
+      const done = new Set(lines(judgedFile).filter((l) => l.judge === judge && current(l) && !l.error).map((l) => `${l.key}|${l.tfp}`));
+      const todo = rows.filter((r) => !r.t.error && !done.has(`${r.key}|${r.tfp}`)).sort((a, b) => a.qid.localeCompare(b.qid));
+      const byId = new Map(todo.map((r) => [opaque(`${r.key}|${r.tfp}`), r]));
+      const res = await judgeAll(judge, todo.map((r) => fromTranscript(r.t, opaque(`${r.key}|${r.tfp}`))), ledger, 'exam', (id, j) => {
         const r = byId.get(id)!;
-        appendFileSync(judgedFile, `${JSON.stringify({ key: r.key, coach: r.coach, qid: r.qid, run: r.run, judge, effort: EFFORT, ...(j instanceof Error ? { error: j.message } : { score: j.score, verdict: j.verdict, usd: j.usd }) })}\n`);
+        appendFileSync(judgedFile, `${JSON.stringify({ key: r.key, tfp: r.tfp, coach: r.coach, qid: r.qid, run: r.run, judge, effort: EFFORT, ...(j instanceof Error ? { error: j.message } : { score: j.score, verdict: j.verdict, usd: j.usd }) })}\n`);
       });
       console.log(`${judge}: judged ${[...res.values()].filter((j) => !(j instanceof Error)).length} of ${todo.length}`);
     }
@@ -145,7 +146,9 @@ it('judges the Coach exam and writes the report', async () => {
   if (STEP === 'calibrate' || !rows.length) return;
   // (a transcript judged twice, after an error then a success, counts once: its last good verdict)
   // (only this run's judges at this run's effort: verdicts left by an earlier setup never enter the scores)
-  const judged = [...new Map(lines(judgedFile).filter((l) => !l.error && current(l)).map((l) => [`${l.key}|${l.judge}`, l])).values()];
+  // (and only verdicts on the transcript as it is now: a stale one, from before the answer was regenerated, is dropped)
+  const printOf = new Map(rows.map((r) => [r.key, r.tfp]));
+  const judged = [...new Map(lines(judgedFile).filter((l) => !l.error && current(l) && printOf.get(l.key) === l.tfp).map((l) => [`${l.key}|${l.judge}`, l])).values()];
   const answers: Answer[] = rows.map((r) => ({
     coach: r.coach, qid: r.qid, run: r.run, safety: SAFETY_IDS.test(r.qid), heldout: /^h\d/.test(r.qid),
     check: r.t.check ?? null, flags: r.t.flags ?? [], ...(r.t.error ? { error: r.t.error } : {}),

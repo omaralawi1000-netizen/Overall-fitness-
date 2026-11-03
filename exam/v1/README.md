@@ -22,7 +22,8 @@ to get the "before" score of old Aven's Coach and to choose the Coach model (E2 
    `EXAM_MODEL=gemini-3.8-flash EXAM_RUNS=2 EXAM_HELDOUT=1 EXAM_CAP_USD=38 EXAM_LEDGER=<dir>/ledger.jsonl EXAM_GAP_MS=1000 EXAM_OUT=<dir>/gemini-3.8-flash npx vitest run …`
    Top tier on the hard 10 only: `EXAM_ONLY=<the HARD_10 ids in exam/judge/report.ts>`.
    Keys come from the environment: `GEMINI_API_KEY` (or a proxy that adds it), `AVEN_ANTHROPIC_KEY` or `ANTHROPIC_API_KEY`.
-   A stopped run resumes: answers already written are kept, errors are redone.
+   A stopped run resumes: answers already written are kept, errors are redone. One `EXAM_OUT` holds one Coach setup
+   (model and effort): the run stops if the folder has answers from another one.
 
 ## Judge and report (this repo)
 `EXAM_TRANSCRIPTS=<dir>/gemini-3.8-flash,<dir>/claude-sonnet-5-5,… EXAM_CAP_USD=38 EXAM_LEDGER=<dir>/ledger.jsonl EXAM_JUDGED=<dir>/judged npx vitest run --config exam/vitest.config.ts exam/judge/run-judges.test.ts`
@@ -31,7 +32,7 @@ Calibration first (a judge that fails grades nothing), then both judges through 
 handle (`batch-*.json`) and its worst case reserved in the ledger until its answers are in, so a stopped run resumes and
 collects it without paying twice; `EXAM_DRY=1` writes only under `<EXAM_JUDGED>/dry/` and takes only dry transcripts.
 A Claude judge's calibration and verdicts belong to its effort (`EXAM_JUDGE_EFFORT`): changing it calibrates and
-judges again. Omar's blind pairs go in `<judged>/omar-pairs.json` as `{"agree": n, "of": 12}` (all 12, or the exam is not passed).
+judges again. A verdict also belongs to the exact transcript it graded: a regenerated answer is judged again. Omar's blind pairs go in `<judged>/omar-pairs.json` as `{"agree": n, "of": 12}` (all 12, or the exam is not passed).
 
 Measured in the dry run (3 Nov 2026): old Aven's Coach prompt is about 75–90k characters (about 20k tokens) per call,
 the judge's about 25k characters. Claude reads the stable part of the Coach prompt from its cache; Gemini caches it by itself.

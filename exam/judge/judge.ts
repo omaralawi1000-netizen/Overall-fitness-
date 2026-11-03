@@ -4,6 +4,7 @@
  * Before grading anything, a judge must pass the calibration gate on replies with a known right score.
  */
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { call, CallError, type CallOpts, type GeminiBody } from '../providers';
 import { CALIBRATION, type CalibrationCase } from './calibration';
 
@@ -139,6 +140,9 @@ export function fromTranscript(t: any, opaqueId: string): JudgeInput {
     lookups: t.lookups, lookupResults: t.lookupResults, good: t.good, where, leads: t.numbersToCheck,
   };
 }
+
+/** What the judge is shown for a transcript, hashed: a verdict belongs to that exact transcript, so a regenerated answer is judged again. */
+export const transcriptPrint = (t: any): string => createHash('sha256').update(JSON.stringify(judgeBody(fromTranscript(t, 'x')))).digest('hex').slice(0, 16);
 
 // ── calibration ──
 export const fromCalibration = (c: CalibrationCase): JudgeInput => ({ id: `cal:${c.id}`, facts: c.facts, conversation: [{ role: 'user', text: c.said }], reply: c.reply, actions: c.actions });

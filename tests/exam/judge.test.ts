@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { finalScore, readVerdict, gate, spearman, within, selfBias, shuffled, judgeBody, judgeMessage, judgeOne, fromCalibration, fromTranscript, POINTS, type Verdict } from '../../exam/judge/judge';
+import { finalScore, readVerdict, gate, spearman, within, selfBias, shuffled, judgeBody, judgeMessage, judgeOne, fromCalibration, fromTranscript, transcriptPrint, POINTS, type Verdict } from '../../exam/judge/judge';
 import { CALIBRATION } from '../../exam/judge/calibration';
 import { toClaude, Ledger, type GeminiReply } from '../../exam/providers';
 
@@ -109,5 +109,17 @@ describe('the judge request', () => {
   });
   it('gives up after two unreadable verdicts', async () => {
     await expect(judgeOne('gemini-4-argon', x, { ledger: ledger(), purpose: 'p', dry: () => reply('nope') })).rejects.toThrow(/not JSON/);
+  });
+});
+
+describe('transcript fingerprint (Codex, PR #66)', () => {
+  const t = { id: '05-x', run: 1, factSheet: 'Jonas, 82 kg', messages: [{ role: 'user', text: 'hi' }], reply: 'Hello.', actions: [], usd: 0.01, ms: 900 };
+  it('changes when anything the judge sees changes', () => {
+    expect(transcriptPrint({ ...t, reply: 'Hello!' })).not.toBe(transcriptPrint(t));
+    expect(transcriptPrint({ ...t, factSheet: 'Jonas, 83 kg' })).not.toBe(transcriptPrint(t));
+    expect(transcriptPrint({ ...t, actions: [{ type: 'log_food' }] })).not.toBe(transcriptPrint(t));
+  });
+  it('stays the same for what the judge never sees (cost, time)', () => {
+    expect(transcriptPrint({ ...t, usd: 0.5, ms: 3000 })).toBe(transcriptPrint(t));
   });
 });

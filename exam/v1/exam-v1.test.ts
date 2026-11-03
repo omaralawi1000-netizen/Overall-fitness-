@@ -284,6 +284,9 @@ async function runOne(q: Question) {
 
 const SAFETY = new Set(QUESTIONS_SAFETY.map((q) => q.id));
 const fileOf = (id: string, run: number) => `${OUT}/${id}.r${run}.json`;
+const WANT_EFFORT = MODEL.startsWith('claude-') ? EFFORT : undefined;
+/** an answer made with this run's Coach setup (the model asked for, and its effort): only such an answer is kept as done */
+const sameSetup = (r: any) => r.requestedModel === MODEL && (r.effort ?? null) === (WANT_EFFORT ?? null);
 
 it('runs Coach exam v1 (before: old Aven)', async () => {
   vi.useFakeTimers({ toFake: ['Date'] });
@@ -293,14 +296,19 @@ it('runs Coach exam v1 (before: old Aven)', async () => {
   ledger = new Ledger(LEDGER, CAP);
   const all = [...QUESTIONS_V1, ...QUESTIONS_SAFETY, ...(await heldOut())];
   const qs = all.filter((q) => !ONLY || ONLY.includes(q.id));
+  // one folder holds one Coach setup: answers from another model or effort would be judged and scored under this one
+  if (!DRY) {
+    const other = readdirSync(OUT).filter((f) => /\.r\d+\.json$/.test(f)).filter((f) => { const r = JSON.parse(readFileSync(`${OUT}/${f}`, 'utf8')); return !r.error && !r.dry && !sameSetup(r); });
+    if (other.length) throw new Error(`${OUT} already holds answers from another Coach setup (${other.slice(0, 3).join(', ')}${other.length > 3 ? ', …' : ''}): give this model/effort its own EXAM_OUT`);
+  }
   console.log(`${MODEL}${DRY ? ' (dry)' : ''}: ${qs.length} conversations, $${ledger.spent.toFixed(2)} of $${CAP} already spent`);
   for (const q of qs) {
     for (let run = 1; run <= (SAFETY.has(q.id) ? SAFETY_RUNS : RUNS); run++) {
-      // done: a re-run only redoes errors (and never takes a dry answer for a real one)
-      if (!DRY && existsSync(fileOf(q.id, run))) { const prev = JSON.parse(readFileSync(fileOf(q.id, run), 'utf8')); if (!prev.error && !prev.dry) continue; }
+      // done: a re-run only redoes errors (and never takes a dry answer, or one from another setup, for this run's)
+      if (!DRY && existsSync(fileOf(q.id, run))) { const prev = JSON.parse(readFileSync(fileOf(q.id, run), 'utf8')); if (!prev.error && !prev.dry && sameSetup(prev)) continue; }
       purpose = `${MODEL} ${q.id} r${run}`;
       const before = ledger.spent;
-      const r: any = { ...(await runOne(q)), run, effort: MODEL.startsWith('claude-') ? EFFORT : undefined, ...(DRY ? { dry: true } : {}) };
+      const r: any = { ...(await runOne(q)), run, requestedModel: MODEL, effort: WANT_EFFORT, ...(DRY ? { dry: true } : {}) };
       r.usd = Math.round((ledger.spent - before) * 1e5) / 1e5;
       r.numbersToCheck = r.reply ? unsourcedNumbers(r.reply, [r.factSheet ?? '', r.lookupResults ?? '', ...(r.messages ?? []).map((m: any) => m.text)].join('\n')) : [];
       writeFileSync(fileOf(q.id, run), JSON.stringify(r, null, 1));
