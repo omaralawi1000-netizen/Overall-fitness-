@@ -88,6 +88,24 @@ describe('ledger', () => {
     await expect(call('gemini-3.8-flash', BODY, { ledger: l, purpose: 'q1', fetchFn })).rejects.toMatchObject({ status: 429 });
     expect(l.spent).toBe(0);
   });
+  it('an answer lost on the network counts its worst case, so retries stop at the cap (Codex, PR #66)', async () => {
+    let sent = 0;
+    const fetchFn = (async () => { sent++; throw new TypeError('socket hang up'); }) as unknown as typeof fetch;
+    const probe = new Ledger(tmp(), 5);
+    await expect(call('gemini-3.8-flash', BODY, { ledger: probe, purpose: 'q1', fetchFn })).rejects.toMatchObject({ status: -1 });
+    const one = probe.spent; // the call's worst case
+    expect(one).toBeGreaterThan(0);
+    sent = 0;
+    const l = new Ledger(tmp(), one * 1.5);
+    await expect(call('gemini-3.8-flash', BODY, { ledger: l, purpose: 'q1', fetchFn })).rejects.toMatchObject({ status: -1 });
+    expect(l.spent).toBeCloseTo(one);
+    await expect(call('gemini-3.8-flash', BODY, { ledger: l, purpose: 'q1', fetchFn })).rejects.toBeInstanceOf(SpendCapError);
+    expect(sent).toBe(1);
+    const busy = new Ledger(tmp(), 5);
+    const f503 = (async () => ({ status: 503, json: async () => ({ error: { message: 'overloaded' } }) })) as unknown as typeof fetch;
+    await expect(call('gemini-3.8-flash', BODY, { ledger: busy, purpose: 'q1', fetchFn: f503 })).rejects.toMatchObject({ status: 503 });
+    expect(busy.spent).toBe(0);
+  });
 });
 
 describe('Gemini schema → JSON Schema for Claude', () => {

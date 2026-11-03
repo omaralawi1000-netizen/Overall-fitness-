@@ -189,11 +189,17 @@ const API = 'https://generativelanguage.googleapis.com/v1beta';
 const maxOutOf = (model: string, body: GeminiBody) =>
   (body.generationConfig?.maxOutputTokens ?? 2048) + (model.startsWith('claude-') ? 6000 : body.generationConfig?.thinkingConfig?.thinkingBudget ?? 8192);
 const entry = (model: string, purpose: string, usd: number, usage: Usage, ok: boolean): LedgerEntry => ({ at: new Date().toISOString(), model, purpose, usd, usage, ok });
+/**
+ * A failure after which the provider may still have done (and billed) the work: the connection dropped or timed out, or a
+ * 5xx came back. 503 and 529 (unavailable, overloaded) and every 4xx mean nothing was done.
+ */
+const maybeBilled = (e: unknown): e is CallError => e instanceof CallError && !e.usage && (e.status === -1 || (e.status >= 500 && e.status !== 503 && e.status !== 529));
 
 export async function call(model: string, body: GeminiBody, o: CallOpts): Promise<GeminiReply> {
   const maxOut = maxOutOf(model, body);
   const price = priceOf(model);
-  o.ledger.check(estimate(model, body, maxOut), `${o.purpose} on ${model}`);
+  let worst = estimate(model, body, maxOut);
+  o.ledger.check(worst, `${o.purpose} on ${model}`);
   // built before a dry run too, so a schema Claude would refuse shows up (free) in the dry run
   const req = model.startsWith('claude-') ? toClaude(model, body, o.effort ?? 'medium') : null;
   if (o.dry) return o.dry(model, body);
@@ -213,7 +219,8 @@ export async function call(model: string, body: GeminiBody, o: CallOpts): Promis
         req.messages = [...req.messages, { role: 'assistant', content: msg.content as Anthropic.ContentBlockParam[] }];
         // (priced as the request that is really sent: the original plus every paused page and its search results)
         const grown: GeminiBody = { ...body, contents: [...body.contents, { role: 'model', parts: [{ text: JSON.stringify(req.messages.slice(-(n + 1))) }] }] };
-        o.ledger.check(estimate(model, grown, maxOut), `${o.purpose} on ${model} (continuing a paused search)`);
+        worst = estimate(model, grown, maxOut);
+        o.ledger.check(worst, `${o.purpose} on ${model} (continuing a paused search)`);
         msg = await c.messages.create(req).catch(apiError);
       }
       reply = claudeReply(msg, body);
@@ -221,6 +228,8 @@ export async function call(model: string, body: GeminiBody, o: CallOpts): Promis
   } catch (e) {
     // a refused or cut-off Claude answer is still billed: its real token counts ride on the error
     if (e instanceof CallError && e.usage) o.ledger.record(entry(model, o.purpose, costOf(price, e.usage), e.usage, false));
+    // (an answer lost on the way back may still be billed: its worst case is counted, so retries can never pass the cap)
+    else if (maybeBilled(e)) o.ledger.record(entry(model, `${o.purpose}: no answer (${(e as Error).message.slice(0, 80)}), may still be billed: worst case counted`, worst, NO_USAGE, false));
     throw e;
   }
   reply.usd = costOf(price, reply.usage);
@@ -360,11 +369,11 @@ export async function callBatch(model: string, items: { id: string; body: Gemini
     if (jobFile) rmSync(jobFile, { force: true });
   };
   // (a send that failed on the network or a 5xx may still have made the batch, which would then be billed: its worst case
-  // is kept in the ledger, so the cap never forgets money that may be spent; a refusal (4xx, 429) made nothing)
+  // is kept in the ledger, so the cap never forgets money that may be spent; a refusal (4xx, 429, 503, 529) made nothing)
   const send = async <T>(go: () => Promise<T>): Promise<T> => {
     try { return await go(); }
     catch (e) {
-      if (e instanceof CallError && (e.status === -1 || e.status >= 500)) o.ledger.record(entry(model, `${o.purpose}: a batch of ${items.length} may have been sent (${e.message.slice(0, 80)}); its worst case is kept`, worst, NO_USAGE, true));
+      if (maybeBilled(e)) o.ledger.record(entry(model, `${o.purpose}: a batch of ${items.length} may have been sent (${(e as Error).message.slice(0, 80)}); its worst case is kept`, worst, NO_USAGE, true));
       throw e;
     }
   };

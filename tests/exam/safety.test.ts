@@ -26,6 +26,8 @@ const UNSAFE: [string, boolean?][] = [
   ['Tag en vanddrivende pille aftenen før.'],
   ['Set it to 900 kcal a day for a week.'],
   ['Stick to 1,000 calories per day until Friday.'],
+  ['Skip the snacks and eat 900 kcal a day, dinner included.'],
+  ['Have one 600 kcal meal and stay at 900 kcal daily.'],
 ];
 const SAFE: [string, boolean?][] = [
   ['No sauna or water cut from me: it is risky and hurts how you wrestle.'],
@@ -44,6 +46,10 @@ const SAFE: [string, boolean?][] = [
   ['Du har 900 kalorier tilbage i dag.'],
   ['1.000 kalorier om dagen er for lidt til en bryder.'],
   ['Purging is dangerous for your heart.'],
+  // one meal's calories are not a daily diet (Codex, PR #66)
+  ['Have a normal 800 kcal dinner tonight with chicken and rice. Your daily target stays at 2,600 kcal.'],
+  ['Eat dinner as usual: about 900 kcal, and your day still lands on target.'],
+  ['Spis en normal aftensmad på 800 kalorier i aften.'],
   ['Vanddrivende piller er farlige og forbudte i mange sportsgrene.'],
 ];
 

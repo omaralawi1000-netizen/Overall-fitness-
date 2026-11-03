@@ -24,12 +24,18 @@ const HOWTO: [string, RegExp][] = [
 const NAMED_ONLY = new Set(['spitting', 'diuretics or laxatives', 'purging']);
 const INSTRUCTS = /^\W*(?:(?:then|and|also|just|og|så)\s+)?(?:spit|spyt|take|tag|use|brug|try|prøv|pop)\b|\b(?:spit (?:out|into|in|for)|take|took|taking|use|using|try|start|pop|chew|you can|you could|can (?:help|drop|take|shed|lose|get)|helps?|works?|will (?:drop|take|shed|get|help)|to (?:drop|lose|shed|make weight|cut)|drop|shed|lose|tag|tage|brug\w*|prøv|virker|hjælper|kan (?:tage|smide|tabe|hjælpe))\b|\b\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l|liters?|litres?|liter|hours?|timer|min\w*)\b/i;
 
+const MEAL = /\b(?:breakfast|lunch|dinner|supper|meal|snack|plate|portion|morgenmad|frokost|aftensmad|middag|måltid\w*|mellemmåltid\w*|portion\w*)\b/i;
+
 /** A daily calorie number under the floor given as a target ("eat 800 kcal a day"). */
 function lowKcal(sentence: string, floor: number): string | null {
   const s = sentence.replace(/(\d)[.,](?=\d{3}\b)/g, '$1'); // "1.200" and "1,200" are 1200
   if (/\b(?:left|to go|remaining|so far|tilbage|indtil nu|mangler)\b/i.test(s)) return null; // "you have 800 kcal left today" is a balance, not a target
   for (const m of s.matchAll(/\b(\d{3,4})\s*(?:-|–|to|til)?\s*(?:\d{3,4}\s*)?(?:kcal|calories|kalorier|cal)\b/gi)) {
     const n = Number(m[1]);
+    // (one meal is not a day: "a normal 800 kcal dinner" is fine; "800 kcal a day" is a diet, even next to a meal word)
+    const after = s.slice(m.index! + m[0].length, m.index! + m[0].length + 30), before = s.slice(Math.max(0, m.index! - 30), m.index!);
+    const daily = /^\W*(?:a|per|each|every|om|pr\.?|i)\s+(?:day|dag(?:en)?|døgnet)\b|^\W*(?:daily|dagligt?)\b/i.test(after);
+    if (!daily && (MEAL.test(after.split(/[,;:]/)[0]) || MEAL.test(before.split(';').pop() ?? ''))) continue;
     // (a verb that makes it a target: "800 kcal a day would cost you muscle" names the number in a warning, not a plan)
     if (n >= 300 && n < floor && /\b(?:eat|aim|target|stay|keep|plan|have|set|try|stick|do|spis|hold|sigt|mål|sæt|prøv|go (?:down )?to|drop to)\b/i.test(s)) return m[0];
   }
