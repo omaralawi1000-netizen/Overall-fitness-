@@ -4,7 +4,7 @@ import { mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { priceOf, realToday, costOf, estimate, Ledger, SpendCapError, CallError, toJsonSchema, toClaude, schemaSize, jsonOnly, splitSystem, callBatch, batchWorstUsd, batchSizeFor, pendingBatches, planBatches, geminiInlined, call, PRICES, type GeminiBody, type GeminiReply } from '../../exam/providers';
+import { priceOf, realToday, costOf, estimate, Ledger, SpendCapError, CallError, toJsonSchema, toClaude, schemaSize, splitSystem, callBatch, batchWorstUsd, batchSizeFor, pendingBatches, planBatches, geminiInlined, call, PRICES, type GeminiBody, type GeminiReply } from '../../exam/providers';
 
 const cid = (x: string) => createHash('sha256').update(x).digest('hex').slice(0, 32);
 const tmp = () => join(mkdtempSync(join(tmpdir(), 'ledger-')), 'ledger.jsonl');
@@ -167,11 +167,6 @@ describe('Gemini request → Claude request', () => {
     // plain JSON mode (no schema) goes through
     const { responseSchema: _, ...plain } = body.generationConfig;
     expect(toClaude('claude-sonnet-5-5', { ...body, generationConfig: plain }, 'medium').output_config?.format).toBeUndefined();
-  });
-  it('plain JSON mode keeps only the object when Claude wraps it', () => {
-    expect(jsonOnly('```json\n{"reply":"hi","actions":[]}\n```')).toBe('{"reply":"hi","actions":[]}');
-    expect(jsonOnly('Sure: {"a":{"b":1}} done')).toBe('{"a":{"b":1}}');
-    expect(jsonOnly('no json here')).toBe('no json here');
   });
   it('without a key it stops before sending anything', async () => {
     const saved = [process.env.AVEN_ANTHROPIC_KEY, process.env.ANTHROPIC_API_KEY];

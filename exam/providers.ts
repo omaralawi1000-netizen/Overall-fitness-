@@ -223,7 +223,7 @@ export async function call(model: string, body: GeminiBody, o: CallOpts): Promis
         o.ledger.check(worst, `${o.purpose} on ${model} (continuing a paused search)`);
         msg = await c.messages.create(req).catch(apiError);
       }
-      reply = claudeReply(msg, body);
+      reply = claudeReply(msg);
     } else reply = geminiReply(await geminiPost(`models/${encodeURIComponent(model)}:generateContent`, body, o));
   } catch (e) {
     // a refused or cut-off Claude answer is still billed: its real token counts ride on the error
@@ -267,25 +267,17 @@ function geminiReply(data: any): GeminiReply {
   return { candidates: data?.candidates ?? [], usage: { inTokens: m.promptTokenCount ?? 0, cachedTokens: m.cachedContentTokenCount ?? 0, outTokens: (m.candidatesTokenCount ?? 0) + (m.thoughtsTokenCount ?? 0), searches: grounded ? 1 : 0 }, usd: 0 };
 }
 
-/**
- * Plain JSON mode: Gemini's responseMimeType forces bare JSON, Claude has no such switch and may wrap the object in a
- * ```json fence or a sentence. Keep the outermost object (or the text as it was, so a real failure still shows).
- */
-export function jsonOnly(t: string): string {
-  const a = t.indexOf('{'), b = t.lastIndexOf('}');
-  return a >= 0 && b > a ? t.slice(a, b + 1) : t;
-}
-
 /** A Claude message in Gemini's reply shape. A refusal or a cut-off answer is an error that still carries its bill. */
 const claudeUsage = ({ usage: u }: Anthropic.Message): Usage => ({ inTokens: u.input_tokens + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0), cachedTokens: u.cache_read_input_tokens ?? 0, cacheWriteTokens: u.cache_creation_input_tokens ?? 0, outTokens: u.output_tokens, searches: u.server_tool_use?.web_search_requests ?? 0 });
-export function claudeReply(msg: Anthropic.Message, body: GeminiBody): GeminiReply {
+export function claudeReply(msg: Anthropic.Message): GeminiReply {
   const usage = claudeUsage(msg);
   if (msg.stop_reason === 'pause_turn') throw new CallError(0, 'paused turn (pause_turn) handed over as an answer', usage);
   if (msg.stop_reason === 'refusal') throw new CallError(0, `refusal${msg.stop_details && 'category' in msg.stop_details ? ` (${msg.stop_details.category})` : ''}`, usage);
   if (msg.stop_reason === 'max_tokens') throw new CallError(0, 'cut off at max_tokens', usage);
   const all = msg.content.filter((b): b is Anthropic.TextBlock => b.type === 'text').map((b) => b.text).join('');
-  const plainJson = body.generationConfig?.responseMimeType === 'application/json' && !body.generationConfig?.responseSchema;
-  const text = plainJson ? jsonOnly(all) : all;
+  // (in plain JSON mode Claude may wrap, break or skip the object: the text is passed on as it came, so the caller can
+  // read it and count the format failure; see checks/agent-json.ts)
+  const text = all;
   const chunks = msg.content.flatMap((b: any) => (b.type === 'web_search_tool_result' && Array.isArray(b.content) ? b.content : []))
     .map((r: any) => ({ web: { uri: String(r.url), title: String(r.title ?? 'source') } }));
   return { candidates: [{ content: { parts: [{ text }] }, ...(chunks.length ? { groundingMetadata: { groundingChunks: chunks } } : {}) }], usage, usd: 0 };
@@ -425,9 +417,8 @@ export async function callBatch(model: string, items: { id: string; body: Gemini
     }
     for await (const r of await poll(() => c.messages.batches.results(id).catch(apiError), id)) {
       const itemId = byCid.get(r.custom_id);
-      const body = itemId && bodyOf.get(itemId);
-      if (!itemId || !body) continue;
-      if (r.result.type === 'succeeded') { const msg = r.result.message; keep(id, itemId, () => claudeReply(msg, body)); }
+      if (!itemId) continue;
+      if (r.result.type === 'succeeded') { const msg = r.result.message; keep(id, itemId, () => claudeReply(msg)); }
       else out.set(itemId, new CallError(r.result.type === 'errored' ? -1 : -3, `batch item ${r.result.type}${r.result.type === 'errored' ? `: ${JSON.stringify(r.result.error).slice(0, 160)}` : ''}`));
     }
     release(id);

@@ -46,16 +46,18 @@ function replyOf(t: string): string {
   return out.trim();
 }
 
-const isAnswer = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v) && ('reply' in v || 'actions' in v);
+/** a final answer, or a look-up request the harness runs before the answer (the app's lookup loop) */
+const isAnswer = (v: unknown): v is Record<string, unknown> => !!v && typeof v === 'object' && !Array.isArray(v) && ('reply' in v || 'actions' in v || 'lookups' in v);
 
 /**
  * The answer object and how it was read. Throws when nothing honest can be read: a broken object with no reply, or
  * prose that holds a brace (it may be a broken object, not words).
  */
 export function readAgent(text: string): { value: Record<string, unknown>; format: AgentFormat } {
-  const t = text.replace(/^\s*```(?:json)?\s*|\s*```\s*$/g, '').trim();
+  // (only bare JSON is clean: the app parses the text as it comes, so even a ```json fence would have been an error there)
+  const t = text.trim();
   try { const v = JSON.parse(t); if (isAnswer(v)) return { value: v, format: 'json' }; } catch { /* read it below */ }
-  // 1. a whole object somewhere in the text (a sentence or a fence around it, or a second object after it)
+  // 1. a whole object somewhere in the text (a fence or a sentence around it, or a second object after it)
   for (const o of objects(t)) {
     try { const v = JSON.parse(o); if (isAnswer(v)) return { value: v, format: 'extracted' }; } catch { /* the next one */ }
   }
