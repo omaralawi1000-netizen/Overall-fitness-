@@ -1,18 +1,28 @@
 // @vitest-environment jsdom
 // Coach exam v1, the "before": old Aven's real Coach (agentSystem, its data blocks, look-ups, validateAgent and the
 // app's own after-steps: readableDates, fillFromReply, savePlanFromGoals and the one self-check re-ask) on the 22
-// conversations of Aven 2's docs/COACH.md §8, with fake people (personas-v1.ts). Gemini is called over REST in the
-// app's own request shape (lib/gemini.ts aiAgent: responseSchema AGENT_SCHEMA, temperature 0.3, 6144 tokens, thinking
-// budget 1024), keyless: the environment's proxy adds the key. Never print or log a key or a header.
-// Pacing: one call at a time, at least 4 s apart; 429/5xx wait 10, 20, 40, 60, 60, 60 s (6 retries).
+// conversations of Aven 2's docs/COACH.md §8 plus 8 safety probes (and, with EXAM_HELDOUT=1, the 10 held-out ones),
+// with fake people (personas-v1.ts). Every call goes through ../providers.ts in the app's own Gemini request shape
+// (lib/gemini.ts aiAgent: responseSchema AGENT_SCHEMA, temperature 0.3, 6144 tokens, thinking budget 1024); a claude-*
+// model gets the same request turned into Claude's, and, since AGENT_SCHEMA is too big for Claude's strict mode, the
+// app's own plain-JSON fallback. Keys come from the environment only. Never print or log a key or a header.
+// Money: EXAM_CAP_USD is required for a real run; the ledger (EXAM_LEDGER, shared by every model) stops the run before a
+// call that could cross it. EXAM_DRY=1 sends nothing and writes each call's size and worst-case price to dry-sizes.jsonl.
+// Pacing: one call at a time, EXAM_GAP_MS apart; 429/5xx/network wait 10, 20, 40, 60, 60, 60 s (6 retries).
 //   npx vitest run --config scripts/exam/vitest.config.ts scripts/exam/exam-v1.test.ts
-// Options: EXAM_MODEL (default gemini-3.8-flash), EXAM_FALLBACK (default gemini-flash-latest), EXAM_ONLY=01-...,03-...,
-//          EXAM_OUT (default /home/user/Overall-fitness-/reference/exam-v1/before)
+// Options: EXAM_MODEL (default gemini-3.8-flash), EXAM_FALLBACK (default none: a fallback model would mix two models'
+//          answers in one result), EXAM_ONLY=01-...,s3-..., EXAM_RUNS (default 1), EXAM_SAFETY_RUNS (default 5),
+//          EXAM_EFFORT (Claude: low | medium | high, default medium), EXAM_OUT (default …/reference/exam-v1/before)
 import { it, vi } from 'vitest';
-import { writeFileSync, mkdirSync, existsSync, readFileSync, appendFileSync } from 'node:fs';
+import { writeFileSync, mkdirSync, existsSync, readFileSync, appendFileSync, readdirSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { EnvHttpProxyAgent, fetch as proxyFetch } from 'undici';
 import { PERSONAS_V1 } from './personas-v1';
 import { QUESTIONS_V1, type Question } from './questions-v1';
+import { QUESTIONS_SAFETY } from './questions-safety';
+import { unsafeHelp } from '../checks/safety';
+import { unsourcedNumbers } from '../checks/numbers';
+import { call, estimate, Ledger, SpendCapError, CallError, type GeminiBody, type GeminiReply } from '../providers';
 import { threadTurns, type ThreadMsg } from '../../src/lib/thread';
 import { SEED_EXERCISES } from '../../src/data/exercises';
 import { agentSystem, route, ORB_BRIEF } from '../../src/lib/agentTurn';
@@ -31,37 +41,60 @@ import { useStore } from '../../src/state/store';
 import type { AppData } from '../../src/lib/types';
 
 const dispatcher = process.env.HTTPS_PROXY || process.env.https_proxy ? new EnvHttpProxyAgent() : undefined;
-const API = 'https://generativelanguage.googleapis.com/v1beta';
 const MODEL = process.env.EXAM_MODEL ?? 'gemini-3.8-flash';
-const FALLBACK = process.env.EXAM_FALLBACK ?? 'gemini-flash-latest';
+const FALLBACK = process.env.EXAM_FALLBACK ?? '';
 const ONLY = process.env.EXAM_ONLY?.split(',').map((s) => s.trim()).filter(Boolean);
 const OUT = process.env.EXAM_OUT ?? '/home/user/Overall-fitness-/reference/exam-v1/before';
 const GAP_MS = Number(process.env.EXAM_GAP_MS ?? 7000);
+const DRY = !!process.env.EXAM_DRY;
+const RUNS = Number(process.env.EXAM_RUNS ?? 1);
+const SAFETY_RUNS = Number(process.env.EXAM_SAFETY_RUNS ?? 5);
+const EFFORT = (process.env.EXAM_EFFORT ?? 'medium') as 'low' | 'medium' | 'high';
+const CAP = Number(process.env.EXAM_CAP_USD ?? (DRY ? 1000 : NaN));
+const LEDGER = process.env.EXAM_LEDGER ?? `${OUT}/ledger.jsonl`;
+
+// The held-out conversations live outside the repo (Coach work must never see them); only their hash is in it.
+async function heldOut(): Promise<Question[]> {
+  if (!process.env.EXAM_HELDOUT) return [];
+  // (paths, not URLs: jsdom replaces the global URL, and node:fs does not take jsdom's)
+  const file = `${import.meta.dirname}/questions-heldout.ts`;
+  const want = readFileSync(`${import.meta.dirname}/HELDOUT.sha256`, 'utf8').trim();
+  const got = createHash('sha256').update(readFileSync(file)).digest('hex');
+  if (got !== want) throw new Error(`questions-heldout.ts is not the sealed version (sha256 ${got.slice(0, 12)}…, want ${want.slice(0, 12)}…)`);
+  return (await import(/* @vite-ignore */ file)).QUESTIONS_HELDOUT;
+}
 const WAITS = [10, 20, 40, 60, 60, 60];
 const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
 
-// ── one Gemini call, paced and retried (performance.now: Date is faked to each conversation's "now") ──
+// ── one call (Gemini or Claude, providers.ts), paced and retried (performance.now: Date is faked to each conversation's "now") ──
 let lastCall = -Infinity;
-class CallError extends Error { constructor(public status: number, msg: string) { super(msg); } }
 const log: string[] = [];
-async function gemini(model: string, body: unknown): Promise<any> {
-  if (process.env.EXAM_DRY) return { candidates: [{ content: { parts: [{ text: JSON.stringify((body as any).tools ? 'dry search' : (body as any).generationConfig?.responseSchema === INSIGHT_SCHEMA ? { insights: [] } : { reply: 'dry', actions: [] }) }] } }] };
+let ledger: Ledger;
+let purpose = '';
+const sizes: string[] = [];
+// a dry run answers like the old EXAM_DRY did, and notes each call's size and its worst-case price
+function dryReply(model: string, body: GeminiBody): GeminiReply {
+  const out = (body.generationConfig?.maxOutputTokens ?? 2048) + (model.startsWith('claude-') ? 6000 : body.generationConfig?.thinkingConfig?.thinkingBudget ?? 8192);
+  const chars = JSON.stringify(body.systemInstruction ?? '').length + JSON.stringify(body.contents).length;
+  sizes.push(JSON.stringify({ purpose, model, chars, schemaChars: JSON.stringify(body.generationConfig?.responseSchema ?? '').length, maxOut: out, worstUsd: estimate(model, body, out), search: !!body.tools }));
+  const text = JSON.stringify(body.tools ? 'dry search' : body.generationConfig?.responseSchema === INSIGHT_SCHEMA ? { insights: [] } : { reply: 'dry', actions: [] });
+  return { candidates: [{ content: { parts: [{ text }] } }], usage: { inTokens: 0, cachedTokens: 0, outTokens: 0, searches: 0 }, usd: 0 };
+}
+async function gemini(model: string, body: unknown): Promise<GeminiReply> {
   for (let attempt = 0; ; attempt++) {
-    const wait = lastCall + GAP_MS - performance.now();
+    const wait = DRY ? 0 : lastCall + GAP_MS - performance.now();
     if (wait > 0) await sleep(wait);
     lastCall = performance.now();
-    let status = 0, data: any = null;
+    let status = 0, msg = '';
     try {
-      const ctl = new AbortController(); const timer = setTimeout(() => ctl.abort(), 120_000);
-      const res: any = await proxyFetch(`${API}/models/${encodeURIComponent(model)}:generateContent`, { dispatcher, method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body), signal: ctl.signal });
-      clearTimeout(timer);
-      status = res.status; data = await res.json().catch(() => null);
-    } catch (e: any) { status = -1; data = { error: { message: String(e?.message ?? e).slice(0, 120) } }; }
-    lastCall = performance.now();
-    if (status === 200) return data;
-    const retry = status === 429 || status === -1 || status >= 500;
-    log.push(`${model} ${status}${retry && attempt < WAITS.length ? ` → wait ${WAITS[attempt]} s` : ''}: ${String(data?.error?.message ?? '').slice(0, 100)}`);
-    if (!retry || attempt >= WAITS.length) throw new CallError(status, `${status} ${String(data?.error?.message ?? '').slice(0, 200)}`);
+      return await call(model, body as GeminiBody, { ledger, purpose, effort: EFFORT, fetchFn: proxyFetch as unknown as typeof fetch, dispatcher, ...(DRY ? { dry: dryReply } : {}) });
+    } catch (e: any) {
+      if (e instanceof SpendCapError) throw e; // never retried, never caught: the run stops
+      status = e instanceof CallError ? e.status : -1; msg = String(e?.message ?? e);
+    } finally { lastCall = performance.now(); }
+    const retry = status === 429 || status === 529 || status === -1 || status >= 500;
+    log.push(`${model} ${status}${retry && attempt < WAITS.length ? ` → wait ${WAITS[attempt]} s` : ''}: ${msg.slice(0, 100)}`);
+    if (!retry || attempt >= WAITS.length) throw new CallError(status, msg.slice(0, 200));
     await sleep(WAITS[attempt] * 1000);
   }
 }
@@ -93,7 +126,7 @@ async function aiAgent(system: string, contents: Turn[]): Promise<{ raw: any; mo
     try { return await run(think); }
     catch (e) {
       if (!(e instanceof CallError) || e.status !== 400) throw e;
-      if (think) { noThinking.add(m); try { return await run(false); } catch (e2) { if (!(e2 instanceof CallError) || e2.status !== 400 || noSchema.has(m)) throw e2; } }
+      if (think) { noThinking.add(m); log.push(`${m}: 400 with the thinking budget on (${String((e as Error).message).slice(0, 80)}), asked again without it`); try { return await run(false); } catch (e2) { if (!(e2 instanceof CallError) || e2.status !== 400 || noSchema.has(m)) throw e2; } }
       noSchema.add(m); log.push(`${m}: schema refused, plain JSON mode`);
       return run(false);
     }
@@ -136,6 +169,7 @@ function flags(q: Question, reply: string, actions: any[], d: AppData): string[]
   if (words > 150) out.push(`too long (${words} words)`);
   if (q.asking) { const did = actions.filter((x) => !SHOW.has(x.type)); if (did.length) out.push(`did something unasked: ${did.map((x) => x.type).join(', ')}`); }
   if (!q.health && UNPROMPTED.test(reply)) out.push(`unprompted doctor/age: "${reply.match(UNPROMPTED)![0]}"`);
+  for (const f of unsafeHelp(reply, { minor: d.memory.some((m) => /\b(?:age:?\s*1[3-7]|1[3-7][ -](?:years?|år))\b/i.test(m.text)) })) out.push(`unsafe by code (${f.kind}): "${f.sentence.slice(0, 80)}"`);
   return out;
 }
 
@@ -183,7 +217,7 @@ async function runOne(q: Question) {
     const app = `\nApp setup: Today shows ${Object.entries(d.settings.widgets).filter(([, v]) => v).map(([k]) => k).join(', ')}; hidden: ${Object.entries(d.settings.widgets).filter(([, v]) => !v).map(([k]) => k).join(', ') || 'none'}.`;
     let insights: any[] = [], model = current, error: string | undefined;
     try { const r = await aiJson(`${INSIGHT_SYSTEM(lang)}\n\n${TASK_STYLE}\n\n${HANDBOOK_CORE}`, ctx + app, INSIGHT_SCHEMA); insights = readInsights(r.raw); model = r.model; }
-    catch (e: any) { error = String(e?.message ?? e).slice(0, 300); }
+    catch (e: any) { if (e instanceof SpendCapError) throw e; error = String(e?.message ?? e).slice(0, 300); }
     const notes = rankNotes(d, today, now.getHours(), makeT(lang), lang, name, insights, now.getTime()).slice(0, 4);
     const reply = notes.length
       ? `Today's pin (collapsed): "${notes[0].title}"${notes.length > 1 ? ` (+${notes.length - 1})` : ''}\nTapped open, "The Coach noticed":\n${notes.map((x, i) => `${i + 1}. ${x.title}${x.body ? ` — ${x.body}` : ''}${x.action ? ` [button: ${x.action.label}${x.action.run.type === 'coach' ? ` → asks the Coach "${x.action.run.prompt}"` : ''}]` : ''}`).join('\n')}`
@@ -213,7 +247,7 @@ async function runOne(q: Question) {
       const local = look.filter((l) => l.kind !== 'web');
       if (local.length) found += (found ? '\n\n' : '') + runLookups(d, local, { today, lang, pool: SEED_EXERCISES, mealLabel, said: [] });
       for (const l of look.filter((x) => x.kind === 'web' && x.query).slice(0, 2)) {
-        const w = await webSearch(l.query!, lang).catch((e) => { log.push(`web failed: ${String(e?.message ?? e).slice(0, 100)}`); return null; });
+        const w = await webSearch(l.query!, lang).catch((e) => { if (e instanceof SpendCapError) throw e; log.push(`web failed: ${String(e?.message ?? e).slice(0, 100)}`); return null; });
         if (!w) { found += `${found ? '\n\n' : ''}### web\nThe web search failed: answer from what you know and say you could not check it.`; continue; }
         sources.push(...w.sources);
         found += `${found ? '\n\n' : ''}### web (searched)\n${w.text}\nSources: ${w.sources.map((s, i) => `[${i + 1}] ${s.title}`).join('; ') || 'none listed'}`;
@@ -228,7 +262,7 @@ async function runOne(q: Question) {
     let selfCheck: any = undefined;
     if (probs.length) {
       rounds++;
-      const again = await aiAgent(sysFinal + '\n\nNo look-ups now: answer.' + checkNote(probs, raw), conv).catch(() => null);
+      const again = await aiAgent(sysFinal + '\n\nNo look-ups now: answer.' + checkNote(probs, raw), conv).catch((e) => { if (e instanceof SpendCapError) throw e; return null; });
       const v1 = again ? validateAgent(again.raw) : null;
       const v2 = v1 ? { ...v1, reply: readableDates(v1.reply, lang, today), actions: savePlanFromGoals(sysFinal, v1.reply, fillFromReply(v1.reply, v1.actions, lang)) } : null;
       const kept = !!(v2 && v2.reply.trim() && answerProblems(v2.reply, v2.actions, sysFinal).length < probs.length);
@@ -241,33 +275,49 @@ async function runOne(q: Question) {
       check, checked: !!q.check, flags: flags(q, v.reply, v.actions, d), route: routed, ...(selfCheck ? { selfCheck } : {}),
       ...(q.mode === 'setup' ? { setupForm: SETUP_FORM[lang], setupChoices: q.setup } : {}), factSheet };
   } catch (e: any) {
+    if (e instanceof SpendCapError) throw e;
     return { ...base, messages, reply: '', actions: [], lookups, model, ms: Math.round(performance.now() - t0), rounds, check: 'error', flags: [], error: String(e?.message ?? e).slice(0, 300), factSheet };
   }
 }
 
+const SAFETY = new Set(QUESTIONS_SAFETY.map((q) => q.id));
+const fileOf = (id: string, run: number) => `${OUT}/${id}.r${run}.json`;
+
 it('runs Coach exam v1 (before: old Aven)', async () => {
   vi.useFakeTimers({ toFake: ['Date'] });
+  if (!(CAP > 0)) throw new Error('set EXAM_CAP_USD (the most this run may spend, in US dollars, counting what the ledger already holds)');
   await loadDanish();
   mkdirSync(OUT, { recursive: true });
-  const qs = QUESTIONS_V1.filter((q) => !ONLY || ONLY.includes(q.id));
+  ledger = new Ledger(DRY ? `${OUT}/dry-ledger.jsonl` : LEDGER, CAP);
+  const all = [...QUESTIONS_V1, ...QUESTIONS_SAFETY, ...(await heldOut())];
+  const qs = all.filter((q) => !ONLY || ONLY.includes(q.id));
+  console.log(`${MODEL}${DRY ? ' (dry)' : ''}: ${qs.length} conversations, $${ledger.spent.toFixed(2)} of $${CAP} already spent`);
   for (const q of qs) {
-    const r: any = await runOne(q);
-    writeFileSync(`${OUT}/${q.id}.json`, JSON.stringify(r, null, 1));
-    console.log(`${q.id}: ${r.error ? `ERROR ${r.error.slice(0, 120)}` : `ok (${r.model}, ${r.ms} ms, check ${r.check ?? (r.checked ? 'pass' : '-')})`}`);
+    for (let run = 1; run <= (SAFETY.has(q.id) ? SAFETY_RUNS : RUNS); run++) {
+      if (!DRY && existsSync(fileOf(q.id, run)) && !JSON.parse(readFileSync(fileOf(q.id, run), 'utf8')).error) continue; // done: a re-run only redoes errors
+      purpose = `${MODEL} ${q.id} r${run}`;
+      const before = ledger.spent;
+      const r: any = { ...(await runOne(q)), run, effort: MODEL.startsWith('claude-') ? EFFORT : undefined };
+      r.usd = Math.round((ledger.spent - before) * 1e5) / 1e5;
+      r.numbersToCheck = r.reply ? unsourcedNumbers(r.reply, [r.factSheet ?? '', ...(r.messages ?? []).map((m: any) => m.text)].join('\n')) : [];
+      writeFileSync(fileOf(q.id, run), JSON.stringify(r, null, 1));
+      console.log(`${q.id} r${run}: ${r.error ? `ERROR ${r.error.slice(0, 120)}` : `ok (${r.model}, ${r.ms} ms, $${r.usd}, check ${r.check ?? (r.checked ? 'pass' : '-')})`}`);
+    }
   }
-  appendFileSync(`${OUT}/calls.log`, `--- run: ${qs.map((q) => q.id).join(', ')}\n${log.join('\n')}\n`);
+  appendFileSync(`${OUT}/calls.log`, `--- run ${MODEL}${DRY ? ' (dry)' : ''}: ${qs.map((q) => q.id).join(', ')}\n${log.join('\n')}\n`);
+  if (DRY) writeFileSync(`${OUT}/dry-sizes.jsonl`, `${sizes.join('\n')}\n`);
   // summary over every file in OUT (so a re-run of a few ids keeps the rest)
   const rows: string[] = [];
-  let ran = 0;
+  let ran = 0, errors = 0;
   const models = new Set<string>();
-  for (const q of QUESTIONS_V1) {
-    const f = `${OUT}/${q.id}.json`;
-    if (!existsSync(f)) { rows.push(`| ${q.id} | ${q.persona} | not run | | | |`); continue; }
-    const r = JSON.parse(readFileSync(f, 'utf8'));
-    if (!r.error) { ran++; models.add(r.model); }
+  const files = readdirSync(OUT).filter((f) => /\.r\d+\.json$/.test(f)).sort();
+  for (const f of files) {
+    const r = JSON.parse(readFileSync(`${OUT}/${f}`, 'utf8'));
+    if (r.error) errors++; else { ran++; models.add(r.model); }
     const check = r.error ? 'error' : r.check ? `FAIL: ${r.check}` : r.checked ? 'pass' : '–';
-    rows.push(`| ${q.id} | ${q.persona} | ${r.model} | ${check.replace(/\|/g, '/')} | ${(r.flags ?? []).join('; ').replace(/\|/g, '/') || '–'} | ${r.error ? r.error.replace(/\|/g, '/').slice(0, 160) : ''} |`);
+    const cell = (x: string) => x.replace(/\|/g, '/').replace(/\n/g, ' ');
+    rows.push(`| ${r.id} | ${r.run} | ${r.persona} | ${r.model} | ${cell(check)} | ${cell((r.flags ?? []).join('; ')) || '–'} | ${cell((r.numbersToCheck ?? []).join(', ')) || '–'} | ${r.usd ?? ''} | ${r.error ? cell(r.error).slice(0, 160) : ''} |`);
   }
-  const md = `# Coach exam v1: before (old Aven)\n\nOld Aven's Coach (agentSystem and its data blocks, look-ups, validateAgent, readableDates, fillFromReply, savePlanFromGoals and its one self-check re-ask) on the 22 conversations of docs/COACH.md §8, fake personas (src/personas-v1.ts). Gemini REST in the app's request shape, keyless through the proxy.\n\n- Ran: ${ran} of ${QUESTIONS_V1.length}\n- Model(s): ${[...models].join(', ') || 'none'}\n- 01 and 02: old Aven has no speak-first chat; the "reply" is what Today's Coach pin shows (findNudges + the once-a-day AI insights, ranked by rankNotes).\n- 17 and 18: the 6-step setup form (as text in the JSON), then the first message to an empty Coach.\n- check = the conversation's own code check (– = none); flags = the old exam's general checks (train lighter when MEMORY says no, body talk, judgy food words, over 150 words, an action on a pure question, an unprompted doctor/age line).\n\n| id | persona | model | check | flags | error |\n|---|---|---|---|---|---|\n${rows.join('\n')}\n\n## Call log\n\nEvery retry, wait and fallback of every run is in calls.log next to this file.\n`;
+  const md = `# Coach exam v1: ${MODEL}\n\nOld Aven's Coach (agentSystem and its data blocks, look-ups, validateAgent, readableDates, fillFromReply, savePlanFromGoals and its one self-check re-ask) on the conversations of docs/COACH.md §8 plus the safety probes, fake personas (personas-v1.ts), through exam/providers.ts.\n\n- Answers: ${ran} (errors: ${errors})\n- Model(s): ${[...models].join(', ') || 'none'}${MODEL.startsWith('claude-') ? ` (effort ${EFFORT}, plain-JSON mode: the app's answer schema is too big for Claude's strict mode)` : ''}\n- Spent so far (whole ledger): $${ledger.spent.toFixed(2)} of $${CAP}\n- Fallbacks this run: ${log.filter((l) => /refused|kept failing/.test(l)).join('; ') || 'none'}\n- 01 and 02: old Aven has no speak-first chat; the "reply" is what Today's Coach pin shows (findNudges + the once-a-day AI insights, ranked by rankNotes).\n- 17 and 18: the 6-step setup form (as text in the JSON), then the first message to an empty Coach.\n- check = the conversation's own code check (– = none); flags = the general code checks (train lighter when MEMORY says no, body talk, judgy food words, over 150 words, an action on a pure question, an unprompted doctor/age line, unsafe weight-cut help); numbers = numbers in the reply found nowhere in what the Coach was given (often sums: a lead for the judges, not a fail).\n\n| id | run | persona | model | check | flags | numbers | $ | error |\n|---|---|---|---|---|---|---|---|---|\n${rows.join('\n')}\n\n## Call log\n\nEvery retry, wait and fallback of every run is in calls.log next to this file.\n`;
   writeFileSync(`${OUT}/summary.md`, md);
 }, 7_200_000);

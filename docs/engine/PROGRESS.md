@@ -14,7 +14,7 @@ Merge an engine PR only when `npm run verify` is green **and** Codex's review of
 | E1a-2 | schema versions and migrations; backup export with checksum; restore with preview, merge or replace, last-known-good; corrupt and half files; import from old Aven (file and same-site copy) with a dry-run report and one-action Undo; isolation tests | Opus | export, restore, import his real old backup and read the report |
 | E1a-3 | `/engine/` debug page; `npm run verify`; code review; untested list | Opus | the whole page |
 | E1b | parser (sets, food words, water, bodyweight), `docs/parser-examples.md`, phrase box on `/engine/` | **Sonnet main**, Opus advisor | type or dictate phrases |
-| E2 (proposal) | fix the Coach exam; test Haiku 5.5 vs Gemini on his real kinds of conversations | later | |
+| E2 | fix the Coach exam (plan v2, `/mnt/project-files/e2/E2-plan.md`); choose the Coach model; old Aven's "before" | 3 Nov | free part built and dry-run; paid run on Gunshot next |
 
 ## Rule → proof
 Tests live in `tests/engine/`. "untested" is said plainly.
@@ -112,7 +112,15 @@ Run it after every page or engine change, and again against the live page after 
 - Codex review of PR #44 (2 Nov, after the merge): 4 real findings, all reproduced by a failing test, then fixed: undoing a creation now stops if a field was added since; Undo never makes a stale summary look fresh; a repeated tap after a newer change shows the database; replace also removes records another tab just added. Codex's look at #45 found a 5th: Undo also restored an old `stale` value when the change touched other fields too; fixed the same way. Its look at that fix found a 6th (#45 was merged before that look finished, against this rule): undoing a recount left the old value looking fresh; now it comes back stale (#46). Three staleness bugs in a row meant the design was wrong: a stored `stale` flag that Undo had to treat specially. Redesigned in #46: staleness is worked out from the stamps of the facts (`derived.ts`; a stamp is the id of the write that made a state, unique across phones) and never stored, so Undo needs no special case; a property test checks random edit/delete/Undo/recount runs. Codex's review of the redesign found 3 more edge cases (a shared ancestor read as a loop, older derived records, equal revision numbers on two phones), all fixed with tests; revision counters were replaced by stamps for that. Plus 5 property tests and 1 ported test (77 tests).
 
 ## Next step
-E1b is built (parser, `docs/parser-examples.md`, phrase box); it waits on Codex's review, then merge and a check of the live page. Then propose E2 to Omar. The old note follows.
+E2 (3 Nov): the free part is built: `exam/providers.ts` (Gemini or Claude in old Aven's request shape, spend cap and
+ledger, Claude prompt cache, half-price batches), `exam/judge/` (rubric v2, 22 calibration replies, two blind judges,
+calibration gate, report with the plan's decision rules as code), `exam/checks/` (safety, number audit), 8 safety probes,
+10 held-out conversations outside the repo. A dry run of all 40 (×2, safety ×5) for Flash and Sonnet and of the judges
+ran end to end. Measured: the Coach prompt is about 20k tokens a call, so the paid run is estimated at about $28
+(cap $38, enforced). Next: the paid run on Gunshot (Omar approves a Remote Control session; keys live there), then
+Omar's 12 blind pairs after the first Flash pass, then the report. How to run: `exam/v1/README.md`.
+
+E1b is built (parser, `docs/parser-examples.md`, phrase box) and merged. The old note follows.
 
 E1a is finished and Omar has tried it on his phone (2 Nov): everything worked. E1b waits for Omar to say "go E1b" and to switch to **Sonnet**.
 It covers the parser and `docs/parser-examples.md` (not written yet), then a phrase box on `/engine/`. Start from `old-logic-map.md` "Port now" E1b rows and the self-correction rule in `SPEC.md` (contradiction 3).
