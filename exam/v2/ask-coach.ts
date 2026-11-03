@@ -12,11 +12,22 @@ function geminiSchema(s: unknown): unknown {
   return Object.fromEntries(Object.entries(s).map(([k, v]) => [k, k === 'type' ? String(v).toUpperCase() : k === 'description' ? v : geminiSchema(v)]));
 }
 
-export function toBody(req: CoachRequest, maxOut = 1200): GeminiBody {
+/**
+ * Gemini counts its thinking inside maxOutputTokens, so a bare 1,200 can be spent on thinking and cut the JSON short
+ * (the 3 Nov run: Flash's "reply is not JSON" on most cases). Gemini gets a fixed thinking budget on top of the answer's
+ * own room; Claude's thinking room is added by `toClaude`.
+ */
+export const GEMINI_THINKING = 4096;
+export function toBody(req: CoachRequest, maxOut = 1200, model = 'gemini'): GeminiBody {
+  const gemini = !model.startsWith('claude-');
   return {
     systemInstruction: { parts: [{ text: req.system }] },
     contents: req.turns.map((t) => ({ role: t.role, parts: [{ text: t.text }] })),
-    generationConfig: { responseMimeType: 'application/json', responseSchema: geminiSchema(req.schema), maxOutputTokens: maxOut },
+    generationConfig: {
+      responseMimeType: 'application/json', responseSchema: geminiSchema(req.schema),
+      maxOutputTokens: gemini ? maxOut + GEMINI_THINKING : maxOut,
+      ...(gemini ? { thinkingConfig: { thinkingBudget: GEMINI_THINKING } } : {}),
+    },
   };
 }
 
@@ -36,7 +47,7 @@ export async function askCoach(model: string, req: CoachRequest, o: CallOpts & {
   try {
     let r;
     for (let n = 0; ; n++) {
-      try { r = await call(model, toBody(req), o); break; } catch (e) {
+      try { r = await call(model, toBody(req, 1200, model), o); break; } catch (e) {
         if (!(e instanceof CallError) || !busy(e) || n >= RETRY_WAITS_MS.length) throw e;
         await wait(RETRY_WAITS_MS[n]);
       }
@@ -44,7 +55,8 @@ export async function askCoach(model: string, req: CoachRequest, o: CallOpts & {
     const ms = Math.round(performance.now() - t0);
     const text = r.candidates[0]?.content.parts.filter((p) => !p.thought).map((p) => p.text ?? '').join('') ?? '';
     let raw: unknown;
-    try { raw = JSON.parse(text); } catch { return { model, dropped: [], error: 'reply is not JSON', usd: r.usd, ms }; }
+    const cut = (r.candidates[0] as { finishReason?: string } | undefined)?.finishReason === 'MAX_TOKENS';
+    try { raw = JSON.parse(text); } catch { return { model, dropped: [], error: cut ? 'reply is not JSON (cut off at the token limit)' : 'reply is not JSON', usd: r.usd, ms }; }
     const read = readReply(raw);
     return 'error' in read ? { model, dropped: [], error: read.error, usd: r.usd, ms } : { model, reply: read.reply, dropped: read.dropped, usd: r.usd, ms };
   } catch (e) {

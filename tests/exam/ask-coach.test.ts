@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { coachRequest } from '../../src/coach/coach';
 import { buildFacts } from '../../src/coach/facts';
-import { askCoach, toBody } from '../../exam/v2/ask-coach';
+import { askCoach, GEMINI_THINKING, toBody } from '../../exam/v2/ask-coach';
 import { Ledger, toClaude, type GeminiBody } from '../../exam/providers';
 
 const sheet = buildFacts([], { now: Date.UTC(2026, 10, 3, 12), tz: 'Europe/Copenhagen' });
@@ -40,5 +40,17 @@ describe('one request for every model', () => {
     const no = await askCoach('gemini-3.8-flash', req, { ledger: ledger(), purpose: 't', fetchFn: refused, wait: async () => { throw new Error('a 400 is never retried'); } });
     expect(no).toMatchObject({ callFailed: true });
     expect(no.reply).toBeUndefined();
+  });
+
+  it('gives Gemini thinking room on top of the answer, and names a reply cut off at the limit', async () => {
+    const g = toBody(req, 1200, 'gemini-3.8-flash').generationConfig!;
+    expect(g.maxOutputTokens).toBe(1200 + GEMINI_THINKING);
+    expect(g.thinkingConfig?.thinkingBudget).toBe(GEMINI_THINKING);
+    const c = toBody(req, 1200, 'claude-sonnet-5-5').generationConfig!;
+    expect(c.maxOutputTokens).toBe(1200);
+    expect(c.thinkingConfig).toBeUndefined();
+    const cut = (async () => ({ status: 200, json: async () => ({ candidates: [{ content: { parts: [{ text: '{"say":"Half a sen' }] }, finishReason: 'MAX_TOKENS' }], usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 5 } }) })) as unknown as typeof fetch;
+    const r = await askCoach('gemini-3.8-flash', req, { ledger: ledger(), purpose: 't', fetchFn: cut });
+    expect(r.error).toBe('reply is not JSON (cut off at the token limit)');
   });
 });
