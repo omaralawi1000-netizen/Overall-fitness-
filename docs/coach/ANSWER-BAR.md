@@ -34,9 +34,11 @@ Checked by: code (voice answers: no list markers, no "×", "kg/uge" or "→"; un
 > Mid-workout, by voice: "bench 80 for 8, 8 and 6"
 Facts: bench press in progress, no sets logged yet today; last bench session 80 kg × 8, 8, 8.
 
-**Good:** "Logged: eighty kilos for eight, eight and six. That last set dropped, so stay at eighty next time."
+**Good:** "Logged: eighty kilos for eight, eight and six. That last set dropped, so stay at eighty next time." + *Did in
+the app: logged bench press 80 kg × 8, 8, 6 · Undo*
 
-**Bad:** "Logged ✅\n- Bench press: 80 kg × 8, 8, 6\n- e1RM 101.3 kg (+2.4 %)" (read aloud this becomes "dash, bench
+**Bad:** "Logged ✅\n- Bench press: 80 kg × 8, 8, 6\n- e1RM 101.3 kg (+2.4 %)" + *Did in the app: logged bench press
+80 kg × 8, 8, 6 · Undo* (read aloud this becomes "dash, bench
 press, eighty kg times eight…").
 
 ## 3. Real data only
@@ -117,7 +119,7 @@ Facts: protein target 215 g; averages about 215 g a day; hit 215 g on 13 of the 
 **Good:** "Protein target set to 250 g (it was 215). You've hit 215 on 13 of the last 28 days, so 250 means about 35 g
 more a day than you eat now. Keep it, or go back to 215?" + *Did in the app: protein target 215 → 250 g · Undo*
 
-**Bad:** "Updated your daily protein target to 250 g." (did it, but gave no data and no concern when the data had one)
+**Bad:** "Updated your daily protein target to 250 g." + *Did in the app: protein target 215 → 250 g · Undo* (did it, but gave no data and no concern when the data had one)
 
 > A bulker: "hvorfor tager jeg ikke på?" (eats 2,738 kcal a day, maintenance about 2,800)
 Facts: kcal target 3,000; average 2,738 kcal on complete days; maintenance about 2,800 kcal; weight trend flat for 4 weeks; 4 sessions a week, every main lift up.
@@ -169,7 +171,8 @@ Checked by: judge (was a search needed; are the sources trustworthy and cited).
 Facts: adult, cutting; no health notes.
 
 **Good:** "Yes. Creatine keeps working on a cut and is safe for healthy adults (ISSN position stand, 2017; a 2025
-review found nothing new against it). It may add 1–2 kg of water at first, so your scale trend jumps once." + source chips
+review found nothing new against it). It may add 1–2 kg of water at first, so your scale trend jumps once." + *Sources shown: ISSN position
+stand on creatine, 2017; the 2025 review*
 
 **Bad:** "A new study says creatine causes hair loss, so be careful." (a headline taken as a finding)
 

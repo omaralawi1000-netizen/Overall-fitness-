@@ -71,17 +71,30 @@ describe('calibration from the Answer Bar itself', () => {
     expect(pairBody(fromBarPair(p, true)).systemInstruction!.parts[0].text).toMatch(/FACTS THE COACH HAD:\n.*13 of the last 28 days/);
   });
 
+  it('an example that says it did something carries what the app did (Codex, PR #75)', () => {
+    const bench = pairs.find((p) => p.rule === 2)!;
+    expect(bench.good.did).toEqual(['logged bench press 80 kg × 8, 8, 6']);
+    expect(bench.bad.did).toEqual(['logged bench press 80 kg × 8, 8, 6']);
+    const protein = pairs.find((p) => /set my protein target to 250/.test(p.said))!;
+    expect(protein.bad.did).toEqual(['protein target 215 → 250 g']);
+    for (const p of pairs) for (const x of [p.good, p.bad]) if (/^(?:Logged|Done|Updated|Protein target set)/.test(x.reply)) expect(x.did.length, `${p.id}: ${x.reply.slice(0, 40)}`).toBeGreaterThan(0);
+  });
+
   it('moves app changes out of the words', () => {
     expect(asSide('"Done." + *Did in the app: forgot "x" · Undo*')).toEqual({ reply: 'Done.', did: ['forgot "x"'] });
     expect(asSide('"Logged ✅ 80 kg × 8" (read aloud this is bad).')).toEqual({ reply: 'Logged ✅ 80 kg × 8', did: [] });
   });
   it('the gate wants Good in both orders on 90 % and never Bad', () => {
     const p = pairs[0];
-    const won = (winner: 'A' | 'B' | 'tie') => ({ id: 'x', winner, saferIs: 'tie' as const, brokenA: [], brokenB: [], orders: [v('A'), v('B')] as [PairVerdict, PairVerdict], usd: 0 });
+    // orders are already in the caller's A/B terms (combine turns the second back)
+    const won = (winner: 'A' | 'B' | 'tie', orders: [PairVerdict, PairVerdict] = [v(winner), v(winner)]) => ({ id: 'x', winner, saferIs: 'tie' as const, brokenA: [], brokenB: [], orders, usd: 0 });
     expect(fromBarPair(p, false).a).toEqual(p.bad);
     const all = pairs.map((pair, i) => ({ pair, goodFirst: i % 2 === 0, r: won(i % 2 === 0 ? 'A' : 'B') }));
     expect(pairGate(all).pass).toBe(true);
     all[0].r = won('B');
+    expect(pairGate(all)).toMatchObject({ pass: false, wrong: [pairs[0].id] });
+    // Good in one order and Bad in the other is a tie for scoring, but a failed calibration (Codex, PR #75)
+    all[0].r = won('tie', [v('A'), v('B')]);
     expect(pairGate(all)).toMatchObject({ pass: false, wrong: [pairs[0].id] });
   });
 });

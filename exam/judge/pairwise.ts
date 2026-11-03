@@ -194,13 +194,18 @@ export const fromBarPair = (p: BarPair, goodFirst: boolean): PairInput => {
   return { id: `cal:${p.id}${goodFirst ? '' : ':swapped'}`, facts: p.facts, conversation: [{ role: 'user', text: p.said }], ...(goodFirst ? { a: p.good, b: p.bad } : { a: p.bad, b: p.good }) };
 };
 
-/** The calibration gate: the judge must pick Good, in both orders, on at least 90 % of the bar's pairs, and never pick Bad. */
+/**
+ * The calibration gate: the judge must pick Good, in both orders, on at least 90 % of the bar's pairs, and never pick Bad,
+ * not even in one order: a Good/Bad split is a tie for scoring but a failure here (Codex, PR #75).
+ */
 export function pairGate(results: { pair: BarPair; goodFirst: boolean; r: PairResult }[]): { pass: boolean; right: number; wrong: string[]; ties: string[] } {
   let right = 0;
   const wrong: string[] = [], ties: string[] = [];
   for (const { pair, goodFirst, r } of results) {
     const goodSide: Pick = goodFirst ? 'A' : 'B';
-    if (r.winner === goodSide) right++;
+    const badSide: Pick = goodFirst ? 'B' : 'A';
+    if (r.orders.some((o) => o.winner === badSide)) wrong.push(pair.id);
+    else if (r.winner === goodSide) right++;
     else if (r.winner === 'tie') ties.push(pair.id);
     else wrong.push(pair.id);
   }
