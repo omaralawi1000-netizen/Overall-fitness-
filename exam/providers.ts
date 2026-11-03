@@ -241,7 +241,9 @@ export async function call(model: string, body: GeminiBody, o: CallOpts): Promis
 function claudeClient(): Anthropic {
   const apiKey = process.env.AVEN_ANTHROPIC_KEY ?? process.env.ANTHROPIC_API_KEY;
   if (!apiKey) throw new CallError(401, 'no Anthropic key in AVEN_ANTHROPIC_KEY or ANTHROPIC_API_KEY');
-  return (claude ??= new Anthropic({ apiKey, maxRetries: 0, timeout: 180_000 })); // the harness does its own paced retries
+  // (the harness does its own paced retries; old Aven's exam runs under jsdom, which looks like a browser to the SDK, so it
+  // must be allowed: the key comes from the PC's environment and never reaches a real browser)
+  return (claude ??= new Anthropic({ apiKey, maxRetries: 0, timeout: 180_000, dangerouslyAllowBrowser: true }));
 }
 function apiError(e: unknown): never {
   if (e instanceof Anthropic.APIError) throw new CallError(e.status ?? -1, `${e.status} ${e.message.slice(0, 200)}`);
