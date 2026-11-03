@@ -1,0 +1,61 @@
+// Coach exam v2: run cases through setups and save every transcript (one JSON line per case, setup and run).
+//   npx vitest run --config exam/vitest.config.ts exam/v2/run-answers.test.ts
+// Env: EXAM_SETUPS   comma list of setup names from SETUPS below (default: flash,sonnet,opponent)
+//      EXAM_CASES    comma list of case ids, or empty for all
+//      EXAM_RUNS     runs per case (default 1; the scored exam uses 3 and reports the worst)
+//      EXAM_CAP_USD  required unless EXAM_DRY · EXAM_LEDGER (this provider's ledger) · EXAM_OUT (default reference/e2v2)
+//      EXAM_DRY=1    no calls: a made-up reply, files under <EXAM_OUT>/dry
+// A (case, setup, run) already saved with the same prompt is never paid for again.
+import { it } from 'vitest';
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { COACH_RULES } from '../../src/coach/coach';
+import { renderKnowledge } from '../../src/coach/knowledge';
+import { Ledger, type GeminiReply } from '../providers';
+import { CASES } from './cases';
+import { OPPONENT_RULES, runCase, type Setup } from './run-case';
+
+export const SETUPS: Record<string, Setup> = {
+  flash: { name: 'flash', quick: 'gemini-3.8-flash', deep: 'gemini-3.8-flash' },
+  sonnet: { name: 'sonnet', quick: 'claude-sonnet-5-5', deep: 'claude-sonnet-5-5' },
+  mix: { name: 'mix', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5' },
+  opponent: { name: 'opponent', quick: 'claude-opus-5-5', deep: 'claude-opus-5-5', rules: OPPONENT_RULES },
+};
+
+const DRY = !!process.env.EXAM_DRY;
+const OUT = `${process.env.EXAM_OUT ?? '/home/user/Overall-fitness-/reference/e2v2'}${DRY ? '/dry' : ''}`;
+const CAP = Number(process.env.EXAM_CAP_USD ?? (DRY ? 1000 : NaN));
+const RUNS = Number(process.env.EXAM_RUNS ?? 1);
+const pick = (v: string | undefined) => (v ? v.split(',').map((s) => s.trim()).filter(Boolean) : []);
+
+const dry = (): GeminiReply => ({ candidates: [{ content: { parts: [{ text: JSON.stringify({ say: 'Dry run.', actions: [] }) }] } }], usage: { inTokens: 0, cachedTokens: 0, outTokens: 0, searches: 0 }, usd: 0 });
+
+it('runs the cases through the setups', async () => {
+  if (!Number.isFinite(CAP)) throw new Error('set EXAM_CAP_USD (or EXAM_DRY=1)');
+  mkdirSync(OUT, { recursive: true });
+  const file = `${OUT}/answers.jsonl`;
+  const ledger = new Ledger(process.env.EXAM_LEDGER ?? `${OUT}/ledger.jsonl`, CAP);
+  const setups = (pick(process.env.EXAM_SETUPS).length ? pick(process.env.EXAM_SETUPS) : ['flash', 'sonnet', 'opponent']).map((n) => {
+    const s = SETUPS[n];
+    if (!s) throw new Error(`unknown setup ${n}`);
+    return s;
+  });
+  const only = new Set(pick(process.env.EXAM_CASES));
+  const cases = CASES.filter((c) => !only.size || only.has(c.id));
+  // the prompt version: a change to the rules, the knowledge or the case is new work
+  const version = (setupRules: string, caseJson: string) => createHash('sha256').update(`${setupRules}|${renderKnowledge()}|${caseJson}`).digest('hex').slice(0, 16);
+  const done = new Set((existsSync(file) ? readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []).map((l) => l.key as string));
+  for (const c of cases) {
+    for (const s of setups) {
+      for (let run = 1; run <= RUNS; run++) {
+        const key = `${c.id}|${s.name}|${s.quick}|${s.deep}|${run}|${version(s.rules ?? COACH_RULES, JSON.stringify(c))}`;
+        if (done.has(key)) continue;
+        const r = await runCase(c, s, { ledger, purpose: 'answers', ...(DRY ? { dry } : {}) });
+        appendFileSync(file, `${JSON.stringify({ key, at: new Date().toISOString(), run, ...r })}\n`);
+        const failed = r.checks.filter((x) => !x.ok).map((x) => x.name);
+        console.log(`${c.id} · ${s.name} · run ${run}: $${r.usd.toFixed(4)}${failed.length ? ` · FAILED ${failed.join(', ')}` : ''}`);
+      }
+    }
+  }
+  console.log(`spent $${ledger.spent.toFixed(2)} of $${CAP}`);
+});
