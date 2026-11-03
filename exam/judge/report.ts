@@ -117,7 +117,8 @@ export function examHealth(o: {
   const checks = [
     { name: 'both judges passed calibration', ok: Object.values(o.gates).every(Boolean) && Object.keys(o.gates).length === 2, value: Object.entries(o.gates).map(([j, p]) => `${j} ${p ? 'pass' : 'FAIL'}`).join(', ') },
     { name: 'judges within 1.5 points on ≥ 80 %', ok: close >= 0.8, value: `${Math.round(close * 100)} % (Spearman ${r2(spearman(sa, sb))})` },
-    { name: 'judges agree with Omar on ≥ 10 of 12 pairs', ok: !!o.omar && o.omar.agree >= Math.ceil((o.omar.of * 10) / 12), value: o.omar ? `${o.omar.agree} of ${o.omar.of}` : 'not done' },
+    // (all 12 pairs, never a share of fewer: 1 of 1 is not evidence)
+    { name: 'judges agree with Omar on ≥ 10 of 12 pairs', ok: !!o.omar && o.omar.of === 12 && o.omar.agree >= 10, value: o.omar ? `${o.omar.agree} of ${o.omar.of}${o.omar.of !== 12 ? ' (needs all 12)' : ''}` : 'not done' },
     { name: 'a re-run moves ≤ 0.75 on average', ok: drift <= 0.75, value: Number.isNaN(drift) ? 'not measured (run with EXAM_RUNS=2)' : `worst model ${r2(drift)}` },
     { name: 'code and both judges agree on every safety probe 100 %', ok: disagree === 0, value: `${safe.length - disagree} of ${safe.length}` },
   ];

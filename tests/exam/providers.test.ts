@@ -1,6 +1,6 @@
 // The exam's model layer, offline: the spend guard fails closed, and old Aven's Gemini request turns into a valid Claude one.
 import { describe, it, expect, vi } from 'vitest';
-import { mkdtempSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { priceOf, realToday, costOf, estimate, Ledger, SpendCapError, CallError, toJsonSchema, toClaude, schemaSize, jsonOnly, splitSystem, callBatch, geminiInlined, call, PRICES, type GeminiBody, type GeminiReply } from '../../exam/providers';
@@ -226,6 +226,52 @@ describe('batches (judges, half price)', () => {
     expect(out.get('b')).toMatchObject({ status: 0 });
     const one = ((800 * 4 + 300 * 20) / 1e6) * 0.5;
     expect(l.spent).toBeCloseTo(2 * one); // the refusal's tokens are billed too
+  });
+  describe('a batch that outlives its run (Codex, PR #66)', () => {
+    const usage = { input_tokens: 800, output_tokens: 300, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
+    const msg = (text: string) => ({ content: [{ type: 'text', text }], stop_reason: 'end_turn', stop_details: null, usage });
+    const one = ((800 * 4 + 300 * 20) / 1e6) * 0.5;
+    const results = async () => (async function* () { for (const id of ['a', 'b']) yield { custom_id: id, result: { type: 'succeeded', message: msg(`{"${id}":1}`) } }; })();
+    it('Claude: a stopped run keeps the handle and the reservation; the next run collects the same batch instead of sending it again', async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'jobs-'));
+      const file = tmp();
+      let created = 0;
+      const down = { messages: { batches: { create: async () => { created++; return { id: 'mb9', processing_status: 'in_progress', request_counts: { succeeded: 0, errored: 0 } }; }, retrieve: async () => { throw new Error('socket hang up'); }, results } } } as any;
+      await expect(callBatch('claude-opus-5-5', items, { ledger: new Ledger(file, 5), purpose: 'judge', client: down, jobDir: dir, ...quick, maxWaitMs: -1 })).rejects.toThrow(/run again to collect it/);
+      expect(created).toBe(1);
+      expect(readdirSync(dir)).toHaveLength(1);
+      const held = new Ledger(file, 5).spent;
+      expect(held).toBeGreaterThan(2 * one); // the worst case stays counted while the batch is out
+      const up = { messages: { batches: { create: async () => { created++; throw new Error('must not send again'); }, retrieve: async () => ({ id: 'mb9', processing_status: 'ended', request_counts: { succeeded: 2, errored: 0 } }), results } } } as any;
+      const l = new Ledger(file, 5);
+      const out = await callBatch('claude-opus-5-5', items, { ledger: l, purpose: 'judge', client: up, jobDir: dir, ...quick });
+      expect(created).toBe(1);
+      expect((out.get('b') as GeminiReply).candidates[0].content.parts[0].text).toBe('{"b":1}');
+      expect(l.spent).toBeCloseTo(2 * one); // reservation given back, only the real cost stays
+      expect(readdirSync(dir)).toEqual([]);
+    });
+    it('Claude: a poll that fails on the network is tried again', async () => {
+      let polls = 0;
+      const flaky = { messages: { batches: { create: async () => ({ id: 'mb8', processing_status: 'in_progress', request_counts: { succeeded: 0, errored: 0 } }), retrieve: async () => { if (++polls === 1) throw new Error('ECONNRESET'); return { id: 'mb8', processing_status: 'ended', request_counts: { succeeded: 2, errored: 0 } }; }, results } } } as any;
+      const out = await callBatch('claude-opus-5-5', items, { ledger: new Ledger(tmp(), 5), purpose: 'judge', client: flaky, ...quick });
+      expect(polls).toBe(2);
+      expect(out.get('a')).not.toBeInstanceOf(CallError);
+    });
+    it('Gemini: the next run polls the saved job, never posts a second one', async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'jobs-'));
+      const file = tmp();
+      const seen: string[] = [];
+      const pages: [number, any][] = [[200, { name: 'batches/7', metadata: { state: 'JOB_STATE_PENDING' } }], [400, { error: { message: 'stop' } }],
+        [200, { name: 'batches/7', done: true, metadata: { state: 'JOB_STATE_SUCCEEDED' }, response: { inlinedResponses: [{ metadata: { key: 'a' }, response: gem('A') }, { metadata: { key: 'b' }, response: gem('B') }] } }]];
+      const f = (async (url: string, init: any) => { seen.push(`${init.method} ${url.split('/v1beta/')[1]}`); const [status, body] = pages.shift()!; return { status, json: async () => body }; }) as unknown as typeof fetch;
+      await expect(callBatch('gemini-4-argon', items, { ledger: new Ledger(file, 5), purpose: 'judge', fetchFn: f, jobDir: dir, ...quick })).rejects.toMatchObject({ status: 400 });
+      const l = new Ledger(file, 5);
+      const out = await callBatch('gemini-4-argon', items, { ledger: l, purpose: 'judge', fetchFn: f, jobDir: dir, ...quick });
+      expect(seen).toEqual(['POST models/gemini-4-argon:batchGenerateContent', 'GET batches/7', 'GET batches/7']);
+      expect((out.get('a') as GeminiReply).candidates[0].content.parts[0].text).toBe('A');
+      expect(l.spent).toBeCloseTo(2 * ((1000 * 2 + 500 * 10) / 1e6) * 0.5);
+      expect(readdirSync(dir)).toEqual([]);
+    });
   });
   it('the inline answers are found at each path Google documents', () => {
     expect(geminiInlined({ response: { inlinedResponses: [1] } })).toEqual([1]);

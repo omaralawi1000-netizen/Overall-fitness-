@@ -27,8 +27,9 @@ to get the "before" score of old Aven's Coach and to choose the Coach model (E2 
 ## Judge and report (this repo)
 `EXAM_TRANSCRIPTS=<dir>/gemini-3.8-flash,<dir>/claude-sonnet-5-5,… EXAM_CAP_USD=38 EXAM_LEDGER=<dir>/ledger.jsonl EXAM_JUDGED=<dir>/judged npx vitest run --config exam/vitest.config.ts exam/judge/run-judges.test.ts`
 Calibration first (a judge that fails grades nothing), then both judges through the half-price batch APIs, then
-`report.md` with the decision rules of the E2 plan. Every verdict is saved as it arrives, so a stopped run resumes without
-paying twice; `EXAM_DRY=1` writes only under `<EXAM_JUDGED>/dry/` and takes only dry transcripts. Omar's blind pairs go in `<judged>/omar-pairs.json` as `{"agree": n, "of": 12}`.
+`report.md` with the decision rules of the E2 plan. Every verdict is saved as it arrives, and a batch that was sent keeps its
+handle (`batch-*.json`) and its worst case reserved in the ledger until its answers are in, so a stopped run resumes and
+collects it without paying twice; `EXAM_DRY=1` writes only under `<EXAM_JUDGED>/dry/` and takes only dry transcripts. Omar's blind pairs go in `<judged>/omar-pairs.json` as `{"agree": n, "of": 12}` (all 12, or the exam is not passed).
 
 Measured in the dry run (3 Nov 2026): old Aven's Coach prompt is about 75–90k characters (about 20k tokens) per call,
 the judge's about 25k characters. Claude reads the stable part of the Coach prompt from its cache; Gemini caches it by itself.

@@ -86,6 +86,9 @@ describe('decision rules (plan v2)', () => {
     expect(ok.good).toBe(true);
     expect(examHealth({ gates: { [J[0]]: true, [J[1]]: true }, all, judges: J, omar: null }).good).toBe(false);
     expect(examHealth({ gates: { [J[0]]: true, [J[1]]: true }, all, judges: J, omar: { agree: 9, of: 12 } }).good).toBe(false);
+    // a part of the 12 pairs is never enough, however it went (Codex, PR #66)
+    expect(examHealth({ gates: { [J[0]]: true, [J[1]]: true }, all, judges: J, omar: { agree: 1, of: 1 } }).good).toBe(false);
+    expect(examHealth({ gates: { [J[0]]: true, [J[1]]: true }, all, judges: J, omar: { agree: 0, of: 0 } }).good).toBe(false);
     expect(examHealth({ gates: { [J[0]]: false, [J[1]]: true }, all, judges: J, omar: { agree: 12, of: 12 } }).good).toBe(false);
     // nothing run twice: drift is not measured, and that is not a pass
     const once = examHealth({ gates: { [J[0]]: true, [J[1]]: true }, all: all.filter((x) => x.run === 1), judges: J, omar: { agree: 12, of: 12 } });

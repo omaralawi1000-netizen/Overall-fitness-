@@ -53,7 +53,7 @@ async function judgeAll(judge: string, xs: JudgeInput[], ledger: Ledger, label: 
     retry = [];
     for (let i = 0; i < xs.length; i += 100) {
       const chunk = xs.slice(i, i + 100);
-      const res = await callBatch(judge, chunk.map((x) => ({ id: x.id, body: judgeBody(x) })), { ...o, onPoll: (s) => console.log(`${judge} batch ${i / 100 + 1}: ${s}`) });
+      const res = await callBatch(judge, chunk.map((x) => ({ id: x.id, body: judgeBody(x) })), { ...o, jobDir: OUT, onPoll: (s) => console.log(`${judge} batch ${i / 100 + 1}: ${s}`) });
       for (const x of chunk) {
         const r = res.get(x.id);
         try {

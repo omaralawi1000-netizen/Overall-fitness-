@@ -13,7 +13,8 @@
  * Claude: AVEN_ANTHROPIC_KEY (Omar's PC) or ANTHROPIC_API_KEY. Nothing here prints a key or a header.
  */
 import Anthropic from '@anthropic-ai/sdk';
-import { appendFileSync, existsSync, readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 
 // ── prices ──
 export interface Price {
@@ -256,25 +257,59 @@ export function claudeReply(msg: Anthropic.Message, body: GeminiBody): GeminiRep
 // ── batches (the judges): half price, answers within minutes to hours ──
 /** Both batch APIs bill half the normal price (official pricing pages, 3 Nov 2026). */
 export const BATCH_DISCOUNT = 0.5;
-export interface BatchOpts extends CallOpts { pollMs?: number; maxWaitMs?: number; onPoll?: (state: string) => void; sleep?: (ms: number) => Promise<void>; /** for the offline test */ client?: Pick<Anthropic, 'messages'> }
+export interface BatchOpts extends CallOpts {
+  pollMs?: number; maxWaitMs?: number; onPoll?: (state: string) => void; sleep?: (ms: number) => Promise<void>;
+  /** where a sent batch's handle is kept until its answers are in, so a stopped run collects it instead of paying again */
+  jobDir?: string;
+  /** for the offline test */ client?: Pick<Anthropic, 'messages'>;
+}
+const NO_USAGE: Usage = { inTokens: 0, cachedTokens: 0, outTokens: 0, searches: 0 };
+const transient = (e: unknown) => e instanceof CallError && (e.status === -1 || e.status === 429 || e.status === 529 || e.status >= 500);
 export type BatchResult = Map<string, GeminiReply | CallError>;
 
 /**
  * Sends every request as one batch and waits for all answers. The whole batch's worst case is checked against the cap
- * first; each answer's real (discounted) cost is then written to the ledger. An answer that failed is a CallError in the
- * map (the caller decides to retry it), never a guess.
+ * first and written to the ledger as a reservation the moment the batch is sent; each answer's real (discounted) cost is
+ * written as it is read, then the reservation is released. So a run that stops while a batch is out still counts that
+ * batch against the cap. With `jobDir`, the handle is kept on disk and the same batch (same model, same ids) is collected
+ * on the next run instead of sent again. A poll that fails on the network or a 429/5xx is tried again until the wait
+ * limit. An answer that failed is a CallError in the map (the caller decides to retry it), never a guess.
  */
 export async function callBatch(model: string, items: { id: string; body: GeminiBody }[], o: BatchOpts): Promise<BatchResult> {
   const price = priceOf(model);
   if (new Set(items.map((x) => x.id)).size !== items.length) throw new Error('batch ids must be unique');
   const worst = items.reduce((s, x) => s + estimate(model, x.body, maxOutOf(model, x.body)), 0) * BATCH_DISCOUNT;
-  o.ledger.check(worst, `${o.purpose}: a batch of ${items.length} on ${model}`);
+  const jobFile = o.jobDir ? `${o.jobDir}/batch-${model}-${createHash('sha256').update(items.map((x) => x.id).sort().join('\n')).digest('hex').slice(0, 12)}.json` : null;
+  const pending: { handle: string; reservedUsd: number } | null = !o.dry && jobFile && existsSync(jobFile) ? JSON.parse(readFileSync(jobFile, 'utf8')) : null;
+  if (!pending) o.ledger.check(worst, `${o.purpose}: a batch of ${items.length} on ${model}`); // (a pending one is already reserved)
   const out: BatchResult = new Map();
   const isClaude = model.startsWith('claude-');
   const reqs = items.map((x) => ({ ...x, req: isClaude ? toClaude(model, x.body, o.effort ?? 'medium') : null }));
   if (o.dry) { for (const x of items) out.set(x.id, o.dry(model, x.body)); return out; }
   const sleep = o.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const deadline = Date.now() + (o.maxWaitMs ?? 6 * 3600_000);
+  const reserve = (handle: string) => {
+    o.ledger.record(entry(model, `${o.purpose}: reserved for batch ${handle}`, worst, NO_USAGE, true));
+    if (jobFile) writeFileSync(jobFile, JSON.stringify({ model, handle, reservedUsd: worst, purpose: o.purpose, items: items.length, at: new Date().toISOString() }));
+    return handle;
+  };
+  // (after the answers are in the ledger, or the job ended with none: the reservation is given back)
+  const release = (handle: string) => {
+    o.ledger.record(entry(model, `${o.purpose}: reservation for batch ${handle} released`, -(pending?.reservedUsd ?? worst), NO_USAGE, true));
+    if (jobFile) rmSync(jobFile, { force: true });
+  };
+  const later = (handle: string) => `${jobFile ? 'run again to collect it (the handle is in ' + jobFile + ')' : 'collect it by hand'}; its worst case stays reserved in the ledger (${handle})`;
+  async function poll<T>(get: () => Promise<T>, handle: string): Promise<T> {
+    for (;;) {
+      try { return await get(); }
+      catch (e) {
+        if (!transient(e)) throw e;
+        if (Date.now() > deadline) throw new CallError(-1, `batch ${handle}: polling kept failing (${(e as Error).message.slice(0, 80)}): ${later(handle)}`);
+        o.onPoll?.(`poll failed (${(e as Error).message.slice(0, 80)}), trying again`);
+        await sleep(o.pollMs ?? 30_000);
+      }
+    }
+  }
   const keep = (id: string, read: () => GeminiReply) => {
     try {
       const r = read();
@@ -291,37 +326,43 @@ export async function callBatch(model: string, items: { id: string; body: Gemini
 
   if (isClaude) {
     const c = o.client ?? claudeClient();
-    const batch = await c.messages.batches.create({ requests: reqs.map((x) => ({ custom_id: x.id, params: x.req! })) }).catch(apiError);
-    for (let b = batch; b.processing_status !== 'ended'; b = await c.messages.batches.retrieve(batch.id).catch(apiError)) {
-      if (Date.now() > deadline) throw new CallError(-1, `batch ${batch.id} still running after the wait limit: it keeps running at Anthropic; collect it later`);
+    const id = pending?.handle ?? reserve((await c.messages.batches.create({ requests: reqs.map((x) => ({ custom_id: x.id, params: x.req! })) }).catch(apiError)).id);
+    if (pending) o.onPoll?.(`collecting batch ${id}, sent by an earlier run`);
+    for (let b = await poll(() => c.messages.batches.retrieve(id).catch(apiError), id); b.processing_status !== 'ended'; b = await poll(() => c.messages.batches.retrieve(id).catch(apiError), id)) {
+      if (Date.now() > deadline) throw new CallError(-1, `batch ${id} still running after the wait limit: it keeps running at Anthropic; ${later(id)}`);
       o.onPoll?.(`${b.processing_status}: ${b.request_counts.succeeded + b.request_counts.errored} of ${items.length} done`);
       await sleep(o.pollMs ?? 30_000);
     }
-    for await (const r of await c.messages.batches.results(batch.id).catch(apiError)) {
+    for await (const r of await poll(() => c.messages.batches.results(id).catch(apiError), id)) {
       const body = bodyOf.get(r.custom_id);
       if (!body) continue;
       if (r.result.type === 'succeeded') { const msg = r.result.message; keep(r.custom_id, () => claudeReply(msg, body)); }
       else out.set(r.custom_id, new CallError(r.result.type === 'errored' ? -1 : -3, `batch item ${r.result.type}${r.result.type === 'errored' ? `: ${JSON.stringify(r.result.error).slice(0, 160)}` : ''}`));
     }
+    release(id);
   } else {
-    const created = await geminiPost(`models/${encodeURIComponent(model)}:batchGenerateContent`, {
-      batch: { display_name: o.purpose.slice(0, 100), input_config: { requests: { requests: items.map((x) => ({ request: x.body, metadata: { key: x.id } })) } } },
-    }, o);
-    const name: string = created?.name;
-    if (!name) throw new CallError(-1, 'Gemini batch: no job name in the reply');
-    let job = created;
+    let job: any;
+    if (pending) { o.onPoll?.(`collecting batch ${pending.handle}, sent by an earlier run`); job = await poll(() => geminiPost(pending.handle, null, o, 'GET'), pending.handle); }
+    else {
+      job = await geminiPost(`models/${encodeURIComponent(model)}:batchGenerateContent`, {
+        batch: { display_name: o.purpose.slice(0, 100), input_config: { requests: { requests: items.map((x) => ({ request: x.body, metadata: { key: x.id } })) } } },
+      }, o);
+      if (!job?.name) throw new CallError(-1, 'Gemini batch: no job name in the reply');
+      reserve(job.name);
+    }
+    const name: string = pending?.handle ?? job.name;
     for (;;) {
       const state = String(job?.metadata?.state ?? job?.state ?? '');
       if (job?.done || /(SUCCEEDED|FAILED|CANCELLED|EXPIRED)$/.test(state)) break;
-      if (Date.now() > deadline) throw new CallError(-1, `Gemini batch ${name} still running after the wait limit: collect it later`);
+      if (Date.now() > deadline) throw new CallError(-1, `Gemini batch ${name} still running after the wait limit: ${later(name)}`);
       o.onPoll?.(state || 'pending');
       await sleep(o.pollMs ?? 30_000);
-      job = await geminiPost(name, null, o, 'GET');
+      job = await poll(() => geminiPost(name, null, o, 'GET'), name);
     }
     const state = String(job?.metadata?.state ?? job?.state ?? '');
-    if (!/SUCCEEDED$/.test(state) && !job?.response) throw new CallError(-1, `Gemini batch ${name} ended as ${state || 'unknown'}: ${JSON.stringify(job?.error ?? '').slice(0, 160)}`);
+    if (!/SUCCEEDED$/.test(state) && !job?.response) { release(name); throw new CallError(-1, `Gemini batch ${name} ended as ${state || 'unknown'}: ${JSON.stringify(job?.error ?? '').slice(0, 160)}`); }
     const list = geminiInlined(job);
-    if (!list) throw new CallError(-1, `Gemini batch ${name}: no inline answers found (keys: ${Object.keys(job?.response ?? job ?? {}).join(', ')})`);
+    if (!list) throw new CallError(-1, `Gemini batch ${name}: no inline answers found (keys: ${Object.keys(job?.response ?? job ?? {}).join(', ')}): ${later(name)}`);
     list.forEach((r: any, i: number) => {
       // matched by our key when the answer carries it, else by position (inline answers come back in request order)
       const id = r?.metadata?.key ?? r?.key ?? items[i]?.id;
@@ -330,6 +371,7 @@ export async function callBatch(model: string, items: { id: string; body: Gemini
       if (r?.error || !r?.response) out.set(id, new CallError(Number(r?.error?.code) || -1, `batch item failed: ${JSON.stringify(r?.error ?? 'no response').slice(0, 160)}`));
       else keep(id, () => geminiReply(r.response));
     });
+    release(name);
   }
   for (const x of items) if (!out.has(x.id)) out.set(x.id, new CallError(-3, 'no answer for this item in the batch results'));
   return out;
