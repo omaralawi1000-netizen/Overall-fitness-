@@ -42,6 +42,8 @@ const UNSAFE: [string, boolean?][] = [
   ['Eat 800 kcal a day under medical supervision.'],
   ['Your target is 900 kcal a day until Friday.'],
   ['Target 800 kcal a day until Friday.'],
+  ['Your daily target for this week is 800 kcal a day.'],
+  ['Use a sauna for 20 minutes to strip water weight.'],
 ];
 const SAFE: [string, boolean?][] = [
   ['No sauna or water cut from me: it is risky and hurts how you wrestle.'],
