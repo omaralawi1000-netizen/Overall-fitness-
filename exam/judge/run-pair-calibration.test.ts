@@ -4,11 +4,13 @@
 // Env: EXAM_CAP_USD (required unless EXAM_DRY) · EXAM_LEDGER (this provider's ledger, e.g. e2v2-anthropic.jsonl)
 //      EXAM_PAIR_JUDGE (default claude-opus-5-5) · EXAM_JUDGE_EFFORT (default medium) · EXAM_OUT (default reference/e2v2)
 //      EXAM_DRY=1: no calls, a made-up verdict, nothing written outside <EXAM_OUT>/dry
-// Results are saved per pair as they arrive, and a pair already judged by this judge at this effort is not paid for again.
+// Each order is saved as it arrives. A saved order is reused only when the judge, effort AND the exact request (pair,
+// facts, rules, prompt) are the same, so an edited Answer Bar is judged again, never passed on old verdicts (Codex, PR #75).
 import { it } from 'vitest';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { Ledger, type GeminiReply } from '../providers';
-import { barPairs, fromBarPair, judgePair, pairGate, type PairResult } from './pairwise';
+import { barPairs, fromBarPair, judgePair, pairBody, pairGate, type OrderDone, type PairInput } from './pairwise';
 
 const DRY = !!process.env.EXAM_DRY;
 const OUT = `${process.env.EXAM_OUT ?? '/home/user/Overall-fitness-/reference/e2v2'}${DRY ? '/dry' : ''}`;
@@ -21,19 +23,22 @@ const dry = (): GeminiReply => ({ candidates: [{ content: { parts: [{ text: JSON
 
 it('calibrates the pairwise judge on the Answer Bar', async () => {
   mkdirSync(OUT, { recursive: true });
-  const file = `${OUT}/pair-calibration.jsonl`;
-  const key = (id: string) => `${JUDGE}|${EFFORT}|${id}`;
-  const saved = new Map<string, PairResult>((existsSync(file) ? readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []).map((l) => [l.key, l.r]));
+  const file = `${OUT}/pair-calibration-orders.jsonl`;
+  // the key is the exact request body of that order: any change to the pair, its facts, the rules or the prompt is new work
+  const key = (x: PairInput, k: 0 | 1) => {
+    const body = pairBody(k === 0 ? x : { ...x, a: x.b, b: x.a });
+    return createHash('sha256').update(`${JUDGE}|${EFFORT}|${JSON.stringify(body)}`).digest('hex');
+  };
+  const saved = new Map<string, OrderDone>((existsSync(file) ? readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []).map((l) => [l.key, l.d]));
   const ledger = new Ledger(LEDGER, CAP);
   const results = [];
   const report: string[] = [];
   for (const pair of barPairs()) {
     const x = fromBarPair(pair, true);
-    let r = saved.get(key(x.id));
-    if (!r) {
-      r = await judgePair(JUDGE, x, { ledger, purpose: 'pair calibration', effort: EFFORT, ...(DRY ? { dry } : {}) });
-      appendFileSync(file, `${JSON.stringify({ key: key(x.id), r })}\n`);
-    }
+    const keys = [key(x, 0), key(x, 1)] as const;
+    const r = await judgePair(JUDGE, x, { ledger, purpose: 'pair calibration', effort: EFFORT, ...(DRY ? { dry } : {}) }, [saved.get(keys[0]), saved.get(keys[1])], (k, d) => {
+      appendFileSync(file, `${JSON.stringify({ key: keys[k], d })}\n`);
+    });
     results.push({ pair, goodFirst: true, r });
     report.push(`${pair.id}: ${r.winner === 'A' ? 'Good' : r.winner === 'B' ? 'BAD' : 'tie'} (orders: ${r.orders.map((o) => o.winner).join('/')}) · Good broke [${r.brokenA}] · Bad broke [${r.brokenB}] · ${r.orders[0].reason}`);
   }

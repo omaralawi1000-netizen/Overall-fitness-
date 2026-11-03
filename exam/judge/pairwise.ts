@@ -12,6 +12,18 @@ import { call, CallError, type CallOpts, type GeminiBody } from '../providers';
 
 export const BAR = readFileSync(new URL('../../docs/coach/ANSWER-BAR.md', import.meta.url), 'utf8');
 
+/**
+ * The bar's rules without its examples. The judge must never see the Good/Bad examples: they are the calibration pairs,
+ * so with them in the prompt a pass would only prove it can look the answer up (Codex, PR #75).
+ */
+export function barRules(md = BAR): string {
+  return md
+    .split(/^(?=## )/m)
+    .map((sec) => sec.split(/^> /m)[0].trim())
+    .filter((sec) => sec.startsWith('## '))
+    .join('\n\n');
+}
+
 export interface Side { reply: string; /** what the app did, from code ("Did in the app" lines), never the reply's own claims */ did: string[] }
 export interface PairInput {
   id: string;
@@ -69,7 +81,7 @@ export function pairBody(x: PairInput): GeminiBody {
   const conv = x.conversation.map((m) => `${m.role === 'user' ? 'Person' : 'Coach'}: ${blind(m.text)}`).join('\n') || '(the Coach spoke first)';
   const text = [`CONVERSATION:\n${conv}`, side('A', x.a), side('B', x.b), ...(x.good ? [`WHAT A GOOD ANSWER DOES (exam writer's note, a guide):\n${x.good}`] : [])].join('\n\n');
   return {
-    systemInstruction: { parts: [{ text: `${PAIR_SYSTEM.replace('{BAR}', BAR)}\n\nFACTS THE COACH HAD:\n${x.facts || '(none)'}` }] },
+    systemInstruction: { parts: [{ text: `${PAIR_SYSTEM.replace('{BAR}', barRules())}\n\nFACTS THE COACH HAD:\n${x.facts || '(none)'}` }] },
     contents: [{ role: 'user', parts: [{ text }] }],
     generationConfig: { temperature: 0, responseMimeType: 'application/json', responseSchema: PAIR_SCHEMA, maxOutputTokens: 4096 },
   };
@@ -127,16 +139,23 @@ async function once(judge: string, x: PairInput, o: CallOpts): Promise<{ v: Pair
   throw last;
 }
 
-/** Judge one pair in both orders. */
-export async function judgePair(judge: string, x: PairInput, o: CallOpts): Promise<PairResult> {
-  const one = await once(judge, x, o);
-  const two = await once(judge, swapped(x), { ...o });
+export interface OrderDone { v: PairVerdict; usd: number }
+/**
+ * Judge one pair in both orders. Each order is paid for once: `done` holds orders already judged (from an earlier,
+ * interrupted run) and `onOrder` is called as soon as an order is back, so the caller can save it before the next one
+ * is asked (Codex, PR #75).
+ */
+export async function judgePair(judge: string, x: PairInput, o: CallOpts, done: [OrderDone?, OrderDone?] = [], onOrder?: (k: 0 | 1, d: OrderDone) => void): Promise<PairResult> {
+  const one = done[0] ?? (await once(judge, x, o));
+  if (!done[0]) onOrder?.(0, one);
+  const two = done[1] ?? (await once(judge, swapped(x), { ...o }));
+  if (!done[1]) onOrder?.(1, two);
   return { id: x.id, ...combine(one.v, two.v), usd: one.usd + two.usd };
 }
 
 // ── calibration: the Answer Bar's own Good and Bad examples ──
 
-export interface BarPair { id: string; rule: number; said: string; good: Side; bad: Side }
+export interface BarPair { id: string; rule: number; said: string; facts: string; good: Side; bad: Side }
 
 /**
  * An example as an answer: the quoted reply, with a trailing "(why it fails)" note removed so the judge can't read the
@@ -161,17 +180,18 @@ export function barPairs(md = BAR): BarPair[] {
     // a rule can have several examples ("> said" then Good/Bad lines); pair each Good with the Bads that follow it
     for (const block of sec.split(/^> /m).slice(1)) {
       const said = block.split('\n')[0].trim().replace(/^"|"$/g, '');
+      const facts = block.match(/^Facts:\s*(.+)$/m)?.[1].trim() ?? '';
       const take = (label: string) => [...block.matchAll(new RegExp(`\\*\\*${label}(?: \\([^)]*\\))?:\\*\\*\\s*([\\s\\S]*?)(?=\\n\\n|\\n\\*\\*|$)`, 'g'))].map((m) => m[1].replace(/\s+/g, ' ').trim());
       const goods = take('Good'), bads = take('Bad');
       if (!goods.length) continue;
-      for (const bad of bads) out.push({ id: `bar${rule}${String.fromCharCode(97 + out.filter((p) => p.rule === rule).length)}`, rule, said, good: asSide(goods[0]), bad: asSide(bad) });
+      for (const bad of bads) out.push({ id: `bar${rule}${String.fromCharCode(97 + out.filter((p) => p.rule === rule).length)}`, rule, said, facts, good: asSide(goods[0]), bad: asSide(bad) });
     }
   }
   return out;
 }
 
 export const fromBarPair = (p: BarPair, goodFirst: boolean): PairInput => {
-  return { id: `cal:${p.id}${goodFirst ? '' : ':swapped'}`, facts: '(only what the conversation and the answers state)', conversation: [{ role: 'user', text: p.said }], ...(goodFirst ? { a: p.good, b: p.bad } : { a: p.bad, b: p.good }) };
+  return { id: `cal:${p.id}${goodFirst ? '' : ':swapped'}`, facts: p.facts, conversation: [{ role: 'user', text: p.said }], ...(goodFirst ? { a: p.good, b: p.bad } : { a: p.bad, b: p.good }) };
 };
 
 /** The calibration gate: the judge must pick Good, in both orders, on at least 90 % of the bar's pairs, and never pick Bad. */

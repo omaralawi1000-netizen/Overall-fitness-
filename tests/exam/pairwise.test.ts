@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { asSide, barPairs, combine, fromBarPair, pairBody, pairGate, readPair, type PairVerdict } from '../../exam/judge/pairwise';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { Ledger, type GeminiReply } from '../../exam/providers';
+import { asSide, barPairs, barRules, combine, fromBarPair, judgePair, pairBody, pairGate, readPair, type OrderDone, type PairVerdict } from '../../exam/judge/pairwise';
 
 const v = (winner: 'A' | 'B' | 'tie', saferIs: 'A' | 'B' | 'tie' = 'tie', brokenA: number[] = [], brokenB: number[] = []): PairVerdict => ({ winner, saferIs, brokenA, brokenB, reason: 'r' });
 
@@ -48,6 +52,25 @@ describe('calibration from the Answer Bar itself', () => {
       for (const d of s.did) expect(d).not.toMatch(/\(|Did in the app/);
     }
   });
+  it('the judge sees the rules but never the labelled examples it is calibrated on (Codex, PR #75)', () => {
+    const rules = barRules();
+    expect(rules).toContain('## 13. Tone');
+    expect(rules).toContain('Checked by:');
+    expect(rules).not.toMatch(/\*\*Good|\*\*Bad|^> |Facts:/m);
+    for (const p of pairs) {
+      const sys = pairBody(fromBarPair(p, true)).systemInstruction!.parts[0].text!;
+      expect(sys, p.id).not.toContain(p.good.reply.slice(0, 40));
+      expect(sys, p.id).not.toContain(p.bad.reply.slice(0, 40));
+    }
+  });
+
+  it('every pair carries its own facts, apart from both answers (Codex, PR #75)', () => {
+    for (const p of pairs) expect(p.facts, p.id).toMatch(/\w{3}/);
+    const p = pairs.find((x) => /set my protein target to 250/.test(x.said))!;
+    expect(fromBarPair(p, true).facts).toMatch(/13 of the last 28 days/);
+    expect(pairBody(fromBarPair(p, true)).systemInstruction!.parts[0].text).toMatch(/FACTS THE COACH HAD:\n.*13 of the last 28 days/);
+  });
+
   it('moves app changes out of the words', () => {
     expect(asSide('"Done." + *Did in the app: forgot "x" · Undo*')).toEqual({ reply: 'Done.', did: ['forgot "x"'] });
     expect(asSide('"Logged ✅ 80 kg × 8" (read aloud this is bad).')).toEqual({ reply: 'Logged ✅ 80 kg × 8', did: [] });
@@ -60,5 +83,24 @@ describe('calibration from the Answer Bar itself', () => {
     expect(pairGate(all).pass).toBe(true);
     all[0].r = won('B');
     expect(pairGate(all)).toMatchObject({ pass: false, wrong: [pairs[0].id] });
+  });
+});
+
+describe('each paid order is kept (Codex, PR #75)', () => {
+  const verdict = (winner: string): GeminiReply => ({ candidates: [{ content: { parts: [{ text: JSON.stringify({ brokenA: [], brokenB: [], saferIs: 'tie', winner, reason: 'r' }) }] } }], usage: { inTokens: 1, cachedTokens: 0, outTokens: 1, searches: 0 }, usd: 0.01 });
+  const x = fromBarPair(barPairs()[0], true);
+  const ledger = () => new Ledger(join(mkdtempSync(join(tmpdir(), 'pair-')), 'l.jsonl'), 1);
+
+  it('saves the first order before asking the second, and a rerun pays only for the missing order', async () => {
+    const saved: OrderDone[] = [];
+    let calls = 0;
+    const failSecond = () => { calls++; if (calls === 2) throw new Error('network'); return verdict('A'); };
+    await expect(judgePair('claude-opus-5-5', x, { ledger: ledger(), purpose: 't', dry: failSecond }, [], (k, d) => { saved[k] = d; })).rejects.toThrow('network');
+    expect(saved[0]?.v.winner).toBe('A');
+
+    let rerunCalls = 0;
+    const r = await judgePair('claude-opus-5-5', x, { ledger: ledger(), purpose: 't', dry: () => { rerunCalls++; return verdict('B'); } }, [saved[0], undefined]);
+    expect(rerunCalls).toBe(1);
+    expect(r.winner).toBe('A');
   });
 });
