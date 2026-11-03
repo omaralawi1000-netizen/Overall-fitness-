@@ -5,7 +5,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 ## Start here (repo)
 - `docs/BRIEF.md`: the whole job. `docs/PROGRESS.md`: what's done and the exact next step.
 - `docs/TASTE.md`: the tests the judges check. `docs/VISION.md`: what Aven 2 is.
-- `docs/COACH.md`: the Coach rulebook. `docs/coach/ANSWER-BAR.md`: the 13 rules every Coach answer must pass, with examples. `exam/`: the Coach exam (`v1/` conversations and harness, `v2/CASES.md` the 50 cases of the Coach quality exam, `judge/` judges and report, `checks/` code checks, `providers.ts` model calls and spend cap).
+- `docs/COACH.md`: the Coach rulebook. `docs/coach/ANSWER-BAR.md`: the 13 rules every Coach answer must pass, with examples. `exam/`: the Coach exam (`v1/` conversations and harness, `v2/CASES.md` the 50 cases of the Coach quality exam, `judge/` judges and report (`pairwise.ts`: the blind judge that compares two answers in both orders, checked first on the Answer Bar's own Good/Bad pairs), `checks/` code checks, `providers.ts` model calls and spend cap).
 - `docs/INTERVIEW.md`: Omar's Checkpoint 1 answers. `docs/INVENTORY.md`: every old-Aven feature and what Aven 2 does with it. `docs/LESSONS.md`: lessons from old Aven.
 - `docs/concepts.md`: the twelve concepts in words. `docs/blur-test-plan.md`: how blur is tested (both go when their pages in `site/` are archived).
 - `.claude/agents/`: the judges. `.claude/skills/`: design and motion skills.
