@@ -243,7 +243,9 @@ async function geminiPost(path: string, body: unknown, o: Pick<CallOpts, 'fetchF
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (process.env.GEMINI_API_KEY) headers['x-goog-api-key'] = process.env.GEMINI_API_KEY;
   const f = o.fetchFn ?? fetch;
-  const res: any = await f(`${API}/${path}`, { method, headers, ...(method === 'POST' ? { body: JSON.stringify(body) } : {}), ...(o.dispatcher ? { dispatcher: o.dispatcher } : {}), signal: AbortSignal.timeout(120_000) } as RequestInit);
+  // (a dropped connection or a timeout is a CallError(-1) like any other network failure, so the callers' retries apply)
+  const res: any = await f(`${API}/${path}`, { method, headers, ...(method === 'POST' ? { body: JSON.stringify(body) } : {}), ...(o.dispatcher ? { dispatcher: o.dispatcher } : {}), signal: AbortSignal.timeout(120_000) } as RequestInit)
+    .catch((e: unknown) => { throw new CallError(-1, `network: ${String((e as Error)?.message ?? e).slice(0, 200)}`); });
   const data: any = await res.json().catch(() => null);
   if (res.status !== 200) throw new CallError(res.status, `${res.status} ${String(data?.error?.message ?? '').slice(0, 200)}`);
   return data;
@@ -357,6 +359,15 @@ export async function callBatch(model: string, items: { id: string; body: Gemini
     o.ledger.record({ ...entry(model, `${o.purpose}: reservation for batch ${handle} released`, -(pending?.reservedUsd ?? worst), NO_USAGE, true), key: `${handle}|release` });
     if (jobFile) rmSync(jobFile, { force: true });
   };
+  // (a send that failed on the network or a 5xx may still have made the batch, which would then be billed: its worst case
+  // is kept in the ledger, so the cap never forgets money that may be spent; a refusal (4xx, 429) made nothing)
+  const send = async <T>(go: () => Promise<T>): Promise<T> => {
+    try { return await go(); }
+    catch (e) {
+      if (e instanceof CallError && (e.status === -1 || e.status >= 500)) o.ledger.record(entry(model, `${o.purpose}: a batch of ${items.length} may have been sent (${e.message.slice(0, 80)}); its worst case is kept`, worst, NO_USAGE, true));
+      throw e;
+    }
+  };
   const later = (handle: string) => `${jobFile ? 'run again to collect it (the handle is in ' + jobFile + ')' : 'collect it by hand'}; its worst case stays reserved in the ledger (${handle})`;
   async function poll<T>(get: () => Promise<T>, handle: string): Promise<T> {
     for (;;) {
@@ -389,7 +400,7 @@ export async function callBatch(model: string, items: { id: string; body: Gemini
     // custom_id must match ^[a-zA-Z0-9_-]{1,64}$ ("cal:great-protein" would be refused): a hash of the id, mapped back below
     const cid = (x: string) => createHash('sha256').update(x).digest('hex').slice(0, 32);
     const byCid = new Map(items.map((x) => [cid(x.id), x.id]));
-    const id = pending?.handle ?? reserve((await c.messages.batches.create({ requests: reqs.map((x) => ({ custom_id: cid(x.id), params: x.req! })) }).catch(apiError)).id);
+    const id = pending?.handle ?? reserve((await send(() => c.messages.batches.create({ requests: reqs.map((x) => ({ custom_id: cid(x.id), params: x.req! })) }).catch(apiError))).id);
     if (pending) o.onPoll?.(`collecting batch ${id}, sent by an earlier run`);
     for (let b = await poll(() => c.messages.batches.retrieve(id).catch(apiError), id); b.processing_status !== 'ended'; b = await poll(() => c.messages.batches.retrieve(id).catch(apiError), id)) {
       if (Date.now() > deadline) throw new CallError(-1, `batch ${id} still running after the wait limit: it keeps running at Anthropic; ${later(id)}`);
@@ -408,9 +419,9 @@ export async function callBatch(model: string, items: { id: string; body: Gemini
     let job: any;
     if (pending) { o.onPoll?.(`collecting batch ${pending.handle}, sent by an earlier run`); job = await poll(() => geminiPost(pending.handle, null, o, 'GET'), pending.handle); }
     else {
-      job = await geminiPost(`models/${encodeURIComponent(model)}:batchGenerateContent`, {
+      job = await send(() => geminiPost(`models/${encodeURIComponent(model)}:batchGenerateContent`, {
         batch: { display_name: o.purpose.slice(0, 100), input_config: { requests: { requests: items.map((x) => ({ request: x.body, metadata: { key: x.id } })) } } },
-      }, o);
+      }, o));
       if (!job?.name) throw new CallError(-1, 'Gemini batch: no job name in the reply');
       reserve(job.name);
     }

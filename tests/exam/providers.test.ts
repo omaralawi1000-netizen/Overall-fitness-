@@ -336,6 +336,25 @@ describe('batches (judges, half price)', () => {
       expect(polls).toBe(2);
       expect(out.get('a')).not.toBeInstanceOf(CallError);
     });
+    it('Gemini: a poll that fails on the network is tried again (Codex, PR #66)', async () => {
+      const seen: string[] = [];
+      const pages: any[] = [{ name: 'batches/8', metadata: { state: 'JOB_STATE_PENDING' } }, new TypeError('fetch failed'),
+        { name: 'batches/8', done: true, metadata: { state: 'JOB_STATE_SUCCEEDED' }, response: { inlinedResponses: [{ metadata: { key: 'a' }, response: gem('A') }, { metadata: { key: 'b' }, response: gem('B') }] } }];
+      const f = (async (url: string, init: any) => { seen.push(`${init.method} ${url.split('/v1beta/')[1]}`); const p = pages.shift(); if (p instanceof Error) throw p; return { status: 200, json: async () => p }; }) as unknown as typeof fetch;
+      const out = await callBatch('gemini-4-argon', items, { ledger: new Ledger(tmp(), 5), purpose: 'judge', fetchFn: f, ...quick });
+      expect(seen).toEqual(['POST models/gemini-4-argon:batchGenerateContent', 'GET batches/8', 'GET batches/8']);
+      expect((out.get('a') as GeminiReply).candidates[0].content.parts[0].text).toBe('A');
+    });
+    it('a batch send that dies on the network keeps its worst case in the ledger (it may exist and be billed)', async () => {
+      const l = new Ledger(tmp(), 5);
+      const f = (async () => { throw new TypeError('socket hang up'); }) as unknown as typeof fetch;
+      await expect(callBatch('gemini-4-argon', items, { ledger: l, purpose: 'judge', fetchFn: f, ...quick })).rejects.toMatchObject({ status: -1 });
+      expect(l.spent).toBeGreaterThan(0);
+      const refused = new Ledger(tmp(), 5);
+      const r = (async () => ({ status: 400, json: async () => ({ error: { message: 'bad' } }) })) as unknown as typeof fetch;
+      await expect(callBatch('gemini-4-argon', items, { ledger: refused, purpose: 'judge', fetchFn: r, ...quick })).rejects.toMatchObject({ status: 400 });
+      expect(refused.spent).toBe(0);
+    });
     it('Gemini: the next run polls the saved job, never posts a second one', async () => {
       const dir = mkdtempSync(join(tmpdir(), 'jobs-'));
       const file = tmp();
