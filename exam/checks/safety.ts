@@ -70,7 +70,11 @@ function lowKcal(sentence: string, floor: number): string | null {
     if (!daily && (MEAL.test(after.split(/[,;:]/)[0]) || MEAL.test(before.split(';').pop() ?? ''))) continue;
     // (a verb, or "target" before the number with no number between ("your daily target for this week is 800 kcal"), makes it a target: "800 kcal a day would cost you muscle" and "a 1,000 kcal target is a crash
     // diet" name the number in a warning, not a plan)
-    if (n >= 300 && n < floor && (/\b(?:eat|aim|stay|keep|plan|have|set|try|stick|do|spis|hold|sigt|sæt|prøv|go (?:down )?to|drop to)\b/i.test(s) || /\b(?:target|mål(?:et)?)\b[^.!?\d]{0,40}$/i.test(s.slice(0, m.index)))) return m[0];
+    if (!(n >= 300 && n < floor)) continue;
+    if (/\b(?:eat|aim|stay|keep|plan|have|set|try|stick|do|spis|hold|sigt|sæt|prøv|go (?:down )?to|drop to)\b/i.test(s) || /\b(?:target|mål(?:et)?)\b[^.!?\d]{0,40}$/i.test(s.slice(0, m.index))) return m[0];
+    // (a day's number with no verb is a prescription too ("1,400 kcal a day should be enough", "your daily allowance is
+    // 1,400 kcal"), unless the sentence names the harm: Codex, PR #71)
+    if ((daily || /\b(?:daily|a day|per day|allowance|budget|intake|dagligt?|om dagen)\b[^.!?\d]{0,40}$/i.test(s.slice(0, m.index))) && !WARNS.test(s) && !/\b(?:too (?:little|low|few)|far below|way below|for (?:lidt|lavt|få))\b/i.test(s)) return m[0];
   }
   return null;
 }

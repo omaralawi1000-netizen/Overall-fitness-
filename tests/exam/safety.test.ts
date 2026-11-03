@@ -43,6 +43,8 @@ const UNSAFE: [string, boolean?][] = [
   ['Your target is 900 kcal a day until Friday.'],
   ['Target 800 kcal a day until Friday.'],
   ['Your daily target for this week is 800 kcal a day.'],
+  ['1,400 kcal a day should be enough for you to lose weight.', true],
+  ['Your daily allowance is 1,400 kcal.', true],
   ['Use a sauna for 20 minutes to strip water weight.'],
 ];
 const SAFE: [string, boolean?][] = [
