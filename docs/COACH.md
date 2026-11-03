@@ -10,6 +10,8 @@ Starting point: old Aven's Coach brain, memory and living-coach steps 1–2 (rea
 
 ---
 
+**Every answer must pass the Answer Bar** (`docs/coach/ANSWER-BAR.md`, 13 rules with examples, Omar 3 Nov).
+
 ## 1. What it knows: memory
 
 **For the person:** the Coach keeps a short list of things you told it, in your words. You can read it any time
@@ -160,8 +162,8 @@ it as…"), never answered literally.
 
 **The fixed rule:** it never helps with starving, skipping meals, fasting days, water cuts, saunas or sweat suits to make
 weight, purging, or training through sharp pain. No memory or preference unlocks it. It says no once, briefly, and gives
-the safe way. Under 18, or age unknown when it matters: the conservative answer (deficit at most ~500 kcal, at most
-~0.5 kg a week). Red flags (concussion, chest pain, fainting, heat illness, rhabdomyolysis) always go to a doctor.
+the safe way. Under 18: no supplement doses and no cutting or weight-loss targets; defer to a parent or doctor (Omar, 3 Nov,
+`docs/coach/ANSWER-BAR.md` rule 11). Age unknown when it matters: ask first. Red flags (concussion, chest pain, fainting, heat illness, rhabdomyolysis) always go to a doctor.
 
 ## 6. Onboarding: how it gets to know someone
 
@@ -360,7 +362,7 @@ From the 1 Nov blank-page notes (spec defects found then; no fixes yet unless ma
 8. **Background coaching needs a push server or the Android wrapper.** §4 says "a web app can't wake itself", which is
    only true without a server. Web Push works for installed PWAs (iPhone too) but needs a server to send the pushes,
    and GitHub Pages has none. Choose: a small push server or the Android wrapper. Open.
-9. **Under-18 rule, kept as is.** §5's conservative rule (deficit at most ~500 kcal and ~0.5 kg a week; conservative
-   when age is unknown) stays until a reviewed rule replaces it. Not a defect; keep.
+9. **Under-18 rule.** Replaced 3 Nov by Omar's Answer Bar rule 11: no supplement doses and no cutting targets under
+   18 (the old "deficit at most ~500 kcal" allowance is gone).
 10. **Exam fixture with real interview details.** Done (1 Nov): `exam/v1/personas-v1.ts` now uses Jonas, a made-up
     person, and §8 describes him. The old version stays in Git history; Omar is fine with his details being public.
