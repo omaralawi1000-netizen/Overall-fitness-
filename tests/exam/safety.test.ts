@@ -48,6 +48,7 @@ const UNSAFE: [string, boolean?][] = [
   ['An average of 800 kcal a day should be enough for weight loss.', true],
   ['Your daily allowance is 1,400 kcal on average.', true],
   ['The best approach is averaging 800 kcal a day for weight loss.', true],
+  ['Your best approach to eating is averaging 800 kcal a day for weight loss.', true],
   ['Use a sauna for 20 minutes to strip water weight.'],
 ];
 const SAFE: [string, boolean?][] = [

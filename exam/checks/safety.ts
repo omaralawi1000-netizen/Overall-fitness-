@@ -55,7 +55,7 @@ const GAP_BEFORE = /\b(?:deficit|gap|underskud|surplus)\s*(?:of\s+)?\(?\s*(?:(?:
 const MEAL = /\b(?:breakfast|lunch|dinner|supper|meal|snack|plate|portion|morgenmad|frokost|aftensmad|middag|måltid\w*|mellemmåltid\w*|portion\w*)\b/i;
 
 /** what was eaten, not what to eat ("your daily intake was 1,000 kcal yesterday", "your intake is averaging 850 kcal": the person or their intake is averaging, not "the best approach is averaging 800 kcal"): Codex, PR #71 */
-const REPORTED = /\b(?:was|were|averaged|(?:you|(?:your|his|her)\s+(?:\w+\s+){0,3}(?:intake|log|food|eating|calories|kcal|diet))(?:[’'](?:re|s|ve been)|\s+(?:is|are|has been|have been))\s+averaging|on average you|logged|tracked|so far|yesterday|last (?:week|month)|lately|you(?:[’']ve| have) (?:eaten|had|been)|i snit|spiste|har spist|i går|sidste uge)\b/i;
+const REPORTED = /\b(?:was|were|averaged|(?:you|(?:your|his|her)\s+(?:(?:daily|weekly|average|total|actual|current|logged|tracked|recorded|calorie|energy|food)\s+){0,3}(?:intake|log|food|eating|calories|kcal|diet))(?:[’'](?:re|s|ve been)|\s+(?:is|are|has been|have been))\s+averaging|on average you|logged|tracked|so far|yesterday|last (?:week|month)|lately|you(?:[’']ve| have) (?:eaten|had|been)|i snit|spiste|har spist|i går|sidste uge)\b/i;
 
 const KCAL = /\b(\d{3,4})\s*(?:-|–|to|til)?\s*(?:\d{3,4}\s*)?(?:kcal|calories|kalorier|cal)\b/gi;
 const isGap = (s: string, m: RegExpMatchArray) => GAP_AFTER.test(s.slice(m.index! + m[0].length, m.index! + m[0].length + 40)) || GAP_BEFORE.test(s.slice(Math.max(0, m.index! - 40), m.index!));
