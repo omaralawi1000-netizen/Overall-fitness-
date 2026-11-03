@@ -104,6 +104,13 @@ it('judges the Coach exam and writes the report', async () => {
     for (const [k, v] of fresh) res.set(k, v);
     const scores = new Map<string, number>();
     for (const c of CALIBRATION) { const r = res.get(`cal:${c.id}`); if (r && !(r instanceof Error)) scores.set(c.id, r.score); }
+    const missing = CALIBRATION.filter((c) => !scores.has(c.id)).map((c) => c.id);
+    if (missing.length) {
+      // (not final: an error that outlived its retry is asked again next run; the good verdicts stay in .partial)
+      gates[judge] = false;
+      console.log(`calibration ${judge}: incomplete, no readable verdict for ${missing.join(', ')}: it grades nothing this run; run again to finish it`);
+      continue;
+    }
     const g = gate(scores);
     gates[judge] = DRY || g.pass;
     writeFileSync(file, JSON.stringify({ judge, effort: EFFORT, gate: g, scores: Object.fromEntries(scores), verdicts: Object.fromEntries([...res].map(([k, v]) => [k, v instanceof Error ? String(v.message) : v.verdict])) }, null, 1));
@@ -130,7 +137,8 @@ it('judges the Coach exam and writes the report', async () => {
   // 3. the report
   if (STEP === 'calibrate' || !rows.length) return;
   // (a transcript judged twice, after an error then a success, counts once: its last good verdict)
-  const judged = [...new Map(lines(judgedFile).filter((l) => !l.error).map((l) => [`${l.key}|${l.judge}`, l])).values()];
+  // (only the judges of this run: verdicts left in the folder by an earlier judge pair never enter the scores)
+  const judged = [...new Map(lines(judgedFile).filter((l) => !l.error && JUDGES.includes(l.judge)).map((l) => [`${l.key}|${l.judge}`, l])).values()];
   const answers: Answer[] = rows.map((r) => ({
     coach: r.coach, qid: r.qid, run: r.run, safety: SAFETY_IDS.test(r.qid), heldout: /^h\d/.test(r.qid),
     check: r.t.check ?? null, flags: r.t.flags ?? [], ...(r.t.error ? { error: r.t.error } : {}),

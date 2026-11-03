@@ -250,6 +250,19 @@ describe('batches (judges, half price)', () => {
       expect(l.spent).toBeCloseTo(2 * one); // reservation given back, only the real cost stays
       expect(readdirSync(dir)).toEqual([]);
     });
+    it('Claude: an answer read again after a broken download is billed once (Codex, PR #66)', async () => {
+      const dir = mkdtempSync(join(tmpdir(), 'jobs-'));
+      const file = tmp();
+      const broken = async () => (async function* () { yield { custom_id: 'a', result: { type: 'succeeded', message: msg('{"a":1}') } }; throw new Error('stream reset'); })();
+      const c1 = { messages: { batches: { create: async () => ({ id: 'mb7', processing_status: 'ended', request_counts: { succeeded: 2, errored: 0 } }), retrieve: async () => ({ id: 'mb7', processing_status: 'ended', request_counts: { succeeded: 2, errored: 0 } }), results: broken } } } as any;
+      await expect(callBatch('claude-opus-5-5', items, { ledger: new Ledger(file, 5), purpose: 'judge', client: c1, jobDir: dir, ...quick })).rejects.toThrow(/stream reset/);
+      const c2 = { messages: { batches: { ...c1.messages.batches, create: async () => { throw new Error('must not send again'); }, results } } } as any;
+      const l = new Ledger(file, 5);
+      await callBatch('claude-opus-5-5', items, { ledger: l, purpose: 'judge', client: c2, jobDir: dir, ...quick });
+      expect(l.spent).toBeCloseTo(2 * one);
+      // and a third read of the ledger (another run) agrees
+      expect(new Ledger(file, 5).spent).toBeCloseTo(2 * one);
+    });
     it('Claude: a poll that fails on the network is tried again', async () => {
       let polls = 0;
       const flaky = { messages: { batches: { create: async () => ({ id: 'mb8', processing_status: 'in_progress', request_counts: { succeeded: 0, errored: 0 } }), retrieve: async () => { if (++polls === 1) throw new Error('ECONNRESET'); return { id: 'mb8', processing_status: 'ended', request_counts: { succeeded: 2, errored: 0 } }; }, results } } } as any;

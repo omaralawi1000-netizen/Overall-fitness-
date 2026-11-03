@@ -71,18 +71,22 @@ export function estimate(model: string, body: GeminiBody, maxOut: number): numbe
 }
 
 // ── the ledger ──
-export interface LedgerEntry { at: string; model: string; purpose: string; usd: number; usage: Usage; ok: boolean }
+/** key: set on a batch answer (`<batch>|<id>`), so collecting the same batch twice never bills an answer twice */
+export interface LedgerEntry { at: string; model: string; purpose: string; usd: number; usage: Usage; ok: boolean; key?: string }
 export class Ledger {
   spent = 0;
+  private keys = new Set<string>();
   constructor(public file: string, public capUsd: number) {
     if (!(capUsd > 0)) throw new SpendCapError('a spend cap is required');
-    if (existsSync(file)) for (const line of readFileSync(file, 'utf8').split('\n')) if (line.trim()) this.spent += (JSON.parse(line) as LedgerEntry).usd;
+    if (existsSync(file)) for (const line of readFileSync(file, 'utf8').split('\n')) if (line.trim()) { const e = JSON.parse(line) as LedgerEntry; this.spent += e.usd; if (e.key) this.keys.add(e.key); }
   }
+  has(key: string): boolean { return this.keys.has(key); }
   /** Throws before a call that could cross the cap. */
   check(usd: number, what: string): void {
     if (this.spent + usd > this.capUsd) throw new SpendCapError(`stopped before ${what}: $${this.spent.toFixed(2)} spent, this call could cost up to $${usd.toFixed(3)}, cap $${this.capUsd}`);
   }
   record(e: LedgerEntry): void {
+    if (e.key) { if (this.keys.has(e.key)) return; this.keys.add(e.key); }
     this.spent += e.usd;
     appendFileSync(this.file, `${JSON.stringify(e)}\n`);
   }
@@ -289,13 +293,13 @@ export async function callBatch(model: string, items: { id: string; body: Gemini
   const sleep = o.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const deadline = Date.now() + (o.maxWaitMs ?? 6 * 3600_000);
   const reserve = (handle: string) => {
-    o.ledger.record(entry(model, `${o.purpose}: reserved for batch ${handle}`, worst, NO_USAGE, true));
+    o.ledger.record({ ...entry(model, `${o.purpose}: reserved for batch ${handle}`, worst, NO_USAGE, true), key: `${handle}|reserve` });
     if (jobFile) writeFileSync(jobFile, JSON.stringify({ model, handle, reservedUsd: worst, purpose: o.purpose, items: items.length, at: new Date().toISOString() }));
     return handle;
   };
   // (after the answers are in the ledger, or the job ended with none: the reservation is given back)
   const release = (handle: string) => {
-    o.ledger.record(entry(model, `${o.purpose}: reservation for batch ${handle} released`, -(pending?.reservedUsd ?? worst), NO_USAGE, true));
+    o.ledger.record({ ...entry(model, `${o.purpose}: reservation for batch ${handle} released`, -(pending?.reservedUsd ?? worst), NO_USAGE, true), key: `${handle}|release` });
     if (jobFile) rmSync(jobFile, { force: true });
   };
   const later = (handle: string) => `${jobFile ? 'run again to collect it (the handle is in ' + jobFile + ')' : 'collect it by hand'}; its worst case stays reserved in the ledger (${handle})`;
@@ -310,15 +314,16 @@ export async function callBatch(model: string, items: { id: string; body: Gemini
       }
     }
   }
-  const keep = (id: string, read: () => GeminiReply) => {
+  // (keyed by batch and item: an answer read again after an interrupted download is not billed twice)
+  const keep = (handle: string, id: string, read: () => GeminiReply) => {
     try {
       const r = read();
       r.usd = costOf(price, r.usage) * BATCH_DISCOUNT;
-      o.ledger.record(entry(model, `${o.purpose} ${id}`, r.usd, r.usage, true));
+      o.ledger.record({ ...entry(model, `${o.purpose} ${id}`, r.usd, r.usage, true), key: `${handle}|${id}` });
       out.set(id, r);
     } catch (e) {
       const err = e instanceof CallError ? e : new CallError(-1, String((e as Error)?.message ?? e));
-      if (err.usage) o.ledger.record(entry(model, `${o.purpose} ${id}`, costOf(price, err.usage) * BATCH_DISCOUNT, err.usage, false));
+      if (err.usage) o.ledger.record({ ...entry(model, `${o.purpose} ${id}`, costOf(price, err.usage) * BATCH_DISCOUNT, err.usage, false), key: `${handle}|${id}` });
       out.set(id, err);
     }
   };
@@ -336,7 +341,7 @@ export async function callBatch(model: string, items: { id: string; body: Gemini
     for await (const r of await poll(() => c.messages.batches.results(id).catch(apiError), id)) {
       const body = bodyOf.get(r.custom_id);
       if (!body) continue;
-      if (r.result.type === 'succeeded') { const msg = r.result.message; keep(r.custom_id, () => claudeReply(msg, body)); }
+      if (r.result.type === 'succeeded') { const msg = r.result.message; keep(id, r.custom_id, () => claudeReply(msg, body)); }
       else out.set(r.custom_id, new CallError(r.result.type === 'errored' ? -1 : -3, `batch item ${r.result.type}${r.result.type === 'errored' ? `: ${JSON.stringify(r.result.error).slice(0, 160)}` : ''}`));
     }
     release(id);
@@ -369,7 +374,7 @@ export async function callBatch(model: string, items: { id: string; body: Gemini
       const body = bodyOf.get(id);
       if (!body) return;
       if (r?.error || !r?.response) out.set(id, new CallError(Number(r?.error?.code) || -1, `batch item failed: ${JSON.stringify(r?.error ?? 'no response').slice(0, 160)}`));
-      else keep(id, () => geminiReply(r.response));
+      else keep(name, id, () => geminiReply(r.response));
     });
     release(name);
   }
