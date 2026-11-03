@@ -189,6 +189,33 @@ Picks from https://claude.ai/artifact/3F55dCusNya4BDpNacPhZA; the noes and reaso
 - **The Coach shows it's there as light that rises and fills the screen** (clip 01, `own-01-orb-sunrise-flood`), over the small orb. "It's good, but of course, we will still explore."
 - **Later, for hydration: water you can feel, moving when you tilt the phone** (clip 16). "Not my main focus right now, but we can always add this."
 
+### Window is the spine (3 Nov 2026)
+"Window is the spine. It's the best build so far." (Window artifact: https://claude.ai/artifact/2mGPer97P43dNo4Y5Ugjhp.)
+
+His condition, in his words: "Can you please only use this if it's generally improving the UI, because I want to make this exceptional, world-class?" So every item below is used only where it improves the UI. If it doesn't, leave it out.
+
+**Keep in Window**
+- Everything on Today's first screen.
+- The time-following light.
+- The Coach proposal.
+- Fuel's meal bars.
+- The workout's "Log 80 × 8" button.
+- The teal rest with the Undo pill, and −15 / Skip / +15.
+
+**Bring in from the Workout build** (artifact EpaXDiZtC23VWUZ8WL9VWL)
+- The whole number as one big tap-to-edit button, replacing Window's 44 px ± buttons. Adjustment: the big number keeps a fast nudge, and a sideways drag steps one plate at a time.
+- The 3D equipment icons in Train.
+- The plate where it fits.
+
+**Fix**
+1. A real record moment, with his medal flip that catches the light.
+2. The finish: no "0 records" in big type and no "Not done today" blame list. Make it an earned summary with "Next time" targets and a kind way to reschedule what was skipped.
+3. The Coach line must change between sets.
+4. "Move Push to tomorrow" must weigh tomorrow's wrestling, or offer a choice.
+5. On a cold start, show the numbers instantly and warm up the graphics after. He will time it on his phone.
+6. The photo isn't ownable long term: plan Aven's own image.
+7. Check the thin numbers at arm's length at 20% brightness.
+
 ### Candidates, NOT approved yet (3 Nov 2026, Today)
 Built after his "no rings, readiness in a different way". He has not seen or said yes to either. Do not build from them until he does.
 - **Readiness as a big serif word that fills with light.** The word ("Ready.", with a score such as 82) fills with light as far as you are ready.
