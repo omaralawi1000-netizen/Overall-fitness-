@@ -1,9 +1,9 @@
 // The exam's model layer, offline: the spend guard fails closed, and old Aven's Gemini request turns into a valid Claude one.
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { priceOf, costOf, estimate, Ledger, SpendCapError, CallError, toJsonSchema, toClaude, schemaSize, jsonOnly, splitSystem, callBatch, geminiInlined, call, PRICES, type GeminiBody, type GeminiReply } from '../../exam/providers';
+import { priceOf, realToday, costOf, estimate, Ledger, SpendCapError, CallError, toJsonSchema, toClaude, schemaSize, jsonOnly, splitSystem, callBatch, geminiInlined, call, PRICES, type GeminiBody, type GeminiReply } from '../../exam/providers';
 
 const tmp = () => join(mkdtempSync(join(tmpdir(), 'ledger-')), 'ledger.jsonl');
 const BODY: GeminiBody = {
@@ -25,6 +25,16 @@ describe('prices fail closed', () => {
   it('refuses a model with no price', () => expect(() => priceOf('gemini-9-mystery')).toThrow(SpendCapError));
   it('refuses a price past its checked date', () => expect(() => priceOf('gemini-4-argon', '2026-12-01')).toThrow(/check it again/));
   it('accepts a price on its last day', () => expect(priceOf('gemini-4-argon', '2026-11-30').in).toBe(2));
+  it('checks the date by the real clock, not the faked conversation date (Codex, PR #66)', () => {
+    vi.useFakeTimers({ toFake: ['Date'] });
+    vi.setSystemTime(new Date(2026, 9, 1));
+    PRICES['test-expired'] = { in: 1, out: 1, cacheRead: 0.1, search: 0, until: '2026-10-15' };
+    try {
+      expect(new Date().toISOString().slice(0, 7)).toBe('2026-10');
+      expect(realToday() > '2026-10-15').toBe(true);
+      expect(() => priceOf('test-expired')).toThrow(/check it again/);
+    } finally { delete PRICES['test-expired']; vi.useRealTimers(); }
+  });
   it('prices cached tokens at the cache rate', () => {
     const p = PRICES['claude-sonnet-5-5'];
     expect(costOf(p, { inTokens: 1e6, cachedTokens: 0, outTokens: 1e6, searches: 0 })).toBeCloseTo(12);

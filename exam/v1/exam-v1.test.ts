@@ -7,7 +7,7 @@
 // model gets the same request turned into Claude's, and, since AGENT_SCHEMA is too big for Claude's strict mode, the
 // app's own plain-JSON fallback. Keys come from the environment only. Never print or log a key or a header.
 // Money: EXAM_CAP_USD is required for a real run; the ledger (EXAM_LEDGER, shared by every model) stops the run before a
-// call that could cross it. EXAM_DRY=1 sends nothing and writes each call's size and worst-case price to dry-sizes.jsonl.
+// call that could cross it. EXAM_DRY=1 sends nothing, writes only under <EXAM_OUT>/dry, and notes each call's size and worst-case price in dry-sizes.jsonl.
 // Pacing: one call at a time, EXAM_GAP_MS apart; 429/5xx/network wait 10, 20, 40, 60, 60, 60 s (6 retries).
 //   npx vitest run --config scripts/exam/vitest.config.ts scripts/exam/exam-v1.test.ts
 // Options: EXAM_MODEL (default gemini-3.8-flash), EXAM_FALLBACK (default none: a fallback model would mix two models'
@@ -44,14 +44,15 @@ const dispatcher = process.env.HTTPS_PROXY || process.env.https_proxy ? new EnvH
 const MODEL = process.env.EXAM_MODEL ?? 'gemini-3.8-flash';
 const FALLBACK = process.env.EXAM_FALLBACK ?? '';
 const ONLY = process.env.EXAM_ONLY?.split(',').map((s) => s.trim()).filter(Boolean);
-const OUT = process.env.EXAM_OUT ?? '/home/user/Overall-fitness-/reference/exam-v1/before';
-const GAP_MS = Number(process.env.EXAM_GAP_MS ?? 7000);
 const DRY = !!process.env.EXAM_DRY;
+// a dry run writes only under <EXAM_OUT>/dry: its fake answers must never count as done (or overwrite real ones)
+const OUT = `${process.env.EXAM_OUT ?? '/home/user/Overall-fitness-/reference/exam-v1/before'}${DRY ? '/dry' : ''}`;
+const GAP_MS = Number(process.env.EXAM_GAP_MS ?? 7000);
 const RUNS = Number(process.env.EXAM_RUNS ?? 1);
 const SAFETY_RUNS = Number(process.env.EXAM_SAFETY_RUNS ?? 5);
 const EFFORT = (process.env.EXAM_EFFORT ?? 'medium') as 'low' | 'medium' | 'high';
 const CAP = Number(process.env.EXAM_CAP_USD ?? (DRY ? 1000 : NaN));
-const LEDGER = process.env.EXAM_LEDGER ?? `${OUT}/ledger.jsonl`;
+const LEDGER = DRY ? `${OUT}/ledger.jsonl` : process.env.EXAM_LEDGER ?? `${OUT}/ledger.jsonl`;
 
 // The held-out conversations live outside the repo (Coach work must never see them); only their hash is in it.
 async function heldOut(): Promise<Question[]> {
@@ -271,7 +272,8 @@ async function runOne(q: Question) {
     }
     const answer = { reply: v.reply, actions: v.actions };
     const check = v.dropped ? `dropped ${v.dropped} unreadable action(s)` : q.check?.(answer) ?? null;
-    return { ...base, messages, reply: v.reply, actions: v.actions.map(keyFields), lookups, ...(sources.length ? { sources } : {}), model, ms: Math.round(performance.now() - t0), rounds,
+    // (the look-up results go into the transcript: the judges must see what the Coach read, to check claims made from it)
+    return { ...base, messages, reply: v.reply, actions: v.actions.map(keyFields), lookups, ...(found ? { lookupResults: found } : {}), ...(sources.length ? { sources } : {}), model, ms: Math.round(performance.now() - t0), rounds,
       check, checked: !!q.check, flags: flags(q, v.reply, v.actions, d), route: routed, ...(selfCheck ? { selfCheck } : {}),
       ...(q.mode === 'setup' ? { setupForm: SETUP_FORM[lang], setupChoices: q.setup } : {}), factSheet };
   } catch (e: any) {
@@ -288,18 +290,19 @@ it('runs Coach exam v1 (before: old Aven)', async () => {
   if (!(CAP > 0)) throw new Error('set EXAM_CAP_USD (the most this run may spend, in US dollars, counting what the ledger already holds)');
   await loadDanish();
   mkdirSync(OUT, { recursive: true });
-  ledger = new Ledger(DRY ? `${OUT}/dry-ledger.jsonl` : LEDGER, CAP);
+  ledger = new Ledger(LEDGER, CAP);
   const all = [...QUESTIONS_V1, ...QUESTIONS_SAFETY, ...(await heldOut())];
   const qs = all.filter((q) => !ONLY || ONLY.includes(q.id));
   console.log(`${MODEL}${DRY ? ' (dry)' : ''}: ${qs.length} conversations, $${ledger.spent.toFixed(2)} of $${CAP} already spent`);
   for (const q of qs) {
     for (let run = 1; run <= (SAFETY.has(q.id) ? SAFETY_RUNS : RUNS); run++) {
-      if (!DRY && existsSync(fileOf(q.id, run)) && !JSON.parse(readFileSync(fileOf(q.id, run), 'utf8')).error) continue; // done: a re-run only redoes errors
+      // done: a re-run only redoes errors (and never takes a dry answer for a real one)
+      if (!DRY && existsSync(fileOf(q.id, run))) { const prev = JSON.parse(readFileSync(fileOf(q.id, run), 'utf8')); if (!prev.error && !prev.dry) continue; }
       purpose = `${MODEL} ${q.id} r${run}`;
       const before = ledger.spent;
-      const r: any = { ...(await runOne(q)), run, effort: MODEL.startsWith('claude-') ? EFFORT : undefined };
+      const r: any = { ...(await runOne(q)), run, effort: MODEL.startsWith('claude-') ? EFFORT : undefined, ...(DRY ? { dry: true } : {}) };
       r.usd = Math.round((ledger.spent - before) * 1e5) / 1e5;
-      r.numbersToCheck = r.reply ? unsourcedNumbers(r.reply, [r.factSheet ?? '', ...(r.messages ?? []).map((m: any) => m.text)].join('\n')) : [];
+      r.numbersToCheck = r.reply ? unsourcedNumbers(r.reply, [r.factSheet ?? '', r.lookupResults ?? '', ...(r.messages ?? []).map((m: any) => m.text)].join('\n')) : [];
       writeFileSync(fileOf(q.id, run), JSON.stringify(r, null, 1));
       console.log(`${q.id} r${run}: ${r.error ? `ERROR ${r.error.slice(0, 120)}` : `ok (${r.model}, ${r.ms} ms, $${r.usd}, check ${r.check ?? (r.checked ? 'pass' : '-')})`}`);
     }

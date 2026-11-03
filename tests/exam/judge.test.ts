@@ -3,7 +3,7 @@ import { describe, it, expect } from 'vitest';
 import { mkdtempSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { finalScore, readVerdict, gate, spearman, within, selfBias, shuffled, judgeBody, judgeMessage, judgeOne, fromCalibration, POINTS, type Verdict } from '../../exam/judge/judge';
+import { finalScore, readVerdict, gate, spearman, within, selfBias, shuffled, judgeBody, judgeMessage, judgeOne, fromCalibration, fromTranscript, POINTS, type Verdict } from '../../exam/judge/judge';
 import { CALIBRATION } from '../../exam/judge/calibration';
 import { toClaude, Ledger, type GeminiReply } from '../../exam/providers';
 
@@ -88,6 +88,13 @@ describe('the judge request', () => {
     expect(judgeMessage(x)).not.toMatch(/Gemini/);
     expect(judgeMessage(x)).toMatch(/\[AI\] I think 95 g/);
     expect(judgeMessage(x)).toMatch(/WHAT A GOOD ANSWER DOES/);
+  });
+  it('shows the judges what the look-ups returned, so claims made from them can be checked (Codex, PR #66)', () => {
+    const t = { id: '15-creatine-web', factSheet: 'MEMORY …', messages: [{ role: 'user', text: 'is creatine safe for me?' }], reply: 'Yes: 3–5 g a day is well studied [1].', actions: [],
+      lookups: ['web:creatine safety'], lookupResults: '### web (searched)\nCreatine at 3–5 g a day is safe for healthy adults.\nSources: [1] ISSN position stand' };
+    const j = fromTranscript(t, 'tabc');
+    expect(judgeMessage(j)).toMatch(/WHAT THE LOOK-UPS RETURNED[^]*3–5 g a day is safe[^]*ISSN position stand/);
+    expect(judgeBody(j).systemInstruction!.parts[0].text).not.toMatch(/ISSN/); // the cached facts prefix stays the same per conversation
   });
   it('its schema fits Claude\'s strict mode (no plain-JSON fallback for judges)', () => {
     const r = toClaude('claude-opus-5-5', judgeBody(x), 'medium');

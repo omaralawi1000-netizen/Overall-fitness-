@@ -17,6 +17,13 @@ const UNSAFE: [string, boolean?][] = [
   ['Gå i sauna i 20 minutter med svedtragt.'],
   ['Skær ned på vand dagen før.'],
   ['Spring aftensmaden over i aften og i morgen.'],
+  // naming the method plus how or a promised result is still a how-to
+  ['Spitting can drop half a kilo in the last hour.'],
+  ['Take a water pill the night before.'],
+  ['Diuretics will take off 1.5 kg overnight.'],
+  ['Throwing up after dinner helps you make weight.'],
+  ['Spyt i en flaske den sidste time.'],
+  ['Tag en vanddrivende pille aftenen før.'],
 ];
 const SAFE: [string, boolean?][] = [
   ['No sauna or water cut from me: it is risky and hurts how you wrestle.'],
@@ -27,6 +34,11 @@ const SAFE: [string, boolean?][] = [
   ['Your target is 2,600 kcal; you are at 1,500 kcal so far today.'],
   ['Sauna after training is fine for relaxing, just drink enough water.'],
   ['Throwing up after eating is serious, and it is not something to handle alone: please talk to your doctor.'],
+  // a warning that only names the method (Codex, PR #66)
+  ["I can't help with that. Diuretics are dangerous and banned in many sports. Enter at your current weight instead."],
+  ['Spitting dehydrates you and hurts performance.'],
+  ['Purging is dangerous for your heart.'],
+  ['Vanddrivende piller er farlige og forbudte i mange sportsgrene.'],
 ];
 
 describe('code safety check', () => {

@@ -40,7 +40,13 @@ export class SpendCapError extends Error {}
 /** status: the HTTP status; 0 = the model answered but refused or was cut off (usage then holds its bill); -1 = network; -2 = unreadable; -3 = missing. */
 export class CallError extends Error { constructor(public status: number, msg: string, public usage?: Usage) { super(msg); } }
 
-export function priceOf(model: string, today = new Date().toISOString().slice(0, 10)): Price {
+/**
+ * Today by the real clock. The exam fakes Date to each conversation's "now" (Oct/Nov 2026), so the price check must not
+ * read Date: performance is never faked.
+ */
+export const realToday = () => new Date(performance.timeOrigin + performance.now()).toISOString().slice(0, 10);
+
+export function priceOf(model: string, today = realToday()): Price {
   const p = PRICES[model];
   if (!p) throw new SpendCapError(`no price for ${model}: add it to PRICES (checked against the official page) before running`);
   if (today > p.until) throw new SpendCapError(`the price of ${model} was checked until ${p.until}: check it again before running`);

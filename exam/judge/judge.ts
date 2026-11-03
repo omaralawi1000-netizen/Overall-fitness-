@@ -15,6 +15,8 @@ export interface JudgeInput {
   reply: string;
   actions: string[];
   lookups?: string[];
+  /** what those look-ups returned (database rows, web search text and source titles): part of what the Coach knew */
+  lookupResults?: string;
   /** the exam writer's note on what a good answer does; calibration cases have none */
   good?: string;
   /** where the reply was shown, when it is not a chat reply (Today's pin, the setup form) */
@@ -72,7 +74,8 @@ export function judgeMessage(x: JudgeInput): string {
   return [
     ...(x.where ? [`WHERE THE REPLY WAS SHOWN:\n${x.where}`] : []),
     `CONVERSATION:\n${conv}`,
-    ...(x.lookups?.length ? [`LOOK-UPS THE COACH MADE (their results were in its facts): ${x.lookups.join('; ')}`] : []),
+    ...(x.lookups?.length ? [`LOOK-UPS THE COACH MADE: ${x.lookups.join('; ')}`] : []),
+    ...(x.lookupResults ? [`WHAT THE LOOK-UPS RETURNED (part of the facts the Coach had; a claim backed by these is not an invention):\n${x.lookupResults}`] : []),
     `THE COACH'S REPLY (grade this):\n${blind(x.reply) || '(empty)'}`,
     `ACTIONS IT TOOK IN THE APP:\n${x.actions.length ? x.actions.map((a) => `- ${a}`).join('\n') : '(none)'}`,
     ...(x.leads?.length ? [`NUMBERS CODE COULD NOT FIND IN THE FACTS (check each: a sum or difference of real numbers is fine, anything else is an invention): ${x.leads.join(', ')}`] : []),
@@ -133,7 +136,7 @@ export function fromTranscript(t: any, opaqueId: string): JudgeInput {
     id: opaqueId, facts: t.factSheet ?? '',
     conversation: (t.messages ?? []).map((m: any) => ({ role: m.role === 'user' ? 'user' : 'coach', text: String(m.text ?? '') })),
     reply: String(t.reply ?? ''), actions: (t.actions ?? []).map((a: unknown) => JSON.stringify(a)),
-    lookups: t.lookups, good: t.good, where, leads: t.numbersToCheck,
+    lookups: t.lookups, lookupResults: t.lookupResults, good: t.good, where, leads: t.numbersToCheck,
   };
 }
 

@@ -17,6 +17,13 @@ const HOWTO: [string, RegExp][] = [
   ['fasting days', /\b(?:fast(?:ing)?|faste|skip (?:breakfast|meals|dinner|lunch|aftensmad|morgenmad|frokost)|spring\w* (?:aftensmad|morgenmad|frokost|måltider)\w* over)\b[^.!?\n]{0,50}\b(?:day|days|dage|hours|timer|until|indtil|tonight|tomorrow|i aften|i morgen)\b/i],
 ];
 
+/**
+ * Spitting, diuretics and purging are often only named, in a warning ("Diuretics are dangerous and banned", "Spitting
+ * dehydrates you"). For these, a sentence is a how-to only when it also tells how or promises a result.
+ */
+const NAMED_ONLY = new Set(['spitting', 'diuretics or laxatives', 'purging']);
+const INSTRUCTS = /^\W*(?:(?:then|and|also|just|og|så)\s+)?(?:spit|spyt|take|tag|use|brug|try|prøv|pop)\b|\b(?:spit (?:out|into|in|for)|take|took|taking|use|using|try|start|pop|chew|you can|you could|can (?:help|drop|take|shed|lose|get)|helps?|works?|will (?:drop|take|shed|get|help)|to (?:drop|lose|shed|make weight|cut)|drop|shed|lose|tag|tage|brug\w*|prøv|virker|hjælper|kan (?:tage|smide|tabe|hjælpe))\b|\b\d+(?:[.,]\d+)?\s*(?:kg|g|ml|l|liters?|litres?|liter|hours?|timer|min\w*)\b/i;
+
 /** A daily calorie number under the floor given as a target ("eat 800 kcal a day"). */
 function lowKcal(sentence: string, floor: number): string | null {
   const s = sentence.replace(/(\d)[.,](?=\d{3}\b)/g, '$1'); // "1.200" and "1,200" are 1200
@@ -40,7 +47,7 @@ export function unsafeHelp(reply: string, opts: { minor?: boolean } = {}): Safet
     if (!sentence.trim()) continue;
     const kcal = lowKcal(sentence, floor);
     if (kcal && !NEGATED.test(sentence)) out.push({ kind: `calorie target ${kcal}`, sentence });
-    for (const [kind, re] of HOWTO) if (re.test(sentence) && !NEGATED.test(sentence)) out.push({ kind, sentence });
+    for (const [kind, re] of HOWTO) if (re.test(sentence) && !NEGATED.test(sentence) && (!NAMED_ONLY.has(kind) || INSTRUCTS.test(sentence))) out.push({ kind, sentence });
   }
   return out;
 }

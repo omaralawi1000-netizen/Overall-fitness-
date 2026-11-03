@@ -5,7 +5,9 @@
 //      EXAM_JUDGES (default claude-opus-5-5,gemini-4-argon) · EXAM_JUDGE_STEP calibrate | judge | report | all (default all)
 //      EXAM_CAP_USD (required unless EXAM_DRY) and EXAM_LEDGER (the same ledger as the Coach runs, so the cap is for everything)
 //      EXAM_JUDGE_SYNC=1 (one call at a time, full price; default: the half-price batch APIs) · EXAM_JUDGE_EFFORT (Claude, default medium)
-// A judge that fails calibration grades nothing. Already-judged transcripts are skipped, so a stopped run resumes.
+// A judge that fails calibration grades nothing. Every verdict is saved the moment it arrives, and already-judged
+// transcripts are skipped, so a run stopped by the cap (or anything else) resumes without paying twice.
+// EXAM_DRY=1 writes only under <EXAM_JUDGED>/dry and refuses real transcripts' folders mixed with dry ones.
 import { it } from 'vitest';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -15,10 +17,11 @@ import { judgeBody, judgeOne, readVerdict, finalScore, fromCalibration, fromTran
 import { HARD_10, modelRow, chatModel, topTierWorthIt, examHealth, relativeBias, scoreOf, type Answer } from './report';
 
 const DIRS = (process.env.EXAM_TRANSCRIPTS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
-const OUT = process.env.EXAM_JUDGED ?? '/home/user/Overall-fitness-/reference/exam-v1/judged';
+const DRY = !!process.env.EXAM_DRY;
+// a dry run never shares a file with a real one: fake verdicts must not count as done work (or real ones be overwritten)
+const OUT = `${process.env.EXAM_JUDGED ?? '/home/user/Overall-fitness-/reference/exam-v1/judged'}${DRY ? '/dry' : ''}`;
 const JUDGES = (process.env.EXAM_JUDGES ?? 'claude-opus-5-5,gemini-4-argon').split(',').map((s) => s.trim()) as [string, string];
 const STEP = process.env.EXAM_JUDGE_STEP ?? 'all';
-const DRY = !!process.env.EXAM_DRY;
 const SYNC = !!process.env.EXAM_JUDGE_SYNC || DRY;
 const EFFORT = (process.env.EXAM_JUDGE_EFFORT ?? 'medium') as 'low' | 'medium' | 'high';
 const CAP = Number(process.env.EXAM_CAP_USD ?? (DRY ? 1000 : NaN));
@@ -36,9 +39,14 @@ const dry = (model: string, body: any): GeminiReply => {
   return { candidates: [{ content: { parts: [{ text: JSON.stringify(v) }] } }], usage: { inTokens: 0, cachedTokens: 0, outTokens: 0, searches: 0 }, usd: 0 };
 };
 
-/** Every input judged by one judge: one batch (half price), then one sync retry for anything that failed or was unreadable. */
-async function judgeAll(judge: string, xs: JudgeInput[], ledger: Ledger, label: string): Promise<Map<string, Judged | Error>> {
+/**
+ * Every input judged by one judge: one batch (half price), then one sync retry for anything that failed or was unreadable.
+ * `save` gets each result the moment it is final (a batch's good verdicts as soon as the batch ends), so a cap stop
+ * later in the run loses nothing that was paid for.
+ */
+async function judgeAll(judge: string, xs: JudgeInput[], ledger: Ledger, label: string, save: (id: string, r: Judged | Error) => void): Promise<Map<string, Judged | Error>> {
   const out = new Map<string, Judged | Error>();
+  const put = (id: string, r: Judged | Error) => { out.set(id, r); save(id, r); };
   const o = { ledger, purpose: `${label} by ${judge}`, effort: EFFORT, ...(DRY ? { dry } : {}) };
   let retry = xs;
   if (!SYNC && xs.length) {
@@ -51,14 +59,14 @@ async function judgeAll(judge: string, xs: JudgeInput[], ledger: Ledger, label: 
         try {
           if (!r || r instanceof CallError) throw r ?? new Error('missing');
           const verdict = readVerdict(r.candidates[0]?.content.parts.filter((p) => !p.thought).map((p) => p.text ?? '').join('') ?? '');
-          out.set(x.id, { id: x.id, judge, score: finalScore(verdict), verdict, usd: r.usd });
+          put(x.id, { id: x.id, judge, score: finalScore(verdict), verdict, usd: r.usd });
         } catch { retry.push(x); }
       }
     }
   }
   for (const x of retry) {
-    try { out.set(x.id, await judgeOne(judge, x, o)); }
-    catch (e) { if (e instanceof SpendCapError) throw e; out.set(x.id, e as Error); }
+    try { put(x.id, await judgeOne(judge, x, o)); }
+    catch (e) { if (e instanceof SpendCapError) throw e; put(x.id, e as Error); }
   }
   return out;
 }
@@ -68,6 +76,7 @@ function transcripts(): Row[] {
   const rows: Row[] = [];
   for (const dir of DIRS) for (const f of readdirSync(dir).filter((x) => /\.r\d+\.json$/.test(x))) {
     const t = JSON.parse(readFileSync(`${dir}/${f}`, 'utf8'));
+    if (!!t.dry !== DRY) throw new Error(`${dir}/${f} is ${t.dry ? 'from a dry run' : 'a real answer'}: ${DRY ? 'a dry judge run takes only dry transcripts' : 'point EXAM_TRANSCRIPTS at the real run\'s folder, not its dry/ folder'}`);
     const coach = String(t.model ?? dir.split('/').pop());
     rows.push({ key: `${coach}|${t.id}|r${t.run}`, coach, qid: t.id, run: t.run, t });
   }
@@ -77,16 +86,22 @@ function transcripts(): Row[] {
 it('judges the Coach exam and writes the report', async () => {
   if (!(CAP > 0)) throw new Error('set EXAM_CAP_USD (and EXAM_LEDGER to the Coach runs\' ledger, so the cap covers everything)');
   mkdirSync(OUT, { recursive: true });
-  const ledger = new Ledger(DRY ? `${OUT}/dry-ledger.jsonl` : process.env.EXAM_LEDGER ?? `${OUT}/ledger.jsonl`, CAP);
+  const ledger = new Ledger(DRY ? `${OUT}/ledger.jsonl` : process.env.EXAM_LEDGER ?? `${OUT}/ledger.jsonl`, CAP);
   const gates: Record<string, boolean> = {};
+  const rows = transcripts(); // (read first: a wrong folder stops the run before anything is paid)
 
   // 1. calibration: a judge grades only after it scores the known replies right
   for (const judge of JUDGES) {
     const file = `${OUT}/calibration-${judge}.json`;
     const prior = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null;
-    if (prior && !DRY) { gates[judge] = prior.gate.pass; continue; }
+    if (prior) { gates[judge] = DRY || prior.gate.pass; continue; }
     if (STEP !== 'all' && STEP !== 'calibrate') continue;
-    const res = await judgeAll(judge, CALIBRATION.map(fromCalibration), ledger, 'calibration');
+    // (verdicts already paid for in a stopped calibration are kept in the .partial file and not asked again)
+    const partial = `${OUT}/calibration-${judge}.partial.jsonl`;
+    const res = new Map<string, Judged | Error>(lines(partial).map((l) => [l.id, l as Judged]));
+    const fresh = await judgeAll(judge, CALIBRATION.map(fromCalibration).filter((x) => !res.has(x.id)), ledger, 'calibration',
+      (_id, r) => { if (!(r instanceof Error)) appendFileSync(partial, `${JSON.stringify(r)}\n`); });
+    for (const [k, v] of fresh) res.set(k, v);
     const scores = new Map<string, number>();
     for (const c of CALIBRATION) { const r = res.get(`cal:${c.id}`); if (r && !(r instanceof Error)) scores.set(c.id, r.score); }
     const g = gate(scores);
@@ -96,7 +111,6 @@ it('judges the Coach exam and writes the report', async () => {
   }
 
   // 2. the transcripts, blind: the judge sees an opaque id, never the model; same conversations together so the facts are cached
-  const rows = transcripts();
   const judgedFile = `${OUT}/judged.jsonl`;
   if ((STEP === 'all' || STEP === 'judge') && rows.length) {
     for (const judge of JUDGES) {
@@ -104,11 +118,10 @@ it('judges the Coach exam and writes the report', async () => {
       const done = new Set(lines(judgedFile).filter((l) => l.judge === judge && !l.error).map((l) => l.key));
       const todo = rows.filter((r) => !r.t.error && !done.has(r.key)).sort((a, b) => a.qid.localeCompare(b.qid));
       const byId = new Map(todo.map((r) => [opaque(r.key), r]));
-      const res = await judgeAll(judge, todo.map((r) => fromTranscript(r.t, opaque(r.key))), ledger, 'exam');
-      for (const [id, j] of res) {
+      const res = await judgeAll(judge, todo.map((r) => fromTranscript(r.t, opaque(r.key))), ledger, 'exam', (id, j) => {
         const r = byId.get(id)!;
         appendFileSync(judgedFile, `${JSON.stringify({ key: r.key, coach: r.coach, qid: r.qid, run: r.run, judge, ...(j instanceof Error ? { error: j.message } : { score: j.score, verdict: j.verdict, usd: j.usd }) })}\n`);
-      }
+      });
       console.log(`${judge}: judged ${[...res.values()].filter((j) => !(j instanceof Error)).length} of ${todo.length}`);
     }
   }
@@ -116,7 +129,8 @@ it('judges the Coach exam and writes the report', async () => {
 
   // 3. the report
   if (STEP === 'calibrate' || !rows.length) return;
-  const judged = lines(judgedFile).filter((l) => !l.error);
+  // (a transcript judged twice, after an error then a success, counts once: its last good verdict)
+  const judged = [...new Map(lines(judgedFile).filter((l) => !l.error).map((l) => [`${l.key}|${l.judge}`, l])).values()];
   const answers: Answer[] = rows.map((r) => ({
     coach: r.coach, qid: r.qid, run: r.run, safety: SAFETY_IDS.test(r.qid), heldout: /^h\d/.test(r.qid),
     check: r.t.check ?? null, flags: r.t.flags ?? [], ...(r.t.error ? { error: r.t.error } : {}),
@@ -128,14 +142,14 @@ it('judges the Coach exam and writes the report', async () => {
 
 function report(rows: Row[], answers: Answer[], judged: any[], gates: Record<string, boolean>, ledger: Ledger): string {
   const coaches = [...new Set(rows.map((r) => r.coach))];
-  const all = coaches.map((c) => modelRow(c, answers));
+  const all = coaches.map((c) => modelRow(c, answers, JUDGES));
   const usdPer = (c: string) => { const xs = rows.filter((r) => r.coach === c && !r.t.error).map((r) => r.t.usd ?? 0); return xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : NaN; };
   const omarFile = `${OUT}/omar-pairs.json`;
   const omar = existsSync(omarFile) ? JSON.parse(readFileSync(omarFile, 'utf8')) : null;
   const health = examHealth({ gates, all: answers, judges: JUDGES, omar });
   const cheap = all.find((r) => r.coach === 'gemini-3.8-flash'), dear = all.find((r) => r.coach === 'claude-sonnet-5-5');
   const pick = cheap && dear ? chatModel(cheap, dear) : null;
-  const hard = coaches.map((c) => modelRow(c, answers, HARD_10));
+  const hard = coaches.map((c) => modelRow(c, answers, JUDGES, HARD_10));
   const chosenHard = pick ? hard.find((r) => r.coach === pick.pick) : undefined;
   const tops = hard.filter((r) => /opus|argon/.test(r.coach));
   const worst = judged.slice().sort((a, b) => a.score - b.score).slice(0, 5);
@@ -149,7 +163,7 @@ function report(rows: Row[], answers: Answer[], judged: any[], gates: Record<str
     health.good ? '' : '\n**Not yet: fix the exam before trusting the scores below.**', '',
     '## Scores (the 22; 1–10, mean of both judges)', '',
     '| Coach | mean | worst | under 7 | held-out | safety | re-run drift | errors | $ per answer |', '|---|---|---|---|---|---|---|---|---|',
-    ...all.map((r) => `| ${r.coach} | ${f1(r.mean)} | ${f1(r.worst)} | ${r.under7.join(', ') || '–'} | ${f1(r.heldout)} | ${r.safetyPass}/${r.safetyTotal}${r.safetyDisagree.length ? ` (read: ${r.safetyDisagree.join(', ')})` : ''} | ${f1(r.drift)} | ${r.errors} | ${usdPer(r.coach).toFixed(4)} |`), '',
+    ...all.map((r) => `| ${r.coach} | ${f1(r.mean)} | ${f1(r.worst)} | ${r.under7.join(', ') || '–'} | ${f1(r.heldout)} | ${r.safetyPass}/${r.safetyTotal}${r.safetyDisagree.length ? ` (read: ${r.safetyDisagree.join(', ')})` : ''} | ${f1(r.drift)} | ${r.errors}${r.unjudged ? ` (+${r.unjudged} not judged by both)` : ''} | ${usdPer(r.coach).toFixed(4)} |`), '',
     '## The hard 10', '', '| Coach | mean | worst |', '|---|---|---|', ...hard.map((r) => `| ${r.coach} | ${f1(r.mean)} | ${f1(r.worst)} |`), '',
     '## Decisions (rules fixed before the run)', '',
     pick ? `- Chat model: **${pick.pick}** (${pick.why}).` : '- Chat model: needs both Flash and Sonnet results.',

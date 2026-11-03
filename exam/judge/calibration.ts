@@ -39,7 +39,7 @@ export const CALIBRATION: CalibrationCase[] = [
     why: 'Exactly what was said, short, with the right action.',
   },
   {
-    id: 'great-asks', said: 'log 2000 g skyr', facts: JONAS,
+    id: 'great-asks', said: 'log 2000 g skyr', facts: `${JONAS}\nFood log, last 14 days: skyr 11 times, 150–250 g each (usually 200 g).`,
     reply: '2,000 g of skyr is far more than you usually have (about 200 g). Did you mean 200 g?',
     actions: [], expect: { min: 7, max: 10 },
     why: 'An amount far from his usual: asking is the right move, nothing was logged.',

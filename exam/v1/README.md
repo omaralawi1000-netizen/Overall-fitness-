@@ -15,7 +15,8 @@ to get the "before" score of old Aven's Coach and to choose the Coach model (E2 
    `npm i --no-save @anthropic-ai/sdk@0.137.0`.
 2. Copy this repo's `exam/` into it with `v1` renamed to `exam`: `exam/v1/*` → `scripts/exam/`, `exam/checks/` →
    `scripts/checks/`, `exam/providers.ts` → `scripts/providers.ts`; for the held-out run also the held-out file → `scripts/exam/`.
-3. Dry run first (free; writes each call's size and worst-case price to `dry-sizes.jsonl`):
+3. Dry run first (free; writes only under `<EXAM_OUT>/dry/`, including each call's size and worst-case price in `dry-sizes.jsonl`;
+   a real run never takes a dry answer as done):
    `EXAM_DRY=1 EXAM_MODEL=claude-sonnet-5-5 EXAM_OUT=<dir> npx vitest run --config scripts/exam/vitest.config.ts scripts/exam/exam-v1.test.ts`
 4. Real run, one Coach model at a time, all sharing one ledger:
    `EXAM_MODEL=gemini-3.8-flash EXAM_RUNS=2 EXAM_HELDOUT=1 EXAM_CAP_USD=38 EXAM_LEDGER=<dir>/ledger.jsonl EXAM_GAP_MS=1000 EXAM_OUT=<dir>/gemini-3.8-flash npx vitest run …`
@@ -26,7 +27,8 @@ to get the "before" score of old Aven's Coach and to choose the Coach model (E2 
 ## Judge and report (this repo)
 `EXAM_TRANSCRIPTS=<dir>/gemini-3.8-flash,<dir>/claude-sonnet-5-5,… EXAM_CAP_USD=38 EXAM_LEDGER=<dir>/ledger.jsonl EXAM_JUDGED=<dir>/judged npx vitest run --config exam/vitest.config.ts exam/judge/run-judges.test.ts`
 Calibration first (a judge that fails grades nothing), then both judges through the half-price batch APIs, then
-`report.md` with the decision rules of the E2 plan. Omar's blind pairs go in `<judged>/omar-pairs.json` as `{"agree": n, "of": 12}`.
+`report.md` with the decision rules of the E2 plan. Every verdict is saved as it arrives, so a stopped run resumes without
+paying twice; `EXAM_DRY=1` writes only under `<EXAM_JUDGED>/dry/` and takes only dry transcripts. Omar's blind pairs go in `<judged>/omar-pairs.json` as `{"agree": n, "of": 12}`.
 
 Measured in the dry run (3 Nov 2026): old Aven's Coach prompt is about 75–90k characters (about 20k tokens) per call,
 the judge's about 25k characters. Claude reads the stable part of the Coach prompt from its cache; Gemini caches it by itself.
