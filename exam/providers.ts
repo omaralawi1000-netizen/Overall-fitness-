@@ -182,7 +182,7 @@ function systemBlocks(system: string): Anthropic.TextBlockParam[] {
 }
 
 // ── the call ──
-export interface CallOpts { ledger: Ledger; purpose: string; dry?: (model: string, body: GeminiBody) => GeminiReply; effort?: 'low' | 'medium' | 'high'; fetchFn?: typeof fetch; dispatcher?: unknown }
+export interface CallOpts { ledger: Ledger; purpose: string; dry?: (model: string, body: GeminiBody) => GeminiReply; effort?: 'low' | 'medium' | 'high'; fetchFn?: typeof fetch; dispatcher?: unknown; /** for the offline tests */ client?: Pick<Anthropic, 'messages'> }
 
 let claude: Anthropic | null = null;
 const API = 'https://generativelanguage.googleapis.com/v1beta';
@@ -198,8 +198,24 @@ export async function call(model: string, body: GeminiBody, o: CallOpts): Promis
   const req = model.startsWith('claude-') ? toClaude(model, body, o.effort ?? 'medium') : null;
   if (o.dry) return o.dry(model, body);
   let reply: GeminiReply;
+  let paused = 0;
   try {
-    reply = req ? claudeReply(await claudeClient().messages.create(req).catch(apiError), body) : geminiReply(await geminiPost(`models/${encodeURIComponent(model)}:generateContent`, body, o));
+    if (req) {
+      // a long web search can pause the turn (stop_reason pause_turn): the paused content is sent back unchanged so Claude
+      // finishes it (Anthropic's stop-reason docs). Each page is billed as it comes; at most 3 continuations.
+      const c = o.client ?? claudeClient();
+      let msg = await c.messages.create(req).catch(apiError);
+      for (let n = 0; msg.stop_reason === 'pause_turn'; n++) {
+        const u = claudeUsage(msg);
+        paused += costOf(price, u);
+        o.ledger.record(entry(model, `${o.purpose} (paused, page ${n + 1})`, costOf(price, u), u, true));
+        if (n >= 3) throw new CallError(0, 'the web search was still paused after 3 continuations');
+        req.messages = [...req.messages, { role: 'assistant', content: msg.content as Anthropic.ContentBlockParam[] }];
+        o.ledger.check(estimate(model, body, maxOut), `${o.purpose} on ${model} (continuing a paused search)`);
+        msg = await c.messages.create(req).catch(apiError);
+      }
+      reply = claudeReply(msg, body);
+    } else reply = geminiReply(await geminiPost(`models/${encodeURIComponent(model)}:generateContent`, body, o));
   } catch (e) {
     // a refused or cut-off Claude answer is still billed: its real token counts ride on the error
     if (e instanceof CallError && e.usage) o.ledger.record(entry(model, o.purpose, costOf(price, e.usage), e.usage, false));
@@ -207,6 +223,7 @@ export async function call(model: string, body: GeminiBody, o: CallOpts): Promis
   }
   reply.usd = costOf(price, reply.usage);
   o.ledger.record(entry(model, o.purpose, reply.usd, reply.usage, true));
+  reply.usd += paused;
   return reply;
 }
 
@@ -245,9 +262,10 @@ export function jsonOnly(t: string): string {
 }
 
 /** A Claude message in Gemini's reply shape. A refusal or a cut-off answer is an error that still carries its bill. */
+const claudeUsage = ({ usage: u }: Anthropic.Message): Usage => ({ inTokens: u.input_tokens + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0), cachedTokens: u.cache_read_input_tokens ?? 0, cacheWriteTokens: u.cache_creation_input_tokens ?? 0, outTokens: u.output_tokens, searches: u.server_tool_use?.web_search_requests ?? 0 });
 export function claudeReply(msg: Anthropic.Message, body: GeminiBody): GeminiReply {
-  const u = msg.usage;
-  const usage: Usage = { inTokens: u.input_tokens + (u.cache_read_input_tokens ?? 0) + (u.cache_creation_input_tokens ?? 0), cachedTokens: u.cache_read_input_tokens ?? 0, cacheWriteTokens: u.cache_creation_input_tokens ?? 0, outTokens: u.output_tokens, searches: u.server_tool_use?.web_search_requests ?? 0 };
+  const usage = claudeUsage(msg);
+  if (msg.stop_reason === 'pause_turn') throw new CallError(0, 'paused turn (pause_turn) handed over as an answer', usage);
   if (msg.stop_reason === 'refusal') throw new CallError(0, `refusal${msg.stop_details && 'category' in msg.stop_details ? ` (${msg.stop_details.category})` : ''}`, usage);
   if (msg.stop_reason === 'max_tokens') throw new CallError(0, 'cut off at max_tokens', usage);
   const all = msg.content.filter((b): b is Anthropic.TextBlock => b.type === 'text').map((b) => b.text).join('');
@@ -265,7 +283,6 @@ export interface BatchOpts extends CallOpts {
   pollMs?: number; maxWaitMs?: number; onPoll?: (state: string) => void; sleep?: (ms: number) => Promise<void>;
   /** where a sent batch's handle is kept until its answers are in, so a stopped run collects it instead of paying again */
   jobDir?: string;
-  /** for the offline test */ client?: Pick<Anthropic, 'messages'>;
 }
 const NO_USAGE: Usage = { inTokens: 0, cachedTokens: 0, outTokens: 0, searches: 0 };
 const transient = (e: unknown) => e instanceof CallError && (e.status === -1 || e.status === 429 || e.status === 529 || e.status >= 500);
@@ -331,7 +348,10 @@ export async function callBatch(model: string, items: { id: string; body: Gemini
 
   if (isClaude) {
     const c = o.client ?? claudeClient();
-    const id = pending?.handle ?? reserve((await c.messages.batches.create({ requests: reqs.map((x) => ({ custom_id: x.id, params: x.req! })) }).catch(apiError)).id);
+    // custom_id must match ^[a-zA-Z0-9_-]{1,64}$ ("cal:great-protein" would be refused): a hash of the id, mapped back below
+    const cid = (x: string) => createHash('sha256').update(x).digest('hex').slice(0, 32);
+    const byCid = new Map(items.map((x) => [cid(x.id), x.id]));
+    const id = pending?.handle ?? reserve((await c.messages.batches.create({ requests: reqs.map((x) => ({ custom_id: cid(x.id), params: x.req! })) }).catch(apiError)).id);
     if (pending) o.onPoll?.(`collecting batch ${id}, sent by an earlier run`);
     for (let b = await poll(() => c.messages.batches.retrieve(id).catch(apiError), id); b.processing_status !== 'ended'; b = await poll(() => c.messages.batches.retrieve(id).catch(apiError), id)) {
       if (Date.now() > deadline) throw new CallError(-1, `batch ${id} still running after the wait limit: it keeps running at Anthropic; ${later(id)}`);
@@ -339,10 +359,11 @@ export async function callBatch(model: string, items: { id: string; body: Gemini
       await sleep(o.pollMs ?? 30_000);
     }
     for await (const r of await poll(() => c.messages.batches.results(id).catch(apiError), id)) {
-      const body = bodyOf.get(r.custom_id);
-      if (!body) continue;
-      if (r.result.type === 'succeeded') { const msg = r.result.message; keep(id, r.custom_id, () => claudeReply(msg, body)); }
-      else out.set(r.custom_id, new CallError(r.result.type === 'errored' ? -1 : -3, `batch item ${r.result.type}${r.result.type === 'errored' ? `: ${JSON.stringify(r.result.error).slice(0, 160)}` : ''}`));
+      const itemId = byCid.get(r.custom_id);
+      const body = itemId && bodyOf.get(itemId);
+      if (!itemId || !body) continue;
+      if (r.result.type === 'succeeded') { const msg = r.result.message; keep(id, itemId, () => claudeReply(msg, body)); }
+      else out.set(itemId, new CallError(r.result.type === 'errored' ? -1 : -3, `batch item ${r.result.type}${r.result.type === 'errored' ? `: ${JSON.stringify(r.result.error).slice(0, 160)}` : ''}`));
     }
     release(id);
   } else {

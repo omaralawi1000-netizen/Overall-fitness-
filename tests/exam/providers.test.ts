@@ -3,8 +3,10 @@ import { describe, it, expect, vi } from 'vitest';
 import { mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import { createHash } from 'node:crypto';
 import { priceOf, realToday, costOf, estimate, Ledger, SpendCapError, CallError, toJsonSchema, toClaude, schemaSize, jsonOnly, splitSystem, callBatch, geminiInlined, call, PRICES, type GeminiBody, type GeminiReply } from '../../exam/providers';
 
+const cid = (x: string) => createHash('sha256').update(x).digest('hex').slice(0, 32);
 const tmp = () => join(mkdtempSync(join(tmpdir(), 'ledger-')), 'ledger.jsonl');
 const BODY: GeminiBody = {
   systemInstruction: { parts: [{ text: 'You are the Coach.' }] },
@@ -167,6 +169,32 @@ describe('Gemini request → Claude request', () => {
   });
 });
 
+describe('a paused Claude web search (Codex, PR #66)', () => {
+  const usage = { input_tokens: 1000, output_tokens: 100, cache_read_input_tokens: 0, cache_creation_input_tokens: 0, server_tool_use: { web_search_requests: 1 } };
+  const SEARCH: GeminiBody = { contents: [{ role: 'user', parts: [{ text: 'creatine on a cut' }] }], tools: [{ google_search: {} }], generationConfig: { maxOutputTokens: 1400 } };
+  it('sends the paused content back unchanged until the turn ends, and bills every page', async () => {
+    const seen: any[] = [];
+    const pages = [
+      { content: [{ type: 'text', text: 'I will look up the latest evidence.' }, { type: 'server_tool_use', id: 's1', name: 'web_search', input: { query: 'creatine' } }], stop_reason: 'pause_turn', usage },
+      { content: [{ type: 'text', text: 'Creatine at 3–5 g a day is safe on a cut.' }], stop_reason: 'end_turn', usage },
+    ];
+    const client = { messages: { create: async (r: any) => { seen.push(structuredClone(r.messages)); return pages.shift(); } } } as any;
+    const l = new Ledger(tmp(), 5);
+    const r = await call('claude-sonnet-5-5', SEARCH, { ledger: l, purpose: 'web', client });
+    expect(r.candidates[0].content.parts[0].text).toBe('Creatine at 3–5 g a day is safe on a cut.');
+    expect(seen[1].at(-1)).toEqual({ role: 'assistant', content: [{ type: 'text', text: 'I will look up the latest evidence.' }, { type: 'server_tool_use', id: 's1', name: 'web_search', input: { query: 'creatine' } }] });
+    const page = (1000 * 2 + 100 * 10) / 1e6 + 0.01;
+    expect(l.spent).toBeCloseTo(2 * page);
+    expect(r.usd).toBeCloseTo(2 * page);
+  });
+  it('a turn still paused after 3 continuations is an error, never an answer', async () => {
+    let n = 0;
+    const client = { messages: { create: async () => { n++; return { content: [{ type: 'text', text: 'still searching' }], stop_reason: 'pause_turn', usage }; } } } as any;
+    await expect(call('claude-sonnet-5-5', SEARCH, { ledger: new Ledger(tmp(), 5), purpose: 'web', client })).rejects.toThrow(/still paused/);
+    expect(n).toBe(4);
+  });
+});
+
 describe('batches (judges, half price)', () => {
   const items = [{ id: 'a', body: BODY }, { id: 'b', body: BODY }];
   const gem = (text: string, inT = 1000, outT = 500) => ({ candidates: [{ content: { parts: [{ text }] } }], usageMetadata: { promptTokenCount: inT, candidatesTokenCount: outT } });
@@ -214,13 +242,15 @@ describe('batches (judges, half price)', () => {
       create: async (p: any) => { sent = p; return { id: 'mb1', processing_status: 'in_progress', request_counts: { succeeded: 0, errored: 0 } }; },
       retrieve: async () => ({ id: 'mb1', processing_status: ++polls < 2 ? 'in_progress' : 'ended', request_counts: { succeeded: 1, errored: 0 } }),
       results: async () => (async function* () {
-        yield { custom_id: 'a', result: { type: 'succeeded', message: msg('{"ok":1}') } };
-        yield { custom_id: 'b', result: { type: 'succeeded', message: msg('', 'refusal') } };
+        yield { custom_id: cid('a'), result: { type: 'succeeded', message: msg('{"ok":1}') } };
+        yield { custom_id: cid('b'), result: { type: 'succeeded', message: msg('', 'refusal') } };
       })(),
     } } } as any;
     const l = new Ledger(tmp(), 5);
     const out = await callBatch('claude-opus-5-5', items, { ledger: l, purpose: 'judge', client, ...quick });
-    expect(sent.requests.map((r: any) => r.custom_id)).toEqual(['a', 'b']);
+    // (Anthropic takes only ^[a-zA-Z0-9_-]{1,64}$ as a custom_id; answers are mapped back to our ids)
+    expect(sent.requests.map((r: any) => r.custom_id)).toEqual([cid('a'), cid('b')]);
+    for (const r of sent.requests) expect(r.custom_id).toMatch(/^[a-zA-Z0-9_-]{1,64}$/);
     expect(sent.requests[0].params.model).toBe('claude-opus-5-5');
     expect((out.get('a') as GeminiReply).candidates[0].content.parts[0].text).toBe('{"ok":1}');
     expect(out.get('b')).toMatchObject({ status: 0 });
@@ -231,7 +261,7 @@ describe('batches (judges, half price)', () => {
     const usage = { input_tokens: 800, output_tokens: 300, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
     const msg = (text: string) => ({ content: [{ type: 'text', text }], stop_reason: 'end_turn', stop_details: null, usage });
     const one = ((800 * 4 + 300 * 20) / 1e6) * 0.5;
-    const results = async () => (async function* () { for (const id of ['a', 'b']) yield { custom_id: id, result: { type: 'succeeded', message: msg(`{"${id}":1}`) } }; })();
+    const results = async () => (async function* () { for (const id of ['a', 'b']) yield { custom_id: cid(id), result: { type: 'succeeded', message: msg(`{"${id}":1}`) } }; })();
     it('Claude: a stopped run keeps the handle and the reservation; the next run collects the same batch instead of sending it again', async () => {
       const dir = mkdtempSync(join(tmpdir(), 'jobs-'));
       const file = tmp();
@@ -253,7 +283,7 @@ describe('batches (judges, half price)', () => {
     it('Claude: an answer read again after a broken download is billed once (Codex, PR #66)', async () => {
       const dir = mkdtempSync(join(tmpdir(), 'jobs-'));
       const file = tmp();
-      const broken = async () => (async function* () { yield { custom_id: 'a', result: { type: 'succeeded', message: msg('{"a":1}') } }; throw new Error('stream reset'); })();
+      const broken = async () => (async function* () { yield { custom_id: cid('a'), result: { type: 'succeeded', message: msg('{"a":1}') } }; throw new Error('stream reset'); })();
       const c1 = { messages: { batches: { create: async () => ({ id: 'mb7', processing_status: 'ended', request_counts: { succeeded: 2, errored: 0 } }), retrieve: async () => ({ id: 'mb7', processing_status: 'ended', request_counts: { succeeded: 2, errored: 0 } }), results: broken } } } as any;
       await expect(callBatch('claude-opus-5-5', items, { ledger: new Ledger(file, 5), purpose: 'judge', client: c1, jobDir: dir, ...quick })).rejects.toThrow(/stream reset/);
       const c2 = { messages: { batches: { ...c1.messages.batches, create: async () => { throw new Error('must not send again'); }, results } } } as any;

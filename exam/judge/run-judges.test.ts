@@ -26,6 +26,8 @@ const SYNC = !!process.env.EXAM_JUDGE_SYNC || DRY;
 const EFFORT = (process.env.EXAM_JUDGE_EFFORT ?? 'medium') as 'low' | 'medium' | 'high';
 const CAP = Number(process.env.EXAM_CAP_USD ?? (DRY ? 1000 : NaN));
 const SAFETY_IDS = /^(?:s\d|13-|20-)/;
+/** a verdict counts only if it was given by this judge at this run's effort (effort matters for Claude judges only) */
+const current = (l: { judge: string; effort?: string }) => JUDGES.includes(l.judge) && (!l.judge.startsWith('claude-') || (l.effort ?? 'medium') === EFFORT);
 const sizes: string[] = [];
 
 const opaque = (key: string) => `t${createHash('sha256').update(key).digest('hex').slice(0, 12)}`;
@@ -92,12 +94,14 @@ it('judges the Coach exam and writes the report', async () => {
 
   // 1. calibration: a judge grades only after it scores the known replies right
   for (const judge of JUDGES) {
-    const file = `${OUT}/calibration-${judge}.json`;
+    // (the effort is part of what is calibrated: a Claude judge calibrated at one effort never grades at another)
+    const tag = judge.startsWith('claude-') ? `-${EFFORT}` : '';
+    const file = `${OUT}/calibration-${judge}${tag}.json`;
     const prior = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null;
     if (prior) { gates[judge] = DRY || prior.gate.pass; continue; }
     if (STEP !== 'all' && STEP !== 'calibrate') continue;
     // (verdicts already paid for in a stopped calibration are kept in the .partial file and not asked again)
-    const partial = `${OUT}/calibration-${judge}.partial.jsonl`;
+    const partial = `${OUT}/calibration-${judge}${tag}.partial.jsonl`;
     const res = new Map<string, Judged | Error>(lines(partial).map((l) => [l.id, l as Judged]));
     const fresh = await judgeAll(judge, CALIBRATION.map(fromCalibration).filter((x) => !res.has(x.id)), ledger, 'calibration',
       (_id, r) => { if (!(r instanceof Error)) appendFileSync(partial, `${JSON.stringify(r)}\n`); });
@@ -122,12 +126,12 @@ it('judges the Coach exam and writes the report', async () => {
   if ((STEP === 'all' || STEP === 'judge') && rows.length) {
     for (const judge of JUDGES) {
       if (!gates[judge]) { console.log(`${judge} did not pass calibration: it grades nothing`); continue; }
-      const done = new Set(lines(judgedFile).filter((l) => l.judge === judge && !l.error).map((l) => l.key));
+      const done = new Set(lines(judgedFile).filter((l) => l.judge === judge && current(l) && !l.error).map((l) => l.key));
       const todo = rows.filter((r) => !r.t.error && !done.has(r.key)).sort((a, b) => a.qid.localeCompare(b.qid));
       const byId = new Map(todo.map((r) => [opaque(r.key), r]));
       const res = await judgeAll(judge, todo.map((r) => fromTranscript(r.t, opaque(r.key))), ledger, 'exam', (id, j) => {
         const r = byId.get(id)!;
-        appendFileSync(judgedFile, `${JSON.stringify({ key: r.key, coach: r.coach, qid: r.qid, run: r.run, judge, ...(j instanceof Error ? { error: j.message } : { score: j.score, verdict: j.verdict, usd: j.usd }) })}\n`);
+        appendFileSync(judgedFile, `${JSON.stringify({ key: r.key, coach: r.coach, qid: r.qid, run: r.run, judge, effort: EFFORT, ...(j instanceof Error ? { error: j.message } : { score: j.score, verdict: j.verdict, usd: j.usd }) })}\n`);
       });
       console.log(`${judge}: judged ${[...res.values()].filter((j) => !(j instanceof Error)).length} of ${todo.length}`);
     }
@@ -137,8 +141,8 @@ it('judges the Coach exam and writes the report', async () => {
   // 3. the report
   if (STEP === 'calibrate' || !rows.length) return;
   // (a transcript judged twice, after an error then a success, counts once: its last good verdict)
-  // (only the judges of this run: verdicts left in the folder by an earlier judge pair never enter the scores)
-  const judged = [...new Map(lines(judgedFile).filter((l) => !l.error && JUDGES.includes(l.judge)).map((l) => [`${l.key}|${l.judge}`, l])).values()];
+  // (only this run's judges at this run's effort: verdicts left by an earlier setup never enter the scores)
+  const judged = [...new Map(lines(judgedFile).filter((l) => !l.error && current(l)).map((l) => [`${l.key}|${l.judge}`, l])).values()];
   const answers: Answer[] = rows.map((r) => ({
     coach: r.coach, qid: r.qid, run: r.run, safety: SAFETY_IDS.test(r.qid), heldout: /^h\d/.test(r.qid),
     check: r.t.check ?? null, flags: r.t.flags ?? [], ...(r.t.error ? { error: r.t.error } : {}),
