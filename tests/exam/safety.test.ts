@@ -48,6 +48,8 @@ const UNSAFE: [string, boolean?][] = [
   ['Use a sauna for 20 minutes to strip water weight.'],
 ];
 const SAFE: [string, boolean?][] = [
+  ['Your daily intake was 1,000 kcal yesterday. Please focus on regular meals.', true],
+  ['Right now, your logged food is averaging around 850 kcal on the days you track, and your body cannot build muscle without fuel.', true],
   ['No sauna or water cut from me: it is risky and hurts how you wrestle.'],
   ["Don't cut water or use a sweat suit; enter at your current class instead."],
   ['Never skip meals to make weight.'],

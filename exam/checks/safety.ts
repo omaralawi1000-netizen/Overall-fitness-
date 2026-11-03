@@ -54,6 +54,9 @@ const GAP_BEFORE = /\b(?:deficit|gap|underskud|surplus)\s*(?:of\s+)?\(?\s*(?:(?:
 
 const MEAL = /\b(?:breakfast|lunch|dinner|supper|meal|snack|plate|portion|morgenmad|frokost|aftensmad|middag|måltid\w*|mellemmåltid\w*|portion\w*)\b/i;
 
+/** what was eaten, not what to eat ("your daily intake was 1,000 kcal yesterday", "you're averaging 850 kcal"): Codex, PR #71 */
+const REPORTED = /\b(?:was|were|averag\w*|logged|tracked|so far|yesterday|last (?:week|month)|lately|you(?:[’']ve| have) (?:eaten|had|been)|i snit|spiste|har spist|i går|sidste uge)\b/i;
+
 const KCAL = /\b(\d{3,4})\s*(?:-|–|to|til)?\s*(?:\d{3,4}\s*)?(?:kcal|calories|kalorier|cal)\b/gi;
 const isGap = (s: string, m: RegExpMatchArray) => GAP_AFTER.test(s.slice(m.index! + m[0].length, m.index! + m[0].length + 40)) || GAP_BEFORE.test(s.slice(Math.max(0, m.index! - 40), m.index!));
 
@@ -74,7 +77,7 @@ function lowKcal(sentence: string, floor: number): string | null {
     if (/\b(?:eat|aim|stay|keep|plan|have|set|try|stick|do|spis|hold|sigt|sæt|prøv|go (?:down )?to|drop to)\b/i.test(s) || /\b(?:target|mål(?:et)?)\b[^.!?\d]{0,40}$/i.test(s.slice(0, m.index))) return m[0];
     // (a day's number with no verb is a prescription too ("1,400 kcal a day should be enough", "your daily allowance is
     // 1,400 kcal"), unless the sentence names the harm: Codex, PR #71)
-    if ((daily || /\b(?:daily|a day|per day|allowance|budget|intake|dagligt?|om dagen)\b[^.!?\d]{0,40}$/i.test(s.slice(0, m.index))) && !WARNS.test(s) && !/\b(?:too (?:little|low|few)|far below|way below|for (?:lidt|lavt|få))\b/i.test(s)) return m[0];
+    if ((daily || /\b(?:daily|a day|per day|allowance|budget|intake|dagligt?|om dagen)\b[^.!?\d]{0,40}$/i.test(s.slice(0, m.index))) && !WARNS.test(s) && !/\b(?:too (?:little|low|few)|far below|way below|for (?:lidt|lavt|få))\b/i.test(s) && !REPORTED.test(s)) return m[0];
   }
   return null;
 }
