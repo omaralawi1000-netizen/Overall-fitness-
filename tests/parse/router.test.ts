@@ -90,3 +90,50 @@ describe('Codex review of #51, round 4', () => {
     expect(understand('One-arm Dumbbell Row 20 kg for 10')).toMatchObject({ kind: 'workout', rows: [{ exercise: { name: 'One-arm Dumbbell Row' } }] });
   });
 });
+
+// Codex's retro-review of #51, #54 and #58 (3 Nov 2026): each finding, reproduced on main, now a test.
+describe('Codex retro-review findings', () => {
+  it('a leading decimal point is kept: ".5" is half, never 5', () => {
+    expect(u('.5 l water', closed)).toMatchObject({ kind: 'water', ml: 500 });
+    expect(u('.5 kg for 8', open)).toMatchObject({ kind: 'command', cmd: { kind: 'set', kg: 0.5, reps: 8 } });
+    expect(u('uh .5 liter vand', closed)).toMatchObject({ kind: 'water', ml: 500 });
+  });
+  it('a bare decimal correction keeps the unit the set was said in', () => {
+    const c = u('180 lb for 5 no 185.5', open);
+    expect(c).toMatchObject({ kind: 'command', cmd: { kind: 'set', reps: 5, entered: { value: 185.5, unit: 'lb' } } });
+    if (c.kind === 'command' && c.cmd.kind === 'set') expect(c.cmd.kg).toBeCloseTo(185.5 * 0.45359237, 2);
+  });
+  it('two exercises joined by "and" stay two exercises', () => {
+    expect(u('squat 100 for 5 and front squat 80 for 5', closed)).toMatchObject({ kind: 'workout', rows: [
+      { exercise: { name: 'Back Squat' }, row: { sets: [{ kg: 100, reps: 5 }] } },
+      { exercise: { name: 'Front Squat' }, row: { sets: [{ kg: 80, reps: 5 }] } },
+    ] });
+    expect(u('bench press 80 for 8 and dumbbell bench press 25 for 10', closed)).toMatchObject({ kind: 'workout', rows: [
+      { exercise: { name: 'Barbell Bench Press' }, row: { sets: [{ kg: 80, reps: 8 }] } },
+      { exercise: { name: 'Dumbbell Bench Press' }, row: { sets: [{ kg: 25, reps: 10 }] } },
+    ] });
+    // more reps of the same exercise still join it
+    expect(u('bench press 80 for 8, 8 and 6', closed)).toMatchObject({ kind: 'workout', rows: [{ row: { sets: [{ reps: 8 }, { reps: 8 }, { reps: 6 }] } }] });
+    expect(u('bench 80 for 8. 60 for 10!', closed)).toMatchObject({ kind: 'workout', rows: [{ row: { sets: [{ kg: 80, reps: 8 }, { kg: 60, reps: 10 }] } }] });
+    // a connector inside one distance-and-time set does not start a new exercise or set (Codex on #64)
+    for (const t of ['run 5 km, in 25 minutes', 'run 5 km and in 25 minutes', 'løb 5 km på 25 minutter', 'run 5 km, and in 25 minutes', 'run 5 km, and 25 minutes', 'run 5 km. 25 minutes', 'løb 5 km, og på 25 minutter', 'run 5 km. 25 minutes!'])
+      expect(u(t, closed)).toMatchObject({ kind: 'workout', rows: [{ row: { sets: [{ distanceM: 5000, durationSec: 1500 }] } }] });
+  });
+  it('making, getting or buying something is not eating it', () => {
+    for (const t of ['I made 2 sandwiches', 'I got 2 dogs', 'i bought 6 eggs', 'jeg købte 2 bananer', 'I made 3 pizzas for the kids']) {
+      expect(['ignored', 'ask']).toContain(u(t, closed).kind);
+    }
+    expect(u('i did 8 at 80', open)).toMatchObject({ kind: 'command', cmd: { kind: 'set', reps: 8, kg: 80 } }); // a lead-in before a set still goes
+    expect(u('I had 2 sandwiches', closed)).toMatchObject({ kind: 'food', rows: [{ amount: 2, query: 'sandwiches' }] });
+  });
+  it('a food name with a word that is also a sentence word in the other language is still food', () => {
+    expect(u('jeg spiste 100 g is', closed)).toMatchObject({ kind: 'food', rows: [{ amount: 100, dim: 'g', query: 'is' }] });
+    expect(u('200 g kylling i karry', closed)).toMatchObject({ kind: 'food', rows: [{ amount: 200, dim: 'g', query: 'kylling i karry' }] });
+    expect(u('100 g dulce de leche', closed)).toMatchObject({ kind: 'food', rows: [{ amount: 100, query: 'dulce de leche' }] });
+    expect(u('150 g is med jordbær', closed)).toMatchObject({ kind: 'food', rows: [{ amount: 150, query: 'is med jordbær' }] });
+    // still talk: a clause after the amount
+    for (const t of ['27 people are in the gym', 'I have two kids', '2 eggs i think', 'jeg har 3 timer i skole', '2 bananer de er gode', '2 eggs is all i had', '2 eggs i cooked', '2 is enough', '3 eggs i made earlier', '2 is plenty', '2 æg de smager godt', '2 bananer de kostede meget']) {
+      expect(['ignored', 'ask']).toContain(u(t, closed).kind);
+    }
+  });
+});

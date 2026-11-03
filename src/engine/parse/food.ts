@@ -66,7 +66,25 @@ export function splitSegments(text: string): string[] {
 /** Counted things that are never food: "8 reps", "30 seconds", "2 minutes", "80 kroner". */
 const NOT_FOOD = new Set(['rep', 'reps', 'set', 'sets', 'second', 'seconds', 'sec', 'secs', 'sekund', 'sekunder', 'minute', 'minutes', 'min', 'mins', 'minut', 'minutter', 'hour', 'hours', 'time', 'times', 'timer', 'day', 'days', 'dag', 'dage', 'week', 'weeks', 'uge', 'uger', 'year', 'years', 'aar', 'kr', 'kroner', 'dkk', 'euro', 'dollar', 'dollars', 'km', 'kilometer', 'kilometers', 'kilometre', 'kilometres', 'meter', 'meters', 'mile', 'miles', 'views', 'likes', 'comments', 'subscribers', 'followers', 'gange', 'gentagelser', 'repetitions']);
 /** Verbs and pronouns: a food name has none, so a phrase holding one is a sentence. */
-const SENTENCE_WORD = new Set(['is', 'are', 'was', 'were', 'am', 'be', 'been', 'have', 'has', 'had', 'will', 'would', 'should', 'could', 'i', 'you', 'we', 'they', 'he', 'she', 'it', 'jeg', 'du', 'vi', 'de', 'han', 'hun', 'det', 'er', 'var', 'har', 'skal', 'vil', 'kan', 'people', 'persons', 'friends', 'guys', 'kids']);
+/** Words that make the rest a clause, not a food name, in either language ("27 people are in the gym", "2 eggs i think"). */
+const SENTENCE_WORD = new Set(['are', 'was', 'were', 'am', 'be', 'been', 'have', 'has', 'had', 'will', 'would', 'should', 'could', 'you', 'we', 'they', 'he', 'she', 'it', 'jeg', 'du', 'vi', 'han', 'hun', 'det', 'er', 'var', 'har', 'skal', 'vil', 'kan', 'people', 'persons', 'friends', 'guys', 'kids']);
+/** What can follow "i" in a Danish dish name ("kylling i karry", "laks i ovn"): a sauce, a cut, a pan. Any other "i" is English "I". */
+const DISH_AFTER_I = /^(?:karry|karrysovs|sovs|sauce|flødesovs|tomatsovs|tomat|tomater|olie|olivenolie|lage|eddike|fad|ovn|ovnen|skiver|tern|både|strimler|kokosmælk|mælk|smør|svøb|dej|gele|sirup|chili|hvidløg|vaffel)$/;
+/** A first "is" is Danish ice cream only on its own or when the name goes on like a dish ("is med jordbær"), never "2 is enough". */
+const ICE_CREAM_NEXT = /^(?:med|og|i|uden|fra)$/;
+/** Foreign dish names with "de" ("dulce de leche", "fleur de sel"): what can follow it. Any other "de" is Danish "they". */
+const DISH_AFTER_DE = /^(?:leche|sel|provence|mie|campagne|bruxelles|pollo|queso|gallo|nata|la)$/;
+/**
+ * "is", "i" and "de" are sentence words in one language and food words in the other: Danish "is" is ice cream,
+ * "kylling i karry" is chicken in curry, "dulce de leche" is a food. They count as food words only in a dish's shape;
+ * anywhere else they make the row a sentence (conservative: a missed food can be typed again, a wrong log is worse).
+ */
+function isClause(name: string[]): boolean {
+  return name.some((t, k) => SENTENCE_WORD.has(t)
+    || (t === 'is' && (k > 0 || (name.length > 1 && !ICE_CREAM_NEXT.test(name[1])))) // "2 eggs is all", "2 is enough"
+    || (t === 'i' && !(k > 0 && k < name.length - 1 && DISH_AFTER_I.test(name[k + 1]))) // "2 eggs i cooked", not "kylling i karry"
+    || (t === 'de' && !(k > 0 && k < name.length - 1 && DISH_AFTER_DE.test(name[k + 1])))); // "2 bananer de er gode", not "dulce de leche"
+}
 const PREPOSITION = new Set(['for', 'at', 'with', 'and', 'to', 'til', 'med', 'på', 'paa', 'in', 'i', 'og', 'on', 'by', 'from', 'fra']);
 /** The most one row can hold (grams or ml): 5 kg. Above that a weight or a slip, not a meal. */
 const MAX_AMOUNT = 5000;
@@ -108,7 +126,7 @@ function readRow(seg: string): FoodRow | null {
   if (/\b(?:for|at|på|paa|med|with)\s+(?:\d|(?:one|two|three|four|five|six|seven|eight|nine|ten|en|et|to|tre|fire|fem|seks|syv|otte|ni|ti)\b)/.test(query)) return null; // "for three", "at 80": the end of a set phrase, not a food
   const nameWords = words.slice(i);
   if (nameWords.every((t) => t.replace(/[^\p{L}\p{N}]/gu, '').length < 2)) return null; // "83 x": a stray letter or sign is not a food
-  if (nameWords.some((t) => SENTENCE_WORD.has(t))) return null; // "27 people are in the gym": a clause, not a food name
+  if (isClause(nameWords)) return null; // "27 people are in the gym": a clause, not a food name
   if (PREPOSITION.has(words[i] ?? '')) return null; // "80 for", "8 at …": the rest of a sentence, not a food
   if (NOT_FOOD.has(words[i] === 'of' ? '' : fold(words[i] ?? ''))) return null; // "8 reps", "30 seconds", "2 minutes": a count of something that is not food
   if ((dim === 'g' || dim === 'ml') && amount * factor > MAX_AMOUNT) return null; // 100 000 g is a weight lifted, not a meal
