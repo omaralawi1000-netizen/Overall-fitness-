@@ -13,7 +13,7 @@ import { appendFileSync, existsSync, mkdirSync, readFileSync, readdirSync, write
 import { createHash } from 'node:crypto';
 import { callBatch, batchWorstUsd, batchSizeFor, pendingBatches, planBatches, CallError, Ledger, SpendCapError, estimate, type GeminiReply } from '../providers';
 import { CALIBRATION } from './calibration';
-import { judgeBody, judgeOne, readVerdict, finalScore, fromCalibration, fromTranscript, transcriptPrint, gate, type JudgeInput, type Judged } from './judge';
+import { judgeBody, judgeOne, readVerdict, finalScore, fromCalibration, fromTranscript, transcriptPrint, gate, type JudgeInput, type Judged, type Verdict } from './judge';
 import { HARD_10, modelRow, chatModel, topTierWorthIt, examHealth, relativeBias, scoreOf, type Answer } from './report';
 
 const DIRS = (process.env.EXAM_TRANSCRIPTS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
@@ -111,7 +111,16 @@ it('judges the Coach exam and writes the report', async () => {
     const tag = judge.startsWith('claude-') ? `-${EFFORT}` : '';
     const file = `${OUT}/calibration-${judge}${tag}.json`;
     const prior = existsSync(file) ? JSON.parse(readFileSync(file, 'utf8')) : null;
-    if (prior) { gates[judge] = DRY || prior.gate.pass; continue; }
+    if (prior) {
+      // (the verdicts are kept, the score is not: it is recomputed with today's finalScore, so a fix to the formula
+      // re-runs the gate for free and never leaves a judge passed or failed by an old formula)
+      const scores = calScores(new Map(Object.entries(prior.verdicts ?? {}).filter(([, v]) => typeof v === 'object').map(([k, v]) => [k, v as Verdict])));
+      const g = gate(scores);
+      gates[judge] = DRY || g.pass;
+      writeFileSync(file, JSON.stringify({ ...prior, gate: g, scores: Object.fromEntries(scores) }, null, 1));
+      logGate(judge, g);
+      continue;
+    }
     if (STEP !== 'all' && STEP !== 'calibrate') continue;
     // (verdicts already paid for in a stopped calibration are kept in the .partial file and not asked again)
     const partial = `${OUT}/calibration-${judge}${tag}.partial.jsonl`;
@@ -119,8 +128,7 @@ it('judges the Coach exam and writes the report', async () => {
     const fresh = await judgeAll(judge, CALIBRATION.map(fromCalibration).filter((x) => !res.has(x.id)), ledger, 'calibration',
       (_id, r) => { if (!(r instanceof Error)) appendFileSync(partial, `${JSON.stringify(r)}\n`); });
     for (const [k, v] of fresh) res.set(k, v);
-    const scores = new Map<string, number>();
-    for (const c of CALIBRATION) { const r = res.get(`cal:${c.id}`); if (r && !(r instanceof Error)) scores.set(c.id, r.score); }
+    const scores = calScores(new Map([...res].filter(([, r]) => !(r instanceof Error)).map(([k, r]) => [k, (r as Judged).verdict])));
     const missing = CALIBRATION.filter((c) => !scores.has(c.id)).map((c) => c.id);
     if (missing.length) {
       // (not final: an error that outlived its retry is asked again next run; the good verdicts stay in .partial)
@@ -131,7 +139,7 @@ it('judges the Coach exam and writes the report', async () => {
     const g = gate(scores);
     gates[judge] = DRY || g.pass;
     writeFileSync(file, JSON.stringify({ judge, effort: EFFORT, gate: g, scores: Object.fromEntries(scores), verdicts: Object.fromEntries([...res].map(([k, v]) => [k, v instanceof Error ? String(v.message) : v.verdict])) }, null, 1));
-    console.log(`calibration ${judge}: ${g.pass ? 'PASS' : 'FAIL'} (caps ${g.capsInRange}, others ${Math.round(g.othersInRange * 100)} %, Spearman ${g.spearman.toFixed(2)}${g.misses.length ? `; missed ${g.misses.map((m) => `${m.id}=${m.score}`).join(', ')}` : ''})`);
+    logGate(judge, g);
   }
 
   // 2. the transcripts, blind: the judge sees an opaque id, never the model; same conversations together so the facts are cached
@@ -158,7 +166,8 @@ it('judges the Coach exam and writes the report', async () => {
   // (only this run's judges at this run's effort: verdicts left by an earlier setup never enter the scores)
   // (and only verdicts on the transcript as it is now: a stale one, from before the answer was regenerated, is dropped)
   const printOf = new Map(rows.map((r) => [r.key, r.tfp]));
-  const judged = [...new Map(lines(judgedFile).filter((l) => !l.error && current(l) && printOf.get(l.key) === l.tfp).map((l) => [`${l.key}|${l.judge}`, l])).values()];
+  // (each score is recomputed from its verdict with today's finalScore, like calibration's: one formula for both)
+  const judged = [...new Map(lines(judgedFile).filter((l) => !l.error && current(l) && printOf.get(l.key) === l.tfp).map((l) => [`${l.key}|${l.judge}`, { ...l, score: finalScore(l.verdict) }])).values()];
   const answers: Answer[] = rows.map((r) => ({
     coach: r.coach, qid: r.qid, run: r.run, safety: SAFETY_IDS.test(r.qid), heldout: /^h\d/.test(r.qid),
     check: r.t.check ?? null, flags: r.t.flags ?? [], ...(r.t.error ? { error: r.t.error } : {}),
@@ -167,6 +176,12 @@ it('judges the Coach exam and writes the report', async () => {
   writeFileSync(`${OUT}/report.md`, report(rows, answers, judged, gates, ledger));
   console.log(`report: ${OUT}/report.md`);
 }, 24 * 3600_000);
+
+/** calibration case id → score, from the verdicts by `cal:<id>` (a case with no verdict is left out: the gate then fails) */
+function calScores(verdicts: Map<string, Verdict>): Map<string, number> {
+  return new Map(CALIBRATION.filter((c) => verdicts.has(`cal:${c.id}`)).map((c) => [c.id, finalScore(verdicts.get(`cal:${c.id}`)!)]));
+}
+const logGate = (judge: string, g: ReturnType<typeof gate>) => console.log(`calibration ${judge}: ${g.pass ? 'PASS' : 'FAIL'} (caps ${g.capsInRange}, others ${Math.round(g.othersInRange * 100)} %, Spearman ${g.spearman.toFixed(2)}${g.misses.length ? `; missed ${g.misses.map((m) => `${m.id}=${m.score}`).join(', ')}` : ''})`);
 
 function report(rows: Row[], answers: Answer[], judged: any[], gates: Record<string, boolean>, ledger: Ledger): string {
   const coaches = [...new Set(rows.map((r) => r.coach))];

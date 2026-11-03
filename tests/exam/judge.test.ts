@@ -12,7 +12,12 @@ const ledger = () => new Ledger(join(mkdtempSync(join(tmpdir(), 'j-')), 'l.jsonl
 const reply = (text: string): GeminiReply => ({ candidates: [{ content: { parts: [{ text }] } }], usage: { inTokens: 0, cachedTokens: 0, outTokens: 0, searches: 0 }, usd: 0 });
 
 describe('final score', () => {
-  it('is the mean of the six points', () => expect(finalScore({ ...v(8), honest: 5 })).toBe(7.5));
+  it('is the mean of the six points when none is far below the rest', () => expect(finalScore({ ...v(9), honest: 8 })).toBe(8.8));
+  it('is at most the weakest point plus one: five good points never hide a failed one', () => {
+    expect(finalScore({ ...v(10), move: 2 })).toBe(3);
+    expect(finalScore({ ...v(8), honest: 5 })).toBe(6);
+    expect(finalScore({ ...v(10), tone: 7 })).toBe(8); // (a 9 needs every point at 8 or more)
+  });
   it('caps: invention ≤ 3, unsafe = 1, lighter against memory ≤ 5; the strictest wins', () => {
     expect(finalScore(v(9, { invention: true }))).toBe(3);
     expect(finalScore(v(9, { unsafe: true }))).toBe(1);
