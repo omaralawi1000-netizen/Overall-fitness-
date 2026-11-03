@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#05070b">
+<meta name="color-scheme" content="dark">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Aven</title>
+<link rel="manifest" href="./manifest.webmanifest">
+<link rel="icon" href="./icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="./icon-192.png">
+<style>html,body{background:#05070b}</style>
+<!-- same-origin, tiny, and asked for in the first bytes: the numbers are on screen before the type could have swapped -->
+<link rel="preload" as="font" type="font/woff2" href="/fonts/geist-latin.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/fonts/instrument-serif-latin-italic.woff2" crossorigin>
+<link rel="preload" as="font" type="font/woff2" href="/fonts/instrument-serif-latin.woff2" crossorigin>
+<link rel="preload" as="image" href="/photo.jpg" fetchpriority="high">
+<link rel="stylesheet" href="./app.css">
+</head>
+<body>
+<div id="stage"><div id="phone" data-v="today" data-tab="today">
+  <div id="sceneW"><canvas id="scene" aria-hidden="true"></canvas></div>
+  <div id="topFade" aria-hidden="true"></div>
+  <div id="rainW" aria-hidden="true"><div id="rain"><i></i><i></i></div></div>
+  <div id="dim"></div>
+  <div class="lay" id="tTrain"></div><div class="lay" id="tFuel"></div><div class="lay" id="tHealth"></div><div class="lay" id="tH0"></div><div class="lay" id="tH1"></div><div class="lay" id="tH2"></div><div class="lay" id="tCoach"></div><div id="light"></div>
+  <div class="lay" id="tEmber"></div><div class="lay" id="tTeal"></div>
+
+  <!-- Today -->
+  <section class="scr on in" id="sToday" data-s="today" aria-label="Today">
+    <div class="hero">
+      <div class="hdr">
+        <button class="circ glass" id="setB0" aria-label="Settings"><svg viewBox="0 0 24 24"><path d="M4 8h9M17 8h3M4 16h3M11 16h9"/><circle cx="15" cy="8" r="2"/><circle cx="9" cy="16" r="2"/></svg></button>
+        <div class="word">AVEN</div>
+        <button class="wxp glass tab" id="wxB" aria-label="Weather"></button>
+      </div>
+      <svg id="arc" viewBox="0 0 430 300" aria-label="Your day. Drag the dot to see the light at any hour."></svg>
+      <div id="arcHint"></div>
+      <div class="clock"><div id="big" class="tab"></div><div id="kick"></div></div>
+      <div class="below"><div class="ready" id="ready" role="button" tabindex="0" aria-label="Readiness"><div id="rk"></div><div class="lock"><b id="rkN" class="tab"></b><div class="rw"><span class="dim" id="rwD"></span><span class="lit" id="rwL" aria-hidden="true"></span></div></div><div class="rc" id="rc"></div></div>
+      <div class="mom">
+        <div id="coach" class="serif swap"><span></span></div>
+        <div class="cta"><button class="prim" id="cta"><svg viewBox="0 0 24 24"><path d="M7 4.5v15l13-7.5z"/></svg><span id="ctaL"></span><small id="ctaS"></small></button></div>
+      </div></div>
+    </div>
+    <div class="card glass rise" id="cPlan"></div><div class="sp"></div>
+    <div class="card glass rise" id="cFuel"></div><div class="sp"></div>
+    <div class="card glass rise" id="cWeek"></div><div class="sp"></div>
+    <div class="card glass rise" id="cMem"></div>
+  </section>
+
+  <!-- Train -->
+  <section class="scr" id="sTrain" data-s="train" aria-label="Train"></section>
+  <!-- Fuel -->
+  <section class="scr" id="sFuel" data-s="fuel" aria-label="Fuel"></section>
+  <!-- Health -->
+  <section class="scr" id="sHealth" data-s="health" aria-label="Health"></section>
+  <!-- Coach -->
+  <section class="scr" id="sCoach" data-s="coach" aria-label="Coach"></section>
+  <button class="circ glass close" id="askX" aria-label="Close Coach"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button>
+  <form class="glass" id="askBar"><input id="askI" autocomplete="off"><button class="go" type="submit" id="askGo"></button></form>
+
+  <div id="dockFade"></div>
+  <button id="live" class="glass" aria-label="Resume workout"><span class="pd"></span><span class="lt" id="liveT"></span><span class="lc tab" id="liveC">0:00</span></button>
+  <nav id="dock">
+    <div class="tabs glass"><div id="ind"></div>
+      <button class="tb on" data-tab="today"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/></svg><span data-t="today"></span></button>
+      <button class="tb" data-tab="train"><svg viewBox="0 0 24 24"><path d="M3 9.5v5M6 7v10M18 7v10M21 9.5v5M6 12h12"/></svg><span data-t="train"></span></button>
+      <button class="tb" data-tab="fuel"><svg viewBox="0 0 24 24"><path d="M5 3v8a3 3 0 003 3v7M8 3v8M11 3v8a3 3 0 01-3 3M17 21V3c-2.5 1.5-3.5 4.5-3.5 8H17"/></svg><span data-t="fuel"></span></button>
+      <button class="tb" data-tab="health"><svg viewBox="0 0 24 24"><path d="M3 12h4l2.5-6 4 12 2.5-6H21"/></svg><span data-t="health"></span></button>
+    </div>
+    <button id="askB" class="glass" aria-label="Coach"><svg viewBox="0 0 24 24"><path d="M12 3c.6 4.2 2.2 6.2 6.5 7-4.3.8-5.9 2.8-6.5 7-.6-4.2-2.2-6.2-6.5-7 4.3-.8 5.9-2.8 6.5-7z"/><path d="M19 15.5c.2 1.5.8 2.2 2.3 2.5-1.5.3-2.1 1-2.3 2.5-.2-1.5-.8-2.2-2.3-2.5 1.5-.3 2.1-1 2.3-2.5z"/></svg><span class="dot"></span></button>
+  </nav>
+
+  <!-- workout -->
+  <section id="work" aria-label="Workout">
+    <canvas id="stg" aria-hidden="true"></canvas><div id="level"></div>
+    <div id="wHd">
+      <button class="circ glass" id="minB" aria-label="Back"><svg viewBox="0 0 24 24"><path d="M6 9l6 6 6-6"/></svg></button>
+      <div class="pill glass tab"><span class="serif" style="font-size:1.9rem;font-weight:400">Push</span><small id="clkT">0:00</small></div>
+      <button class="pill glass tab" id="sessB"><span id="sessN">1</span><small id="sessOf">/ 16</small></button>
+    </div>
+    <div id="wMid">
+      <div class="fade" id="wNameW"><div id="exName" class="serif"></div><div id="exSub"></div></div>
+      <button id="setB" class="fade" aria-describedby="setHint">
+        <div class="wnum"><span id="wW" class="tab"></span><span class="u" id="wU">kg</span><span class="x">×</span><span id="wR" class="tab"></span><span class="u" data-t="reps"></span></div>
+        <span id="setHint" class="sr" data-t="setHint"></span>
+      </button>
+      <div id="wCoach" class="serif fade"></div>
+      <div id="wMeta" class="fade tab"></div>
+    </div>
+    <div id="restB"><div class="k fade" id="rLabel"></div><div id="rNum" class="tab fade"></div><div id="rNext" class="fade"></div></div>
+    <div id="tray"><div class="tr" id="trIn"></div></div>
+    <div id="sill"><div id="sess"></div></div>
+    <div id="wNext" class="fade"></div>
+    <div id="act">
+      <button class="side glass tab" id="m15">−15</button>
+      <button id="logB"><span id="pearl"><i></i><svg viewBox="0 0 20 20"><path d="M4.5 10.5l3.5 3.5 7.5-8"/></svg></span><span id="logL"></span></button>
+      <button class="side glass tab" id="p15">+15</button>
+    </div>
+  </section>
+
+  <div id="scrim"></div>
+  <section class="sheet" id="setS" aria-label="Settings"><div class="si" id="setIn"></div></section>
+  <section class="sheet" id="logS" aria-label="Log food"><div class="si" id="logIn"></div></section>
+  <section class="sheet" id="edS" aria-label="Change the set"><div class="si" id="edIn"></div></section>
+  <section class="sheet" id="mvS" aria-label="Move Push"><div class="si" id="mvIn"></div></section>
+  <section class="sheet" id="exS" aria-label="Lift"><div class="si" id="exIn"></div></section>
+  <section id="sessT" aria-label="Whole workout"><div class="sT" id="sTIn"></div></section>
+  <div id="soft"></div>
+  <section id="cmp" aria-label="Workout complete"></section>
+  <section id="rec" aria-label="New record"><div id="recBg"></div><div id="recIn"><div id="medal"><div class="coin"><div class="cf"><b id="mdW"></b><span id="mdR"></span></div><div class="cb"><i>AVEN</i><em id="mdD"></em></div><div class="sh"></div></div><div class="rl" id="recL"></div></div><div id="recT"></div></div></section>
+  <div id="toast" class="glass"><span id="toastT"></span><button id="toastU"></button></div>
+  <div id="veil"></div>
+  <div id="splash" aria-hidden="true"></div>
+</div></div>
+
+<script type="module" src="./main.js"></script>
+</body>
+</html>
