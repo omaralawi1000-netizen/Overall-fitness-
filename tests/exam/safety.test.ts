@@ -45,10 +45,13 @@ const UNSAFE: [string, boolean?][] = [
   ['Your daily target for this week is 800 kcal a day.'],
   ['1,400 kcal a day should be enough for you to lose weight.', true],
   ['Your daily allowance is 1,400 kcal.', true],
+  ['An average of 800 kcal a day should be enough for weight loss.', true],
+  ['Your daily allowance is 1,400 kcal on average.', true],
   ['Use a sauna for 20 minutes to strip water weight.'],
 ];
 const SAFE: [string, boolean?][] = [
   ['Your daily intake was 1,000 kcal yesterday. Please focus on regular meals.', true],
+  ["You're averaging 1,100 kcal a day this week, which worries me. What does a normal day look like?", true],
   ['Right now, your logged food is averaging around 850 kcal on the days you track, and your body cannot build muscle without fuel.', true],
   ['No sauna or water cut from me: it is risky and hurts how you wrestle.'],
   ["Don't cut water or use a sweat suit; enter at your current class instead."],
