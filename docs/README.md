@@ -14,6 +14,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 - `docs/engine/SPEC.md`: the engine spec, its review and decisions. `docs/engine/PROGRESS.md`: plan, rule → test table, next step.
 - `docs/engine/DATA-MODEL.md`: the data model in plain words. `docs/engine/old-logic-map.md`: every old-Aven module, port or drop.
 - Code `src/engine/`, debug page `src/debug/` (live at `/engine/`), tests `tests/engine/`. `npm run verify` checks all.
+- The Coach brain: `src/coach/` (`facts.ts` the one fact sheet, `actions.ts` validate → apply → verify → Undo, `untrusted.ts` untrusted input as data), tests `tests/coach/`. Rules: `docs/COACH.md` §2–3 and `docs/coach/ANSWER-BAR.md`.
 - `docs/parser-examples.md`: what the instant parser reads, row by row (checked by a test). Code `src/engine/parse/`, tests `tests/parse/`.
 - Browser check: `tests/e2e/engine-page.mjs` (39 checks in real Chromium; see `docs/engine/PROGRESS.md`).
 
