@@ -47,6 +47,12 @@ Facts and taste learned the hard way (Oct 2026). Not old CSS rules: the new desi
 29. "Never tell me to train lighter" was Omar's rule. For anyone else it's a preference the Coach learns.
 38. Undo must not be tappable the moment an action is applied (old Aven's double-tap Apply bug). Omar, 1 Nov.
 
+## Building the web app (3 Nov 2026, Today build)
+39. First-tap stutter on desktop Chrome was GPU shader compilation (ANGLE), not JS. A glass layer whose scale the compositor animates, blurred text and 3D turns each compile on first use. Fix: a warm-up under the veil that plays every kind of motion once for real, not only static states.
+40. A glass element that grows from scale(0) or animates width hitches. Grow glass with a clip on its own frost layer, or move it with translate only.
+41. WAAPI commitStyles on interrupt leaves inline styles behind (it kept a record overlay stuck). Cancel instead, and always give explicit start keyframes.
+42. A scrim with a higher z-index than a tray swallowed every tap inside the tray. Check stacking order whenever a scrim and a tray coexist.
+
 ## Old taste (history, not rules: Omar, 1 Nov)
 Kept as background only. 35 (one tap ticks a set) and 36 (seamless settle) live on as tests in docs/TASTE.md.
 30. Any warm or orange tint on a surface reads as orange. Colour goes on tappable or meaningful things only.

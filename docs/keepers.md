@@ -188,3 +188,8 @@ Picks from https://claude.ai/artifact/3F55dCusNya4BDpNacPhZA; the noes and reaso
 - **Italic serif for names and titles** (Pull, Breakfast, Today), as in old Aven, over bold sans.
 - **The Coach shows it's there as light that rises and fills the screen** (clip 01, `own-01-orb-sunrise-flood`), over the small orb. "It's good, but of course, we will still explore."
 - **Later, for hydration: water you can feel, moving when you tilt the phone** (clip 16). "Not my main focus right now, but we can always add this."
+
+### Candidates, NOT approved yet (3 Nov 2026, Today)
+Built after his "no rings, readiness in a different way". He has not seen or said yes to either. Do not build from them until he does.
+- **Readiness as a big serif word that fills with light.** The word ("Ready.", with a score such as 82) fills with light as far as you are ready.
+- **A draggable dot on the arc.** Dragging it moves the photo's light through the real day.
