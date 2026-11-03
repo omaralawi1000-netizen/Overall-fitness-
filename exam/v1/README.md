@@ -22,6 +22,8 @@ to get the "before" score of old Aven's Coach and to choose the Coach model (E2 
    `EXAM_MODEL=gemini-3.8-flash EXAM_RUNS=2 EXAM_HELDOUT=1 EXAM_CAP_USD=38 EXAM_LEDGER=<dir>/ledger.jsonl EXAM_GAP_MS=1000 EXAM_OUT=<dir>/gemini-3.8-flash npx vitest run …`
    Top tier on the hard 10 only: `EXAM_ONLY=<the HARD_10 ids in exam/judge/report.ts>`.
    Keys come from the environment: `GEMINI_API_KEY` (or a proxy that adds it), `AVEN_ANTHROPIC_KEY` or `ANTHROPIC_API_KEY`.
+   Claude answers old Aven's schema in plain-JSON mode and sometimes wraps, breaks or skips the object: such an answer is
+   read by `exam/checks/agent-json.ts`, graded, and counted in the report as a format failure (an error in the app).
    A stopped run resumes: answers already written are kept, errors are redone. One `EXAM_OUT` holds one Coach setup
    (model and effort): the run stops if the folder has answers from another one.
 

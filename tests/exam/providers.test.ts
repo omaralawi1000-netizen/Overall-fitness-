@@ -4,7 +4,7 @@ import { mkdtempSync, readdirSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { priceOf, realToday, costOf, estimate, Ledger, SpendCapError, CallError, toJsonSchema, toClaude, schemaSize, jsonOnly, splitSystem, callBatch, pendingBatches, planBatches, geminiInlined, call, PRICES, type GeminiBody, type GeminiReply } from '../../exam/providers';
+import { priceOf, realToday, costOf, estimate, Ledger, SpendCapError, CallError, toJsonSchema, toClaude, schemaSize, jsonOnly, splitSystem, callBatch, batchWorstUsd, batchSizeFor, pendingBatches, planBatches, geminiInlined, call, PRICES, type GeminiBody, type GeminiReply } from '../../exam/providers';
 
 const cid = (x: string) => createHash('sha256').update(x).digest('hex').slice(0, 32);
 const tmp = () => join(mkdtempSync(join(tmpdir(), 'ledger-')), 'ledger.jsonl');
@@ -394,5 +394,21 @@ describe('batches (judges, half price)', () => {
     expect(geminiInlined({ response: { inlinedResponses: { inlinedResponses: [2] } } })).toEqual([2]);
     expect(geminiInlined({ dest: { inlinedResponses: [3] } })).toEqual([3]);
     expect(geminiInlined({ response: {} })).toBeNull();
+  });
+});
+
+describe('batch size near the cap (first paid run, 3 Nov)', () => {
+  it('a new batch holds only what its worst case leaves room for', () => {
+    const l = new Ledger(tmp(), 38);
+    l.record({ at: '', model: 'x', purpose: 'coach', usd: 23, usage: { inTokens: 0, cachedTokens: 0, outTokens: 0, searches: 0 }, ok: true });
+    expect(batchSizeFor(l, 0.155)).toBe(96);
+    expect(batchSizeFor(l, 0.01)).toBe(100);
+    expect(batchSizeFor(l, 20)).toBe(1);
+  });
+  it("a batch reserves exactly the sum of its items' worst cases", async () => {
+    const l = new Ledger(tmp(), 1e-9);
+    const items = [{ id: 'a', body: BODY }, { id: 'b', body: BODY }];
+    const want = (2 * batchWorstUsd('gemini-4-argon', BODY)).toFixed(3);
+    await expect(callBatch('gemini-4-argon', items, { ledger: l, purpose: 'judge' })).rejects.toThrow(`up to $${want}`);
   });
 });

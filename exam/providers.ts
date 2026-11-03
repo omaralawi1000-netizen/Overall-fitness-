@@ -344,10 +344,15 @@ export function pendingBatches(model: string, jobDir: string): PendingBatch[] {
  * on the next run instead of sent again. A poll that fails on the network or a 429/5xx is tried again until the wait
  * limit. An answer that failed is a CallError in the map (the caller decides to retry it), never a guess.
  */
+/** One request's worst case inside a batch (half price): what a batch reserves per item. */
+export const batchWorstUsd = (model: string, body: GeminiBody) => estimate(model, body, maxOutOf(model, body)) * BATCH_DISCOUNT;
+/** The most items a new batch may hold so its reservation still fits under the cap (1 at least: the cap then refuses it, never a silent skip). */
+export const batchSizeFor = (ledger: Ledger, worstItemUsd: number, max = 100) => Math.max(1, Math.min(max, Math.floor((ledger.capUsd - ledger.spent) / worstItemUsd)));
+
 export async function callBatch(model: string, items: { id: string; body: GeminiBody }[], o: BatchOpts): Promise<BatchResult> {
   const price = priceOf(model);
   if (new Set(items.map((x) => x.id)).size !== items.length) throw new Error('batch ids must be unique');
-  const worst = items.reduce((s, x) => s + estimate(model, x.body, maxOutOf(model, x.body)), 0) * BATCH_DISCOUNT;
+  const worst = items.reduce((s, x) => s + batchWorstUsd(model, x.body), 0);
   const isClaude = model.startsWith('claude-');
   const reqs = items.map((x) => ({ ...x, req: isClaude ? toClaude(model, x.body, o.effort ?? 'medium') : null }));
   // (a saved batch is reused only for exactly these requests: same ids, same bodies, same effort; anything else is a new batch)
