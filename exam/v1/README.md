@@ -34,7 +34,9 @@ Calibration first (a judge that fails grades nothing), then both judges through 
 handle (`batch-*.json`) and its worst case reserved in the ledger until its answers are in, so a stopped run resumes and
 collects it without paying twice; `EXAM_DRY=1` writes only under `<EXAM_JUDGED>/dry/` and takes only dry transcripts.
 A Claude judge's calibration and verdicts belong to its effort (`EXAM_JUDGE_EFFORT`): changing it calibrates and
-judges again. A verdict also belongs to the exact transcript it graded: a regenerated answer is judged again. Omar's blind pairs go in `<judged>/omar-pairs.json` as `{"agree": n, "of": 12}` (all 12, or the exam is not passed).
+judges again. A verdict also belongs to the exact transcript it graded: a regenerated answer is judged again. Scores are
+never stored for good: the gate and the report recompute every score from the saved verdicts with today's `finalScore`,
+so a change to the formula costs nothing to apply. Omar's blind pairs go in `<judged>/omar-pairs.json` as `{"agree": n, "of": 12}` (all 12, or the exam is not passed).
 
 Measured in the dry run (3 Nov 2026): old Aven's Coach prompt is about 75–90k characters (about 20k tokens) per call,
 the judge's about 25k characters. Claude reads the stable part of the Coach prompt from its cache; Gemini caches it by itself.

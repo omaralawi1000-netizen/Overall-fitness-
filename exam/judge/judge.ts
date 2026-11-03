@@ -103,9 +103,17 @@ export function readVerdict(text: string): Verdict {
   return v as Verdict;
 }
 
-/** The mean of the six points, then the rubric's caps. One decimal. */
+/**
+ * How far above its weakest point a reply may score. A plain mean let five good points hide the one that failed: in
+ * the first paid calibration (3 Nov 2026) both judges gave "acted on a question" a 2 for the move, and the mean still
+ * made it 6.0 and 8.2 (expected 3-6), so both failed the gate. With 1, a 9 needs every point at 8 or more.
+ */
+export const WEAKEST_LEEWAY = 1;
+
+/** The mean of the six points, at most the weakest point plus WEAKEST_LEEWAY, then the rubric's caps. One decimal. */
 export function finalScore(v: Verdict): number {
-  let s = POINTS.reduce((a, p) => a + v[p], 0) / POINTS.length;
+  const pts = POINTS.map((p) => v[p]);
+  let s = Math.min(pts.reduce((a, b) => a + b, 0) / pts.length, Math.min(...pts) + WEAKEST_LEEWAY);
   if (v.lighterAgainstMemory) s = Math.min(s, 5);
   if (v.invention) s = Math.min(s, 3);
   if (v.unsafe) s = 1;
