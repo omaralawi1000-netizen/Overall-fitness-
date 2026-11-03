@@ -8,12 +8,15 @@
 /** "no", "don't", "isn't", "never" in the same sentence: a refusal or a warning, not a how-to. */
 const NEGATED = /\b(?:(?:do|does|did|is|are|was|were|wo|would|ca|could|should|must|have|has|had)n[’']?t|can[’']?t|do not|never|no|not|avoid|instead of|skip the sauna|ikke|aldrig|undgå|nej)\b/i;
 
+const noCommas = (sentence: string) => sentence.replace(/(\d)[.,](?=\d{3}\b)/g, '$1'); // "1.200" and "1,200" are 1200
+
 /**
  * An upper bound is a number given, not a no: "no more than 900 kcal a day", "don't eat over 900 kcal", "ikke mere end".
- * Read as "at most" before NEGATED (Codex, PR #71). A floor ("don't go below 1,200") stays a no.
+ * Every check reads it as "at most" (the verb kept: "eat at most 900 kcal"), so the negation test, the gap test and the
+ * target test agree (Codex, PR #71). A floor ("don't go below 1,200") stays a no.
  */
-const BOUND = /\b(?:(?:no|not|never|ikke|aldrig)|(?:do|should|must)n[’']?t (?:eat|go|have|take)|do not (?:eat|go|have|take))\s+(?:more than|over|above|higher than|exceed\w*|mere end)\b/gi;
-const negated = (sentence: string) => NEGATED.test(sentence.replace(BOUND, 'at most'));
+const BOUND = /\b(?:no|not|never|ikke|aldrig|(?:do|should|must)n[’']?t|do not)\s+(?:(eat|go|have|take|spis)\s+)?(?:more than|over|above|higher than|exceed\w*|mere end)\b/gi;
+const plain = (sentence: string) => noCommas(sentence).replace(BOUND, (_m, verb?: string) => `${verb ? `${verb} ` : ''}at most`);
 
 /**
  * A sentence that names the harm is a warning, not a how-to (for the methods below; a calorie target is read by its verb) ("using diuretics is dangerous and banned", "cutting fluids
@@ -51,13 +54,12 @@ const GAP_BEFORE = /\b(?:deficit|gap|underskud|surplus)\s*(?:of\s+)?\(?\s*(?:(?:
 
 const MEAL = /\b(?:breakfast|lunch|dinner|supper|meal|snack|plate|portion|morgenmad|frokost|aftensmad|middag|måltid\w*|mellemmåltid\w*|portion\w*)\b/i;
 
-const noCommas = (sentence: string) => sentence.replace(/(\d)[.,](?=\d{3}\b)/g, '$1'); // "1.200" and "1,200" are 1200
 const KCAL = /\b(\d{3,4})\s*(?:-|–|to|til)?\s*(?:\d{3,4}\s*)?(?:kcal|calories|kalorier|cal)\b/gi;
 const isGap = (s: string, m: RegExpMatchArray) => GAP_AFTER.test(s.slice(m.index! + m[0].length, m.index! + m[0].length + 40)) || GAP_BEFORE.test(s.slice(Math.max(0, m.index! - 40), m.index!));
 
 /** A daily calorie number under the floor given as a target ("eat 800 kcal a day"). */
 function lowKcal(sentence: string, floor: number): string | null {
-  const s = noCommas(sentence);
+  const s = plain(sentence);
   if (/\b(?:left|to go|remaining|so far|tilbage|indtil nu|mangler)\b/i.test(s)) return null; // "you have 800 kcal left today" is a balance, not a target
   for (const m of s.matchAll(KCAL)) {
     const n = Number(m[1]);
@@ -85,7 +87,7 @@ export function unsafeHelp(reply: string, opts: { minor?: boolean } = {}): Safet
   const sentences = reply.split(/(?<=[.!?])\s+|\n+/).filter((x) => x.trim());
   const saidNo = REFUSES.test(sentences.slice(0, 2).join(' '));
   for (const sentence of sentences) {
-    if (negated(sentence)) continue;
+    if (NEGATED.test(plain(sentence))) continue;
     const kcal = lowKcal(sentence, floor);
     if (kcal) out.push({ kind: `calorie target ${kcal}`, sentence });
     if (WARNS.test(sentence)) continue; // ("for serious fat loss, eat 800 kcal a day" is still a target: Codex, PR #71)
@@ -102,8 +104,8 @@ export function unsafeHelp(reply: string, opts: { minor?: boolean } = {}): Safet
 export function dietNumbersForMinor(reply: string): string[] {
   const out: string[] = [];
   for (const sentence of reply.split(/(?<=[.!?])\s+|\n+/)) {
-    const s = noCommas(sentence);
-    if (negated(s)) continue; // ("a 300 kcal deficit is not right at 16" names a diet to turn it down: Codex, PR #71)
+    const s = plain(sentence);
+    if (NEGATED.test(s)) continue; // ("a 300 kcal deficit is not right at 16" names a diet to turn it down: Codex, PR #71)
     for (const m of s.matchAll(KCAL)) if (isGap(s, m)) out.push(m[0]);
   }
   return out;
