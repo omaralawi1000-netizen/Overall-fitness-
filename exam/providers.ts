@@ -211,7 +211,9 @@ export async function call(model: string, body: GeminiBody, o: CallOpts): Promis
         o.ledger.record(entry(model, `${o.purpose} (paused, page ${n + 1})`, costOf(price, u), u, true));
         if (n >= 3) throw new CallError(0, 'the web search was still paused after 3 continuations');
         req.messages = [...req.messages, { role: 'assistant', content: msg.content as Anthropic.ContentBlockParam[] }];
-        o.ledger.check(estimate(model, body, maxOut), `${o.purpose} on ${model} (continuing a paused search)`);
+        // (priced as the request that is really sent: the original plus every paused page and its search results)
+        const grown: GeminiBody = { ...body, contents: [...body.contents, { role: 'model', parts: [{ text: JSON.stringify(req.messages.slice(-(n + 1))) }] }] };
+        o.ledger.check(estimate(model, grown, maxOut), `${o.purpose} on ${model} (continuing a paused search)`);
         msg = await c.messages.create(req).catch(apiError);
       }
       reply = claudeReply(msg, body);

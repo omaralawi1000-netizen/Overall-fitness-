@@ -187,6 +187,14 @@ describe('a paused Claude web search (Codex, PR #66)', () => {
     expect(l.spent).toBeCloseTo(2 * page);
     expect(r.usd).toBeCloseTo(2 * page);
   });
+  it('a continuation is priced with everything it sends, so a big search page cannot slip past the cap (Codex, PR #66)', async () => {
+    const big = 'x'.repeat(300_000); // ~100k tokens of search results on the paused page
+    let n = 0;
+    const client = { messages: { create: async () => { n++; return { content: [{ type: 'text', text: big }], stop_reason: 'pause_turn', usage }; } } } as any;
+    // the first request fits in $0.30, the continuation (with the 300k characters sent back) does not
+    await expect(call('claude-sonnet-5-5', SEARCH, { ledger: new Ledger(tmp(), 0.3), purpose: 'web', client })).rejects.toThrow(SpendCapError);
+    expect(n).toBe(1);
+  });
   it('a turn still paused after 3 continuations is an error, never an answer', async () => {
     let n = 0;
     const client = { messages: { create: async () => { n++; return { content: [{ type: 'text', text: 'still searching' }], stop_reason: 'pause_turn', usage }; } } } as any;
