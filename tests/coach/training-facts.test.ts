@@ -58,3 +58,20 @@ describe('training facts', () => {
     expect(buildFacts([night('2026-11-02', 8), night('2026-11-03', 5)], { now: NOW, tz: TZ }).training.sleep).toBeUndefined();
   });
 });
+
+describe('maintenance', () => {
+  it('is estimated from complete days and the weight trend, labelled as an estimate, with targets for a pace', () => {
+    const rs: AnyRecord[] = [env('settings', '2026-10-01', { language: 'da', dayStartHour: 0, weekStart: 1, units: {}, restDefaultSec: 120, targets: { kcal: 3000 } })];
+    for (let i = 1; i <= 28; i++) {
+      const d = new Date(Date.parse('2026-11-03T00:00:00Z') - i * 864e5).toISOString().slice(0, 10);
+      rs.push(env('food', d, { name: 'x', meal: 'lunch', dataSource: 'reference', portion: { amount: 1, unit: 'portion' }, estimated: false, nutrients: { kcal: 2740 } }));
+      rs.push({ ...env('dayNote', d, { foodComplete: true }), id: `day:${d}` } as AnyRecord);
+      if (i % 2 === 0) rs.push(env('bodyweight', d, { kg: 74.7 }));
+    }
+    const s = buildFacts(rs, { now: NOW, tz: TZ });
+    const f = (id: string) => s.food28.facts.find((x) => x.id === id);
+    expect(f('food28.maintenanceKcal')).toMatchObject({ value: 2740, confidence: 'estimate' });
+    expect(f('food28.kcalForGain25g')!.value).toBe(3020); // 2,740 + 0.25 × 7,700 / 7, to the nearest 10
+    expect(buildFacts(rs.filter((r) => r.kind !== 'bodyweight'), { now: NOW, tz: TZ }).trust.join(' ')).toMatch(/No maintenance estimate yet/);
+  });
+});
