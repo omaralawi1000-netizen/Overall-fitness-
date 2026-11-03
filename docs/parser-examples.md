@@ -18,8 +18,8 @@ How to read it:
 9. **Dictation noise is dropped, numbers are read as words.** Filler ("uh", "like", "altså", "please", "tak") and a lead-in ("I did", "jeg tog") are ignored; "one hundred and twenty", "two fifty", "to og firs" and "eighty two point five" are numbers. A half-said phrase ("eighty for", "8 reps at") is never logged, and neither is a count of something that is not food ("30 seconds", "2 minutes").
 10. **A lead-in is only dropped before a set.** "I did 8 at 80" is a set, but "I made 2 sandwiches", "I got 2 dogs" and "I bought 6 eggs" are not meals: making, getting or buying is not eating.
 11. **".5" is half.** A leading point belongs to the number (".5 l water" is 500 ml), never a stray full stop.
-12. **Two exercises in one phrase stay two.** "squat 100 for 5 and front squat 80 for 5" is two exercises, each with its own set; "80 for 8, 8 and 6" is still three sets of one exercise.
-13. **Food words from either language are food.** Danish "is" (ice cream), "kylling i karry" and "dulce de leche" are foods; "2 eggs i think" and "27 people are in the gym" are talk. A word only makes a sentence by where it stands.
+12. **Two exercises in one phrase stay two.** "squat 100 for 5 and front squat 80 for 5" is two exercises, each with its own set; "80 for 8, 8 and 6" is still three sets of one exercise, and "run 5 km, in 25 minutes" is still one run.
+13. **Food words from either language are food, only in a dish's shape.** Danish "is" (ice cream), "is med jordbær", "kylling i karry" and "dulce de leche" are foods; "2 eggs i think", "2 eggs i cooked", "2 is enough" and "27 people are in the gym" are talk. When in doubt it is talk: a missed food is typed again, a wrong log is worse.
 
 ## Examples
 

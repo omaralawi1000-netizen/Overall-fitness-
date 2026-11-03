@@ -32,8 +32,9 @@ function normaliseNumbers(s: string): string {
 
 export function splitExerciseSegments(text: string): string[] {
   return text
-    // "squat 100 for 5 and front squat 80 for 5": an "and" (or comma) followed by a name and a number starts a new exercise
-    .split(/\s*(?:;|\.\s+|\bthen\b|\bnext\b|\bderefter\b|\bdernaest\b|\bdernæst\b|(?:,|\band\b|\bog\b)\s+(?=(?:[a-zæøå][\p{L}-]*\s+){1,4}\d))\s*/iu)
+    // "squat 100 for 5 and front squat 80 for 5": an "and" (or comma) followed by a name and a number starts a new exercise;
+    // a connector is not a name ("run 5 km, in 25 minutes" is one run)
+    .split(/\s*(?:;|\.\s+|\bthen\b|\bnext\b|\bderefter\b|\bdernaest\b|\bdernæst\b|(?:,|\band\b|\bog\b)\s+(?!(?:in|on|at|for|with|of|by|to|then|x|i|på|paa|til|med|af|over|under)\s)(?=(?:[a-zæøå][\p{L}-]*\s+){1,4}\d))\s*/iu)
     .map((s) => s.trim())
     .filter(Boolean);
 }

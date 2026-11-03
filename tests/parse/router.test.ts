@@ -114,6 +114,9 @@ describe('Codex retro-review findings', () => {
     ] });
     // more reps of the same exercise still join it
     expect(u('bench press 80 for 8, 8 and 6', closed)).toMatchObject({ kind: 'workout', rows: [{ row: { sets: [{ reps: 8 }, { reps: 8 }, { reps: 6 }] } }] });
+    // a connector inside one distance-and-time set does not start a new exercise or set (Codex on #64)
+    for (const t of ['run 5 km, in 25 minutes', 'run 5 km and in 25 minutes', 'løb 5 km på 25 minutter'])
+      expect(u(t, closed)).toMatchObject({ kind: 'workout', rows: [{ row: { sets: [{ distanceM: 5000, durationSec: 1500 }] } }] });
   });
   it('making, getting or buying something is not eating it', () => {
     for (const t of ['I made 2 sandwiches', 'I got 2 dogs', 'i bought 6 eggs', 'jeg købte 2 bananer', 'I made 3 pizzas for the kids']) {
@@ -128,7 +131,7 @@ describe('Codex retro-review findings', () => {
     expect(u('100 g dulce de leche', closed)).toMatchObject({ kind: 'food', rows: [{ amount: 100, query: 'dulce de leche' }] });
     expect(u('150 g is med jordbær', closed)).toMatchObject({ kind: 'food', rows: [{ amount: 150, query: 'is med jordbær' }] });
     // still talk: a clause after the amount
-    for (const t of ['27 people are in the gym', 'I have two kids', '2 eggs i think', 'jeg har 3 timer i skole', '2 bananer de er gode', '2 eggs is all i had']) {
+    for (const t of ['27 people are in the gym', 'I have two kids', '2 eggs i think', 'jeg har 3 timer i skole', '2 bananer de er gode', '2 eggs is all i had', '2 eggs i cooked', '2 is enough', '3 eggs i made earlier', '2 is plenty']) {
       expect(['ignored', 'ask']).toContain(u(t, closed).kind);
     }
   });

@@ -68,16 +68,20 @@ const NOT_FOOD = new Set(['rep', 'reps', 'set', 'sets', 'second', 'seconds', 'se
 /** Verbs and pronouns: a food name has none, so a phrase holding one is a sentence. */
 /** Words that make the rest a clause, not a food name, in either language ("27 people are in the gym", "2 eggs i think"). */
 const SENTENCE_WORD = new Set(['are', 'was', 'were', 'am', 'be', 'been', 'have', 'has', 'had', 'will', 'would', 'should', 'could', 'you', 'we', 'they', 'he', 'she', 'it', 'jeg', 'du', 'vi', 'han', 'hun', 'det', 'er', 'var', 'har', 'skal', 'vil', 'kan', 'people', 'persons', 'friends', 'guys', 'kids']);
-const VERB_AFTER_I = /^(?:think|guess|ate|had|did|have|am|was|want|need|mean|just|also|will|would|can|cant|can't|dont|don't|got|made|bought|like|love)$/;
+/** What can follow "i" in a Danish dish name ("kylling i karry", "laks i ovn"): a sauce, a cut, a pan. Any other "i" is English "I". */
+const DISH_AFTER_I = /^(?:karry|karrysovs|sovs|sauce|flødesovs|tomatsovs|tomat|tomater|olie|olivenolie|lage|eddike|fad|ovn|ovnen|skiver|tern|både|strimler|kokosmælk|mælk|smør|svøb|dej|gele|sirup|chili|hvidløg|vaffel)$/;
+/** A first "is" is Danish ice cream only on its own or when the name goes on like a dish ("is med jordbær"), never "2 is enough". */
+const ICE_CREAM_NEXT = /^(?:med|og|i|uden|fra)$/;
 const VERB_AFTER_DE = /^(?:spiste|kommer|tog|ville|gik|er|var|har|skal|vil|kan)$/;
 /**
  * "is", "i" and "de" are sentence words in one language and food words in the other: Danish "is" is ice cream,
- * "kylling i karry" is chicken in curry, "dulce de leche" is a food. They make a clause only by where they stand.
+ * "kylling i karry" is chicken in curry, "dulce de leche" is a food. They count as food words only in a dish's shape;
+ * anywhere else they make the row a sentence (conservative: a missed food can be typed again, a wrong log is worse).
  */
 function isClause(name: string[]): boolean {
   return name.some((t, k) => SENTENCE_WORD.has(t)
-    || (t === 'is' && k > 0) // "2 eggs is all": a verb after the food (a first "is" is the food itself)
-    || (t === 'i' && (k === 0 || k === name.length - 1 || VERB_AFTER_I.test(name[k + 1] ?? ''))) // "2 eggs i think"
+    || (t === 'is' && (k > 0 || (name.length > 1 && !ICE_CREAM_NEXT.test(name[1])))) // "2 eggs is all", "2 is enough"
+    || (t === 'i' && !(k > 0 && k < name.length - 1 && DISH_AFTER_I.test(name[k + 1]))) // "2 eggs i cooked", not "kylling i karry"
     || (t === 'de' && VERB_AFTER_DE.test(name[k + 1] ?? ''))); // "2 bananer de er gode"
 }
 const PREPOSITION = new Set(['for', 'at', 'with', 'and', 'to', 'til', 'med', 'på', 'paa', 'in', 'i', 'og', 'on', 'by', 'from', 'fra']);
