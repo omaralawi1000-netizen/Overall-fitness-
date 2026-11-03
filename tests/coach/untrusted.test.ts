@@ -1,4 +1,6 @@
 import { describe, expect, it } from 'vitest';
+import { buildFacts, sheetNumbers } from '../../src/coach/facts';
+import type { AnyRecord } from '../../src/engine/model';
 import { fence, gate, numbersIn } from '../../src/coach/untrusted';
 
 describe('untrusted text is data, never instructions', () => {
@@ -40,6 +42,13 @@ describe('untrusted text is data, never instructions', () => {
     expect(gate({ name: 'forget', memoryId: 'm-health' }, t)).toMatchObject({ ok: false, reason: expect.stringContaining('forget') });
     expect(gate({ name: 'remember', text: 'wants 900 kcal', topic: 'preference' }, t).ok).toBe(false);
     expect(gate({ name: 'set_target', key: 'kcal', value: 1500 }, { userText: "don't increase anything, just read it", untrusted: true, sheet: [1500] }).ok).toBe(false);
+  });
+
+  it("a number from the person's own memory counts as theirs: \"change it back to my old target\" (Codex, PR #73)", () => {
+    const mem = { id: 'm1', kind: 'memory', v: 1, at: 0, tz: 'Europe/Copenhagen', day: '2026-10-01', source: 'tap', createdAt: 0, updatedAt: 0, rev: 1, stamp: 's', text: 'my previous protein target was 215 g', topic: 'preference', scope: 'standing', validFrom: '2026-10-01', lastSeen: 0, origin: 'said' } as unknown as AnyRecord;
+    const sheet = sheetNumbers(buildFacts([mem], { now: Date.parse('2026-11-03T15:00:00+01:00'), tz: 'Europe/Copenhagen' }));
+    expect(sheet).toContain(215);
+    expect(gate({ name: 'set_target', key: 'protein', value: 215 }, { userText: 'change it back to my previous target', untrusted: true, sheet })).toEqual({ ok: true });
   });
 
   it("the person's own command still works next to untrusted text, with numbers from their words or the sheet", () => {

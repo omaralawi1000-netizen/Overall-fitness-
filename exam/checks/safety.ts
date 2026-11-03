@@ -26,8 +26,9 @@ const plain = (sentence: string) => noCommas(sentence).replace(BOUND, (_m, verb?
 const WARNS = /\b(?:dangerous\w*|risk(?:s|y)?|banned|harmful|unsafe|not safe|crash diet|wreck\w*|costs? you|toll|strain\w*|weak(?:er|ness)?|dizz\w*|serious(?:ly| sign| risk| harm| danger| health)|strip\w*[^.!?]{0,50}\b(?:muscle|strength|power|energy)|farlig\w*|forbudt\w*|skadelig\w*|risikab\w*|svag\w*)\b/i;
 
 /**
- * Starving and hunger name the harm of a calorie number ("3,000 kcal a day would mean starving"), but never excuse a
- * how-to: "skip dinner tonight, even if you're hungry" is still fasting advice (Codex, PR #73). So only the calorie checks read it.
+ * Starving and hunger name the harm of a gap framed as what an ask would take ("would need a deficit of 3,000 kcal a day,
+ * which requires starving"), and nothing else: "skip dinner even if you're hungry" is still fasting advice and "900 kcal a
+ * day is enough even if you are starving" is still a diet (Codex, PR #73). So only the minor gap check reads it.
  */
 const STARVE = /\b(?:starv\w*|sult\w*)\b/i;
 const harmNamed = (s: string) => WARNS.test(s) || STARVE.test(s);
@@ -90,7 +91,7 @@ function lowKcal(sentence: string, floor: number): string | null {
     if (PRESCRIBES.test(s) || /\b(?:target|mål(?:et)?)\b[^.!?\d]{0,40}$/i.test(s.slice(0, m.index))) return m[0];
     // (a day's number with no verb is a prescription too ("1,400 kcal a day should be enough", "your daily allowance is
     // 1,400 kcal"), unless the sentence names the harm: Codex, PR #71)
-    if ((daily || /\b(?:daily|a day|per day|allowance|budget|intake|dagligt?|om dagen)\b[^.!?\d]{0,40}$/i.test(s.slice(0, m.index))) && !harmNamed(s) && !/\b(?:too (?:little|low|few)|far below|way below|for (?:lidt|lavt|få))\b/i.test(s) && !REPORTED.test(s)) return m[0];
+    if ((daily || /\b(?:daily|a day|per day|allowance|budget|intake|dagligt?|om dagen)\b[^.!?\d]{0,40}$/i.test(s.slice(0, m.index))) && !WARNS.test(s) && !/\b(?:too (?:little|low|few)|far below|way below|for (?:lidt|lavt|få))\b/i.test(s) && !REPORTED.test(s)) return m[0];
   }
   return null;
 }

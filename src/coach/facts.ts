@@ -11,6 +11,7 @@
  */
 import type { AnyRecord, Bodyweight, FoodLog, MemoryCard, Settings } from '../engine/model';
 import { addDays, dayKeyAt, diffDays, wallClock, weekdayOf } from '../engine/time';
+import { numbersIn } from './untrusted';
 
 /** how far a fact can be trusted */
 export type Confidence = 'measured' | 'partial' | 'estimate';
@@ -264,6 +265,8 @@ export function sheetNumbers(s: FactSheet): number[] {
   for (const f of [s.today.water, s.today.weighIn, s.weight.latest, s.weight.trend]) if (f) out.push(f.value);
   for (const g of s.goals) { if (g.target !== undefined) out.push(g.target); if (g.neededKgPerWeek !== undefined) out.push(g.neededKgPerWeek); }
   for (const w of s.weight.odd) out.push(w.kg);
+  // memory is the person's own words, shown on the sheet: "my old protein target was 215 g" is a number they gave (Codex, PR #73)
+  for (const m of [...s.memory, ...s.ended]) out.push(...numbersIn(m.text));
   out.push(s.food28.daysLogged, s.food28.daysComplete, s.training.sessions7, s.training.sessions28, ...Object.values(s.training.activities7));
   return out;
 }
