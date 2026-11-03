@@ -14,8 +14,12 @@ How to read it:
 5. **Water and body weight check the number.** A body under 30 kg or over 300 kg, or a drink over 5 litres, is asked about, never logged.
 6. **Food needs an amount said out loud.** "a banana" alone is too thin (could be talk) unless "I ate" or a meal word comes with it. Parts it cannot read are listed, not dropped.
 7. **"80 x 8" asks.** A multiplication sign does not say which number is the weight; a unit does ("80 kg x 8"). A second set with its own weight ("80 for 8 and 60 for 10") is its own set, never more reps.
-8. **Pounds are kept as said** and stored as kilos to two places.
+8. **Pounds are kept as said** and stored as kilos to two places. A decimal correction stays in pounds ("180 lb for 5, no 185.5" is 185.5 lb).
 9. **Dictation noise is dropped, numbers are read as words.** Filler ("uh", "like", "altså", "please", "tak") and a lead-in ("I did", "jeg tog") are ignored; "one hundred and twenty", "two fifty", "to og firs" and "eighty two point five" are numbers. A half-said phrase ("eighty for", "8 reps at") is never logged, and neither is a count of something that is not food ("30 seconds", "2 minutes").
+10. **A lead-in is only dropped before a set.** "I did 8 at 80" is a set, but "I made 2 sandwiches", "I got 2 dogs" and "I bought 6 eggs" are not meals: making, getting or buying is not eating.
+11. **".5" is half.** A leading point belongs to the number (".5 l water" is 500 ml), never a stray full stop.
+12. **Two exercises in one phrase stay two.** "squat 100 for 5 and front squat 80 for 5" is two exercises, each with its own set; "80 for 8, 8 and 6" is still three sets of one exercise.
+13. **Food words from either language are food.** Danish "is" (ice cream), "kylling i karry" and "dulce de leche" are foods; "2 eggs i think" and "27 people are in the gym" are talk. A word only makes a sentence by where it stands.
 
 ## Examples
 

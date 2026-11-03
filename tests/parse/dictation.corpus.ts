@@ -12,6 +12,8 @@ export type Expect =
   | { food: [amount: number, dim: 'g' | 'ml' | 'count', query: string][]; meal?: string }
   | { workout: [exercise: string, sets: [reps: number | undefined, kg: number | undefined][]] }
   | { run: [km: number | undefined, sec: number | undefined] }
+  /** several exercises in one phrase, each with its own sets, in order */
+  | { workouts: [exercise: string, sets: [reps: number | undefined, kg: number | undefined][]][] }
   /** nothing may be logged: talk, or a half-said phrase (asking is fine) */
   | { nolog: true }
   /** must ask, never pick */

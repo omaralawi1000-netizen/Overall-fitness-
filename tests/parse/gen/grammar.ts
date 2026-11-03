@@ -8,10 +8,10 @@
 import type { Expect } from '../dictation.corpus';
 
 export interface Phrase { family: Family; say: string; open: boolean; expect: Expect }
-export type Family = 'set' | 'correction' | 'command' | 'rest' | 'water' | 'bodyweight' | 'food' | 'talk' | 'halfsaid' | 'noise';
-export const FAMILIES: Family[] = ['set', 'correction', 'command', 'rest', 'water', 'bodyweight', 'food', 'talk', 'halfsaid', 'noise'];
+export type Family = 'set' | 'correction' | 'command' | 'rest' | 'water' | 'bodyweight' | 'food' | 'workout' | 'talk' | 'halfsaid' | 'noise';
+export const FAMILIES: Family[] = ['set', 'correction', 'command', 'rest', 'water', 'bodyweight', 'food', 'workout', 'talk', 'halfsaid', 'noise'];
 /** How often each family is drawn (out of 100). */
-const MIX: Record<Family, number> = { set: 22, correction: 12, command: 10, rest: 6, water: 8, bodyweight: 8, food: 16, talk: 8, halfsaid: 6, noise: 4 };
+const MIX: Record<Family, number> = { set: 18, correction: 12, command: 10, rest: 6, water: 8, bodyweight: 8, food: 14, workout: 6, talk: 8, halfsaid: 6, noise: 4 };
 
 // ── seeded random ──
 export function rng(seed: number) {
@@ -134,7 +134,11 @@ const NO = ['no', 'nej', 'no wait', 'nej vent', 'sorry', 'actually', 'i mean', '
 function genCorrection(r: R): Phrase {
   const a = setBits(r), b = setBits(r);
   a.lang = b.lang; // one language per sentence
-  const kind = r.int(0, 3);
+  const kind = r.int(0, 4);
+  if (kind === 4) { // pounds, corrected by a bare decimal: the decimal is in pounds too
+    const lb = r.int(60, 400), dec = lb + r.pick([0.5, 2.5, 5.5]), reps = r.int(2, 12);
+    return { family: 'correction', say: wrap(`${reps} at ${lb} ${r.pick(['lb', 'lbs', 'pounds'])} ${r.pick(NO).replace(/^(uh|øh) /, '')} ${dec}`, r), open: true, expect: { set: [reps, dec * 0.45359237] } };
+  }
   const first = setPhrase(a, r), marker = r.pick(NO).replace(/^(uh|øh) /, '');
   if (kind === 0) return { family: 'correction', say: wrap(`${first} ${marker} ${setPhrase(b, r)}`, r), open: true, expect: { set: [b.r, b.w] } }; // a whole new set wins
   if (kind === 1) { // only the reps change: the number says "reps"
@@ -181,7 +185,7 @@ function genWater(r: R): Phrase {
   const of = lang === 'en' ? ' of ' : ' ';
   let text: string, ml: number;
   if (kind === 0) { const n = r.pick([100, 150, 200, 250, 300, 330, 400, 500, 600, 750, 1000]); ml = n; text = `${say(n, r, lang, 0.3)} ${r.pick(lang === 'en' ? ['ml', 'milliliters', 'ml'] : ['ml', 'milliliter', 'ml'])}${of}${water}`; }
-  else if (kind === 1) { const n = r.pick([1, 1.5, 2, 2.5, 3]); ml = n * 1000; const num = Number.isInteger(n) ? say(n, r, lang, 0.3) : String(n).replace('.', r.chance(0.5) ? ',' : '.'); text = `${num} ${r.pick(lang === 'en' ? ['liters', 'litres', 'l'] : ['liter', 'l'])}${of}${water}`; }
+  else if (kind === 1) { const n = r.pick([0.5, 1, 1.5, 2, 2.5, 3]); ml = n * 1000; const num = Number.isInteger(n) ? say(n, r, lang, 0.3) : n === 0.5 && r.chance(0.5) ? '.5' : String(n).replace('.', r.chance(0.5) ? ',' : '.'); /* ".5 l" is half a litre */ text = `${num} ${r.pick(lang === 'en' ? ['liters', 'litres', 'l'] : ['liter', 'l'])}${of}${water}`; }
   else if (kind === 2) { const n = r.int(1, 6); ml = n * 250; text = `${say(n, r, lang, 0.3)} ${n === 1 ? (lang === 'en' ? 'glass' : 'glas') : (lang === 'en' ? 'glasses' : 'glas')}${of}${water}`; }
   else { const n = r.int(1, 3); ml = n * 500; text = `${say(n, r, lang, 0.3)} ${n === 1 ? (lang === 'en' ? 'bottle' : 'flaske') : (lang === 'en' ? 'bottles' : 'flasker')}${of}${water}`; }
   return { family: 'water', say: wrap(lead + text, r), open: r.chance(0.5), expect: { water: ml } };
@@ -198,8 +202,8 @@ function genBodyweight(r: R): Phrase {
 }
 
 // ── food ──
-const FOODS_EN = ['chicken breast', 'rice', 'skyr', 'oats', 'greek yogurt', 'salmon', 'broccoli', 'pasta', 'cheese', 'almonds', 'peanut butter', 'cottage cheese', 'sweet potato', 'tuna'];
-const FOODS_DA = ['kylling', 'ris', 'skyr', 'havregryn', 'kvark', 'laks', 'broccoli', 'pasta', 'ost', 'mandler', 'peanutbutter', 'rugbrød', 'tun'];
+const FOODS_EN = ['chicken breast', 'rice', 'skyr', 'oats', 'greek yogurt', 'salmon', 'broccoli', 'pasta', 'cheese', 'almonds', 'peanut butter', 'cottage cheese', 'sweet potato', 'tuna', 'dulce de leche'];
+const FOODS_DA = ['kylling', 'ris', 'skyr', 'havregryn', 'kvark', 'laks', 'broccoli', 'pasta', 'ost', 'mandler', 'peanutbutter', 'rugbrød', 'tun', 'is', 'kylling i karry', 'is med jordbær'];
 const LIQ_EN = ['milk', 'orange juice', 'cola', 'oat milk'];
 const LIQ_DA = ['mælk', 'juice', 'cola', 'havremælk'];
 const COUNT_EN: [string, string[]][] = [['egg', ['egg', 'eggs']], ['banana', ['banana', 'bananas']], ['apple', ['apple', 'apples']], ['rice cake', ['rice cake', 'rice cakes']]];
@@ -242,6 +246,26 @@ function genFood(r: R): Phrase {
   return { family: 'food', say: wrap(text, r), open: r.chance(0.3), expect: { food: rows.map((x) => [x.amount, x.dim, x.q] as [number, 'g' | 'ml' | 'count', string]), ...(meal ? { meal } : {}) } };
 }
 
+// ── exercises with their sets, one to three in a phrase ──
+const LIFTS: [string, string][] = [['squat', 'back squat'], ['back squat', 'back squat'], ['front squat', 'front squat'], ['bench press', 'barbell bench press'], ['bench', 'barbell bench press'], ['dumbbell bench press', 'dumbbell bench press'], ['deadlift', 'deadlift'], ['romanian deadlift', 'romanian deadlift'], ['rdl', 'romanian deadlift'], ['overhead press', 'overhead press'], ['barbell row', 'barbell row'], ['skulderpres', 'overhead press'], ['dødløft', 'deadlift']];
+function liftSets(r: R): { text: string; sets: [number, number][] } {
+  const w = r.pick(weights), reps = r.int(3, 15), unit = r.pick(['', '', ' kg', ' kilos']);
+  switch (r.int(0, 3)) {
+    case 0: return { text: `${w}${unit} for ${reps}`, sets: [[reps, w]] };
+    case 1: return { text: `${reps} reps at ${w}${unit || ' kg'}`, sets: [[reps, w]] };
+    case 2: { const n = r.int(2, 5); return { text: `${n} sets of ${reps} at ${w}${unit}`, sets: Array.from({ length: n }, () => [reps, w] as [number, number]) }; }
+    default: { const more = [reps - 1, reps - 2].filter((x) => x > 0); return { text: `${w}${unit} for ${reps}, ${more.join(' and ')}`, sets: [[reps, w], ...more.map((x) => [x, w] as [number, number])] }; }
+  }
+}
+function genWorkout(r: R): Phrase {
+  const n = r.pick([1, 2, 2, 3]);
+  const picked: [string, string][] = [];
+  while (picked.length < n) { const l = r.pick(LIFTS); if (!picked.some((p) => p[1] === l[1])) picked.push(l); }
+  const parts = picked.map(([said, name]) => { const s = liftSets(r); return { text: `${said} ${s.text}`, name, sets: s.sets }; });
+  const text = parts.map((p) => p.text).reduce((acc, t, i) => (i ? acc + r.pick([' and ', ', ', ' og ', ' then ', ' and then ', '. ', '; ']) + t : t), '');
+  return { family: 'workout', say: wrap(text, r), open: r.chance(0.5), expect: { workouts: parts.map((p) => [p.name, p.sets] as [string, [number, number][]]) } };
+}
+
 // ── talk that must never log ──
 const N = (r: R) => { const n = r.int(2, 99); return r.chance(0.3) ? en(n, r) : String(n); };
 const TALK: ((r: R) => string)[] = [
@@ -251,6 +275,7 @@ const TALK: ((r: R) => string)[] = [
   (r) => `i want to squat ${r.int(100, 180)} kilos someday`, (r) => `what is ${N(r)} plus ${N(r)}`, (r) => `can you hear me ${r.int(1, 3)} times`, (r) => `i need ${r.int(5, 20)} minutes`,
   (r) => `${N(r)} people are in the gym`, (r) => `the bus leaves in ${r.int(2, 30)} minutes`, (r) => `i have ${r.int(2, 9)} more sets`, (r) => `it is ${r.int(10, 30)} degrees outside`,
   () => `no problem`, () => `hey aven`, () => `that felt heavy`, () => `jeg er træt`, () => `what should i eat`, () => `how many sets are left`, () => `good morning`, () => `tak for hjælpen`,
+  (r) => `i made ${r.int(2, 6)} sandwiches`, (r) => `i got ${r.int(2, 4)} dogs`, (r) => `i bought ${r.int(2, 12)} eggs`, (r) => `jeg købte ${r.int(2, 6)} bananer`, (r) => `i cooked ${r.int(200, 900)} grams of rice for the kids`, () => `2 eggs i think`,
   (r) => `i lost ${r.int(1, 5)} kilos this month`, (r) => `my friend ate ${r.int(100, 400)} grams of pasta`, (r) => `the pizza was ${r.int(80, 150)} kroner`, (r) => `i ran ${r.int(2, 10)} km yesterday`,
 ];
 function genTalk(r: R): Phrase { return { family: 'talk', say: wrap(r.pick(TALK)(r), r), open: r.chance(0.6), expect: { nolog: true } }; }
@@ -271,7 +296,7 @@ function genNoise(r: R): Phrase {
   return { family: 'noise', say: parts.join(r.chance(0.8) ? ' ' : r.pick(['', ',', ' , ', '  '])), open: r.chance(0.5), expect: { nolog: true } };
 }
 
-const GEN: Record<Family, (r: R) => Phrase> = { set: genSet, correction: genCorrection, command: genCommand, rest: genRest, water: genWater, bodyweight: genBodyweight, food: genFood, talk: genTalk, halfsaid: genHalf, noise: genNoise };
+const GEN: Record<Family, (r: R) => Phrase> = { set: genSet, correction: genCorrection, command: genCommand, rest: genRest, water: genWater, bodyweight: genBodyweight, food: genFood, workout: genWorkout, talk: genTalk, halfsaid: genHalf, noise: genNoise };
 
 /** Phrase number `i` of seed `seed`: always the same one. */
 export function gen(seed: number, i: number): Phrase {

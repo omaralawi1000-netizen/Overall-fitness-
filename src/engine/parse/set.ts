@@ -123,7 +123,7 @@ function parseCorrected(text: string): SetCommand | null {
   const a = readSet(after), b = before ? parseCorrected(before) : null; // an earlier "no" has already been settled
   // "…, no 87.5": a bare number with a decimal point can only be kilos (reps are whole), so it is not a guess
   const bareDecimal = normal(after).match(/^(\d+\.\d+)$/);
-  if (!a && bareDecimal && b?.kind === 'set' && b.kg !== undefined) return { kind: 'set', kg: n(bareDecimal[1]), ...(b.reps !== undefined ? { reps: b.reps } : {}) };
+  if (!a && bareDecimal && b?.kind === 'set' && b.kg !== undefined) return { kind: 'set', ...weight(bareDecimal[1], b.entered?.unit), ...(b.reps !== undefined ? { reps: b.reps } : {}) }; // in the unit the set was said in
   if (!a && !b) return null; // "no problem", "no thanks": talk, not a set
   // nothing to take back, or what came before is not a set-shaped phrase: never log, ask
   if (!before || !after || !b || !a) return { kind: 'ask', why: 'correction', ...(a ? { options: [a] } : {}) };

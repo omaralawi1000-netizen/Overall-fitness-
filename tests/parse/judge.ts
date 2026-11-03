@@ -36,6 +36,16 @@ export function judge(u: Understood, e: Expect): string {
     for (const [i, [reps, kg]] of sets.entries()) if (!close(r.row.sets[i].reps, reps) || !close(r.row.sets[i].kg, kg)) return `wrong set ${i + 1}: ${said}`;
     return '';
   }
+  if ('workouts' in e) {
+    if (u.kind !== 'workout' || u.rows.length !== e.workouts.length) return `not ${e.workouts.length} exercises: ${said}`;
+    for (const [k, [name, sets]] of e.workouts.entries()) {
+      const r = u.rows[k];
+      if (!r.exercise?.name.toLowerCase().includes(name)) return `wrong exercise ${k + 1}: ${said}`;
+      if (r.row.sets.length !== sets.length) return `wrong sets for exercise ${k + 1}: ${said}`;
+      for (const [i, [reps, kg]] of sets.entries()) if (!close(r.row.sets[i].reps, reps) || !close(r.row.sets[i].kg, kg)) return `wrong set ${i + 1} of exercise ${k + 1}: ${said}`;
+    }
+    return '';
+  }
   if (u.kind !== 'workout' || u.rows.length !== 1) return `not one run: ${said}`;
   const s = u.rows[0].row.sets[0];
   return close(s?.distanceM === undefined ? undefined : s.distanceM / 1000, e.run[0]) && close(s?.durationSec, e.run[1]) ? '' : `wrong run: ${said}`;

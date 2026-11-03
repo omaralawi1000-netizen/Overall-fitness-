@@ -32,7 +32,8 @@ function normaliseNumbers(s: string): string {
 
 export function splitExerciseSegments(text: string): string[] {
   return text
-    .split(/\s*(?:;|\.\s+|\bthen\b|\bnext\b|\bderefter\b|\bdernaest\b|\bdernæst\b)\s*/i)
+    // "squat 100 for 5 and front squat 80 for 5": an "and" (or comma) followed by a name and a number starts a new exercise
+    .split(/\s*(?:;|\.\s+|\bthen\b|\bnext\b|\bderefter\b|\bdernaest\b|\bdernæst\b|(?:,|\band\b|\bog\b)\s+(?=(?:[a-zæøå][\p{L}-]*\s+){1,4}\d))\s*/iu)
     .map((s) => s.trim())
     .filter(Boolean);
 }

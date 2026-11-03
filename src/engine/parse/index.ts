@@ -55,19 +55,23 @@ export interface Context { workoutOpen: boolean }
 const FILLER = /(?<![\p{L}\p{N}])(?:uh+|um+|uhm+|hmm+|ehm+|er+m|øh+m?|ææ+h*|altså|liksom|like|basically|you know|ok|okay|so|well|please|plz|tak|bare|lige|just|yeah|yes|ja)(?![\p{L}\p{N}])/giu;
 /** "i did", "that was", "jeg tog": a lead-in before a set, not part of it. */
 const LEAD = /^(?:(?:(?:i|jeg) )?(?:did|got|hit|made|managed|pulled|lifted|took|tog|lavede|løftede|fik|klarede)|that was|it was|this was|det var|det her var)\s+(?!it$)/i;
+/** Before food only "that was" is a lead-in: making, getting or buying something is not eating it ("I made 2 sandwiches"). */
+const FOOD_LEAD_IN = /^(?:that was|it was|this was|det var|det her var)\s+(?!it$)/i;
 
-/** What was said, with the filler out, a lead-in off, and spoken numbers made into digits. Words only change when they are numbers. */
+/** What was said, with the filler out and spoken numbers made into digits. Words only change when they are numbers. */
 function speech(text: string): string {
-  let t = text.replace(FILLER, ' ').replace(/\s{2,}/g, ' ').replace(/^[\s,.…–-]+/, '').trim();
-  t = t.replace(LEAD, '');
+  // ".5" is 0.5: the point is part of the number, not a stray full stop to clean away
+  let t = text.replace(/(^|[^\d.])\.(\d)/g, '$10.$2');
+  t = t.replace(FILLER, ' ').replace(/\s{2,}/g, ' ').replace(/^[\s,.…–-]+/, '').trim();
   t = mergeNumberWords(t.split(/\s+/)).join(' ');
   return mergeDecimals(t);
 }
 
 export function understand(text: string, ctx: Context = { workoutOpen: false }): Understood {
   if (text.trim().length > MAX_LEN) return { kind: 'ignored', reason: 'notLoggable' }; // a pasted wall of text is not a phrase
-  const t = speech(text.trim());
-  if (!t) return { kind: 'ignored', reason: 'empty' };
+  const said = speech(text.trim());
+  if (!said) return { kind: 'ignored', reason: 'empty' };
+  const t = said.replace(LEAD, ''); // sets, workouts, water and weight: the lead-in goes
 
   const w = readWater(t);
   if (w) return 'ask' in w ? { kind: 'ask', why: 'range', text: `${w.value} ${w.unit} of water?` } : { kind: 'water', ...w };
@@ -85,7 +89,7 @@ export function understand(text: string, ctx: Context = { workoutOpen: false }):
   if (wo) return wo;
 
   let meal: Meal | undefined;
-  let f = t.replace(/[.!?\s]+$/, ''); // a full stop at the end changes nothing
+  let f = said.replace(FOOD_LEAD_IN, '').replace(/[.!?\s]+$/, ''); // a full stop at the end changes nothing
   for (const [re, m] of MEALS) if (re.test(f)) { meal = m; f = f.replace(re, '').trim(); }
   const lead = FOOD_LEAD.test(f);
   f = f.replace(FOOD_LEAD, '');
