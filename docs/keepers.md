@@ -232,6 +232,12 @@ His condition, in his words: "Can you please only use this if it's generally imp
 - Z-Anatomy is CC BY-SA 4.0, so Settings needs a credit line.
 - Push day still needs bench, incline, OHP and lateral raise rendered.
 
+**Figures route (coordinator, 4 Nov 2026 00:26, after a test)**
+- A live three.js mannequin was tried next to the clay curl and failed: it looked cheap. It is dropped.
+- Final route: re-pose Omar's finished clay figure in Blender on Gunshot (GPU). Bench, incline and lateral raise first; overhead press later, after a shoulder fix.
+- Every other exercise gets an equipment still, not a clip.
+- The old clips already rendered stay as they are. Of them only the pushdown belongs to the Push day, so it is the one in the app now; the hammer curl waits for a Pull day.
+
 ### Candidates, NOT approved yet (3 Nov 2026, Today)
 Built after his "no rings, readiness in a different way". He has not seen or said yes to either. Do not build from them until he does.
 - **Readiness as a big serif word that fills with light.** The word ("Ready.", with a score such as 82) fills with light as far as you are ready.
