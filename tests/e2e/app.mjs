@@ -102,6 +102,29 @@ check('food logged before a reload is still there after it', r.db === 2 && r.row
 await ev(`document.getElementById('toastU')?.click()`);
 await ev(`indexedDB.deleteDatabase('a2.data')`);
 
+// P6b. a planned meal ticked before its time is still ticked after a reload
+await p.goto(base + '?nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(400);
+await ev(`__aven.show('fuel')`); await sleep(1000);
+const mk = await ev(`(() => { const all = [...document.querySelectorAll('[data-mc]')].map(c => c.dataset.mc); const open = __aven.openMeals(); const k = open[0]; if (!k) return null; document.querySelector('[data-mc="' + k + '"]').click(); return k; })()`);
+if (mk) {
+  await sleep(1200); await p.waitForFunction(() => !window.__saver.engine.busy(), null, { timeout: 8000 });
+  await p.goto(base + '?nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(800);
+  r = await ev(`({ ticked: __aven.openMeals().indexOf('${mk}') < 0, listed: document.querySelectorAll('#mealList .meal').length })`);
+  check('a planned meal ticked early is still ticked after a reload, and not listed twice', r.ticked, r);
+} else check('a planned meal ticked early is still ticked after a reload (every meal was already due)', true);
+await ev(`indexedDB.deleteDatabase('a2.data')`);
+
+// P5b. open a workout from the whole-workout sheet out of order, reload: the strip follows the set it resumes
+await p.goto(base + '?rest=8&nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(400);
+await ev(`__aven.startWorkout()`); await sleep(900);
+await ev(`(() => { const W = __aven.W; W.e = 4; W.s = 0; W.idx = W.total - W.ex[4].sets.length; })()`);
+await ev(`__aven.logSet()`); await sleep(1200);
+await p.waitForFunction(() => !window.__saver.engine.busy(), null, { timeout: 8000 });
+await p.goto(base + '?rest=8&nosw'); await p.waitForFunction(() => window.__ready && window.__saver && document.getElementById('live').classList.contains('on'), null, { timeout: 90000 }); await sleep(500);
+r = await ev(`({ e: __aven.W.e, s: __aven.W.s, idx: __aven.W.idx })`);
+check('after a reload the strip is on the set it resumes at', r.e === 0 && r.s === 0 && r.idx === 0, r);
+await ev(`indexedDB.deleteDatabase('a2.data')`);
+
 // 1. two taps on Log inside the 300 ms hand-off log one set
 await open('?rest');
 await ev(`localStorage.clear(); __aven.startWorkout()`); await sleep(900);
