@@ -28,7 +28,7 @@ const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 
 const e1rm = (kg: number, reps: number) => kg * (1 + reps / 30);
 
 /** which routine a day has: cleared → none, an override → its routine, else the weekly plan (rotation plans: unknown) */
-function routineOn(plan: Plan, day: string): string | null | undefined {
+export function routineOn(plan: Plan, day: string): string | null | undefined {
   if (plan.cleared.includes(day)) return null;
   const o = plan.overrides.find((x) => x.date === day);
   if (o) return o.routineId;

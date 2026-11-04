@@ -31,6 +31,10 @@ const ASK_FOR: Record<Proposal['name'], RegExp> = {
   forget: words('forget|delete|remove|drop|glem|glemme|slet|slette|fjern|fjerne'),
   log_water: words('log|add|track|record|registrer|registrere|tilføj|tilføje|logge|skriv|skrive'),
   log_weight: words('log|add|track|record|registrer|registrere|tilføj|tilføje|logge|skriv|skrive'),
+  move_session: words('move|shift|swap|put|reschedule|push|flyt|flytte|byt|bytte|ryk|rykke|læg|lægge'),
+  log_food: words('log|add|track|record|registrer|registrere|tilføj|tilføje|logge|skriv|skrive|ate|had|spiste|fik'),
+  // a correction: "no, 2 eggs", "it was 150 g", "nej, to æg", "det var 3"
+  fix_food: words('no|not|actually|wait|it was|only|change|fix|correct|nej|ikke|faktisk|vent|det var|kun|ret|rette|ændr|ændre'),
 };
 /** a sentence that asks for advice or weighs a what-if, not one that orders a change: "Should I lower my target?",
  * "would it help to log more?", "skal jeg sænke?", "hvad hvis jeg hæver?". "Can you lower it?" stays a command (Codex, PR #81) */
@@ -65,6 +69,9 @@ const proposalNumbers = (p: Proposal): number[] => {
     case 'log_weight': return [p.kg];
     case 'remember': return numbersIn(p.text);
     case 'forget': return [];
+    case 'move_session': return [];
+    case 'log_food': return [p.amount];
+    case 'fix_food': return [p.amount];
   }
 };
 

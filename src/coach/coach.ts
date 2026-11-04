@@ -9,7 +9,7 @@
 import type { Engine } from '../engine/engine';
 import { apply, check, didLines, readProposal, type Did, type Proposal } from './actions';
 import { renderFacts, sheetNumbers, type FactSheet } from './facts';
-import { renderKnowledge } from './knowledge';
+import { KNOWLEDGE, renderKnowledge, type Guideline } from './knowledge';
 import { asksFor, fence, gate, saysNotTo, type UntrustedSource } from './untrusted';
 import { newId } from '../engine/util';
 
@@ -39,10 +39,13 @@ Acting:
 - If one change would clearly help, offer it: add the action with "offer" and ask in one short question. At most one offer.
 - If the person says yes to the change you offered last turn, add that same action with "do".
 - Otherwise change nothing. Remember something only when the person states a lasting fact, preference or plan, never from a passing remark.
+- Food the person says they ate: log_food with your estimate for that amount (it is stored and shown as an estimate). A correction to one of today's entries: fix_food with its id and the new amount only; the app recalculates.
+- Moving a planned session: move_session with the planned day and the new day (dates from PLAN). It moves that one week only.
 - You can only do the actions in the schema. For anything else, say what the person can tap to do it.
 
 Showing:
 - If a chart explains it better than words, name one in "show". Then don't list the same numbers in words.
+- Sources: when general advice rests on KNOWLEDGE, put its id in "sources" (shown as a small chip). Never write authors, years or titles in your reply. No source for trivial things.
 
 Safety (overrides everything above):
 - Under 18 (or age unknown and the question is about supplements or losing weight: ask age first): no supplement doses, no cutting or weight-loss targets; suggest talking to a parent and a doctor, and help with food, sleep and training instead.
@@ -68,7 +71,7 @@ export const REPLY_SCHEMA = {
         type: 'object',
         properties: {
           how: { type: 'string', enum: ['do', 'offer'] },
-          name: { type: 'string', enum: ['set_target', 'remember', 'forget', 'log_water', 'log_weight'] },
+          name: { type: 'string', enum: ['set_target', 'remember', 'forget', 'log_water', 'log_weight', 'move_session', 'log_food', 'fix_food'] },
           key: { type: 'string', enum: ['kcal', 'protein', 'carbs', 'fat', 'fibre', 'waterMl'] },
           value: { type: 'number' },
           text: { type: 'string' },
@@ -77,11 +80,21 @@ export const REPLY_SCHEMA = {
           memoryId: { type: 'string' },
           ml: { type: 'number' },
           kg: { type: 'number' },
+          from: { type: 'string', description: 'move_session: the planned day, YYYY-MM-DD' },
+          to: { type: 'string', description: 'move_session: the new day, YYYY-MM-DD' },
+          food: { type: 'string', description: 'log_food: what was eaten, in the person\'s words' },
+          amount: { type: 'number', description: 'log_food / fix_food: how much, in unit' },
+          unit: { type: 'string', enum: ['g', 'ml', 'piece', 'portion'] },
+          kcal: { type: 'number', description: 'log_food: your estimate for that amount' },
+          protein: { type: 'number', description: 'log_food: your estimate for that amount, g' },
+          meal: { type: 'string', enum: ['breakfast', 'lunch', 'dinner', 'snack'] },
+          foodId: { type: 'string', description: "fix_food: the id from today's entries" },
         },
         required: ['how', 'name'],
       },
     },
     show: { type: 'string', enum: [...CHARTS] },
+    sources: { type: 'array', maxItems: 2, items: { type: 'string', enum: KNOWLEDGE.map((g) => g.id) }, description: 'KNOWLEDGE ids you relied on for general advice; shown as small tappable chips' },
   },
   required: ['say', 'actions'],
 } as const;
@@ -96,7 +109,7 @@ export interface CoachRequest { system: string; turns: { role: 'user' | 'model';
 
 /** Build the request: rules + this person's facts + the knowledge pack, then the conversation. */
 export function coachRequest(sheet: FactSheet, convo: CoachTurn[], o: { voice?: boolean; rules?: string } = {}): CoachRequest {
-  const system = [o.rules ?? COACH_RULES, `FACTS (computed by the app, the only numbers you may use):\n${renderFacts(sheet)}`, `KNOWLEDGE (general guidelines; cite by name and year when you use one):\n${renderKnowledge()}`].join('\n\n');
+  const system = [o.rules ?? COACH_RULES, `FACTS (computed by the app, the only numbers you may use):\n${renderFacts(sheet)}`, `KNOWLEDGE (general guidelines; cite with "sources", never in the text):\n${renderKnowledge()}`].join('\n\n');
   const turns = convo.map((t, i) => ({
     role: t.role === 'person' ? ('user' as const) : ('model' as const),
     text: [t.text, t.untrusted ? fence(t.untrusted.text, t.untrusted.source) : '', i === convo.length - 1 && t.role === 'person' && o.voice ? '(voice: true)' : '']
@@ -107,7 +120,7 @@ export function coachRequest(sheet: FactSheet, convo: CoachTurn[], o: { voice?: 
 }
 
 export interface ModelReply {
-  say: string; actions: ({ how: 'do' | 'offer' } & Proposal)[]; show?: Chart;
+  say: string; actions: ({ how: 'do' | 'offer' } & Proposal)[]; show?: Chart; sources?: Guideline['id'][];
   /** "do" actions dropped as broken: the text may claim them, so they count as failed when shown (Codex, PR #81) */
   brokenDo?: string[];
 }
@@ -129,7 +142,9 @@ export function readReply(raw: unknown): { reply: ModelReply; dropped: string[] 
   }
   const show = CHARTS.includes(o.show as Chart) ? (o.show as Chart) : undefined;
   if (o.show !== undefined && !show) dropped.push(`unknown chart ${String(o.show)}`);
-  return { reply: { say: o.say.trim(), actions, ...(show ? { show } : {}), ...(brokenDo.length ? { brokenDo } : {}) }, dropped };
+  const ids = new Set<string>(KNOWLEDGE.map((g) => g.id));
+  const sources = (Array.isArray(o.sources) ? o.sources : []).filter((x): x is Guideline['id'] => { const ok = typeof x === 'string' && ids.has(x); if (!ok) dropped.push(`unknown source ${String(x)}`); return ok; }).slice(0, 2);
+  return { reply: { say: o.say.trim(), actions, ...(show ? { show } : {}), ...(sources.length ? { sources: [...new Set(sources)] } : {}), ...(brokenDo.length ? { brokenDo } : {}) }, dropped };
 }
 
 export interface Offer { id: string; label: string; proposal: Proposal }
@@ -140,6 +155,8 @@ export interface Shown {
   /** Apply buttons, each checked against the current state; applied later through `apply` */
   offers: Offer[];
   show?: Chart;
+  /** source chips: the knowledge-pack guidelines the answer relied on, each with its checked sources */
+  sources?: { id: Guideline['id']; topic: string; titles: string[] }[];
   /** everything code refused, for the exam log; never shown */
   refused: string[];
 }
@@ -156,11 +173,13 @@ export interface Shown {
  */
 const CLAIMS: [RegExp, Proposal['name'][]][] = [
   [/\b(?:I(?:'ve| have)? (?:set|changed|updated|raised|lowered|increased|decreased)|(?:jeg har|har jeg) (?:sat|ændret|opdateret|hævet|sænket))\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)(?:set|changed|updated|raised|lowered|increased|decreased) (?:it|your|that|the)\b/im, ['set_target']],
-  [/\b(?:I(?:'ve| have)? logged|(?:jeg har|har jeg) logget)\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)logged (?:it|your|that)\b/im, ['log_water', 'log_weight']],
-  [/\b(?:I(?:'ve| have)? (?:saved|noted|added)|(?:jeg har|har jeg) (?:gemt|noteret|tilføjet))\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)saved (?:it|your|that)\b/im, ['remember', 'log_water', 'log_weight']],
+  [/\b(?:I(?:'ve| have)? logged|(?:jeg har|har jeg) logget)\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)logged (?:it|your|that)\b/im, ['log_water', 'log_weight', 'log_food', 'fix_food']],
+  [/\b(?:I(?:'ve| have)? (?:saved|noted|added)|(?:jeg har|har jeg) (?:gemt|noteret|tilføjet))\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)saved (?:it|your|that)\b/im, ['remember', 'log_water', 'log_weight', 'log_food']],
   [/\b(?:I(?:'ve| have)? (?:removed|deleted|forgot|forgotten|dropped)|(?:jeg har|har jeg) (?:slettet|fjernet|glemt))\b/im, ['forget']],
-  // the Coach cannot move, swap or start anything, so these are never backed
-  [/\b(?:I(?:'ve| have)? (?:moved|swapped|rescheduled|started)|(?:jeg har|har jeg) (?:flyttet|byttet|startet))\b/im, []],
+  [/\b(?:I(?:'ve| have)? (?:moved|rescheduled)|(?:jeg har|har jeg) flyttet)\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)moved (?:it|your|that|the)\b/im, ['move_session']],
+  [/\b(?:I(?:'ve| have)? (?:corrected|fixed)|(?:jeg har|har jeg) rettet)\b/im, ['fix_food']],
+  // the Coach cannot swap or start anything, so these are never backed
+  [/\b(?:I(?:'ve| have)? (?:swapped|started)|(?:jeg har|har jeg) (?:byttet|startet))\b/im, []],
 ];
 /** claims in `say` that no action in `did` backs: a "moved your workout" next to a memory write still counts (Codex, PR #81) */
 export function unbackedClaims(say: string, did: Proposal['name'][]): string[] {
@@ -209,5 +228,6 @@ export async function finishTurn(e: Engine, reply: ModelReply, ctx: { personText
       ? (ctx.lang === 'da' ? `Kun en del lykkedes. Det kunne jeg ikke: ${failed.join('; ')}. Det, der blev ændret, står nedenfor.` : `Only part of that went through. I couldn't: ${failed.join('; ')}. What did change is below.`)
       : (ctx.lang === 'da' ? `Det kunne jeg ikke ændre: ${failed.join('; ')}. Intet er ændret.` : `I couldn't make that change: ${failed.join('; ')}. Nothing was changed.`);
   const doneLine = didLines(did, ctx.lang);
-  return { text: doneLine ? `${text}\n\n${doneLine}` : text, did, offers, ...(reply.show && !failed.length ? { show: reply.show } : {}), refused };
+  const chips = (reply.sources ?? []).map((id) => KNOWLEDGE.find((g) => g.id === id)!).map((g) => ({ id: g.id, topic: g.topic, titles: g.sources.map((x) => `${x.title}, ${x.year}`) }));
+  return { text: doneLine ? `${text}\n\n${doneLine}` : text, did, offers, ...(reply.show && !failed.length ? { show: reply.show } : {}), ...(chips.length && !failed.length ? { sources: chips } : {}), refused };
 }

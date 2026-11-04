@@ -7,13 +7,14 @@
  * Only a verified result becomes a "Did in the app" line. A proposal that is consequential (a target, forgetting a card)
  * is shown as a preview first unless the person gave a direct command.
  *
- * This is the first slice of the action catalog: targets, memory, water and weight. More actions join one by one,
+ * The catalog: targets, memory, water, weight, moving a planned session, and logging or correcting a food. More join one by one,
  * each with the same four steps and its own tests.
  */
 import type { Engine } from '../engine/engine';
-import type { AnyRecord, MemoryCard, MemoryTopic, Settings } from '../engine/model';
+import type { AnyRecord, FoodLog, MemoryCard, MemoryTopic, Plan, Portion, Routine, Settings } from '../engine/model';
+import { routineOn } from './training-facts';
 import type { NewRecord, Op } from '../engine/plan';
-import { dayKeyAt } from '../engine/time';
+import { dayKeyAt, diffDays } from '../engine/time';
 import { deepEqual, newId } from '../engine/util';
 
 export type TargetKey = 'kcal' | 'protein' | 'carbs' | 'fat' | 'fibre' | 'waterMl';
@@ -27,7 +28,19 @@ export type Proposal =
   | { name: 'remember'; text: string; topic: MemoryTopic; until?: string }
   | { name: 'forget'; memoryId: string }
   | { name: 'log_water'; ml: number }
-  | { name: 'log_weight'; kg: number };
+  | { name: 'log_weight'; kg: number }
+  /** move the session planned on one day to another (one week only; the weekly plan stays) */
+  | { name: 'move_session'; from: string; to: string }
+  /** a food the person said they ate, with the AI's estimate, stored and shown as an estimate */
+  | { name: 'log_food'; food: string; amount: number; unit: FoodUnit; kcal: number; protein: number; meal?: Meal }
+  /** a correction to one of today's entries ("no, 2 eggs"): code scales its nutrients, the AI gives only the new amount */
+  | { name: 'fix_food'; foodId: string; amount: number };
+
+export type FoodUnit = Portion['unit'];
+const FOOD_UNITS: readonly FoodUnit[] = ['g', 'ml', 'piece', 'portion'];
+export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack';
+const MEALS: readonly Meal[] = ['breakfast', 'lunch', 'dinner', 'snack'];
+const isDay = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
 /** how the person asked: a direct command is done at once; a Coach suggestion arrives as a preview */
 export type Mode = 'command' | 'proposal';
@@ -66,6 +79,18 @@ export function readProposal(raw: unknown): Proposal | { error: string } {
       return isNum(o.ml) ? { name: 'log_water', ml: Math.round(o.ml) } : { error: 'ml is not a number' };
     case 'log_weight':
       return isNum(o.kg) ? { name: 'log_weight', kg: Math.round(o.kg * 10) / 10 } : { error: 'kg is not a number' };
+    case 'move_session':
+      return isDay(o.from) && isDay(o.to) ? { name: 'move_session', from: o.from, to: o.to } : { error: 'from and to must be YYYY-MM-DD' };
+    case 'log_food': {
+      const food = str(o.food, 80);
+      if (!food) return { error: 'food name must be 2–80 characters' };
+      if (!isNum(o.amount) || !FOOD_UNITS.includes(o.unit as FoodUnit)) return { error: 'amount and unit (g, ml, piece, portion) are needed' };
+      if (!isNum(o.kcal) || !isNum(o.protein)) return { error: 'kcal and protein estimates are needed' };
+      if (o.meal !== undefined && !MEALS.includes(o.meal as Meal)) return { error: `unknown meal ${String(o.meal)}` };
+      return { name: 'log_food', food, amount: Math.round(o.amount * 10) / 10, unit: o.unit as FoodUnit, kcal: Math.round(o.kcal), protein: Math.round(o.protein), ...(o.meal ? { meal: o.meal as Meal } : {}) };
+    }
+    case 'fix_food':
+      return typeof o.foodId === 'string' && o.foodId && isNum(o.amount) ? { name: 'fix_food', foodId: o.foodId, amount: Math.round(o.amount * 10) / 10 } : { error: 'foodId and amount are needed' };
     default:
       return { error: `unknown action ${String(o.name)}` };
   }
@@ -114,7 +139,60 @@ export function check(p: Proposal, mode: Mode, o: { records: AnyRecord[]; now: n
     case 'log_weight':
       if (p.kg < 30 || p.kg > 300) return { ok: false, reason: `${p.kg} kg is outside 30–300` };
       return ok(false, `${da ? 'loggede' : 'logged'} ${fmt(p.kg)} kg`, [{ op: 'create', record: { id: newId('bw'), kind: 'bodyweight', day, kg: p.kg } as NewRecord }]);
+    case 'move_session': {
+      const plan = o.records.find((r): r is Plan => r.kind === 'plan' && !r.deleted);
+      if (!plan || plan.mode !== 'weekly') return { ok: false, reason: 'no weekly plan to move a session in' };
+      if (p.from < day || p.to < day) return { ok: false, reason: 'a past day cannot be moved' };
+      if (diffDays(p.to, day) > 14 || diffDays(p.from, day) > 14) return { ok: false, reason: 'only the next two weeks can be moved' };
+      if (p.from === p.to) return { ok: false, reason: 'the session is already on that day' };
+      const moving = routineOn(plan, p.from);
+      if (!moving) return { ok: false, reason: `nothing is planned on ${p.from}` };
+      const routines = new Map(o.records.filter((r): r is Routine => r.kind === 'routine' && !r.deleted).map((r) => [r.id, r.name]));
+      const name = routines.get(moving) ?? moving;
+      const replaced = routineOn(plan, p.to);
+      const fromOverride = plan.overrides.find((x) => x.date === p.from);
+      // leaving a day: an override is taken off (the day goes back to its weekly routine); a weekly day is cleared
+      let overrides = plan.overrides.filter((x) => x.date !== p.from && x.date !== p.to);
+      let cleared = plan.cleared.filter((d) => d !== p.to);
+      if (!fromOverride || plan.weekly[weekdayOf(p.from)] === moving) cleared = [...cleared, p.from];
+      overrides = [...overrides, { date: p.to, routineId: moving, originDate: fromOverride?.originDate ?? p.from }];
+      const label = `${da ? 'flyttede' : 'moved'} ${name} ${dayName(p.from, da)} → ${dayName(p.to, da)}${replaced && replaced !== moving ? ` (${da ? 'i stedet for' : 'instead of'} ${routines.get(replaced) ?? replaced})` : ''}`;
+      return ok(mode === 'proposal', label, [{ op: 'update', id: plan.id, set: { overrides, cleared } }]);
+    }
+    case 'log_food': {
+      if (p.amount <= 0 || p.amount > (p.unit === 'g' || p.unit === 'ml' ? 3000 : 20)) return { ok: false, reason: `${p.amount} ${p.unit} is not a plausible amount` };
+      if (p.kcal < 0 || p.kcal > 4000 || p.protein < 0 || p.protein > 250) return { ok: false, reason: 'the estimate is out of range' };
+      // protein has 4 kcal a gram and nothing has more than 9 kcal a gram: an estimate that breaks either is wrong
+      if (p.protein * 4 > p.kcal + 20) return { ok: false, reason: 'more protein than the calories allow' };
+      if ((p.unit === 'g' || p.unit === 'ml') && p.kcal > p.amount * 9.5) return { ok: false, reason: 'more calories than that weight can hold' };
+      const portion: Portion = { amount: p.amount, unit: p.unit };
+      const record = { id: newId('f'), kind: 'food', day, name: p.food, meal: p.meal ?? mealAt(o.now, o.tz), dataSource: 'estimate', portion, ...(p.unit === 'g' ? { grams: p.amount } : p.unit === 'ml' ? { ml: p.amount } : {}), estimated: true, nutrients: { kcal: p.kcal, protein: p.protein } } as NewRecord;
+      return ok(false, `${da ? 'loggede' : 'logged'} ${p.food}, ${fmt(p.amount)} ${unitWord(p.unit, p.amount, da)} (${da ? 'skøn' : 'estimate'}: ${fmt(p.kcal)} kcal, ${fmt(p.protein)} g protein)`, [{ op: 'create', record }]);
+    }
+    case 'fix_food': {
+      const f = o.records.find((r): r is FoodLog => r.id === p.foodId && r.kind === 'food' && !r.deleted);
+      if (!f) return { ok: false, reason: 'no such food entry' };
+      if ((f.day ?? dayKeyAt(f.at, f.tz, settings?.dayStartHour ?? 0)) !== day) return { ok: false, reason: "only today's entries can be corrected here" };
+      if (p.amount <= 0 || f.portion.amount <= 0) return { ok: false, reason: 'the new amount must be above 0' };
+      if (p.amount === f.portion.amount) return { ok: false, reason: `that entry is already ${p.amount} ${f.portion.unit}` };
+      const k = p.amount / f.portion.amount;
+      const nutrients = Object.fromEntries(Object.entries(f.nutrients).map(([n, v]) => [n, Math.round((v as number) * k * 10) / 10]));
+      const set = { portion: { ...f.portion, amount: p.amount }, nutrients, ...(f.grams !== undefined ? { grams: Math.round(f.grams * k * 10) / 10 } : {}), ...(f.ml !== undefined ? { ml: Math.round(f.ml * k * 10) / 10 } : {}) };
+      return ok(false, `${da ? 'rettede' : 'changed'} ${f.name} ${fmt(f.portion.amount)} → ${fmt(p.amount)} ${unitWord(f.portion.unit, p.amount, da)}`, [{ op: 'update', id: f.id, set }]);
+    }
   }
+}
+
+const DAY_NAMES: [string[], string[]] = [['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'], ['søn', 'man', 'tir', 'ons', 'tor', 'fre', 'lør']];
+const MONTHS: [string[], string[]] = [['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], ['jan.', 'feb.', 'mar.', 'apr.', 'maj', 'jun.', 'jul.', 'aug.', 'sep.', 'okt.', 'nov.', 'dec.']];
+const weekdayOf = (d: string) => new Date(`${d}T12:00:00Z`).getUTCDay();
+/** "Thu 5 Nov" / "tor 5. nov." */
+const dayName = (d: string, da: boolean) => `${DAY_NAMES[da ? 1 : 0][weekdayOf(d)]} ${Number(d.slice(8))}${da ? '.' : ''} ${MONTHS[da ? 1 : 0][Number(d.slice(5, 7)) - 1]}`;
+const unitWord = (u: FoodUnit, n: number, da: boolean) => (u === 'piece' ? (da ? 'stk.' : n === 1 ? 'piece' : 'pieces') : u === 'portion' ? (da ? (n === 1 ? 'portion' : 'portioner') : n === 1 ? 'portion' : 'portions') : u);
+/** a food logged with no meal goes where the hour puts it */
+function mealAt(now: number, tz: string): Meal {
+  const h = Number(new Intl.DateTimeFormat('en-GB', { hour: 'numeric', hourCycle: 'h23', timeZone: tz }).format(now));
+  return h < 10 ? 'breakfast' : h < 14 ? 'lunch' : h >= 17 && h < 22 ? 'dinner' : 'snack';
 }
 
 /** Is the change really there now? Read back, never assumed. */
@@ -129,6 +207,9 @@ function verify(c: Extract<Checked, { ok: true }>, e: Engine): boolean {
     case 'forget': return !!r && !!r.deleted;
     case 'log_water': return !!r && !r.deleted && r.ml === p.ml;
     case 'log_weight': return !!r && !r.deleted && r.kg === p.kg;
+    case 'move_session': { const plan = r as unknown as Plan | undefined; return !!plan && !plan.deleted && routineOn(plan, p.to) === (op.op === 'update' ? (op.set as Partial<Plan>).overrides?.find((x) => x.date === p.to)?.routineId : undefined) && routineOn(plan, p.from) !== routineOn(plan, p.to); }
+    case 'log_food': return !!r && !r.deleted && (r as unknown as FoodLog).nutrients.kcal === p.kcal;
+    case 'fix_food': return !!r && !r.deleted && (r as unknown as FoodLog).portion.amount === p.amount;
   }
 }
 
