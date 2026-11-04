@@ -207,6 +207,27 @@ Build notes: the old 6-step form (`Onboarding.tsx`) and `starter.ts` become the 
 
 The exam proves the Coach is good before Omar sees it, and that each change made it better, not just different.
 
+### Exam v3 plan (Omar's brief, 4 Nov 2026; replaces the pending E2 round-2 work)
+Omar: "make the Coach's answers the best in the world, and prove it with measurements, not opinions." His brief is the
+spec (Answer Bar 12 rules, ~60 cases with 4–8 checks each, 10 hold-out, kappa-calibrated judges, both orders, worst of 3
+runs, length correlation, round 3 on his phone, targets 9/10 blind wins, 95 % hold-out pass, zero false claims).
+- **Ship model:** the routed mix already in `src/coach/route.ts` (Flash for quick commands, Sonnet 5.5 for advice and
+  anything sensitive). Tuning runs on both, which also satisfies "a change is kept only if it helps on 2+ models". Opus
+  is never the in-app Coach; it builds and judges.
+- **Opponent:** Opus 5.5 with the same fact sheet and knowledge pack (strongest general model), plus the previous
+  Coach version (main at 1592bdb, PR #81).
+- **Blind picks for calibration:** round 1 saved 24 taps, all "A", most one second apart, so they're unusable.
+  Round 2 (26 pairs) was never answered. A new guarded page collects ~36 picks; until then judges may only triage.
+- **Runs:** Claude calls need Gunshot (the cloud has no Anthropic key; the cloud Gemini key returns 503). Saved answers
+  from before PR #81's merge are stale and are redone.
+- **Steps:** (1) ANSWER-BAR.md rewritten to the 12 rules; (2) exam v3 cases + per-case checklists + code checks;
+  (3) Coach gaps the cases need (move a session, log food, swap an exercise, More, source chips); (4) Omar's ~36 picks
+  and kappa per judge; (5) baseline; (6) tuning, logged with score and cost; (7) hold-out, outside-review pack;
+  (8) round 3 on his phone.
+- **Harsh score of this plan: 6/10.** Biggest weakness: kappa on ~36 picks from one person has an error bar of about
+  ±0.2, so the 0.75 gate can pass or fail by luck. Mitigations: read-time guards, two repeats to measure his own
+  consistency, and code checks for every rule that can be counted.
+
 ### What it is
 - **Conversations**: realistic ones built from Omar's real week (the interview), plus friends of every type. Each one
   runs against fake data built in old Aven's data format, so the old Coach and Aven 2's Coach face exactly the same
