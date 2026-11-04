@@ -81,6 +81,36 @@ describe('code decides what happens', () => {
     expect(s.refused).toContain('more than one offer: kept the first');
   });
 
+  it('a "do" the input gate rejects never leaves the model\'s "Logged." showing (Codex, PR #81)', async () => {
+    const { turn } = await person({ waterMl: 2500 });
+    const s = await turn('log this bottle', { say: 'Logged.', actions: [{ how: 'do', name: 'log_water', ml: 1500 }] }, true);
+    expect(s.text).not.toMatch(/Logged\./);
+    expect(s.text).toMatch(/^I couldn't make that change: .*Nothing was changed\.$/);
+  });
+
+  it('when one change works and another fails, it never says nothing was changed (Codex, PR #81)', async () => {
+    const { f, turn } = await person({ protein: 215, kcal: 2500 });
+    const s = await turn('set protein to 250 and calories to 900', { say: 'Done, both set.', actions: [{ how: 'do', name: 'set_target', key: 'protein', value: 250 }, { how: 'do', name: 'set_target', key: 'kcal', value: 900 }] });
+    expect(f.e.get<'settings'>('settings')!.targets.protein).toBe(250);
+    expect(s.text).toMatch(/^Only part of that went through\. I couldn't: .*What did change is below\.\n\nDid in the app: protein target 215 → 250 g · Undo$/);
+    expect(s.text).not.toMatch(/Nothing was changed|Done/);
+  });
+
+  it('"ja, gør det" after an offer applies exactly the offered change (Codex, PR #81)', async () => {
+    const { f, sheet } = await person({ kcal: 3000 }, 'da');
+    const ctx = (personText: string, pending: Awaited<ReturnType<typeof finishTurn>>['offers'] = []) => ({ personText, untrusted: false, sheet: sheet(), now: f.c.now(), tz: TZ, lang: 'da' as const, pending });
+    const first = await finishTurn(f.e, { say: 'Du spiser omkring vedligehold. Skal jeg hæve målet?', actions: [{ how: 'offer', name: 'set_target', key: 'kcal', value: 3040 }] }, ctx('hvorfor tager jeg ikke på?'));
+    expect(first.offers).toHaveLength(1);
+    // the model's number drifts in turn 2; the person agreed to 3,040, so 3,040 is what is set
+    const second = await finishTurn(f.e, { say: 'Klaret.', actions: [{ how: 'do', name: 'set_target', key: 'kcal', value: 3100 }] }, ctx('ja, gør det', first.offers));
+    expect(f.e.get<'settings'>('settings')!.targets.kcal).toBe(3040);
+    expect(second.did).toHaveLength(1);
+    // without a pending offer, a bare yes is not a command
+    const third = await finishTurn(f.e, { say: 'Klaret.', actions: [{ how: 'do', name: 'set_target', key: 'kcal', value: 3200 }] }, ctx('ja, gør det'));
+    expect(f.e.get<'settings'>('settings')!.targets.kcal).toBe(3040);
+    expect(third.offers).toHaveLength(1);
+  });
+
   it('answers in Danish when the person uses Danish', async () => {
     const { turn } = await person({ kcal: 2500 }, 'da');
     const s = await turn('sæt mine kalorier til 900', { say: 'Klaret.', actions: [{ how: 'do', name: 'set_target', key: 'kcal', value: 900 }] });

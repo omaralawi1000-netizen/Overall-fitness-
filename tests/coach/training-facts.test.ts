@@ -74,4 +74,22 @@ describe('maintenance', () => {
     expect(f('food28.kcalForGain25g')!.value).toBe(3020); // 2,740 + 0.25 × 7,700 / 7, to the nearest 10
     expect(buildFacts(rs.filter((r) => r.kind !== 'bodyweight'), { now: NOW, tz: TZ }).trust.join(' ')).toMatch(/No maintenance estimate yet/);
   });
+
+  it('counts only complete days that have calories, never every day marked complete (Codex, PR #81)', () => {
+    const build = (withKcal: number) => {
+      const rs: AnyRecord[] = [env('settings', '2026-10-01', { language: 'da', dayStartHour: 0, weekStart: 1, units: {}, restDefaultSec: 120, targets: { kcal: 3000 } })];
+      for (let i = 1; i <= 28; i++) {
+        const d = new Date(Date.parse('2026-11-03T00:00:00Z') - i * 864e5).toISOString().slice(0, 10);
+        rs.push(env('food', d, { name: 'x', meal: 'lunch', dataSource: 'reference', portion: { amount: 1, unit: 'portion' }, estimated: false, nutrients: i <= withKcal ? { kcal: 2740, protein: 150 } : { protein: 150 } }));
+        rs.push({ ...env('dayNote', d, { foodComplete: true }), id: `day:${d}` } as AnyRecord);
+        if (i % 2 === 0) rs.push(env('bodyweight', d, { kg: 74.7 }));
+      }
+      return buildFacts(rs, { now: NOW, tz: TZ });
+    };
+    const few = build(3);
+    expect(few.food28.facts.find((x) => x.id === 'food28.kcalAvgComplete')?.note).toMatch(/average of 3 complete days/);
+    expect(few.food28.facts.find((x) => x.id === 'food28.maintenanceKcal')).toBeUndefined();
+    expect(few.trust.join(' ')).toMatch(/No maintenance estimate yet/);
+    expect(build(8).food28.facts.find((x) => x.id === 'food28.maintenanceKcal')?.note).toMatch(/^from 8 complete days/);
+  });
 });

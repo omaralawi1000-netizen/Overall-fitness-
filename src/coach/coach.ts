@@ -37,6 +37,7 @@ How you answer:
 Acting:
 - If the person tells you to change something you can change, do it: add the action with "do". Write your reply as if it worked; the app shows the change and an Undo under your reply. If the person's data raises a concern about it, name it in one sentence and offer to go back.
 - If one change would clearly help, offer it: add the action with "offer" and ask in one short question. At most one offer.
+- If the person says yes to the change you offered last turn, add that same action with "do".
 - Otherwise change nothing. Remember something only when the person states a lasting fact, preference or plan, never from a passing remark.
 - You can only do the actions in the schema. For anything else, say what the person can tap to do it.
 
@@ -144,20 +145,27 @@ export interface Shown {
  * - Every action passes the untrusted-input gate and the state check before anything is written.
  * - If a "do" fails, the model's text (written as if it worked) is never shown: the person gets a plain, true message.
  */
-export async function finishTurn(e: Engine, reply: ModelReply, ctx: { personText: string; untrusted: boolean; sheet: FactSheet; now: number; tz: string; lang: 'en' | 'da' }): Promise<Shown> {
+/** a reply that only accepts what was offered: "ja, gør det", "yes, do it", "ok please" */
+const ACCEPT = /^\s*(?:(?:ja|jo|yes|yeah|yep|ok|okay|sure|klart|gerne|fint|do it|gør det|go ahead|kør|apply|please|tak|det)\b[\s,.!]*)+$/iu;
+
+export async function finishTurn(e: Engine, reply: ModelReply, ctx: { personText: string; untrusted: boolean; sheet: FactSheet; now: number; tz: string; lang: 'en' | 'da'; pending?: Offer[] }): Promise<Shown> {
   const refused: string[] = [];
   const did: Shown['did'] = [];
   const offers: Offer[] = [];
   const failed: string[] = [];
   const turn = { userText: ctx.personText, untrusted: ctx.untrusted, sheet: sheetNumbers(ctx.sheet) };
+  // the person said yes to an Apply button from the last turn in words: that exact change is what they agreed to (Codex, PR #81)
+  const accepted = !ctx.untrusted && ACCEPT.test(ctx.personText) ? (ctx.pending ?? []) : [];
   for (const a of reply.actions) {
     const { how, ...p } = a;
-    const proposal = p as Proposal;
+    const agreed = how === 'do' ? accepted.find((o) => o.proposal.name === p.name) : undefined;
+    const proposal = agreed ? agreed.proposal : (p as Proposal);
     const g = gate(proposal, turn);
-    if (!g.ok) { refused.push(g.reason); continue; }
+    // a rejected "do" leaves the model's text claiming it happened, so it counts as failed for what is shown (Codex, PR #81)
+    if (!g.ok) { refused.push(g.reason); if (how === 'do') failed.push(g.reason); continue; }
     // a lasting fact the person states in their own words may be remembered without "remember" (rule 5); anything else
     // runs only when their words asked for that kind of change
-    const asked = how === 'do' && (asksFor(proposal.name, ctx.personText) || (proposal.name === 'remember' && !ctx.untrusted));
+    const asked = how === 'do' && (!!agreed || asksFor(proposal.name, ctx.personText) || (proposal.name === 'remember' && !ctx.untrusted));
     if (how === 'do' && !asked) refused.push(`"do" ${proposal.name} without being asked: shown as an offer`);
     const c = check(proposal, asked ? 'command' : 'proposal', { records: e.allRecords(), now: ctx.now, tz: ctx.tz });
     if (!c.ok) { refused.push(c.reason); if (asked) failed.push(c.reason); continue; }
@@ -168,9 +176,11 @@ export async function finishTurn(e: Engine, reply: ModelReply, ctx: { personText
     } else if (offers.length < 1) offers.push({ id: newId(), label: c.label, proposal: c.proposal });
     else refused.push('more than one offer: kept the first');
   }
-  const text = failed.length
-    ? (ctx.lang === 'da' ? `Det kunne jeg ikke ændre: ${failed.join('; ')}. Intet er ændret.` : `I couldn't make that change: ${failed.join('; ')}. Nothing was changed.`)
-    : reply.say;
+  // some changes may have gone through before one failed: then say so, never "nothing was changed" (Codex, PR #81)
+  const text = !failed.length ? reply.say
+    : did.length
+      ? (ctx.lang === 'da' ? `Kun en del lykkedes. Det kunne jeg ikke: ${failed.join('; ')}. Det, der blev ændret, står nedenfor.` : `Only part of that went through. I couldn't: ${failed.join('; ')}. What did change is below.`)
+      : (ctx.lang === 'da' ? `Det kunne jeg ikke ændre: ${failed.join('; ')}. Intet er ændret.` : `I couldn't make that change: ${failed.join('; ')}. Nothing was changed.`);
   const doneLine = didLines(did, ctx.lang);
   return { text: doneLine ? `${text}\n\n${doneLine}` : text, did, offers, ...(reply.show && !failed.length ? { show: reply.show } : {}), refused };
 }
