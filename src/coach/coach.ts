@@ -155,7 +155,7 @@ export interface Shown {
  * "set it" counts only at the start of a sentence, so "how I'd set it up" and "days you logged it" are not claims.
  */
 const CLAIMS: [RegExp, Proposal['name'][]][] = [
-  [/\b(?:I(?:'ve| have)? (?:set|changed|updated|raised|lowered)|(?:jeg har|har jeg) (?:sat|ændret|opdateret|hævet|sænket))\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)(?:set|changed|updated) (?:it|your|that)\b/im, ['set_target']],
+  [/\b(?:I(?:'ve| have)? (?:set|changed|updated|raised|lowered|increased|decreased)|(?:jeg har|har jeg) (?:sat|ændret|opdateret|hævet|sænket))\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)(?:set|changed|updated|raised|lowered|increased|decreased) (?:it|your|that|the)\b/im, ['set_target']],
   [/\b(?:I(?:'ve| have)? logged|(?:jeg har|har jeg) logget)\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)logged (?:it|your|that)\b/im, ['log_water', 'log_weight']],
   [/\b(?:I(?:'ve| have)? (?:saved|noted|added)|(?:jeg har|har jeg) (?:gemt|noteret|tilføjet))\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)saved (?:it|your|that)\b/im, ['remember', 'log_water', 'log_weight']],
   [/\b(?:I(?:'ve| have)? (?:removed|deleted|forgot|forgotten|dropped)|(?:jeg har|har jeg) (?:slettet|fjernet|glemt))\b/im, ['forget']],

@@ -32,10 +32,15 @@ const ASK_FOR: Record<Proposal['name'], RegExp> = {
   log_water: words('log|add|track|record|registrer|registrere|tilføj|tilføje|logge|skriv|skrive'),
   log_weight: words('log|add|track|record|registrer|registrere|tilføj|tilføje|logge|skriv|skrive'),
 };
-/** Does the person's own text ask for this kind of action? Turned-down asks are taken out first. */
+/** a sentence that asks for advice or weighs a what-if, not one that orders a change: "Should I lower my target?",
+ * "would it help to log more?", "skal jeg sænke?", "hvad hvis jeg hæver?". "Can you lower it?" stays a command (Codex, PR #81) */
+const ADVICE = new RegExp(`${W0}(?:should (?:i|we)|shall (?:i|we)|would (?:i|it|that|this)|will (?:it|that|this)|is it|is that|do you think|what if|what about|how about|if i|worth it|good idea|skal (?:jeg|vi)|bør (?:jeg|vi)|burde (?:jeg|vi)|er det|vil det|ville det|synes du|tror du|hvad hvis|hvad med|hvis jeg)${W1}`, 'iu');
 /** the person's words say not to do something ("don't remember this", "ikke gem det") */
 export const saysNotTo = (text: string) => { NOT_ASKED.lastIndex = 0; return NOT_ASKED.test(text); };
-export const asksFor = (name: Proposal['name'], text: string) => ASK_FOR[name].test(text.replace(NOT_ASKED, ' '));
+/** Does the person's own text ask for this kind of action? Turned-down asks are taken out first, and only a sentence that
+ * isn't asking for advice counts: "Set protein to 250. Should I eat more?" asks; "Should I lower my calories?" doesn't. */
+export const asksFor = (name: Proposal['name'], text: string) =>
+  text.replace(NOT_ASKED, ' ').split(/(?<=[.!?\n])\s*/u).some((s) => !ADVICE.test(s) && ASK_FOR[name].test(s));
 
 /** "0.5 l", "2 dl", "33 cl" also as millilitres: a water log is proposed in ml (Codex, PR #73) */
 const VOLUME = /(\d[\d.,]*)\s*(l|liters?|litres?|liter|dl|cl)(?![\p{L}\p{N}_])/giu;

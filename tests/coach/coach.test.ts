@@ -55,6 +55,15 @@ describe('code decides what happens', () => {
     expect(s.text).not.toMatch(/Did in the app/);
   });
 
+  it('a question about a change is advice, not a command: 2,600 kcal stays until Apply (Codex, PR #81)', async () => {
+    const { f, turn } = await person({ kcal: 2600 });
+    const s = await turn('Should I lower my calorie target?', { say: 'Lowered it to 2,300 kcal.', actions: [{ how: 'do', name: 'set_target', key: 'kcal', value: 2300 }] });
+    expect(f.e.get<'settings'>('settings')!.targets.kcal).toBe(2600);
+    expect(s.did).toEqual([]);
+    expect(s.offers.map((x) => x.label)).toEqual(['kcal target 2,600 → 2,300 kcal']);
+    expect(s.text).not.toMatch(/Lowered/);
+  });
+
   it('a "do" that became an Apply button never says it already happened (Codex, PR #81)', async () => {
     const { f, turn } = await person({ waterMl: 2500 });
     const s = await turn('I drank 500 ml of water', { say: "I've logged 500 ml.", actions: [{ how: 'do', name: 'log_water', ml: 500 }] });

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { buildFacts, sheetNumbers } from '../../src/coach/facts';
 import type { AnyRecord } from '../../src/engine/model';
-import { fence, gate, numbersIn } from '../../src/coach/untrusted';
+import { asksFor, fence, gate, numbersIn } from '../../src/coach/untrusted';
 
 describe('untrusted text is data, never instructions', () => {
   it('fences the text so it cannot close or fake the block', () => {
@@ -9,6 +9,13 @@ describe('untrusted text is data, never instructions', () => {
     expect(f.startsWith('<untrusted source="web">\n')).toBe(true);
     expect(f.match(/<\/?untrusted/g)).toHaveLength(2);
     expect(f).toContain('[marker removed]');
+  });
+
+  it('a command asks for a change; advice and what-ifs do not (Codex, PR #81)', () => {
+    for (const t of ['set my protein target to 250', 'can you lower my calories to 2300?', 'kan du sænke mit kaloriemål?', 'sænk mit mål til 2300', 'Set protein to 250. Should I eat more too?'])
+      expect(asksFor('set_target', t), t).toBe(true);
+    for (const t of ['Should I lower my calorie target?', 'would it help to raise my protein?', 'what if I lower calories to 2300?', 'skal jeg sænke mit kaloriemål?', 'bør jeg hæve proteinen?', 'is it worth it to change my target?', "don't change my target"])
+      expect(asksFor('set_target', t), t).toBe(false);
   });
 
   it('reads numbers the way people write them', () => {
