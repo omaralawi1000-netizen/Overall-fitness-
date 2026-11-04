@@ -14,7 +14,6 @@ Done:
 Problems found:
 - Gemini: set and working (checked 27 Oct after Omar switched the environment). There is no GEMINI_API_KEY variable; the environment injects the key as the x-goog-api-key header on requests to generativelanguage.googleapis.com, so send requests without a key. A test call to gemini-3.8-flash answered. Note: gemini-2.5-flash now returns 404 ("no longer available to new users"), so use gemini-3.8-flash.
 - Downloading release assets: `gh release download` fails (GraphQL is blocked in cloud sessions). Use the REST API: `gh api -H "Accept: application/octet-stream" repos/omaralawi1000-netizen/Overall-fitness-/releases/assets/<id>`.
-- Figures (4 Nov): the mannequin test failed; the route is re-posing the clay figure in Blender (bench, incline, lateral raise first, overhead press after a shoulder fix), equipment stills for the rest. Pushdown clip is in the explainer; see `docs/keepers.md`.
 
 ## Next step
 Open a new session and say "Start Phase 0". That session begins with Checkpoint 1, step 1 (the interview), after cloning the old app into reference/aven and reading it.
@@ -326,6 +325,7 @@ Window v17 is ported into the repo as the real app: `src/app/`, built to `/app/`
 
 - Figures, slice 1 (4 Nov): Omar put the figure zips on the old repo's `figures-download` branch (fetched read-only). Only one finished Push-day clip exists: the triceps pushdown (clip 12, v2 with the fleck fix; the judge's last verdict on the earlier version was 8.6/10 with the fleck and chest-graze notes, the fleck judge then called the fleck "mostly fixed"). It is in the Train explainer, cropped to the figure, playing only while the explainer is open (`src/app/public/figures/`, `FIGURE` set in `main.js`). It is rendered on a light studio floor, so it sits as a light card in the dark sheet; the tag gets a dark glass. Settings now credits Z-Anatomy (CC BY-SA 4.0).
 - Not done: bench, incline, overhead press and lateral raise have no clips (the branch holds curl, rope-pushdown and hammer-curl work, not the Push lifts), so they keep their equipment picture, and the Train list keeps its equipment thumbnails instead of mixing figures into only one row. They need rendering on Gunshot (Blender), ideally on a dark floor so the clip matches the app.
+- Figures (4 Nov): the mannequin test failed; the route is re-posing the clay figure in Blender (bench, incline, lateral raise first, overhead press after a shoulder fix), equipment stills for the rest. Pushdown clip is in the explainer; see `docs/keepers.md`.
 
 ## Next step
 Omar opens `/app/` on his phone (install it, time the cold start, log a real set, close the app mid-workout and reopen it: the Resume pill should be there). Then: (1) read the plan, Train history and "Last/Best" from saved sessions instead of the example Push day (the first finished workout is the first real history); (2) restore "Push done" after a reload; (3) weight and sleep: a manual weight log and Health Connect; (4) onboarding sets `a2:name`, units and the routine. Clay-figure clips go into the explainer's hero slot when Omar's two zips arrive.
