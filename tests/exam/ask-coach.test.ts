@@ -70,4 +70,12 @@ describe('one request for every model', () => {
     expect(r.reply?.say).toBe('Hi.');
     expect(r.usd).toBeCloseTo(l.spent, 10);
   });
+
+  it('a Claude reply cut off at max_tokens is a failed answer that is kept, not a call that never happened (Codex, PR #81)', async () => {
+    const usage = { input_tokens: 10, output_tokens: 1200, cache_read_input_tokens: 0, cache_creation_input_tokens: 0 };
+    const client = { messages: { create: async () => ({ content: [{ type: 'text', text: '{"say":"Half' }], stop_reason: 'max_tokens', usage }) } } as never;
+    const r = await askCoach('claude-sonnet-5-5', req, { ledger: ledger(), purpose: 't', client });
+    expect(r.error).toMatch(/max_tokens/);
+    expect(r.callFailed).toBeUndefined();
+  });
 });

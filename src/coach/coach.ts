@@ -10,7 +10,7 @@ import type { Engine } from '../engine/engine';
 import { apply, check, didLines, readProposal, type Did, type Proposal } from './actions';
 import { renderFacts, sheetNumbers, type FactSheet } from './facts';
 import { renderKnowledge } from './knowledge';
-import { asksFor, fence, gate, type UntrustedSource } from './untrusted';
+import { asksFor, fence, gate, saysNotTo, type UntrustedSource } from './untrusted';
 import { newId } from '../engine/util';
 
 /** the charts the app can draw from the fact sheet; the model picks one by name, never writes chart code (rule 9) */
@@ -186,9 +186,10 @@ export async function finishTurn(e: Engine, reply: ModelReply, ctx: { personText
     const g = gate(proposal, turn);
     // a rejected "do" leaves the model's text claiming it happened, so it counts as failed for what is shown (Codex, PR #81)
     if (!g.ok) { refused.push(g.reason); if (how === 'do') failed.push(g.reason); continue; }
-    // a lasting fact the person states in their own words may be remembered without "remember" (rule 5); anything else
+    // a lasting fact the person states in their own words may be remembered without "remember" (rule 5), unless they said
+    // not to (Codex, PR #81); anything else
     // runs only when their words asked for that kind of change
-    const asked = how === 'do' && (!!agreed || asksFor(proposal.name, ctx.personText) || (proposal.name === 'remember' && !ctx.untrusted));
+    const asked = how === 'do' && (!!agreed || asksFor(proposal.name, ctx.personText) || (proposal.name === 'remember' && !ctx.untrusted && !saysNotTo(ctx.personText)));
     if (how === 'do' && !asked) { refused.push(`"do" ${proposal.name} without being asked: shown as an offer`); downgraded = true; }
     const c = check(proposal, asked ? 'command' : 'proposal', { records: e.allRecords(), now: ctx.now, tz: ctx.tz });
     if (!c.ok) { refused.push(c.reason); if (asked) failed.push(c.reason); continue; }

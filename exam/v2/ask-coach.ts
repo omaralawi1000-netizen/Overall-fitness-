@@ -64,7 +64,9 @@ export async function askCoach(model: string, req: CoachRequest, o: CallOpts & {
     const read = readReply(raw);
     return 'error' in read ? { model, dropped: [], error: read.error, usd, ms } : { model, reply: read.reply, dropped: read.dropped, usd, ms };
   } catch (e) {
-    if (e instanceof CallError) return { model, dropped: [], error: `${e.status}: ${e.message}`, usd: (e as CallError & { usd?: number }).usd ?? 0, ms: Math.round(performance.now() - t0), callFailed: true };
+    // status 0 is a finished answer that failed (Claude cut off at max_tokens, a refusal): scored like a cut-off Gemini
+    // reply, never thrown away as a call that did not happen (Codex, PR #81)
+    if (e instanceof CallError) return { model, dropped: [], error: `${e.status}: ${e.message}`, usd: (e as CallError & { usd?: number }).usd ?? 0, ms: Math.round(performance.now() - t0), ...(e.status === 0 ? {} : { callFailed: true }) };
     throw e;
   }
 }

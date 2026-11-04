@@ -56,6 +56,14 @@ describe('training facts', () => {
     expect(renderFacts(s)).toMatch(/PLAN: today Full body A/);
   });
 
+  it('two sessions on one day keep the order they happened in, whatever the record order (Codex, PR #81)', () => {
+    const am = env('session', '2026-11-02', { name: 'AM', state: 'finished', startedAt: at('2026-11-02', '08'), events: [], pausedMs: 0 });
+    const pm = env('session', '2026-11-02', { name: 'PM', state: 'finished', startedAt: at('2026-11-02', '18'), events: [], pausedMs: 0 });
+    const sets = (s: AnyRecord, kg: number) => { const slot = env('slot', '2026-11-02', { sessionId: s.id, exerciseId: 'bench-press', order: 0 }); return [slot, env('set', '2026-11-02', { sessionId: s.id, slotId: slot.id, order: 0, type: 'working', done: { kg, reps: 8, at: at('2026-11-02', '19') } })]; };
+    const rs = [am, ...sets(am, 80), pm, ...sets(pm, 90)];
+    for (const order of [rs, [...rs].reverse()]) expect(buildFacts(order, { now: NOW, tz: TZ }).training.lifts[0].status).toBe('up');
+  });
+
   it('sleep: a nap adds to that day, never counts as another short night (Codex, PR #81)', () => {
     const rec = (endDay: string, endHour: string, hours: number) => env('sleep', endDay, { start: at(endDay, endHour) - hours * 36e5, end: at(endDay, endHour) });
     const rs = ['2026-10-31', '2026-11-01', '2026-11-02'].flatMap((d) => [rec(d, '07', 8), rec(d, '15', 1)]);
@@ -82,7 +90,7 @@ describe('maintenance', () => {
     const s = buildFacts(rs, { now: NOW, tz: TZ });
     const f = (id: string) => s.food28.facts.find((x) => x.id === id);
     expect(f('food28.maintenanceKcal')).toMatchObject({ value: 2740, confidence: 'estimate' });
-    expect(f('food28.kcalForGain25g')!.value).toBe(3020); // 2,740 + 0.25 × 7,700 / 7, to the nearest 10
+    expect(f('food28.kcalForGain250g')!.value).toBe(3020); // 2,740 + 0.25 × 7,700 / 7, to the nearest 10
     expect(buildFacts(rs.filter((r) => r.kind !== 'bodyweight'), { now: NOW, tz: TZ }).trust.join(' ')).toMatch(/No maintenance estimate yet/);
   });
 

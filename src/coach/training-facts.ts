@@ -61,13 +61,15 @@ export function trainingFacts(records: AnyRecord[], o: { today: string; dayStart
   const sessions = live<Session>(records, 'session').filter((s) => s.state === 'finished');
   const sessionDay = (s: Session) => (s.startedAt !== undefined ? dayKeyAt(s.startedAt, s.tz, dayStart) : dayOf(s));
   const recent = new Map(sessions.filter((s) => { const d = sessionDay(s); return d <= today && diffDays(today, d) < 56; }).map((s) => [s.id, sessionDay(s)]));
+  // two sessions on one day are ordered by when they started, never by record order (Codex, PR #81)
+  const startOf = new Map(sessions.map((s) => [s.id, s.startedAt ?? s.at]));
   const slots = new Map(live<Slot>(records, 'slot').map((s) => [s.id, s]));
   const custom = new Map(live<CustomExercise>(records, 'exercise').map((e) => [e.id, e.name]));
   // an assisted lift records the help, so less weight is harder: the loaded-lift formula would read progress as a drop.
   // Left out until it has its own comparison (Codex, PR #81)
   const assisted = new Set([...CATALOG_BY_ID.values()].filter((x) => x.logType === 'assisted').map((x) => x.id)
     .concat(live<CustomExercise>(records, 'exercise').filter((e) => e.logType === 'assisted').map((e) => e.id)));
-  const perExercise = new Map<string, Map<string, { day: string; kg: number; reps: number }>>();
+  const perExercise = new Map<string, Map<string, { day: string; kg: number; reps: number; t: number }>>();
   for (const set of live<WorkSet>(records, 'set')) {
     const day = recent.get(set.sessionId);
     const kg = set.done?.kg, reps = set.done?.reps;
@@ -76,12 +78,12 @@ export function trainingFacts(records: AnyRecord[], o: { today: string; dayStart
     if (!ex || assisted.has(ex)) continue;
     const bySession = perExercise.get(ex) ?? new Map();
     const cur = bySession.get(set.sessionId);
-    if (!cur || e1rm(kg, reps) > e1rm(cur.kg, cur.reps)) bySession.set(set.sessionId, { day, kg, reps });
+    if (!cur || e1rm(kg, reps) > e1rm(cur.kg, cur.reps)) bySession.set(set.sessionId, { day, kg, reps, t: startOf.get(set.sessionId) ?? 0 });
     perExercise.set(ex, bySession);
   }
   const lifts: LiftFact[] = [];
   for (const [ex, bySession] of perExercise) {
-    const best = [...bySession.values()].sort((a, b) => a.day.localeCompare(b.day)).slice(-6);
+    const best = [...bySession.values()].sort((a, b) => a.day.localeCompare(b.day) || a.t - b.t).slice(-6).map(({ day, kg, reps }) => ({ day, kg, reps }));
     if (best.length < 2) continue;
     const first = e1rm(best[0].kg, best[0].reps), last = e1rm(best.at(-1)!.kg, best.at(-1)!.reps);
     const status = last > first * 1.01 ? 'up' : last < first * 0.99 ? 'down' : 'flat';

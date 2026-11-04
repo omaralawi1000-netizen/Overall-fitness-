@@ -222,7 +222,7 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
   if (trend && kcalAvg && kcalDays >= 7) {
     const maint = Math.round((kcalAvg.value - (trend.value * 7700) / 7) / 10) * 10;
     food28.push({ id: 'food28.maintenanceKcal', value: maint, unit: 'kcal', confidence: 'estimate', note: `from ${kcalDays} complete days and the weight trend; ±150 kcal` });
-    for (const perWeek of [-0.5, -0.25, 0.25]) food28.push({ id: `food28.kcalFor${perWeek > 0 ? 'Gain' : 'Loss'}${Math.abs(perWeek) * 100}g`, value: Math.round((maint + (perWeek * 7700) / 7) / 10) * 10, unit: 'kcal', confidence: 'estimate', note: `about ${Math.abs(perWeek)} kg a week ${perWeek > 0 ? 'gain' : 'loss'}` });
+    for (const perWeek of [-0.5, -0.25, 0.25]) food28.push({ id: `food28.kcalFor${perWeek > 0 ? 'Gain' : 'Loss'}${Math.abs(perWeek) * 1000}g`, value: Math.round((maint + (perWeek * 7700) / 7) / 10) * 10, unit: 'kcal', confidence: 'estimate', note: `about ${Math.abs(perWeek)} kg a week ${perWeek > 0 ? 'gain' : 'loss'}` });
   } else trust.push('No maintenance estimate yet: it needs a weight trend and at least 7 complete food days with calories.');
 
   // ── goals ──

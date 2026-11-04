@@ -63,6 +63,13 @@ describe('code decides what happens', () => {
     expect(s.text).toBe("I haven't changed anything yet. Tap the button below if you want it.");
   });
 
+  it('"don\'t remember this" is honoured: nothing is saved on its own (Codex, PR #81)', async () => {
+    const { f, turn } = await person({ kcal: 2500 });
+    const s = await turn("Don't remember this, I'm working late tonight", { say: 'Okay, late night.', actions: [{ how: 'do', name: 'remember', text: 'Working late tonight', topic: 'life' }] });
+    expect(s.did).toEqual([]);
+    expect(f.e.allRecords().some((x) => x.kind === 'memory')).toBe(false);
+  });
+
   it('a failed command never shows the model\'s "done" text', async () => {
     const { f, turn } = await person({ kcal: 2500 });
     const s = await turn('set my calories to 900', { say: 'Done, calories set to 900.', actions: [{ how: 'do', name: 'set_target', key: 'kcal', value: 900 }] });

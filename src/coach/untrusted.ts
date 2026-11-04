@@ -33,6 +33,8 @@ const ASK_FOR: Record<Proposal['name'], RegExp> = {
   log_weight: words('log|add|track|record|registrer|registrere|tilføj|tilføje|logge|skriv|skrive'),
 };
 /** Does the person's own text ask for this kind of action? Turned-down asks are taken out first. */
+/** the person's words say not to do something ("don't remember this", "ikke gem det") */
+export const saysNotTo = (text: string) => { NOT_ASKED.lastIndex = 0; return NOT_ASKED.test(text); };
 export const asksFor = (name: Proposal['name'], text: string) => ASK_FOR[name].test(text.replace(NOT_ASKED, ' '));
 
 /** "0.5 l", "2 dl", "33 cl" also as millilitres: a water log is proposed in ml (Codex, PR #73) */
