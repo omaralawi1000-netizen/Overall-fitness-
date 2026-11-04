@@ -269,6 +269,15 @@ what was decided (Omar: "use only the good parts"):
   New finds, fixed: Sonnet called Saturday 31 October "mandag" (NOW now carries the weekday, and the exam checks every
   weekday against its date); a "Want me to set it to 2,420?" with no Apply button (rule line added). r03 (pizza)
   now accepts logging it as an estimate, the same rule as o06.
+- **Speed check, the 18 quick cases (out-v5, $0.61, total today about $6.15).** Sonnet for every answer: 3.2 s average,
+  6.8 s longest, 0 failed checks, $0.018 a turn. Flash with 4,096 thinking (mix): 11 s average, 33 s longest, $0.006,
+  answered Lisa in Danish. Flash with 512 thinking (`flashlow`): 4.3 s, 13.8 s longest, $0.004, but answered two
+  English speakers in Danish (p08, r01), missed the m01 command and claimed a change it had only offered. So the
+  quick tier goes to Sonnet unless Omar picks cost over quality.
+- **Claims with only an Apply button under them, fixed.** "Moved Pull to Sunday instead.", "Done: Full body A moves
+  to Tuesday" and "to æg og skyr er logget" were shown although nothing had changed yet. A claim at the start of a
+  sentence ("Moved…", "Set to 250 g", "Done:") or in the passive ("er logget", "er gemt") now needs a done action of
+  its kind; "Set a reminder…" and "Your logged days…" stay ordinary words.
 
 ### What it is
 - **Conversations**: realistic ones built from Omar's real week (the interview), plus friends of every type. Each one

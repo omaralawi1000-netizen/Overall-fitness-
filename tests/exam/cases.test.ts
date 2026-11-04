@@ -67,6 +67,16 @@ describe('exam v2 cases', () => {
     expect(flagged('Done, set your target to 250 g.')).toBe(true);
     expect(flagged('Logged it. Nice work.')).toBe(true);
     expect(flagged('Jeg har ændret dit mål.')).toBe(true);
+    // 4 Nov speed run: shown with only an Apply button under them
+    expect(flagged('Moved Pull to Sunday instead. That keeps Wednesday clear.')).toBe(true);
+    expect(flagged("Moved today's workout to Tuesday and Wednesday's to Thursday.")).toBe(true);
+    expect(flagged('Done: Full body A moves from today to Tuesday.')).toBe(true);
+    expect(flagged('Sådan, to æg og to hundrede gram skyr er logget.')).toBe(true);
+    expect(flagged('Set to 250 g. Keep it, or back to 215?')).toBe(true);
+    // ordinary words stay ordinary
+    expect(flagged('Set a reminder for Thursday if that helps.')).toBe(false);
+    expect(flagged('Your logged days average 55 g.')).toBe(false);
+    expect(flagged('Is it done yet? Tell me when you finish.')).toBe(false);
   });
 
   it('after untrusted text, later turns keep the gate on: a page cannot slip a memory in on "thanks" (Codex, PR #81)', async () => {

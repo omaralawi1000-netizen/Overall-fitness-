@@ -195,6 +195,15 @@ const CLAIMS: [RegExp, Proposal['name'][]][] = [
   [/\b(?:I(?:'ve| have)? (?:removed|deleted|forgot|forgotten|dropped)|(?:jeg har|har jeg) (?:slettet|fjernet|glemt))\b/im, ['forget']],
   [/\b(?:I(?:'ve| have)? (?:moved|rescheduled)|(?:jeg har|har jeg) flyttet)\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)moved (?:it|your|that|the)\b/im, ['move_session']],
   [/\b(?:I(?:'ve| have)? (?:corrected|fixed)|(?:jeg har|har jeg) rettet)\b/im, ['fix_food']],
+  // a sentence that opens with what was done, or a passive "er logget": the 4 Nov speed run showed "Moved Pull to
+  // Sunday instead." and "Done: Full body A moves to Tuesday" with nothing moved
+  [/(?:^|[.!?]\s+)(?:moved|flyttede|flyttet)\b/im, ['move_session']],
+  [/(?:^|[.!?]\s+)(?:logged|logget|loggede)\b|\b(?:er|is) (?:nu |now )?(?:logget|logged)\b/im, ['log_water', 'log_weight', 'log_food', 'fix_food']],
+  [/(?:^|[.!?]\s+)(?:set|updated|changed|raised|lowered|sat|ændret|opdateret|hævet|sænket)\b(?! (?:a|an|up)\b)/im, ['set_target', 'fix_food', 'move_session']],
+  [/(?:^|[.!?]\s+)(?:saved|noted|gemt|noteret)\b|\ber (?:nu )?(?:gemt|noteret)\b/im, ['remember', 'log_water', 'log_weight', 'log_food']],
+  [/(?:^|[.!?]\s+)(?:removed|deleted|slettet|fjernet)\b/im, ['forget']],
+  [/(?:^|[.!?]\s+)(?:fixed|corrected|rettet)\b/im, ['fix_food']],
+  [/(?:^|[.!?]\s+)(?:done|all set|gjort|klaret)\s*[,:.!–—-]/im, ['set_target', 'remember', 'forget', 'log_water', 'log_weight', 'move_session', 'log_food', 'fix_food']],
   // the Coach cannot swap or start anything, so these are never backed
   [/\b(?:I(?:'ve| have)? (?:swapped|started)|(?:jeg har|har jeg) (?:byttet|startet))\b/im, []],
 ];
