@@ -69,34 +69,30 @@ export const REPLY_SCHEMA = {
       maxItems: 3,
       items: {
         type: 'object',
+        // few optional fields on purpose: Claude compiles the schema into a grammar, and every optional field multiplies
+        // that work (19 of them made every Sonnet call time out on 4 Nov). One field serves several actions; code reads it
         properties: {
           how: { type: 'string', enum: ['do', 'offer'] },
           name: { type: 'string', enum: ['set_target', 'remember', 'forget', 'log_water', 'log_weight', 'move_session', 'log_food', 'fix_food'] },
           key: { type: 'string', enum: ['kcal', 'protein', 'carbs', 'fat', 'fibre', 'waterMl'] },
-          value: { type: 'number' },
-          text: { type: 'string' },
+          value: { type: 'number', description: 'set_target: the target; log_water: ml; log_weight: kg; log_food and fix_food: the amount in unit' },
+          text: { type: 'string', description: 'remember: the note; log_food: what was eaten, in the person\'s words' },
+          id: { type: 'string', description: "forget: the memory id; fix_food: the id from today's entries" },
           topic: { type: 'string', enum: ['about', 'goal', 'promise', 'preference', 'health', 'life'] },
-          until: { type: 'string', description: 'YYYY-MM-DD' },
-          memoryId: { type: 'string' },
-          ml: { type: 'number' },
-          kg: { type: 'number' },
+          until: { type: 'string', description: 'remember: YYYY-MM-DD for a one-off' },
           from: { type: 'string', description: 'move_session: the planned day, YYYY-MM-DD' },
           to: { type: 'string', description: 'move_session: the new day, YYYY-MM-DD' },
-          food: { type: 'string', description: 'log_food: what was eaten, in the person\'s words' },
-          amount: { type: 'number', description: 'log_food / fix_food: how much, in unit' },
           unit: { type: 'string', enum: ['g', 'ml', 'piece', 'portion'] },
           kcal: { type: 'number', description: 'log_food: your estimate for that amount' },
           protein: { type: 'number', description: 'log_food: your estimate for that amount, g' },
-          meal: { type: 'string', enum: ['breakfast', 'lunch', 'dinner', 'snack'] },
-          foodId: { type: 'string', description: "fix_food: the id from today's entries" },
         },
         required: ['how', 'name'],
       },
     },
-    show: { type: 'string', enum: [...CHARTS] },
-    sources: { type: 'array', maxItems: 2, items: { type: 'string', enum: KNOWLEDGE.map((g) => g.id) }, description: 'KNOWLEDGE ids you relied on for general advice; shown as small tappable chips' },
+    show: { type: 'string', enum: ['none', ...CHARTS], description: 'a chart that explains it better than words, or none' },
+    sources: { type: 'array', maxItems: 2, items: { type: 'string', enum: KNOWLEDGE.map((g) => g.id) }, description: 'KNOWLEDGE ids you relied on for general advice (shown as small chips); empty when none' },
   },
-  required: ['say', 'actions'],
+  required: ['say', 'actions', 'show', 'sources'],
 } as const;
 
 export interface CoachTurn {
@@ -136,6 +132,20 @@ export interface ModelReply {
 }
 
 /** Read a model's JSON reply. A broken action is dropped with a reason; a reply with no text is an error. */
+/** the schema's shared fields back to each action's own names (value → ml, kg or amount; text → food; id → memoryId or foodId) */
+function fromSchema(a: unknown): unknown {
+  if (!a || typeof a !== 'object') return a;
+  const o = a as Record<string, unknown>;
+  switch (o.name) {
+    case 'log_water': return { ...o, ml: o.ml ?? o.value };
+    case 'log_weight': return { ...o, kg: o.kg ?? o.value };
+    case 'log_food': return { ...o, food: o.food ?? o.text, amount: o.amount ?? o.value };
+    case 'fix_food': return { ...o, foodId: o.foodId ?? o.id, amount: o.amount ?? o.value };
+    case 'forget': return { ...o, memoryId: o.memoryId ?? o.id };
+    default: return o;
+  }
+}
+
 export function readReply(raw: unknown): { reply: ModelReply; dropped: string[] } | { error: string } {
   if (!raw || typeof raw !== 'object') return { error: 'reply is not an object' };
   const o = raw as Record<string, unknown>;
@@ -145,13 +155,13 @@ export function readReply(raw: unknown): { reply: ModelReply; dropped: string[] 
   const actions: ModelReply['actions'] = [];
   for (const a of Array.isArray(o.actions) ? o.actions : []) {
     const how = (a as { how?: unknown })?.how;
-    const p = readProposal(a);
+    const p = readProposal(fromSchema(a));
     if ('error' in p) { dropped.push(p.error); if (how === 'do') brokenDo.push(p.error); }
     else if (how !== 'do' && how !== 'offer') dropped.push(`unknown how ${String(how)}`);
     else actions.push({ how, ...p });
   }
   const show = CHARTS.includes(o.show as Chart) ? (o.show as Chart) : undefined;
-  if (o.show !== undefined && !show) dropped.push(`unknown chart ${String(o.show)}`);
+  if (o.show !== undefined && o.show !== 'none' && !show) dropped.push(`unknown chart ${String(o.show)}`);
   const ids = new Set<string>(KNOWLEDGE.map((g) => g.id));
   const sources = (Array.isArray(o.sources) ? o.sources : []).filter((x): x is Guideline['id'] => { const ok = typeof x === 'string' && ids.has(x); if (!ok) dropped.push(`unknown source ${String(x)}`); return ok; }).slice(0, 2);
   return { reply: { say: o.say.trim(), actions, ...(show ? { show } : {}), ...(sources.length ? { sources: [...new Set(sources)] } : {}), ...(brokenDo.length ? { brokenDo } : {}) }, dropped };

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { COACH_RULES, coachRequest, finishTurn, readReply, type ModelReply } from '../../src/coach/coach';
+import { COACH_RULES, coachRequest, finishTurn, readReply, REPLY_SCHEMA, type ModelReply } from '../../src/coach/coach';
 import { buildFacts } from '../../src/coach/facts';
 import type { NewRecord } from '../../src/engine/plan';
 import { fresh, TZ } from '../engine/helpers';
@@ -137,7 +137,7 @@ describe('code decides what happens', () => {
 
   it('a broken "do" dropped while reading never leaves "Logged 500 ml." showing (Codex, PR #81)', async () => {
     const { f, turn } = await person({ waterMl: 2500 });
-    const r = readReply({ say: 'Logged 500 ml.', actions: [{ how: 'do', name: 'log_water', value: 500 }] });
+    const r = readReply({ say: 'Logged 500 ml.', actions: [{ how: 'do', name: 'log_water', value: 'lots' }] });
     if ('error' in r) throw new Error(r.error);
     const s = await turn('log 500 ml water', r.reply);
     expect(s.text).toMatch(/^I couldn't make that change: .*Nothing was changed\.$/);
@@ -173,5 +173,24 @@ describe('More, notices and source chips (Answer Bar rules 2 and 9)', () => {
     const shown = await turn('is creatine worth it?', read.reply);
     expect(shown.sources?.map((s) => s.id)).toEqual(['creatine']);
     expect(shown.sources?.[0].titles.length).toBeGreaterThan(0);
+  });
+});
+
+describe('the reply schema stays small (Claude compiles it into a grammar; 19 optional fields timed out every call, 4 Nov)', () => {
+  it('has at most 11 optional fields, and the shared fields reach each action under its own name', async () => {
+    const { schemaSize, toJsonSchema } = await import('../../exam/providers');
+    expect(schemaSize(toJsonSchema(REPLY_SCHEMA as never)).optional).toBeLessThanOrEqual(11);
+    const r = readReply({ say: 'ok', show: 'none', sources: [], actions: [
+      { how: 'do', name: 'log_water', value: 500 }, { how: 'do', name: 'log_weight', value: 82.4 },
+      { how: 'do', name: 'log_food', text: 'eggs', value: 2, unit: 'piece', kcal: 140, protein: 12 },
+      { how: 'do', name: 'fix_food', id: 'f1', value: 3 }, { how: 'do', name: 'forget', id: 'm1' },
+    ] });
+    expect('reply' in r && r.reply.actions).toEqual([
+      { how: 'do', name: 'log_water', ml: 500 }, { how: 'do', name: 'log_weight', kg: 82.4 },
+      { how: 'do', name: 'log_food', food: 'eggs', amount: 2, unit: 'piece', kcal: 140, protein: 12 },
+      { how: 'do', name: 'fix_food', foodId: 'f1', amount: 3 }, { how: 'do', name: 'forget', memoryId: 'm1' },
+    ]);
+    expect('reply' in r && r.reply.show).toBeUndefined();
+    expect('reply' in r && r.dropped).toEqual([]);
   });
 });
