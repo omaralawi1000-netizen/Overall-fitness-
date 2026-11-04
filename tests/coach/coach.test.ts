@@ -111,6 +111,15 @@ describe('code decides what happens', () => {
     expect(third.offers).toHaveLength(1);
   });
 
+  it('a broken "do" dropped while reading never leaves "Logged 500 ml." showing (Codex, PR #81)', async () => {
+    const { f, turn } = await person({ waterMl: 2500 });
+    const r = readReply({ say: 'Logged 500 ml.', actions: [{ how: 'do', name: 'log_water', value: 500 }] });
+    if ('error' in r) throw new Error(r.error);
+    const s = await turn('log 500 ml water', r.reply);
+    expect(s.text).toMatch(/^I couldn't make that change: .*Nothing was changed\.$/);
+    expect(f.e.allRecords().some((x) => x.kind === 'water')).toBe(false);
+  });
+
   it('answers in Danish when the person uses Danish', async () => {
     const { turn } = await person({ kcal: 2500 }, 'da');
     const s = await turn('sæt mine kalorier til 900', { say: 'Klaret.', actions: [{ how: 'do', name: 'set_target', key: 'kcal', value: 900 }] });

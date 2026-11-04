@@ -106,7 +106,11 @@ export function coachRequest(sheet: FactSheet, convo: CoachTurn[], o: { voice?: 
   return { system, turns, schema: REPLY_SCHEMA };
 }
 
-export interface ModelReply { say: string; actions: ({ how: 'do' | 'offer' } & Proposal)[]; show?: Chart }
+export interface ModelReply {
+  say: string; actions: ({ how: 'do' | 'offer' } & Proposal)[]; show?: Chart;
+  /** "do" actions dropped as broken: the text may claim them, so they count as failed when shown (Codex, PR #81) */
+  brokenDo?: string[];
+}
 
 /** Read a model's JSON reply. A broken action is dropped with a reason; a reply with no text is an error. */
 export function readReply(raw: unknown): { reply: ModelReply; dropped: string[] } | { error: string } {
@@ -114,17 +118,18 @@ export function readReply(raw: unknown): { reply: ModelReply; dropped: string[] 
   const o = raw as Record<string, unknown>;
   if (typeof o.say !== 'string' || !o.say.trim()) return { error: 'reply has no text' };
   const dropped: string[] = [];
+  const brokenDo: string[] = [];
   const actions: ModelReply['actions'] = [];
   for (const a of Array.isArray(o.actions) ? o.actions : []) {
     const how = (a as { how?: unknown })?.how;
     const p = readProposal(a);
-    if ('error' in p) dropped.push(p.error);
+    if ('error' in p) { dropped.push(p.error); if (how === 'do') brokenDo.push(p.error); }
     else if (how !== 'do' && how !== 'offer') dropped.push(`unknown how ${String(how)}`);
     else actions.push({ how, ...p });
   }
   const show = CHARTS.includes(o.show as Chart) ? (o.show as Chart) : undefined;
   if (o.show !== undefined && !show) dropped.push(`unknown chart ${String(o.show)}`);
-  return { reply: { say: o.say.trim(), actions, ...(show ? { show } : {}) }, dropped };
+  return { reply: { say: o.say.trim(), actions, ...(show ? { show } : {}), ...(brokenDo.length ? { brokenDo } : {}) }, dropped };
 }
 
 export interface Offer { id: string; label: string; proposal: Proposal }
@@ -152,7 +157,7 @@ export async function finishTurn(e: Engine, reply: ModelReply, ctx: { personText
   const refused: string[] = [];
   const did: Shown['did'] = [];
   const offers: Offer[] = [];
-  const failed: string[] = [];
+  const failed: string[] = [...(reply.brokenDo ?? [])];
   const turn = { userText: ctx.personText, untrusted: ctx.untrusted, sheet: sheetNumbers(ctx.sheet) };
   // the person said yes to an Apply button from the last turn in words: that exact change is what they agreed to (Codex, PR #81)
   const accepted = !ctx.untrusted && ACCEPT.test(ctx.personText) ? (ctx.pending ?? []) : [];

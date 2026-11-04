@@ -14,6 +14,7 @@ import { COACH_RULES } from '../../src/coach/coach';
 import { renderKnowledge } from '../../src/coach/knowledge';
 import { Ledger, type GeminiReply } from '../providers';
 import { CASES } from './cases';
+import { records } from './people';
 import { OPPONENT_RULES, runCase, type Setup } from './run-case';
 
 export const SETUPS: Record<string, Setup> = {
@@ -45,14 +46,14 @@ it('runs the cases through the setups', async () => {
   });
   const only = new Set(pick(process.env.EXAM_CASES));
   const cases = CASES.filter((c) => !only.size || only.has(c.id));
-  // the prompt version: a change to the rules, the knowledge or the case is new work
+  // the prompt version: a change to the rules, the knowledge, the case or the records it makes is new work (Codex, PR #81)
   const version = (setupRules: string, caseJson: string) => createHash('sha256').update(`${setupRules}|${renderKnowledge()}|${caseJson}`).digest('hex').slice(0, 16);
   const done = new Set((existsSync(file) ? readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []).map((l) => l.key as string));
   let failedInARow = 0;
   for (const c of cases) {
     for (const s of setups) {
       for (let run = 1; run <= RUNS; run++) {
-        const key = `${c.id}|${s.name}|${s.quick}|${s.deep}|${run}|${version(s.rules ?? COACH_RULES, JSON.stringify(c))}`;
+        const key = `${c.id}|${s.name}|${s.quick}|${s.deep}|${run}|${version(s.rules ?? COACH_RULES, JSON.stringify([c, records(c.person)]))}`;
         if (done.has(key)) continue;
         const r = await runCase(c, s, { ledger, purpose: 'answers', ...(DRY ? { dry } : {}) });
         // a failed call is no answer: never saved, so the next run asks again; three in a row stop the run

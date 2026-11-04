@@ -19,6 +19,11 @@ function session(day: string, sets: [string, number, number][], state = 'finishe
 }
 
 describe('training facts', () => {
+  it('an assisted lift is left out: less help is progress, never a drop (Codex, PR #81)', () => {
+    const rs = [...session('2026-10-20', [['assisted-pull-up', 40, 8]]), ...session('2026-10-27', [['assisted-pull-up', 30, 8]])];
+    expect(buildFacts(rs, { now: NOW, tz: TZ }).training.lifts).toEqual([]);
+  });
+
   it('a stuck lift is counted by code: same best set N sessions in a row, while another lift goes up', () => {
     const rs = [
       ...session('2026-10-13', [['barbell-row', 70, 8], ['bench-press', 80, 6]]),

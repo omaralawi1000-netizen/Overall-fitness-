@@ -45,16 +45,19 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts): Promise<C
   const turns: TurnLog[] = [];
   const history: Tier[] = [];
   let pending: Shown['offers'] = [];
+  // untrusted text stays in what the model reads on later turns, so the gate stays on from then (Codex, PR #81)
+  let untrusted = false;
   for (const t of c.turns) {
+    untrusted ||= !!t.untrusted;
     const sheet = buildFacts(e.allRecords(), { now, tz: TZ });
-    const tier = route(t.text, { sheet, history, untrusted: !!t.untrusted });
+    const tier = route(t.text, { sheet, history, untrusted });
     history.push(tier);
     const model = tier === 'quick' ? setup.quick : setup.deep;
     convo.push({ role: 'person', text: t.text, ...(t.untrusted ? { untrusted: t.untrusted } : {}) });
     const req = coachRequest(sheet, convo, { voice: t.voice, ...(setup.rules ? { rules: setup.rules } : {}) });
     const asked = await askCoach(model, req, { ...o, purpose: `${c.id} ${setup.name}` });
     if (!asked.reply) { turns.push({ tier, model, error: asked.error, ...(asked.callFailed ? { callFailed: true } : {}), dropped: asked.dropped, usd: asked.usd, ms: asked.ms }); break; }
-    const shown = await finishTurn(e, asked.reply, { personText: t.text, untrusted: !!t.untrusted, sheet, now, tz: TZ, lang: c.person.lang, pending });
+    const shown = await finishTurn(e, asked.reply, { personText: t.text, untrusted, sheet, now, tz: TZ, lang: c.person.lang, pending });
     pending = shown.offers;
     const given = [req.system, ...req.turns.map((x) => x.text)].join('\n');
     turns.push({ tier, model, say: asked.reply.say, shown, dropped: asked.dropped, usd: asked.usd, ms: asked.ms, unsourced: unsourcedNumbers(asked.reply.say, given) });

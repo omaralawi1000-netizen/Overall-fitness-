@@ -63,13 +63,17 @@ export function trainingFacts(records: AnyRecord[], o: { today: string; dayStart
   const recent = new Map(sessions.filter((s) => { const d = sessionDay(s); return d <= today && diffDays(today, d) < 56; }).map((s) => [s.id, sessionDay(s)]));
   const slots = new Map(live<Slot>(records, 'slot').map((s) => [s.id, s]));
   const custom = new Map(live<CustomExercise>(records, 'exercise').map((e) => [e.id, e.name]));
+  // an assisted lift records the help, so less weight is harder: the loaded-lift formula would read progress as a drop.
+  // Left out until it has its own comparison (Codex, PR #81)
+  const assisted = new Set([...CATALOG_BY_ID.values()].filter((x) => x.logType === 'assisted').map((x) => x.id)
+    .concat(live<CustomExercise>(records, 'exercise').filter((e) => e.logType === 'assisted').map((e) => e.id)));
   const perExercise = new Map<string, Map<string, { day: string; kg: number; reps: number }>>();
   for (const set of live<WorkSet>(records, 'set')) {
     const day = recent.get(set.sessionId);
     const kg = set.done?.kg, reps = set.done?.reps;
     if (!day || set.type !== 'working' || set.skipped || !kg || !reps) continue;
     const ex = slots.get(set.slotId)?.exerciseId;
-    if (!ex) continue;
+    if (!ex || assisted.has(ex)) continue;
     const bySession = perExercise.get(ex) ?? new Map();
     const cur = bySession.get(set.sessionId);
     if (!cur || e1rm(kg, reps) > e1rm(cur.kg, cur.reps)) bySession.set(set.sessionId, { day, kg, reps });
