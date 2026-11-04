@@ -20,13 +20,15 @@ import type { AnyRecord, FoodLog, Plan, Routine } from '../../src/engine/model';
 import type { CallOpts } from '../providers';
 import type { Proposal } from '../../src/coach/actions';
 
-export interface Setup { name: string; quick: string; deep: string; rules?: string }
+export interface Setup { name: string; quick: string; deep: string; rules?: string; /** Gemini's thinking budget, when not the default */ thinking?: number }
 
 /** the benchmark opponent's instructions: a capable general coach, no tuning, same facts and knowledge, same JSON format */
 export const OPPONENT_RULES = `You are an expert fitness and nutrition coach inside a training and food app. Help the person as well as you can. FACTS hold their data; KNOWLEDGE holds general guidelines. Reply in their language. You may change things in the app with the actions in the JSON schema: "do" for what they asked, "offer" for a suggestion.`;
 
 export interface TurnLog {
   tier: Tier; model: string; say?: string; shown?: Shown; error?: string; callFailed?: boolean; dropped: string[]; usd: number; ms: number;
+  /** what the model sent when code could not use it (dropped actions, or the end of a reply that is not JSON) */
+  raw?: string;
   /** numbers in the reply found nowhere in what the Coach was given: leads for the judge, not a fail by themselves */
   unsourced?: string[];
   /** dates in the reply found nowhere in what the Coach was given (rule 4) */
@@ -66,13 +68,13 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts): Promise<C
     const model = tier === 'quick' ? setup.quick : setup.deep;
     convo.push({ role: 'person', text: t.text, ...(t.untrusted ? { untrusted: t.untrusted } : {}), ...(t.notice ? { notice: t.notice } : {}) });
     const req = coachRequest(sheet, convo, { voice: t.voice, ...(setup.rules ? { rules: setup.rules } : {}) });
-    const asked = await askCoach(model, req, { ...o, purpose: `${c.id} ${setup.name}` });
-    if (!asked.reply) { turns.push({ tier, model, error: asked.error, ...(asked.callFailed ? { callFailed: true } : {}), dropped: asked.dropped, usd: asked.usd, ms: asked.ms }); break; }
+    const asked = await askCoach(model, req, { ...o, purpose: `${c.id} ${setup.name}`, ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
+    if (!asked.reply) { turns.push({ tier, model, error: asked.error, ...(asked.callFailed ? { callFailed: true } : {}), ...(asked.raw ? { raw: asked.raw } : {}), dropped: asked.dropped, usd: asked.usd, ms: asked.ms }); break; }
     const shown = await finishTurn(e, asked.reply, { personText: t.text, untrusted, sheet, now, tz: TZ, lang: c.person.lang, pending, lastDid });
     pending = shown.offers;
     lastDid = shown.did.map((d) => d.name);
     const given = [req.system, ...req.turns.map((x) => x.text)].join('\n');
-    turns.push({ tier, model, say: asked.reply.say, shown, dropped: asked.dropped, usd: asked.usd, ms: asked.ms, unsourced: unsourcedNumbers(asked.reply.say, given), dates: inventedDates(asked.reply.say, given) });
+    turns.push({ tier, model, say: asked.reply.say, shown, dropped: asked.dropped, ...(asked.raw ? { raw: asked.raw } : {}), usd: asked.usd, ms: asked.ms, unsourced: unsourcedNumbers(asked.reply.say, given), dates: inventedDates(asked.reply.say, given) });
     // the person saw the Apply button, so the next turn's model sees it too
     convo.push({ role: 'coach', text: shown.offers.length ? `${shown.text}\n\n(Apply button shown: ${shown.offers.map((x) => x.label).join('; ')})` : shown.text });
   }
