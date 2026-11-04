@@ -12,7 +12,7 @@
 import type { AnyRecord, Bodyweight, FoodLog, MemoryCard, Settings } from '../engine/model';
 import { addDays, dayKeyAt, diffDays, wallClock, weekdayOf } from '../engine/time';
 import { numbersIn } from './untrusted';
-import { renderTraining, trainingFacts, trainingNumbers, type TrainingFacts } from './training-facts';
+import { DAYS, renderTraining, trainingFacts, trainingNumbers, type TrainingFacts } from './training-facts';
 
 /** how far a fact can be trusted */
 export type Confidence = 'measured' | 'partial' | 'estimate';
@@ -304,7 +304,8 @@ const line = (f: Fact, lang: 'en' | 'da') => `- ${f.id}: ${fmt(f.value, lang)} $
 /** The sheet as the prompt sees it: structured lines with ids, never prose the AI could misread. */
 export function renderFacts(s: FactSheet): string {
   const L = s.person.language;
-  const out: string[] = [`NOW: ${s.now.day}, ${String(s.now.hour).padStart(2, '0')}:00 (${s.now.partOfDay})`];
+  // the weekday is given, never worked out: on 4 Nov Sonnet called Saturday 31 October "mandag den 31. oktober"
+  const out: string[] = [`NOW: ${DAYS[s.now.weekday]} ${s.now.day}, ${String(s.now.hour).padStart(2, '0')}:00 (${s.now.partOfDay})`];
   if (s.person.name) out.push(`NAME: ${s.person.name}`);
   out.push('TARGETS:', ...(s.person.targets.length ? s.person.targets.map((f) => line(f, L)) : ['- none set']));
   out.push('MEMORY (current, in their words):', ...(s.memory.length ? s.memory.map((m) => `- ${m.id} [${m.topic}] ${m.text}${m.until ? ` (until ${m.until})` : ''}`) : ['- none']));

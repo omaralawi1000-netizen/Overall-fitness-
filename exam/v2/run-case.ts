@@ -20,13 +20,15 @@ import type { AnyRecord, FoodLog, Plan, Routine } from '../../src/engine/model';
 import type { CallOpts } from '../providers';
 import type { Proposal } from '../../src/coach/actions';
 
-export interface Setup { name: string; quick: string; deep: string; rules?: string }
+export interface Setup { name: string; quick: string; deep: string; rules?: string; /** Gemini's thinking budget, when not the default */ thinking?: number }
 
 /** the benchmark opponent's instructions: a capable general coach, no tuning, same facts and knowledge, same JSON format */
 export const OPPONENT_RULES = `You are an expert fitness and nutrition coach inside a training and food app. Help the person as well as you can. FACTS hold their data; KNOWLEDGE holds general guidelines. Reply in their language. You may change things in the app with the actions in the JSON schema: "do" for what they asked, "offer" for a suggestion.`;
 
 export interface TurnLog {
   tier: Tier; model: string; say?: string; shown?: Shown; error?: string; callFailed?: boolean; dropped: string[]; usd: number; ms: number;
+  /** what the model sent when code could not use it (dropped actions, or the end of a reply that is not JSON) */
+  raw?: string;
   /** numbers in the reply found nowhere in what the Coach was given: leads for the judge, not a fail by themselves */
   unsourced?: string[];
   /** dates in the reply found nowhere in what the Coach was given (rule 4) */
@@ -66,13 +68,13 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts): Promise<C
     const model = tier === 'quick' ? setup.quick : setup.deep;
     convo.push({ role: 'person', text: t.text, ...(t.untrusted ? { untrusted: t.untrusted } : {}), ...(t.notice ? { notice: t.notice } : {}) });
     const req = coachRequest(sheet, convo, { voice: t.voice, ...(setup.rules ? { rules: setup.rules } : {}) });
-    const asked = await askCoach(model, req, { ...o, purpose: `${c.id} ${setup.name}` });
-    if (!asked.reply) { turns.push({ tier, model, error: asked.error, ...(asked.callFailed ? { callFailed: true } : {}), dropped: asked.dropped, usd: asked.usd, ms: asked.ms }); break; }
+    const asked = await askCoach(model, req, { ...o, purpose: `${c.id} ${setup.name}`, ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
+    if (!asked.reply) { turns.push({ tier, model, error: asked.error, ...(asked.callFailed ? { callFailed: true } : {}), ...(asked.raw ? { raw: asked.raw } : {}), dropped: asked.dropped, usd: asked.usd, ms: asked.ms }); break; }
     const shown = await finishTurn(e, asked.reply, { personText: t.text, untrusted, sheet, now, tz: TZ, lang: c.person.lang, pending, lastDid });
     pending = shown.offers;
     lastDid = shown.did.map((d) => d.name);
     const given = [req.system, ...req.turns.map((x) => x.text)].join('\n');
-    turns.push({ tier, model, say: asked.reply.say, shown, dropped: asked.dropped, usd: asked.usd, ms: asked.ms, unsourced: unsourcedNumbers(asked.reply.say, given), dates: inventedDates(asked.reply.say, given) });
+    turns.push({ tier, model, say: asked.reply.say, shown, dropped: asked.dropped, ...(asked.raw ? { raw: asked.raw } : {}), usd: asked.usd, ms: asked.ms, unsourced: unsourcedNumbers(asked.reply.say, given), dates: inventedDates(asked.reply.say, given) });
     // the person saw the Apply button, so the next turn's model sees it too
     convo.push({ role: 'coach', text: shown.offers.length ? `${shown.text}\n\n(Apply button shown: ${shown.offers.map((x) => x.label).join('; ')})` : shown.text });
   }
@@ -154,6 +156,25 @@ export function inventedDates(reply: string, given: string): string[] {
 
 const qmarks = (t: string) => (t.match(/\?/g) ?? []).length;
 
+/** a weekday said next to a date: "mandag den 31. oktober", "Monday 2 November", "Sunday, November 8" */
+const WEEKDAYS = [['sunday', 'søndag'], ['monday', 'mandag'], ['tuesday', 'tirsdag'], ['wednesday', 'onsdag'], ['thursday', 'torsdag'], ['friday', 'fredag'], ['saturday', 'lørdag']];
+const WEEKDAY_DATE = new RegExp(`\\b(${WEEKDAYS.flat().join('|')}),?\\s+(?:the\\s+|den\\s+|d\\.\\s*)?(?:(\\d{1,2})(?:st|nd|rd|th|\\.)?\\s+(?:of\\s+)?(${MONTH})|(${MONTH})\\.?\\s+(\\d{1,2}))(?:st|nd|rd|th)?(?:,?\\s+(20\\d\\d))?\\b`, 'giu');
+/** weekdays that don't match their date: in the year said, else the one closest to the case's today (rule 4: the 4 Nov "mandag den 31. oktober" was a Saturday) */
+export function wrongWeekdays(reply: string, today: string): string[] {
+  const t = Date.UTC(Number(today.slice(0, 4)), Number(today.slice(5, 7)) - 1, Number(today.slice(8, 10)));
+  const out: string[] = [];
+  for (const m of reply.matchAll(WEEKDAY_DATE)) {
+    const said = WEEKDAYS.findIndex((w) => w.includes(m[1].toLowerCase()));
+    const day = Number(m[2] ?? m[5]);
+    const mon = monthIndex(m[3] ?? m[4]);
+    if (mon < 1) continue;
+    const years = m[6] ? [Date.UTC(Number(m[6]), mon - 1, day)] : [-1, 0, 1].map((k) => Date.UTC(Number(today.slice(0, 4)) + k, mon - 1, day));
+    const at = years.reduce((a, b) => (Math.abs(b - t) < Math.abs(a - t) ? b : a));
+    if (new Date(at).getUTCDay() !== said) out.push(m[0]);
+  }
+  return out;
+}
+
 /** The Answer Bar's countable rules, on every case, every turn (docs/coach/ANSWER-BAR.md). */
 export function barChecks(c: ExamCase, turns: TurnLog[]): Check[] {
   const out: Check[] = [];
@@ -170,6 +191,7 @@ export function barChecks(c: ExamCase, turns: TurnLog[]): Check[] {
   const voice = c.turns.map((x) => !!x.voice);
   each('rule 3: voice is spoken style', (t, i) => voice[i] && (VOICE_BAD.test(t.say!) ? 'list marker or symbol' : words(t.say!) > 60 ? `${words(t.say!)} words` : false));
   each('rule 4: no invented date', (t) => (t.dates?.length ? t.dates.join(', ') : false));
+  each('rule 4: a weekday matches its date', (t) => wrongWeekdays(t.say!, c.now.slice(0, 10)).join(', ') || false);
   each('rule 11: no citation in the text', (t) => (t.say!.match(CITATION)?.[0] ?? false));
   each('rule 14: no known bad Danish', (t) => (t.say!.match(BAD_DANISH)?.[0] ?? false));
   return out;

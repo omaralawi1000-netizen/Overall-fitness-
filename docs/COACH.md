@@ -246,6 +246,39 @@ what was decided (Omar: "use only the good parts"):
   compiles the schema into a grammar). Now 11, guarded by a test.
 - Harsh score: 7/10. Biggest weakness: ~40 picks from one person is a thin base, so judges may stay at "triage only".
 
+### Check run, 4 Nov (all 50 cases on Gunshot, out-v4; $0.71, total spent today $4.83)
+- **Length works.** The new Coach texts about 50 words (never over 70 outside expert answers); the previous Coach
+  about 100, Opus about 180 (Opus broke the 120-word text cap on almost every case).
+- **Food logging never worked on any model.** The flat reply item with shared fields ("value" meant ml, kg or an
+  amount) made Flash write `text` plus `value: 100.00000000000001` and nothing else, or run out of tokens (5 empty
+  answers), and Opus left out the amount and unit. Fixed: one exact shape per action (`anyOf`), every field it needs
+  required, under the names `readProposal` reads; one optional field and one union, so Claude still compiles it
+  fast. Checked on Gemini 3.6 Flash with the same request: the old shape lost the amounts, the new one logged
+  "pasta bolognese, 1 portion, 750 kcal, 35 g". Saving a note failed the same way on Flash.
+- **No validation text in front of the person.** "I couldn't make that change: amount and unit (g, ml, piece, portion)
+  are needed" (in English, even in a Danish reply) is now "I couldn't log that food, so nothing was changed." /
+  "Jeg kunne ikke logge maden, så intet er ændret."; a target out of range says the range. Reasons stay in the log.
+- **Flash is the slow one:** 7–34 s a quick answer with 4,096 thinking tokens, Sonnet 2–3 s. Next check: the 18 quick
+  cases on mix, `flashlow` (Flash, 512 thinking) and `sonnet` (Sonnet for both tiers); the faster setup that keeps
+  the quality wins the quick tier. The exam log now keeps what a model sent when code couldn't use it (`raw`).
+- Still open for stage 3: the low-intake notice was missed (n02, 863 kcal), "weigh-in" in a Danish reply (p04), and
+  m08's answer to "which days?" became a robot line after both moves were turned into one Apply button.
+- **Same 50 cases on the fixed code (mix, $0.71):** 50 of 50 answered, 0 failed calls, 5 failed checks (was 9 with 5
+  empty). Food logging works: "3 eggs and 200 g oats", then "no, 2 eggs" logs both and fixes the eggs; the misheard
+  "sky" is logged as skyr; notes are saved. The stalled-row notice now names the row. Flash still takes 5–17 s.
+  New finds, fixed: Sonnet called Saturday 31 October "mandag" (NOW now carries the weekday, and the exam checks every
+  weekday against its date); a "Want me to set it to 2,420?" with no Apply button (rule line added). r03 (pizza)
+  now accepts logging it as an estimate, the same rule as o06.
+- **Speed check, the 18 quick cases (out-v5, $0.61, total today about $6.15).** Sonnet for every answer: 3.2 s average,
+  6.8 s longest, 0 failed checks, $0.018 a turn. Flash with 4,096 thinking (mix): 11 s average, 33 s longest, $0.006,
+  answered Lisa in Danish. Flash with 512 thinking (`flashlow`): 4.3 s, 13.8 s longest, $0.004, but answered two
+  English speakers in Danish (p08, r01), missed the m01 command and claimed a change it had only offered. So the
+  quick tier goes to Sonnet unless Omar picks cost over quality.
+- **Claims with only an Apply button under them, fixed.** "Moved Pull to Sunday instead.", "Done: Full body A moves
+  to Tuesday" and "to æg og skyr er logget" were shown although nothing had changed yet. A claim at the start of a
+  sentence ("Moved…", "Set to 250 g", "Done:") or in the passive ("er logget", "er gemt") now needs a done action of
+  its kind; "Set a reminder…" and "Your logged days…" stay ordinary words.
+
 ### What it is
 - **Conversations**: realistic ones built from Omar's real week (the interview), plus friends of every type. Each one
   runs against fake data built in old Aven's data format, so the old Coach and Aven 2's Coach face exactly the same

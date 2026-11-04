@@ -18,15 +18,15 @@ function geminiSchema(s: unknown): unknown {
  * own room; Claude's thinking room is added by `toClaude`.
  */
 export const GEMINI_THINKING = 4096;
-export function toBody(req: CoachRequest, maxOut = 1200, model = 'gemini'): GeminiBody {
+export function toBody(req: CoachRequest, maxOut = 1200, model = 'gemini', thinking = GEMINI_THINKING): GeminiBody {
   const gemini = !model.startsWith('claude-');
   return {
     systemInstruction: { parts: [{ text: req.system }] },
     contents: req.turns.map((t) => ({ role: t.role, parts: [{ text: t.text }] })),
     generationConfig: {
       responseMimeType: 'application/json', responseSchema: geminiSchema(req.schema),
-      maxOutputTokens: gemini ? maxOut + GEMINI_THINKING : maxOut,
-      ...(gemini ? { thinkingConfig: { thinkingBudget: GEMINI_THINKING } } : {}),
+      maxOutputTokens: gemini ? maxOut + thinking : maxOut,
+      ...(gemini ? { thinkingConfig: { thinkingBudget: thinking } } : {}),
     },
   };
 }
@@ -35,13 +35,15 @@ export interface Asked {
   model: string; reply?: ModelReply; dropped: string[]; error?: string; usd: number; ms: number;
   /** the call itself failed (network, refused, cap): no answer from the model, so the run is not saved as finished */
   callFailed?: boolean;
+  /** what the model really sent when code could not use it: the actions it dropped, or the end of a reply that is not JSON */
+  raw?: string;
 }
 
 /** busy or dropped: worth asking again after a pause (a 4xx other than 429 never is) */
 const busy = (e: CallError) => e.status === -1 || e.status === 429 || e.status === 503 || e.status === 529 || e.status === 500;
 export const RETRY_WAITS_MS = [5_000, 15_000, 40_000, 90_000];
 
-export async function askCoach(model: string, req: CoachRequest, o: CallOpts & { wait?: (ms: number) => Promise<void> }): Promise<Asked> {
+export async function askCoach(model: string, req: CoachRequest, o: CallOpts & { wait?: (ms: number) => Promise<void>; thinking?: number }): Promise<Asked> {
   const t0 = performance.now();
   const wait = o.wait ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   try {
@@ -49,7 +51,7 @@ export async function askCoach(model: string, req: CoachRequest, o: CallOpts & {
     // a failed attempt may still be billed: its ledger charge counts in the turn's cost too (Codex, PR #81)
     const spentBefore = o.ledger.spent;
     for (let n = 0; ; n++) {
-      try { r = await call(model, toBody(req, 1200, model), o); break; } catch (e) {
+      try { r = await call(model, toBody(req, 1200, model, o.thinking), o); break; } catch (e) {
         if (!(e instanceof CallError) || !busy(e) || n >= RETRY_WAITS_MS.length) { if (e instanceof CallError) (e as CallError & { usd?: number }).usd = o.ledger.spent - spentBefore; throw e; }
         await wait(RETRY_WAITS_MS[n]);
       }
@@ -60,9 +62,10 @@ export async function askCoach(model: string, req: CoachRequest, o: CallOpts & {
     const text = r.candidates[0]?.content?.parts?.filter((p) => !p.thought).map((p) => p.text ?? '').join('') ?? '';
     let raw: unknown;
     const cut = (r.candidates[0] as { finishReason?: string } | undefined)?.finishReason === 'MAX_TOKENS';
-    try { raw = JSON.parse(text); } catch { return { model, dropped: [], error: cut ? 'reply is not JSON (cut off at the token limit)' : 'reply is not JSON', usd, ms }; }
+    try { raw = JSON.parse(text); } catch { return { model, dropped: [], error: cut ? 'reply is not JSON (cut off at the token limit)' : 'reply is not JSON', usd, ms, raw: `${text.length} chars, ends: ${text.slice(-400)}` }; }
     const read = readReply(raw);
-    return 'error' in read ? { model, dropped: [], error: read.error, usd, ms } : { model, reply: read.reply, dropped: read.dropped, usd, ms };
+    const sent = JSON.stringify((raw as { actions?: unknown })?.actions ?? null).slice(0, 1500);
+    return 'error' in read ? { model, dropped: [], error: read.error, usd, ms, raw: sent } : { model, reply: read.reply, dropped: read.dropped, usd, ms, ...(read.dropped.length ? { raw: sent } : {}) };
   } catch (e) {
     // status 0 is a finished answer that failed (Claude cut off at max_tokens, a refusal): scored like a cut-off Gemini
     // reply, never thrown away as a call that did not happen (Codex, PR #81)

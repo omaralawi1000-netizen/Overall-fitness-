@@ -83,7 +83,7 @@ describe('code decides what happens', () => {
     const { f, turn } = await person({ kcal: 2500 });
     const s = await turn('set my calories to 900', { say: 'Done, calories set to 900.', actions: [{ how: 'do', name: 'set_target', key: 'kcal', value: 900 }] });
     expect(f.e.get<'settings'>('settings')!.targets.kcal).toBe(2500);
-    expect(s.text).toMatch(/^I couldn't make that change: .*Nothing was changed\.$/);
+    expect(s.text).toMatch(/^I couldn't change that target, so nothing was changed\. 900 is outside what I can set \([\d,]+–[\d,]+\)\.$/);
     expect(s.text).not.toMatch(/Done/);
   });
 
@@ -109,14 +109,14 @@ describe('code decides what happens', () => {
     const { turn } = await person({ waterMl: 2500 });
     const s = await turn('log this bottle', { say: 'Logged.', actions: [{ how: 'do', name: 'log_water', ml: 1500 }] }, true);
     expect(s.text).not.toMatch(/Logged\./);
-    expect(s.text).toMatch(/^I couldn't make that change: .*Nothing was changed\.$/);
+    expect(s.text).toBe("I couldn't log the water, so nothing was changed.");
   });
 
   it('when one change works and another fails, it never says nothing was changed (Codex, PR #81)', async () => {
     const { f, turn } = await person({ protein: 215, kcal: 2500 });
     const s = await turn('set protein to 250 and calories to 900', { say: 'Done, both set.', actions: [{ how: 'do', name: 'set_target', key: 'protein', value: 250 }, { how: 'do', name: 'set_target', key: 'kcal', value: 900 }] });
     expect(f.e.get<'settings'>('settings')!.targets.protein).toBe(250);
-    expect(s.text).toMatch(/^Only part of that went through\. I couldn't: .*What did change is below\.\n\nDid in the app: protein target 215 → 250 g · Undo$/);
+    expect(s.text).toMatch(/^Only part of that went through: I couldn't change that target\. 900 is outside what I can set \([\d,]+–[\d,]+\)\. What did change is below\.\n\nDid in the app: protein target 215 → 250 g · Undo$/);
     expect(s.text).not.toMatch(/Nothing was changed|Done/);
   });
 
@@ -137,17 +137,26 @@ describe('code decides what happens', () => {
 
   it('a broken "do" dropped while reading never leaves "Logged 500 ml." showing (Codex, PR #81)', async () => {
     const { f, turn } = await person({ waterMl: 2500 });
-    const r = readReply({ say: 'Logged 500 ml.', actions: [{ how: 'do', name: 'log_water', value: 'lots' }] });
+    const r = readReply({ say: 'Logged 500 ml.', actions: [{ how: 'do', name: 'log_water', ml: 'lots' }] });
     if ('error' in r) throw new Error(r.error);
     const s = await turn('log 500 ml water', r.reply);
-    expect(s.text).toMatch(/^I couldn't make that change: .*Nothing was changed\.$/);
+    expect(s.text).toBe("I couldn't log the water, so nothing was changed.");
     expect(f.e.allRecords().some((x) => x.kind === 'water')).toBe(false);
   });
 
   it('answers in Danish when the person uses Danish', async () => {
     const { turn } = await person({ kcal: 2500 }, 'da');
     const s = await turn('sæt mine kalorier til 900', { say: 'Klaret.', actions: [{ how: 'do', name: 'set_target', key: 'kcal', value: 900 }] });
-    expect(s.text).toMatch(/^Det kunne jeg ikke ændre/);
+    expect(s.text).toMatch(/^Jeg kunne ikke ændre målet, så intet er ændret\. 900 ligger uden for det, jeg kan sætte \([\d.]+–[\d.]+\)\.$/);
+  });
+
+  it('a broken food log in Danish is told in plain Danish, never as a validation message (4 Nov run)', async () => {
+    const { turn } = await person({ kcal: 2500 }, 'da');
+    const r = readReply({ say: 'Logget.', actions: [{ how: 'do', name: 'log_food', food: 'to æg', amount: 2, unit: 'piece' }] });
+    if ('error' in r) throw new Error(r.error);
+    const s = await turn('log to æg', r.reply);
+    expect(s.text).toBe('Jeg kunne ikke logge maden, så intet er ændret.');
+    expect(s.refused.join(' ') + JSON.stringify(r.dropped)).toMatch(/kcal and protein estimates are needed/);
   });
 });
 
@@ -176,21 +185,24 @@ describe('More, notices and source chips (Answer Bar rules 2 and 9)', () => {
   });
 });
 
-describe('the reply schema stays small (Claude compiles it into a grammar; 19 optional fields timed out every call, 4 Nov)', () => {
-  it('has at most 11 optional fields, and the shared fields reach each action under its own name', async () => {
+describe('the reply schema: one exact shape per action (4 Nov: shared fields never logged a food on any model)', () => {
+  it('has one union and at most one optional field, so Claude compiles it fast', async () => {
     const { schemaSize, toJsonSchema } = await import('../../exam/providers');
-    expect(schemaSize(toJsonSchema(REPLY_SCHEMA as never)).optional).toBeLessThanOrEqual(11);
+    expect(schemaSize(toJsonSchema(REPLY_SCHEMA as never))).toEqual({ optional: 1, unions: 1 });
+  });
+
+  it('every action requires the fields its reader needs, under the reader\'s own names', () => {
+    const variants = REPLY_SCHEMA.properties.actions.items.anyOf as { properties: { name: { enum: string[] } } & Record<string, unknown>; required: string[] }[];
+    const required = Object.fromEntries(variants.map((v) => [v.properties.name.enum[0], v.required.filter((k) => k !== 'how' && k !== 'name')]));
+    expect(required).toEqual({
+      set_target: ['key', 'value'], remember: ['text', 'topic'], forget: ['memoryId'], log_water: ['ml'], log_weight: ['kg'],
+      move_session: ['from', 'to'], log_food: ['food', 'amount', 'unit', 'kcal', 'protein'], fix_food: ['foodId', 'amount'],
+    });
     const r = readReply({ say: 'ok', show: 'none', sources: [], actions: [
-      { how: 'do', name: 'log_water', value: 500 }, { how: 'do', name: 'log_weight', value: 82.4 },
-      { how: 'do', name: 'log_food', text: 'eggs', value: 2, unit: 'piece', kcal: 140, protein: 12 },
-      { how: 'do', name: 'fix_food', id: 'f1', value: 3 }, { how: 'do', name: 'forget', id: 'm1' },
-    ] });
-    expect('reply' in r && r.reply.actions).toEqual([
-      { how: 'do', name: 'log_water', ml: 500 }, { how: 'do', name: 'log_weight', kg: 82.4 },
       { how: 'do', name: 'log_food', food: 'eggs', amount: 2, unit: 'piece', kcal: 140, protein: 12 },
-      { how: 'do', name: 'fix_food', foodId: 'f1', amount: 3 }, { how: 'do', name: 'forget', memoryId: 'm1' },
-    ]);
-    expect('reply' in r && r.reply.show).toBeUndefined();
+      { how: 'do', name: 'fix_food', foodId: 'f1', amount: 3 }, { how: 'offer', name: 'remember', text: 'Nights all week', topic: 'life', until: '2026-11-08' },
+    ] });
     expect('reply' in r && r.dropped).toEqual([]);
+    expect('reply' in r && r.reply.actions.map((a) => a.name)).toEqual(['log_food', 'fix_food', 'remember']);
   });
 });
