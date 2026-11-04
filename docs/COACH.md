@@ -165,6 +165,12 @@ weight, purging, or training through sharp pain. No memory or preference unlocks
 the safe way. Under 18: no supplement doses and no cutting or weight-loss targets; defer to a parent or doctor (Omar, 3 Nov,
 `docs/coach/ANSWER-BAR.md` rule 11). Age unknown when it matters: ask first. Red flags (concussion, chest pain, fainting, heat illness, rhabdomyolysis) always go to a doctor.
 
+**Rule vs taste (Omar, 3 Nov: "a better answer for the majority of people, not just me"):** facts, safety and what
+happens in the app are rules and hold for everyone. They are checked by code, and by judges calibrated on the Answer Bar.
+Tone, length and how chatty it is are taste. Omar's blind picks choose which judges to trust, but taste is not tuned to
+one person: before release, 3–5 more testers do the same blind page, and a taste change ships only where most of them
+agree. A person's own preference ("be shorter", "be harder on me") still goes in their memory.
+
 ## 6. Onboarding: how it gets to know someone
 
 **For the person:** the first open is a short talk, not a form. The Coach asks one thing at a time, each answerable in

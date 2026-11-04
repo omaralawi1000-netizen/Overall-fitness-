@@ -40,7 +40,9 @@ export interface Did { actionId: string; label: string; undo: true }
 
 const isNum = (v: unknown): v is number => typeof v === 'number' && Number.isFinite(v);
 const str = (v: unknown, max: number) => typeof v === 'string' && v.trim().length >= 2 && v.trim().length <= max ? v.trim() : null;
-const fmt = (n: number) => n.toLocaleString('en-GB');
+const fmtIn = (da: boolean) => (n: number) => n.toLocaleString(da ? 'da-DK' : 'en-GB');
+/** what a target is called in a label, in the person's language (a Danish reply never shows "remembered" or "3,000") */
+const TARGET_NAME: Record<TargetKey, [string, string]> = { kcal: ['kcal target', 'kaloriemål'], protein: ['protein target', 'proteinmål'], carbs: ['carbs target', 'kulhydratmål'], fat: ['fat target', 'fedtmål'], fibre: ['fibre target', 'fibermål'], waterMl: ['water target', 'vandmål'] };
 
 /** Turn whatever the AI sent into a typed proposal, or say what's wrong with it. Never guesses a missing value. */
 export function readProposal(raw: unknown): Proposal | { error: string } {
@@ -73,6 +75,8 @@ export function readProposal(raw: unknown): Proposal | { error: string } {
 export function check(p: Proposal, mode: Mode, o: { records: AnyRecord[]; now: number; tz: string }): Checked {
   const settings = o.records.find((r): r is Settings => r.kind === 'settings' && !r.deleted);
   const day = dayKeyAt(o.now, o.tz, settings?.dayStartHour ?? 0);
+  const da = settings?.language === 'da';
+  const fmt = fmtIn(da);
   const ok = (preview: boolean, label: string, ops: Op[]): Checked => ({ ok: true, proposal: p, mode, preview, label, ops });
   switch (p.name) {
     case 'set_target': {
@@ -81,7 +85,7 @@ export function check(p: Proposal, mode: Mode, o: { records: AnyRecord[]; now: n
       const before = settings?.targets[p.key];
       if (before === p.value) return { ok: false, reason: `${p.key} target is already ${p.value}` };
       const unit = TARGET_UNIT[p.key];
-      const label = `${p.key === 'waterMl' ? 'water' : p.key} target ${before !== undefined ? `${fmt(before)} → ` : ''}${fmt(p.value)} ${unit}`;
+      const label = `${TARGET_NAME[p.key][da ? 1 : 0]} ${before !== undefined ? `${fmt(before)} → ` : ''}${fmt(p.value)} ${unit}`;
       // no live settings: bring back one Undo removed (an id is never created twice, even deleted: Codex, PR #73), else create
       const gone = o.records.find((r): r is Settings => r.kind === 'settings' && !!r.deleted);
       const ops: Op[] = settings
@@ -97,19 +101,19 @@ export function check(p: Proposal, mode: Mode, o: { records: AnyRecord[]; now: n
       if (same) return { ok: false, reason: 'already remembered' };
       const id = newId('m');
       const record = { id, kind: 'memory', day, text: p.text, topic: p.topic, scope: p.until ? 'oneOff' : 'standing', validFrom: day, lastSeen: o.now, origin: mode === 'command' ? 'said' : 'agreed', ...(p.until ? { validUntil: p.until } : {}) } as NewRecord;
-      return ok(mode === 'proposal', `remembered "${p.text}"`, [{ op: 'create', record }]);
+      return ok(mode === 'proposal', `${da ? 'huskede' : 'remembered'} "${p.text}"`, [{ op: 'create', record }]);
     }
     case 'forget': {
       const m = o.records.find((r): r is MemoryCard => r.id === p.memoryId && r.kind === 'memory');
       if (!m || m.deleted) return { ok: false, reason: 'no such memory' };
-      return ok(mode === 'proposal', `forgot "${m.text}"`, [{ op: 'delete', id: m.id }]);
+      return ok(mode === 'proposal', `${da ? 'glemte' : 'forgot'} "${m.text}"`, [{ op: 'delete', id: m.id }]);
     }
     case 'log_water':
       if (p.ml < 50 || p.ml > 3000) return { ok: false, reason: `${p.ml} ml is outside 50–3,000` };
-      return ok(false, `logged ${fmt(p.ml)} ml water`, [{ op: 'create', record: { id: newId('w'), kind: 'water', day, ml: p.ml } as NewRecord }]);
+      return ok(false, da ? `loggede ${fmt(p.ml)} ml vand` : `logged ${fmt(p.ml)} ml water`, [{ op: 'create', record: { id: newId('w'), kind: 'water', day, ml: p.ml } as NewRecord }]);
     case 'log_weight':
       if (p.kg < 30 || p.kg > 300) return { ok: false, reason: `${p.kg} kg is outside 30–300` };
-      return ok(false, `logged ${p.kg} kg`, [{ op: 'create', record: { id: newId('bw'), kind: 'bodyweight', day, kg: p.kg } as NewRecord }]);
+      return ok(false, `${da ? 'loggede' : 'logged'} ${fmt(p.kg)} kg`, [{ op: 'create', record: { id: newId('bw'), kind: 'bodyweight', day, kg: p.kg } as NewRecord }]);
   }
 }
 

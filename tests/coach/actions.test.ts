@@ -4,9 +4,9 @@ import type { Settings } from '../../src/engine/model';
 import type { NewRecord } from '../../src/engine/plan';
 import { fresh, TZ } from '../engine/helpers';
 
-async function withTargets(targets: Record<string, number>) {
+async function withTargets(targets: Record<string, number>, language: 'en' | 'da' = 'en') {
   const f = await fresh();
-  await f.e.commit({ type: 'setup', label: 'setup', ops: [{ op: 'create', record: { id: 'settings', kind: 'settings', language: 'en', dayStartHour: 0, weekStart: 1, units: { weight: 'kg', distance: 'km', length: 'cm' }, restDefaultSec: 120, targets } as NewRecord }] });
+  await f.e.commit({ type: 'setup', label: 'setup', ops: [{ op: 'create', record: { id: 'settings', kind: 'settings', language, dayStartHour: 0, weekStart: 1, units: { weight: 'kg', distance: 'km', length: 'cm' }, restDefaultSec: 120, targets } as NewRecord }] });
   return f;
 }
 const ctx = (f: Awaited<ReturnType<typeof fresh>>) => ({ records: f.e.allRecords(), now: f.c.now(), tz: TZ });
@@ -185,5 +185,16 @@ describe('validate → check → apply → verify → Undo', () => {
       { name: 'log_weight', kg: 82.4 },
     ];
     for (const p of all) expect(readProposal(JSON.parse(JSON.stringify(p)))).toEqual(p);
+  });
+});
+
+describe('labels in the person\'s language', () => {
+  it('a Danish person sees Danish words and Danish numbers in what the app did', async () => {
+    const f = await withTargets({ kcal: 3000 }, 'da');
+    const c = check({ name: 'set_target', key: 'kcal', value: 3040 }, 'proposal', ctx(f));
+    expect(c).toMatchObject({ ok: true, label: 'kaloriemål 3.000 → 3.040 kcal' });
+    expect(check({ name: 'remember', text: 'Spiller fodbold tre gange om ugen', topic: 'about' }, 'command', ctx(f))).toMatchObject({ label: 'huskede "Spiller fodbold tre gange om ugen"' });
+    expect(check({ name: 'log_water', ml: 1500 }, 'command', ctx(f))).toMatchObject({ label: 'loggede 1.500 ml vand' });
+    expect(check({ name: 'log_weight', kg: 74.8 }, 'command', ctx(f))).toMatchObject({ label: 'loggede 74,8 kg' });
   });
 });
