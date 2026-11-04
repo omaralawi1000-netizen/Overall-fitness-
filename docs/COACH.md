@@ -263,6 +263,12 @@ what was decided (Omar: "use only the good parts"):
   the quality wins the quick tier. The exam log now keeps what a model sent when code couldn't use it (`raw`).
 - Still open for stage 3: the low-intake notice was missed (n02, 863 kcal), "weigh-in" in a Danish reply (p04), and
   m08's answer to "which days?" became a robot line after both moves were turned into one Apply button.
+- **Same 50 cases on the fixed code (mix, $0.71):** 50 of 50 answered, 0 failed calls, 5 failed checks (was 9 with 5
+  empty). Food logging works: "3 eggs and 200 g oats", then "no, 2 eggs" logs both and fixes the eggs; the misheard
+  "sky" is logged as skyr; notes are saved. The stalled-row notice now names the row. Flash still takes 5–17 s.
+  New finds, fixed: Sonnet called Saturday 31 October "mandag" (NOW now carries the weekday, and the exam checks every
+  weekday against its date); a "Want me to set it to 2,420?" with no Apply button (rule line added). r03 (pizza)
+  now accepts logging it as an estimate, the same rule as o06.
 
 ### What it is
 - **Conversations**: realistic ones built from Omar's real week (the interview), plus friends of every type. Each one

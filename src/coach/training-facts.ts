@@ -24,7 +24,7 @@ export interface TrainingFacts {
 }
 
 const live = <T extends AnyRecord>(rs: AnyRecord[], kind: T['kind']) => rs.filter((r): r is T => r.kind === kind && !r.deleted);
-const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+export const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const e1rm = (kg: number, reps: number) => kg * (1 + reps / 30);
 
 /** which routine a day has: cleared → none, an override → its routine, else the weekly plan (rotation plans: unknown) */

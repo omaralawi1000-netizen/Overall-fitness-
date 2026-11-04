@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { barChecks, inventedDates } from '../../exam/v2/run-case';
+import { barChecks, inventedDates, wrongWeekdays } from '../../exam/v2/run-case';
 import { CASES } from '../../exam/v2/cases';
 
 const turn = (say: string, extra: Record<string, unknown> = {}) => ({ tier: 'deep' as const, model: 'm', say, shown: { text: say, did: [], offers: [], refused: [] }, dropped: [], usd: 0, ms: 0, ...extra });
@@ -34,5 +34,18 @@ describe('the Answer Bar checks in code', () => {
     expect(inventedDates('You reach 83 kg around 12 December, well ahead of 28 February.', 'goal by 2027-02-28')).toEqual(['12 December']);
     expect(inventedDates('Pull moves to Fri 6 Nov.', '- 2026-11-06 (Friday): Pull')).toEqual([]);
     expect(inventedDates('kampen 7. november', '2026-11-07')).toEqual([]);
+  });
+  it('catches a weekday that is not its date (4 Nov: Saturday 31 October called "mandag")', () => {
+    expect(wrongWeekdays('Dit sidste pas var mandag den 31. oktober...', '2026-11-03')).toEqual(['mandag den 31. oktober']);
+    expect(wrongWeekdays('Sidste pas: lørdag den 31. oktober.', '2026-11-03')).toEqual([]);
+    expect(wrongWeekdays('Race day is Sunday, November 8.', '2026-11-02')).toEqual([]);
+    expect(wrongWeekdays('Race day is Monday 8 November.', '2026-11-02')).toEqual(['Monday 8 November']);
+    expect(wrongWeekdays('See you Monday the 2nd of November', '2026-11-01')).toEqual([]);
+    // across the new year: early January is read in the coming year
+    expect(wrongWeekdays('torsdag den 1. januar', '2026-12-20')).toEqual(['torsdag den 1. januar']);
+    expect(wrongWeekdays('fredag den 1. januar', '2026-12-20')).toEqual([]);
+    expect(wrongWeekdays('Thursday 1 January', '2026-01-03')).toEqual([]);
+    const fails = barChecks(CASES[0], [turn('Moved to Monday 8 November.')]).filter((c) => !c.ok).map((c) => c.name);
+    expect(fails).toContain('rule 4: a weekday matches its date');
   });
 });
