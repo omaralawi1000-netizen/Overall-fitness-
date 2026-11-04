@@ -3,6 +3,7 @@ import { apply, check, readProposal, type Proposal } from '../../src/coach/actio
 import { finishTurn, unbackedClaims } from '../../src/coach/coach';
 import { buildFacts } from '../../src/coach/facts';
 import { asksFor, corrects } from '../../src/coach/untrusted';
+import { barPairs } from '../../exam/judge/pairwise';
 import { routineOn } from '../../src/coach/training-facts';
 import type { Plan } from '../../src/engine/model';
 import type { NewRecord } from '../../src/engine/plan';
@@ -114,5 +115,24 @@ describe('corrections, refusals and real dates (Codex, PR #82)', () => {
 
   it('a move to a day that does not exist is refused', () => {
     expect(readProposal({ name: 'move_session', from: '2026-02-26', to: '2026-02-30' })).toHaveProperty('error');
+  });
+});
+
+describe('second Codex round on PR #82', () => {
+  it('Pull on Tue and Thu: moving Tue to Thu, then to Fri, gives Thu its own Pull back', async () => {
+    const f = await withPlan();
+    await f.e.commit({ type: 'edit', label: 'two pulls', ops: [{ op: 'update', id: 'plan', set: { weekly: { 2: 'r-pull', 4: 'r-pull' } } }] });
+    await run(f, { name: 'move_session', from: '2026-11-03', to: '2026-11-05' }, 'a1');
+    await run(f, { name: 'move_session', from: '2026-11-05', to: '2026-11-06' }, 'a2');
+    expect(routineOn(plan(f), '2026-11-03')).toBeNull();
+    expect(routineOn(plan(f), '2026-11-05')).toBe('r-pull');
+    expect(routineOn(plan(f), '2026-11-06')).toBe('r-pull');
+  });
+  it('"no, don\'t fix the 2 eggs" is a refusal', () => {
+    expect(asksFor('fix_food', "no, don't fix the 2 eggs")).toBe(false);
+    expect(asksFor('fix_food', 'no, 2 eggs')).toBe(true);
+  });
+  it('the Answer Bar calibration answers carry no commentary', () => {
+    for (const p of barPairs()) for (const side of [p.good, p.bad]) expect(side.reply).not.toMatch(/\((?:citations|exactly what|.*\bin the chat)\b/);
   });
 });

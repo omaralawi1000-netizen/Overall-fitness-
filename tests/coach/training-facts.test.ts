@@ -67,13 +67,13 @@ describe('training facts', () => {
   it('sleep: a nap adds to that day, never counts as another short night (Codex, PR #81)', () => {
     const rec = (endDay: string, endHour: string, hours: number) => env('sleep', endDay, { start: at(endDay, endHour) - hours * 36e5, end: at(endDay, endHour) });
     const rs = ['2026-10-31', '2026-11-01', '2026-11-02'].flatMap((d) => [rec(d, '07', 8), rec(d, '15', 1)]);
-    expect(buildFacts(rs, { now: NOW, tz: TZ }).training.sleep).toEqual({ nights: 3, avgHours: 9, under6: 0, under6Of: 3 });
+    expect(buildFacts(rs, { now: NOW, tz: TZ }).training.sleep).toEqual({ nights: 3, avgHours: 9, under6: 0, under6Of: 3, last: { day: '2026-11-02', hours: 9 } });
   });
 
   it('sleep: average and short nights over the last week, and nothing from fewer than 3 nights', () => {
     const night = (endDay: string, hours: number) => env('sleep', endDay, { start: at(endDay, '07') - hours * 36e5, end: at(endDay, '07') });
     const s = buildFacts([night('2026-10-30', 7.5), night('2026-10-31', 5.5), night('2026-11-01', 5), night('2026-11-02', 8), night('2026-11-03', 5.8), night('2026-10-20', 4)], { now: NOW, tz: TZ });
-    expect(s.training.sleep).toEqual({ nights: 5, avgHours: 6.4, under6: 3, under6Of: 5 });
+    expect(s.training.sleep).toEqual({ nights: 5, avgHours: 6.4, under6: 3, under6Of: 5, last: { day: '2026-11-03', hours: 5.8 } });
     expect(buildFacts([night('2026-11-02', 8), night('2026-11-03', 5)], { now: NOW, tz: TZ }).training.sleep).toBeUndefined();
   });
 });

@@ -16,6 +16,7 @@ describe('the Answer Bar checks in code', () => {
     expect(failed('Yes, per Helms 2014 that works.')).toEqual(['rule 9: no citation in the text']);
     expect(failed('Din plan har to heldagskroppe.')).toEqual(['rule 12: no known bad Danish']);
     expect(failed('Creatine 3–5 g a day is fine, and 2026 is a good year.')).toEqual([]);
+    expect(failed('Your goal date is 28 February 2027.')).not.toContain('rule 9: no citation in the text');
   });
   it('voice: no lists or symbols, under 60 words', () => {
     const v = CASES.findIndex((c) => c.turns[0].voice);

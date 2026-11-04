@@ -20,7 +20,7 @@ export interface TrainingFacts {
   lifts: LiftFact[];
   /** finished sessions per 7-day block, oldest first, the last block ending today */
   weeks: number[];
-  sleep?: { nights: number; avgHours: number; under6: number; under6Of: number };
+  sleep?: { nights: number; avgHours: number; under6: number; under6Of: number; last: { day: string; hours: number } };
 }
 
 const live = <T extends AnyRecord>(rs: AnyRecord[], kind: T['kind']) => rs.filter((r): r is T => r.kind === kind && !r.deleted);
@@ -105,8 +105,10 @@ export function trainingFacts(records: AnyRecord[], o: { today: string; dayStart
     perDay.set(d, (perDay.get(d) ?? 0) + (s.minutes ?? (s.end - s.start) / 60000) / 60);
   }
   const nights = [...perDay.values()];
-  const sleep = nights.length >= 3
-    ? { nights: nights.length, avgHours: Math.round((nights.reduce((a, b) => a + b, 0) / nights.length) * 10) / 10, under6: nights.filter((h) => h < 6).length, under6Of: nights.length }
+  // the latest night on its own too: "I barely slept" is about last night, which an average can hide (Codex, PR #82)
+  const lastDay = [...perDay.keys()].sort().at(-1);
+  const sleep = nights.length >= 3 && lastDay
+    ? { nights: nights.length, avgHours: Math.round((nights.reduce((a, b) => a + b, 0) / nights.length) * 10) / 10, under6: nights.filter((h) => h < 6).length, under6Of: nights.length, last: { day: lastDay, hours: Math.round(perDay.get(lastDay)! * 10) / 10 } }
     : undefined;
 
   return { plan: out, lifts: lifts.slice(0, 8), weeks, ...(sleep ? { sleep } : {}) };
@@ -125,7 +127,7 @@ export function renderTraining(t: TrainingFacts): string[] {
     out.push('LIFTS (best working set per session, oldest first):');
     for (const l of t.lifts) out.push(`- ${l.exercise}: ${l.best.map((b) => `${b.kg}×${b.reps} (${b.day})`).join(', ')}; ${l.status}${l.sameInARow >= 3 ? `; same best set ${l.sameInARow} sessions in a row` : ''}`);
   }
-  if (t.sleep) out.push(`SLEEP (last ${t.sleep.nights} nights): average ${t.sleep.avgHours} h; under 6 h on ${t.sleep.under6} of ${t.sleep.under6Of}`);
+  if (t.sleep) out.push(`SLEEP (last ${t.sleep.nights} nights): average ${t.sleep.avgHours} h; under 6 h on ${t.sleep.under6} of ${t.sleep.under6Of}; latest night (ending ${t.sleep.last.day}) ${t.sleep.last.hours} h`);
   return out;
 }
 
@@ -133,6 +135,6 @@ export function renderTraining(t: TrainingFacts): string[] {
 export function trainingNumbers(t: TrainingFacts): number[] {
   const out = [...t.weeks];
   for (const l of t.lifts) { out.push(l.sameInARow, l.best.length); for (const b of l.best) out.push(b.kg, b.reps); }
-  if (t.sleep) out.push(t.sleep.nights, t.sleep.avgHours, t.sleep.under6, t.sleep.under6Of);
+  if (t.sleep) out.push(t.sleep.nights, t.sleep.avgHours, t.sleep.under6, t.sleep.under6Of, t.sleep.last.hours);
   return out;
 }

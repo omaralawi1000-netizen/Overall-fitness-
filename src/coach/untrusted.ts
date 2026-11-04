@@ -44,7 +44,8 @@ export const saysNotTo = (text: string) => { NOT_ASKED.lastIndex = 0; return NOT
 /** Does the person's own text ask for this kind of action? Turned-down asks are taken out first, and only a sentence that
  * isn't asking for advice counts: "Set protein to 250. Should I eat more?" asks; "Should I lower my calories?" doesn't. */
 export const asksFor = (name: Proposal['name'], text: string) =>
-  text.replace(NOT_ASKED, ' ').split(/(?<=[.!?\n])\s*/u).some((s) => !ADVICE.test(s) && ASK_FOR[name].test(s));
+  // a correction's own words ("no", "not") would read "no, don't fix the eggs" as a yes: any refusal means no (Codex, PR #82)
+  !(name === 'fix_food' && saysNotTo(text)) && text.replace(NOT_ASKED, ' ').split(/(?<=[.!?\n])\s*/u).some((s) => !ADVICE.test(s) && ASK_FOR[name].test(s));
 /** "no wait, Sunday", "nej, søndag", "actually make it 1,800": a correction of the change just made asks for the same kind
  * of change again, so it counts only right after that action was done (Codex, PR #82) */
 const CORRECTION = words('no|nope|wait|actually|instead|rather|nej|vent|faktisk|hellere|i stedet');

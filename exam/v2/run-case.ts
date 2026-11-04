@@ -121,8 +121,9 @@ export function codeChecks(c: ExamCase, turns: TurnLog[], end?: EndState): Check
   return out;
 }
 
-/** in-text citations: "(Kreider et al., 2017)", "(ISSN 2017)", "Helms 2014", "(Smith & Jones, 2021)" (Answer Bar rule 9) */
-const CITATION = /\((?:[^()]*\b(?:et al\.?|&|og)\b[^()]*|[A-Z][\p{L}-]+[^()]{0,30}?)[,\s]+(?:19|20)\d{2}\)|\b[A-Z][\p{L}-]+(?: et al\.?)?,? (?:19|20)\d{2}\b/u;
+/** in-text citations: "(Kreider et al., 2017)", "(ISSN 2017)", "Helms 2014", "(Smith & Jones, 2021)" (Answer Bar rule 9);
+ * a date like "28 February 2027" is not one (Codex, PR #82) */
+const CITATION = /\((?:[^()]*\b(?:et al\.?|&|og)\b[^()]*|[A-Z][\p{L}-]+[^()]{0,30}?)[,\s]+(?:19|20)\d{2}\)|\b(?!(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|Januar|Februar|Marts|Maj|Juni|Juli|Oktober)\b)[A-Z][\p{L}-]+(?: et al\.?)?,? (?:19|20)\d{2}\b/u;
 /** list markers and symbols that are read out wrong in voice (rule 2) */
 const VOICE_BAD = /^\s*(?:[-•*]|\d+[.)])\s|[×→✅]|\bkg\/(?:uge|week)\b/mu;
 /** Danish forms a native speaker never writes (rule 12); grows with every one found in an exam */

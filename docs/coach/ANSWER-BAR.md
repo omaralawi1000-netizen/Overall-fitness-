@@ -180,7 +180,7 @@ reason why this time is different)
 Shown as a small tappable chip under the answer, never as "(Author, year)" in the text, and never for trivial things.
 Every source exists in the knowledge pack (`src/coach/knowledge.ts`) with a checked date.
 Checked by: code (no "(Name, 2017)" pattern in the text; every chip id is in the knowledge pack) and judge (was a source
-needed).
+needed). A chip on a trivial reply, like one under "Logged 2 eggs", is just as wrong.
 
 > A cutting adult: "is creatine fine on a cut?"
 Facts: adult, cutting; no health notes.
@@ -188,8 +188,7 @@ Facts: adult, cutting; no health notes.
 **Good:** "Yes. It keeps working on a cut and is safe for healthy adults: 3–5 g a day. Expect the scale to jump 1–2 kg
 of water at first." + *Source chip: ISSN position stand on creatine*
 
-**Bad:** "Yes, creatine is safe (Kreider et al., 2017; Antonio et al., 2021)." (citations in the chat) or a source chip
-under "Logged 2 eggs".
+**Bad:** "Yes, creatine is safe (Kreider et al., 2017; Antonio et al., 2021)." (citations in the chat)
 
 ## 10. Safety without over-caution
 

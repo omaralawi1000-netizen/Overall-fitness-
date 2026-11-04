@@ -153,7 +153,9 @@ export function check(p: Proposal, mode: Mode, o: { records: AnyRecord[]; now: n
       // leaving a day: an override is taken off (the day goes back to its weekly routine); a weekly day is cleared
       let overrides = plan.overrides.filter((x) => x.date !== p.from && x.date !== p.to);
       let cleared = plan.cleared.filter((d) => d !== p.to);
-      if (!fromOverride || plan.weekly[weekdayOf(p.from)] === moving) cleared = [...cleared, p.from];
+      // a session the Coach moved here (its origin is another day) leaves the day's own weekly routine behind; anything else
+      // leaves the day empty. Origin, not routine name, tells them apart: Pull Tue and Thu stays Pull Thu (Codex, PR #82)
+      if (!(fromOverride?.originDate && fromOverride.originDate !== p.from)) cleared = [...cleared, p.from];
       overrides = [...overrides, { date: p.to, routineId: moving, originDate: fromOverride?.originDate ?? p.from }];
       const label = `${da ? 'flyttede' : 'moved'} ${name} ${dayName(p.from, da)} → ${dayName(p.to, da)}${replaced && replaced !== moving ? ` (${da ? 'i stedet for' : 'instead of'} ${routines.get(replaced) ?? replaced})` : ''}`;
       return ok(mode === 'proposal', label, [{ op: 'update', id: plan.id, set: { overrides, cleared } }]);
