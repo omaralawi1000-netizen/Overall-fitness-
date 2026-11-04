@@ -6,6 +6,7 @@
 //      EXAM_RUNS     runs per case (default 1; the scored exam uses 3 and reports the worst)
 //      EXAM_CAP_USD  required unless EXAM_DRY · EXAM_LEDGER (this provider's ledger) · EXAM_OUT (default reference/e2v2)
 //      EXAM_DRY=1    no calls: a made-up reply, files under <EXAM_OUT>/dry
+//      EXAM_MORE=1   also ask for "More" under the Coach's last answer (round 3 shows it; the opponent gets none)
 // Behind an HTTPS proxy (the cloud), add NODE_USE_ENV_PROXY=1 so fetch goes through it.
 // A (case, setup, run) already saved with the same prompt is never paid for again.
 import { it } from 'vitest';
@@ -66,9 +67,9 @@ it('runs the cases through the setups', async () => {
   for (const c of cases) {
     for (const s of setups) {
       for (let run = 1; run <= RUNS; run++) {
-        const key = `${c.id}|${s.name}|${s.quick}|${s.deep}|${run}|${version(s.rules ?? COACH_RULES, JSON.stringify([c, records(c.person)]))}`;
+        const key = `${c.id}|${s.name}|${s.quick}|${s.deep}|${run}|${version(s.rules ?? COACH_RULES, JSON.stringify([c, records(c.person)]))}${process.env.EXAM_MORE ? '|more' : ''}`;
         if (done.has(key)) continue;
-        const r = await runCase(c, s, { ledger, purpose: 'answers', ...(DRY ? { dry } : {}) });
+        const r = await runCase(c, s, { ledger, purpose: 'answers', more: !!process.env.EXAM_MORE, ...(DRY ? { dry } : {}) });
         // a failed call is no answer: never saved, so the next run asks again; three in a row stop the run
         const lost = r.turns.find((t) => t.callFailed);
         if (lost) {

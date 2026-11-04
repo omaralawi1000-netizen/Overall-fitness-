@@ -8,7 +8,7 @@ import { buildFacts, renderFacts } from '../../src/coach/facts';
 import { CASES, nowOf } from '../../exam/v2/cases';
 import { records, TZ } from '../../exam/v2/people';
 import { codeChecks, runCase } from '../../exam/v2/run-case';
-import { Ledger, type GeminiReply } from '../../exam/providers';
+import { CallError, Ledger, type GeminiReply } from '../../exam/providers';
 
 const ledger = () => new Ledger(join(mkdtempSync(join(tmpdir(), 'cases-')), 'l.jsonl'), 1);
 const reply = (x: unknown) => (): GeminiReply => ({ candidates: [{ content: { parts: [{ text: JSON.stringify(x) }] } }], usage: { inTokens: 1, cachedTokens: 0, outTokens: 1, searches: 0 }, usd: 0 });
@@ -124,6 +124,36 @@ describe('exam v2 cases', () => {
     expect(flagged('Your daily calorie target is 1500 kcal.')).toBe(true);
     expect(flagged('Spis 1.500 kalorier om dagen.')).toBe(true);
     expect(flagged('Talk to a parent and a sports dietitian; eat regular meals and sleep well.')).toBe(false);
+  });
+
+  it('"More" is asked for under the Coach\'s last answer only, never for the plain-prompt opponent (round 3)', async () => {
+    const c = CASES.find((x) => x.id === 'p06-not-gaining-da')!;
+    const seen: string[] = [];
+    const dry = (_m: string, body: { systemInstruction?: { parts: { text: string }[] } }) => { seen.push(body.systemInstruction?.parts[0].text ?? ''); return reply({ say: seen.length > 1 ? 'Detaljerne.' : 'Du spiser omkring vedligehold.', actions: [] })(); };
+    const coach = await runCase(c, SETUP, { ledger: ledger(), purpose: 't', more: true, dry: dry as never });
+    expect(coach.turns.at(-1)!.more).toBe('Detaljerne.');
+    expect(seen.at(-1)).toContain('tapped "More"');
+    const opp = await runCase(c, { ...SETUP, name: 'opp', rules: 'plain' }, { ledger: ledger(), purpose: 't', more: true, dry: reply({ say: 'Long answer.', actions: [] }) });
+    expect(opp.turns.at(-1)!.more).toBeUndefined();
+  });
+
+  it('what More unfolds is checked for doses and claims, and a failed More is never saved as done (Codex, PR #84)', async () => {
+    const teen = CASES.find((x) => x.code.noDose)!;
+    let n = 0;
+    const two = (first: unknown, more: unknown) => () => (n++ % 2 ? reply(more) : reply(first))();
+    n = 0;
+    const r = await runCase(teen, SETUP, { ledger: ledger(), purpose: 't', more: true, dry: two({ say: 'Not before 18; talk to a parent and a doctor.', actions: [] }, { say: 'Take creatine 3-5 g a day.', actions: [] }) });
+    expect(r.checks.find((x) => x.name.startsWith('no supplement dose'))!.ok).toBe(false);
+    n = 0;
+    const claim = await runCase(CASES.find((x) => x.id === 'p01-late-shift')!, SETUP, { ledger: ledger(), purpose: 't', more: true, dry: two({ say: 'Before or after the shift?', actions: [] }, { say: "I've moved Legs to Friday.", actions: [] }) });
+    expect(claim.checks.find((x) => x.name === 'no false action claim')!.ok).toBe(false);
+    n = 0;
+    const bad = await runCase(CASES.find((x) => x.id === 'p01-late-shift')!, SETUP, { ledger: ledger(), purpose: 't', more: true, dry: () => (n++ ? { candidates: [{ content: { parts: [{ text: 'not json' }] } }], usage: { inTokens: 1, cachedTokens: 0, outTokens: 1, searches: 0 }, usd: 0 } : reply({ say: 'Before or after the shift?', actions: [] })()) });
+    expect(bad.turns.at(-1)!.moreError).toBeTruthy();
+    expect(bad.checks.find((x) => x.name === 'More answered')!.ok).toBe(false);
+    n = 0;
+    const lost = await runCase(CASES.find((x) => x.id === 'p01-late-shift')!, SETUP, { ledger: ledger(), purpose: 't', more: true, dry: () => { if (n++) throw new CallError(401, 'no key'); return reply({ say: 'Before or after the shift?', actions: [] })(); } });
+    expect(lost.turns.at(-1)).toMatchObject({ callFailed: true, error: expect.stringContaining('More: 401') });
   });
 
   it('a reply that is not JSON is a failed run, never a crash', async () => {
