@@ -1094,6 +1094,7 @@ let W = null, SHORT = Q.get('rest') !== null || store.get('short') === '1';
 const restSec = s => SHORT ? 10 : s;
 /* ---------- saving: the screen keeps its own fast state; the engine keeps the workout (src/app/store.ts) ---------- */
 const EXID = { 'Bench press': 'bench-press', 'Incline dumbbell press': 'incline-db-press', 'Overhead press': 'overhead-press', 'Lateral raise': 'lateral-raise', 'Triceps pushdown': 'tricep-pushdown' };
+const saveRest = () => store.set('rest', W && W.rest && SAVER && SAVER.id ? JSON.stringify({ sid: SAVER.id, end: W.rest.end, total: W.rest.total, newEx: !!W.rest.newEx }) : ''); // a rest that survives the app being closed
 let SAVER = null, warned = false, foodDay = new Date().toDateString();
 const pendingFood = []; // foods tapped before the database was ready
 const saveFood = t => { if (SAVER) SAVER.addFood(t); else pendingFood.push({ t, at: Date.now() }); };
@@ -1117,6 +1118,7 @@ function restoreFoods() {
   pendingFood.splice(0).forEach(y => SAVER.addFood(y.t, y.at)); // taps from before the database opened are saved now, at the time they were tapped
   restoring = true;
   try { SAVER.foods().forEach(x => { if (x.name.startsWith('meal:')) { FUEL.manual.add(x.name.slice(5)); mealSaved[x.name.slice(5)] = x.id; } else if (!FUEL.log.some(y => y.eid === x.id)) { addFood(x.p, x.k, x.c, x.f, x.name, 0, x.id); FUEL.log[FUEL.log.length - 1].m = cphMin(new Date(x.at)); } }); } finally { restoring = false; }
+  afterFood(); // the cards were painted before the database opened
 }
 // a workout the phone still holds as open (the app was closed or killed mid-workout) comes back as the live pill
 function resumeDraft() {
@@ -1132,6 +1134,7 @@ function resumeDraft() {
   if (n >= total) { SAVER.closeDraft(d.snap); return; } // everything was logged but the finish never came: close it in the engine, so the next workout starts a new one
   W = { ex, e, s: done[e].length, idx: ex.slice(0, e).reduce((a, x) => a + x.sets.length, 0) + done[e].length, total, done, t0: d.session.startedAt || Date.now(), rest: null, coach: 0, rec: [], vol: done.flat().reduce((a, x) => a + x[0] * x[1], 0), flags };
   S.live = true; buildSess(); renderSet(true); $('#live').classList.add('on'); paintLive(); paintCta();
+  try { const r = JSON.parse(store.get('rest') || 'null'); if (r && r.sid === d.session.id && r.end - Date.now() > 1500) { startRest(Math.round((r.end - Date.now()) / 1000), r.newEx, true); W.rest.end = r.end; W.rest.total = r.total; paintLive(); } } catch {} // the rest that was running keeps its remaining time
 }
 function freshW() {
   const ex = plan().map(e => ({ ...e, sets: e.sets.map(x => x.slice()) }));
@@ -1402,7 +1405,7 @@ function undoLog(p, k) {
 let restTm = 0;
 function startRest(sec, newEx, quiet) {
   sec = restSec(sec);
-  W.rest = { end: Date.now() + sec * 1000, total: sec * 1000, newEx };
+  W.rest = { end: Date.now() + sec * 1000, total: sec * 1000, newEx }; saveRest();
   if (!quiet) setView('rest');
   $$('#wNameW,#wCoach,#wMeta,#wNext').forEach(el => el.classList.remove('in'));
   const nx = cur();
@@ -1424,7 +1427,7 @@ function restTick() {
   if (left !== lastSec) { lastSec = left; cdR.set(fmtS(Math.max(0, left)), { dir: -1, dur: 340 }); if (left <= 3 && left > 0) { buzz(8); $('#rNum').animate([{ transform: 'scale(1.04)' }, { transform: 'none' }], { duration: 300, easing: 'cubic-bezier(.2,.9,.3,1)' }); } }
   if (left <= 0) endRest(true);
 }
-function clearRest() { clearInterval(restTm); W.rest = null; lastSec = -1; $('#level').getAnimations().forEach(a => a.cancel()); closeTray(); moodStage(false); }
+function clearRest() { clearInterval(restTm); W.rest = null; saveRest(); lastSec = -1; $('#level').getAnimations().forEach(a => a.cancel()); closeTray(); moodStage(false); }
 function endRest(auto) {
   if (!W || !W.rest) return; const newEx = W.rest.newEx;
   if (auto) buzz([60, 40, 60]);
@@ -1437,8 +1440,8 @@ function endRest(auto) {
   if (newEx) go($('#exName'), [{ transform: 'translate3d(6rem,0,0)', opacity: 0 }, { transform: 'none', opacity: 1 }], { key: 'nm' });
   flyInto($('#setB'), W.idx, true); fades(true);
 }
-$('#m15').addEventListener('click', () => { if (!W || !W.rest) return; W.rest.end -= 15000; buzz(5); retimeLevel(); restTick(); });
-$('#p15').addEventListener('click', () => { if (!W || !W.rest) return; W.rest.end += 15000; W.rest.total += 15000; buzz(5); retimeLevel(); restTick(); });
+$('#m15').addEventListener('click', () => { if (!W || !W.rest) return; W.rest.end -= 15000; saveRest(); buzz(5); retimeLevel(); restTick(); });
+$('#p15').addEventListener('click', () => { if (!W || !W.rest) return; W.rest.end += 15000; W.rest.total += 15000; saveRest(); buzz(5); retimeLevel(); restTick(); });
 function retimeLevel() { const lv = $('#level'), left = W.rest.end - Date.now(); const y = new DOMMatrix(getComputedStyle(lv).transform).m42 / lv.offsetHeight; lv.getAnimations().forEach(a => a.cancel()); lv.animate([{ transform: `translate3d(0,${(y * 100).toFixed(2)}%,0)` }, { transform: 'translate3d(0,0%,0)' }], { duration: Math.max(200, left), easing: 'linear', fill: 'forwards' }); }
 function openTray() {
   if (!W || !W.rest || W.coach !== 1) return; const tr = $('#tray'), inn = $('#trIn');
@@ -1549,7 +1552,7 @@ function bindHold() { // hold to commit: the world goes soft while the button fi
   b.addEventListener('pointerdown', down); b.addEventListener('pointerup', up); b.addEventListener('pointerleave', up); b.addEventListener('pointercancel', up);
 }
 function finish() {
-  if (SAVER && W && !W.saved) { persist('Sets saved'); SAVER.finish(snapW()); W.saved = true; }
+  if (SAVER && W && !W.saved) { persist('Sets saved'); SAVER.finish(snapW()); W.saved = true; } else if (W && !W.saved) W.finishPending = true; // the database was not open yet: the finish is saved the moment it is
   buzz([30, 50, 30]); if (W.rest) clearRest();
   closeSess(); setView('complete'); fades(false); restFades(false);
   if (STG.s) stageDo(() => STG.s.putAway()); // behind the summary, the plates come off and the equipment is put away
@@ -1635,7 +1638,7 @@ async function boot() {
   // the workout's 3D equipment loads once Today has settled; until it is ready the workout shows its numbers on the photo
   setTimeout(() => (window.requestIdleCallback || (f => setTimeout(f, 1)))(loadStage, { timeout: 2500 }), 1800);
   // the database opens once Today is up (it never holds up the numbers); a workout started before it was ready is saved the moment it is
-  if (Q.get('nosave') === null) Engine.open().then(e => { SAVER = new Saver(e, saveFailed); window.__saver = SAVER; restoreFoods(); resumeDraft(); if (W && !W.saved) persist('Started Push'); }).catch(err => { console.warn('save', err); saveFailed(); });
+  if (Q.get('nosave') === null) Engine.open().then(e => { SAVER = new Saver(e, saveFailed); window.__saver = SAVER; restoreFoods(); resumeDraft(); if (W && !W.saved) { persist('Started Push'); if (W.finishPending) { SAVER.finish(snapW()); W.saved = true; } saveRest(); } }).catch(err => { console.warn('save', err); saveFailed(); });
   document.addEventListener('visibilitychange', () => { if (!document.hidden) rollDay(); });
   setInterval(() => { rollDay(); if (S.scrub === null && springIdle()) { const n = nowMin(); applyLight(n); placeDot(n); paintHero(n); paintWx(n); } }, 20000);
 }

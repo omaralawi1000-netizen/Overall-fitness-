@@ -125,6 +125,19 @@ r = await ev(`({ e: __aven.W.e, s: __aven.W.s, idx: __aven.W.idx })`);
 check('after a reload the strip is on the set it resumes at', r.e === 0 && r.s === 0 && r.idx === 0, r);
 await ev(`indexedDB.deleteDatabase('a2.data')`);
 
+// P5c. a rest in progress is still running after a reload; a finish tapped before the database opened is still saved
+await p.goto(base + '?rest=8&nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(400);
+await ev(`__aven.startWorkout()`); await sleep(900);
+await ev(`__aven.logSet()`); await sleep(700);
+await p.waitForFunction(() => !window.__saver.engine.busy(), null, { timeout: 8000 });
+await ev(`(() => { const x = JSON.parse(localStorage.getItem('a2:rest')); x.end = Date.now() + 60000; localStorage.setItem('a2:rest', JSON.stringify(x)); })()`); // a slow test machine must not outlast a 10 s rest
+await p.goto(base + '?rest=8&nosw'); await p.waitForFunction(() => window.__ready && window.__saver && document.getElementById('live').classList.contains('on'), null, { timeout: 90000 });
+r = await ev(`({ rest: !!__aven.W.rest, left: __aven.W.rest ? Math.round((__aven.W.rest.end - Date.now()) / 1000) : null })`);
+check('a rest in progress is still running after a reload', r.rest && r.left > 0, r);
+await ev(`indexedDB.deleteDatabase('a2.data')`);
+await p.goto(base + '?rest=8&nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(400);
+await ev(`localStorage.removeItem('a2:rest')`);
+
 // 1. two taps on Log inside the 300 ms hand-off log one set
 await open('?rest');
 await ev(`localStorage.clear(); __aven.startWorkout()`); await sleep(900);
