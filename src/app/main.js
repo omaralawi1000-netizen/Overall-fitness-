@@ -1459,12 +1459,12 @@ function closeTray() {
 function useCoach() {
   if (W.coach !== 1) return; W.coach = 2; buzz(10);
   const rest = W.ex[0].sets.slice(2), prev = rest.map(x => x[0]); // only the sets that exist (the 30-minute plan keeps three)
-  rest.forEach(x => x[0] = 85);
+  rest.forEach(x => x[0] = 85); persist('Coach: 85 kg');
   const lb = $('#use85 .lb');
   go(lb, [{ filter: 'blur(0)', opacity: 1 }, { filter: 'blur(4px)', opacity: 0 }], { key: 'lb', dur: 140 }).finished.then(() => { lb.textContent = '✓ ' + t('applied'); go(lb, [{ filter: 'blur(4px)', opacity: 0 }, { filter: 'blur(0)', opacity: 1 }], { key: 'lb', dur: 200 }); });
   $('#rNext b').textContent = `${kgFmt(85)} × 8`;
   setTimeout(closeTray, 1300);
-  toast(t('applied'), () => { rest.forEach((x, i) => x[0] = prev[i]); W.coach = 3; if (W.rest) $('#rNext b').textContent = `${kgFmt(prev[0])} × 8`; else renderSet(); });
+  toast(t('applied'), () => { rest.forEach((x, i) => x[0] = prev[i]); W.coach = 3; persist('Coach: back to the plan'); if (W.rest) $('#rNext b').textContent = `${kgFmt(prev[0])} × 8`; else renderSet(); });
 }
 // the 30-minute plan on a running workout: drop the cut lifts and sets, keep every logged set and its place on the strip
 const canTrimLive = () => W.e < 3 && (W.s < 3 || W.e < 2) && !W.done.slice(plan().length).some(d => d.some(Boolean)); // never drop a lift that already has logged sets
@@ -1475,6 +1475,9 @@ function trimLive() {
   if (W.s >= keep[W.e]) { W.e++; W.s = 0; }
   W.ex = nex; W.done = W.done.slice(0, nex.length).map((d, i) => d.slice(0, keep[i])); W.flags = flags; W.rec = W.rec.filter(r => r.e < nex.length);
   W.total = nex.reduce((a, e) => a + e.sets.length, 0); W.idx = n[W.e] + W.s;
+  const slots = []; W.ex.forEach((x, ei) => x.sets.forEach((_, si) => slots.push([ei, si])));
+  const at = Math.max(0, slots.findIndex(q => q[0] === W.e && q[1] === W.s)), dest = slots.map((_, k) => slots[(at + k) % slots.length]).find(q => !W.done[q[0]][q[1]]);
+  if (dest) { W.e = dest[0]; W.s = dest[1]; W.idx = idxAt(dest[0], dest[1]); } else { W.end = true; W.e = W.ex.length - 1; W.s = W.ex[W.e].sets.length - 1; W.idx = W.total; $('#logL').textContent = t('finishP'); } // every kept set is already logged: Log now means Finish
   buildSess(); renderSet(true); if (W.rest) paintRestNext(); paintLive(); persist('Plan trimmed');
 }
 function paintRestNext() { const nx = cur(); $('#rNext').innerHTML = `${t('nextSet')} · <b class="tab">${kgFmt(nx[0])} × ${nx[1]}</b><small>${exN(W.ex[W.e])} · ${t('set', { a: W.s + 1, b: W.ex[W.e].sets.length })}</small>`; }
@@ -1713,7 +1716,7 @@ async function warmUp() {
   await nf(); await nf(); quiet.remove();
 }
 boot();
-window.__aven = { S, canTrimLive: () => canTrimLive(), openMeals: () => MEALS.filter(x => !eatenAt(nowMin()).includes(x)).map(x => x.k), get W() { return W; }, startWorkout, show, logSet: () => $('#logB').click(), endRest, finish, minimise, morning, scrubTo: m => { placeDot(m); applyLight(m); paintHero(m); paintWx(m); },
+window.__aven = { S, canTrimLive: () => canTrimLive(), trimLive: () => trimLive(), openMeals: () => MEALS.filter(x => !eatenAt(nowMin()).includes(x)).map(x => x.k), get W() { return W; }, startWorkout, show, logSet: () => $('#logB').click(), endRest, finish, minimise, morning, scrubTo: m => { placeDot(m); applyLight(m); paintHero(m); paintWx(m); },
   // test hooks: which of the shader's uniforms one frame leaves unset, and a small grid of the sky at an hour and weather
   uniformsUnset: () => { const set = new Set(), ks = ['uniform1f', 'uniform2f', 'uniform3f', 'uniform4f', 'uniform1i']; ks.forEach(k => { const o = gl[k]; gl[k] = function (loc, ...a) { set.add(loc); return o.call(gl, loc, ...a); }; }); try { draw(); } finally { ks.forEach(k => delete gl[k]); } return Object.keys(U).filter(n => !set.has(U[n])); },
   sky: (m, mode) => { WXMODE = mode; LIGHT = lightAt(dateAtMin(m)); draw(); const c = document.createElement('canvas'); c.width = 43; c.height = 93; const x = c.getContext('2d'); x.drawImage(cv, 0, 0, 43, 93); const d = x.getImageData(0, 0, 43, 93).data, g = []; for (let i = 0; i < d.length; i += 4) g.push(d[i], d[i + 1], d[i + 2]);

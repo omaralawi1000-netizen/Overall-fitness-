@@ -101,6 +101,16 @@ describe('saving the workout', () => {
     expect(openDraft(e.allRecords())).toBeNull();
   });
 
+  it('a stale screen never wipes a set another window logged', async () => {
+    const { e, c, saver, snap } = await setup(); await settle(e);
+    const b = new Saver(e); const seen = b.draft(c.now())!; // window B opens the workout as it is now (nothing logged)
+    snap.lifts[0].sets[0].done = true; snap.lifts[0].sets[1].done = true;
+    saver.sync(snap, 'A logs two', c.now()); await settle(e);
+    seen.snap.lifts[0].sets[0].done = true; // B logs its first set from its stale picture
+    b.sync(seen.snap, 'B logs one', c.now()); await settle(e);
+    expect(sets(e, saver.id!)[0].sets.filter((x) => x.done).length).toBe(2);
+  });
+
   it('a tapped food is saved, comes back after a reload, and Undo removes exactly it', async () => {
     const { e, saver, c } = await setup();
     saver.addFood({ id: 'fdA', name: '3 eggs', p: 19, k: 215, c: 1, f: 15 }, c.now());

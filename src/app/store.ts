@@ -26,7 +26,7 @@ export function beginOps(snap: Snap, now: number, day: string, id?: string) {
 }
 
 /** The difference between the screen and the engine. Nothing to do → an empty list. */
-export function syncOps(records: AnyRecord[], id: string, snap: Snap, now: number): Op[] {
+export function syncOps(records: AnyRecord[], id: string, snap: Snap, now: number, known?: ReadonlySet<string>): Op[] {
   const have = setsOf(records, id);
   const ops: Op[] = [];
   const day = (records.find((r) => r.id === id) as Session | undefined)?.day;
@@ -46,7 +46,7 @@ export function syncOps(records: AnyRecord[], id: string, snap: Snap, now: numbe
         if (cur.done?.kg !== s.kg || cur.done?.reps !== s.reps) set.done = { kg: s.kg, reps: s.reps, at: cur.done?.at ?? now };
         if (cur.skipped) set.skipped = null;
       } else {
-        if (cur.done) set.done = null;
+        if (cur.done && (!known || known.has(cur.id))) set.done = null; // only an Undo this screen did: a set another window logged is never wiped by a stale screen
         if (cur.planned?.kg !== s.kg || cur.planned?.reps !== s.reps) set.planned = { kg: s.kg, reps: s.reps };
       }
       if (Object.keys(set).length) ops.push({ op: 'update', id: cur.id, set });
@@ -93,6 +93,7 @@ export function foodsOfDay(records: AnyRecord[], day: string): (FoodTap & { at: 
 export class Saver {
   id: string | null = null;
   failed = false;
+  private known = new Set<string>(); // sets this screen has seen as done
   constructor(readonly engine: Engine, private onFail: () => void = () => {}) {}
 
   private run(type: string, label: string, ops: Op[], id?: string) {
@@ -100,6 +101,7 @@ export class Saver {
     const r = this.engine.run({ id, type, label, ops });
     void r.result.then((x) => { if (x.status === 'failed' || x.status === 'conflict') this.fail(); }, () => this.fail());
   }
+  private see(id: string, snap: Snap) { snap.lifts.forEach((l, i) => l.sets.forEach((x, j) => { if (x.done) this.known.add(sid(id, i, j)); })); }
   private fail() { this.failed = true; this.onFail(); }
 
   /** The oldest-first open workout, or null. Workouts left open for over 12 hours are put away as unfinished, never resumed. */
@@ -109,17 +111,19 @@ export class Saver {
       if (now - (s.startedAt ?? now) > 12 * 3600e3) this.run('session.abandon', `Left ${s.name} unfinished`, abandonSession(s, now));
     }
     const d = openDraft(this.engine.allRecords());
-    if (d) this.id = d.session.id;
+    if (d) { this.id = d.session.id; this.see(d.session.id, d.snap); }
     return d;
   }
   begin(snap: Snap, now = Date.now()) {
     const { id, ops } = beginOps(snap, now, dayKeyAt(now, deviceTz()));
     this.id = id;
+    this.see(id, snap);
     this.run('session.start', `Started ${snap.name}`, ops);
   }
   sync(snap: Snap, label = 'Workout changed', now = Date.now()) {
     if (!this.id) return;
-    this.run('session.sync', label, syncOps(this.engine.allRecords(), this.id, snap, now));
+    this.run('session.sync', label, syncOps(this.engine.allRecords(), this.id, snap, now, this.known));
+    this.see(this.id, snap);
   }
   finish(snap: Snap, now = Date.now()) {
     if (!this.id) return;

@@ -102,6 +102,13 @@ check('food logged before a reload is still there after it', r.db === 2 && r.row
 await ev(`document.getElementById('toastU')?.click()`);
 await ev(`indexedDB.deleteDatabase('a2.data')`);
 
+// 11b. trimming when every kept set is already logged leaves the workout ready to finish, not on a logged set
+await open('?rest=8');
+await ev(`__aven.startWorkout()`); await sleep(900);
+await ev(`(() => { const W = __aven.W; W.done[0] = [[80, 8], [82.5, 8], [82.5, 8]]; W.done[1] = [[30, 10], [30, 10], [30, 10]]; W.done[2] = [[47.5, 8], [47.5, 8], [47.5, 8]]; W.e = 0; W.s = 3; W.idx = 3; __aven.S.trimmed = true; __aven.trimLive(); })()`);
+r = await ev(`({ end: !!__aven.W.end, e: __aven.W.e, s: __aven.W.s, idx: __aven.W.idx, total: __aven.W.total })`);
+check('a plan trimmed to sets that are all logged is ready to finish', r.end && r.idx === r.total && !errs.length, { ...r, errs: errs.slice() });
+
 // P6b. a planned meal ticked before its time is still ticked after a reload
 await p.goto(base + '?nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(400);
 await ev(`__aven.show('fuel')`); await sleep(1000);
