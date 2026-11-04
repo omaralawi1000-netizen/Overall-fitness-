@@ -2,6 +2,7 @@
 //   npx vitest run --config exam/vitest.config.ts exam/v2/run-answers.test.ts
 // Env: EXAM_SETUPS   comma list of setup names from SETUPS below (default: flash,sonnet,opponent)
 //      EXAM_CASES    comma list of case ids, or empty for all
+//      EXAM_HELDOUT  1: run only the 10 held-out cases (exam/v2/cases-heldout.ts, gitignored; SHA in HELDOUT.sha256)
 //      EXAM_RUNS     runs per case (default 1; the scored exam uses 3 and reports the worst)
 //      EXAM_CAP_USD  required unless EXAM_DRY · EXAM_LEDGER (this provider's ledger) · EXAM_OUT (default reference/e2v2)
 //      EXAM_DRY=1    no calls: a made-up reply, files under <EXAM_OUT>/dry
@@ -17,12 +18,15 @@ import { Ledger, type GeminiReply } from '../providers';
 import { CASES } from './cases';
 import { records } from './people';
 import { OPPONENT_RULES, runCase, type Setup } from './run-case';
+import { PREV_RULES } from './prev-rules';
 
 export const SETUPS: Record<string, Setup> = {
   flash: { name: 'flash', quick: 'gemini-3.8-flash', deep: 'gemini-3.8-flash' },
   sonnet: { name: 'sonnet', quick: 'claude-sonnet-5-5', deep: 'claude-sonnet-5-5' },
   mix: { name: 'mix', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5' },
   opponent: { name: 'opponent', quick: 'claude-opus-5-5', deep: 'claude-opus-5-5', rules: OPPONENT_RULES },
+  // the previous Coach (PR #81's instructions) on the ship setup
+  prev: { name: 'prev', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5', rules: PREV_RULES },
 };
 
 const DRY = !!process.env.EXAM_DRY;
@@ -46,7 +50,9 @@ it('runs the cases through the setups', async () => {
     return s;
   });
   const only = new Set(pick(process.env.EXAM_CASES));
-  const cases = CASES.filter((c) => !only.size || only.has(c.id));
+  // the 10 held-out cases live outside the repo; EXAM_HELDOUT=1 runs only them, from the gitignored local copy
+  const pool = process.env.EXAM_HELDOUT ? (await import(/* @vite-ignore */ './cases-heldout' + '.ts')).HELDOUT as typeof CASES : CASES;
+  const cases = pool.filter((c) => !only.size || only.has(c.id));
   // the prompt version: a change to the rules, the knowledge, the case or the records it makes is new work (Codex, PR #81)
   // the code that builds the request (fact sheet, reply schema, routing, checks) is part of it too: a fixed calculation
   // in buildFacts is new work even when the rules, knowledge and case are unchanged (Codex, PR #81)

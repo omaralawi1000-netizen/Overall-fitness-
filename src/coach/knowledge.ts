@@ -1,7 +1,7 @@
 /**
- * The Coach's expert knowledge pack (brief v2, Answer Bar rule 10): short sports-science guidelines, each with its
+ * The Coach's expert knowledge pack (brief v2, Answer Bar rule 12): short sports-science guidelines, each with its
  * sources and the date it was last checked against them. The Coach cites these for general advice and keeps them apart
- * from the person's own facts (rule 4). Opponent models in the exam get the same pack, so a win is never "we knew more".
+ * from the person's own facts (rule 5). Opponent models in the exam get the same pack, so a win is never "we knew more".
  *
  * Writing rules: only what the cited source says, or a line marked "Aven rule" (our own safety or product choice, not
  * a research claim). Numbers are general guidance for healthy people; the fact sheet says what applies to this person.

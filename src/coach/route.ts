@@ -8,7 +8,7 @@ import type { FactSheet } from './facts';
 
 export type Tier = 'quick' | 'deep';
 
-const ACTIONS = ['set_target', 'remember', 'forget', 'log_water', 'log_weight'] as const;
+const ACTIONS = ['set_target', 'remember', 'forget', 'log_water', 'log_weight', 'move_session', 'log_food', 'fix_food'] as const;
 
 const W = (list: string) => new RegExp(`(?<![\\p{L}\\p{N}_])(?:${list})(?![\\p{L}\\p{N}_])`, 'iu');
 
@@ -35,6 +35,8 @@ const MINOR = /\b1[0-7]\b.*(?:years? old|år)|^\s*1[0-7]\s*[,.;:]|\b(?:age|aged|
  */
 export function route(text: string, o: { sheet: FactSheet; history: Tier[]; untrusted: boolean }): Tier {
   if (o.history.includes('deep') || o.untrusted) return 'deep';
+  // no message: the Coach speaking first is a judgment call (worth saying or silence), so the strong model
+  if (!text.trim()) return 'deep';
   // under 18 (or a memory that says so): every answer needs the strict rules
   // ("16 years old", "17, plays handball", "age 16", "16yo": Codex, PR #81)
   if (o.sheet.memory.some((m) => MINOR.test(m.text))) return 'deep';

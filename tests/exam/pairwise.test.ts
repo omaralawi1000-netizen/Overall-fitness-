@@ -24,7 +24,7 @@ describe('the pairwise judge', () => {
 
   it('reads only a complete, in-range verdict', () => {
     expect(readPair('{"brokenA":[3,3],"brokenB":[],"saferIs":"tie","winner":"B","reason":"x"}')).toEqual({ brokenA: [3], brokenB: [], saferIs: 'tie', winner: 'B', reason: 'x' });
-    expect(() => readPair('{"brokenA":[14],"brokenB":[],"saferIs":"tie","winner":"B","reason":"x"}')).toThrow();
+    expect(() => readPair('{"brokenA":[15],"brokenB":[],"saferIs":"tie","winner":"B","reason":"x"}')).toThrow();
     expect(() => readPair('{"brokenA":[],"brokenB":[],"saferIs":"tie","winner":"C","reason":"x"}')).toThrow();
     expect(() => readPair('not json')).toThrow();
   });
@@ -33,7 +33,7 @@ describe('the pairwise judge', () => {
     const body = pairBody({ id: 'x', facts: 'f', conversation: [{ role: 'user', text: 'hi' }], a: { reply: 'As Claude I think…', did: [] }, b: { reply: 'Gemini says', did: ['protein target 215 → 250 g'] } });
     const all = JSON.stringify(body);
     expect(all).not.toMatch(/Claude|Gemini/);
-    expect(body.systemInstruction!.parts[0].text).toContain('## 13. Tone');
+    expect(body.systemInstruction!.parts[0].text).toContain('## 14. One voice');
     expect(all).toContain('protein target 215 → 250 g');
   });
 });
@@ -41,8 +41,8 @@ describe('the pairwise judge', () => {
 describe('calibration from the Answer Bar itself', () => {
   const pairs = barPairs();
   it('has a matched Good/Bad pair for every rule', () => {
-    expect(new Set(pairs.map((p) => p.rule))).toEqual(new Set(Array.from({ length: 13 }, (_, i) => i + 1)));
-    expect(pairs.length).toBeGreaterThanOrEqual(13);
+    expect(new Set(pairs.map((p) => p.rule))).toEqual(new Set(Array.from({ length: 14 }, (_, i) => i + 1)));
+    expect(pairs.length).toBeGreaterThanOrEqual(14);
   });
   it("never leaks the verdict: no trailing \"(why it fails)\" notes or quote marks around the reply", () => {
     for (const p of pairs) for (const s of [p.good, p.bad]) {
@@ -54,7 +54,7 @@ describe('calibration from the Answer Bar itself', () => {
   });
   it('the judge sees the rules but never the labelled examples it is calibrated on (Codex, PR #75)', () => {
     const rules = barRules();
-    expect(rules).toContain('## 13. Tone');
+    expect(rules).toContain('## 14. One voice');
     expect(rules).toContain('Checked by:');
     expect(rules).not.toMatch(/\*\*Good|\*\*Bad|^> |Facts:/m);
     for (const p of pairs) {
@@ -72,7 +72,7 @@ describe('calibration from the Answer Bar itself', () => {
   });
 
   it('an example that says it did something carries what the app did (Codex, PR #75)', () => {
-    const bench = pairs.find((p) => p.rule === 2)!;
+    const bench = pairs.find((p) => /bench 80/.test(p.said))!;
     expect(bench.good.did).toEqual(['logged bench press 80 kg × 8, 8, 6']);
     expect(bench.bad.did).toEqual(['logged bench press 80 kg × 8, 8, 6']);
     const protein = pairs.find((p) => /set my protein target to 250/.test(p.said))!;

@@ -1,5 +1,5 @@
 /**
- * The Coach's one fact sheet (docs/COACH.md §2, Answer Bar rule 3). Code computes every number here; the AI only puts
+ * The Coach's one fact sheet (docs/COACH.md §2, Answer Bar rule 4). Code computes every number here; the AI only puts
  * these numbers into words. Chat, voice and notices all read this one sheet, so they never disagree.
  *
  * Rules that hold everywhere below:
@@ -38,7 +38,9 @@ export interface FactSheet {
   /** memory that has run out (an old injury, a past exam week): never to be treated as current */
   ended: { id: string; text: string; endedOn: string }[];
   goals: GoalFact[];
-  today: { food: Fact[]; foodComplete: boolean; left: Fact[]; water?: Fact; weighIn?: Fact; sessions: { name: string; state: string }[] };
+  today: { food: Fact[]; foodComplete: boolean; left: Fact[]; water?: Fact; weighIn?: Fact; sessions: { name: string; state: string }[];
+    /** today's food entries, so a correction ("no, 2 eggs") can name the one entry it changes */
+    entries: { id: string; name: string; amount: number; unit: string; kcal?: number; protein?: number; estimated: boolean }[] };
   /** the last 28 days, today not included */
   food28: { daysLogged: number; daysComplete: number; facts: Fact[] };
   weight: { latest?: Fact; latestDay?: string; trend?: Fact; odd: { id: string; kg: number; day: string }[] };
@@ -272,6 +274,7 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
       ...(water ? { water } : {}),
       ...(lastDay === today && latest ? { weighIn: { ...latest, id: 'today.weighIn' } } : {}),
       sessions: sessions.filter((s) => sessionDay(s) === today).map((s) => ({ name: s.name, state: s.state })),
+      entries: foods.filter((f) => dayOf(f, dayStart) === today).sort((a, b) => a.at - b.at).map((f) => ({ id: f.id, name: f.name, amount: f.portion.amount, unit: f.portion.unit, ...(f.nutrients.kcal !== undefined ? { kcal: Math.round(f.nutrients.kcal) } : {}), ...(f.nutrients.protein !== undefined ? { protein: Math.round(f.nutrients.protein) } : {}), estimated: f.estimated })),
     },
     food28: { daysLogged: logged.length, daysComplete: done.length, facts: food28 },
     weight: { ...(latest ? { latest, latestDay: lastDay } : {}), ...(trend ? { trend } : {}), odd: odd.map((w) => ({ id: w.id, kg: w.kg, day: dayOf(w, dayStart) })) },
@@ -288,6 +291,7 @@ export function sheetNumbers(s: FactSheet): number[] {
   for (const f of [s.today.water, s.today.weighIn, s.weight.latest, s.weight.trend]) if (f) out.push(f.value);
   for (const g of s.goals) { if (g.target !== undefined) out.push(g.target); if (g.neededKgPerWeek !== undefined) out.push(g.neededKgPerWeek); }
   for (const w of s.weight.odd) out.push(w.kg);
+  for (const f of s.today.entries) out.push(f.amount, ...(f.kcal !== undefined ? [f.kcal] : []), ...(f.protein !== undefined ? [f.protein] : []));
   // memory is the person's own words, shown on the sheet: "my old protein target was 215 g" is a number they gave (Codex, PR #73)
   for (const m of [...s.memory, ...s.ended]) out.push(...numbersIn(m.text));
   out.push(s.food28.daysLogged, s.food28.daysComplete, s.training.sessions7, s.training.sessions28, ...Object.values(s.training.activities7), ...trainingNumbers(s.training));
@@ -308,6 +312,7 @@ export function renderFacts(s: FactSheet): string {
   if (s.goals.length) out.push('GOALS:', ...s.goals.map((g) => `- ${g.text}: ${g.status}${g.target !== undefined ? `, target ${fmt(g.target, L)}` : ''}${g.by ? ` by ${g.by}` : ''}${g.neededKgPerWeek !== undefined ? `, needs ${fmt(g.neededKgPerWeek, L)} kg/week` : ''}`));
   out.push(`TODAY (food ${s.today.foodComplete ? 'marked complete' : 'not finished'}):`, ...[...s.today.food, ...s.today.left].map((f) => line(f, L)));
   for (const f of [s.today.water, s.today.weighIn]) if (f) out.push(line(f, L));
+  if (s.today.entries.length) out.push("- today's entries:", ...s.today.entries.map((f) => `  - ${f.id}: ${f.name}, ${fmt(f.amount, L)} ${f.unit}${f.kcal !== undefined ? `, ${fmt(f.kcal, L)} kcal` : ''}${f.protein !== undefined ? `, ${fmt(f.protein, L)} g protein` : ''}${f.estimated ? ' (estimate)' : ''}`));
   if (s.today.sessions.length) out.push(...s.today.sessions.map((x) => `- session: ${x.name} (${x.state})`));
   out.push(`LAST 28 DAYS: food logged ${s.food28.daysLogged} days, ${s.food28.daysComplete} complete; ${s.training.sessions28} sessions (${s.training.sessions7} in the last 7 days)`, ...s.food28.facts.map((f) => line(f, L)));
   const acts = Object.entries(s.training.activities7);
