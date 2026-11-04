@@ -14,7 +14,7 @@ import type { Engine } from '../engine/engine';
 import type { AnyRecord, FoodLog, MemoryCard, MemoryTopic, Plan, Portion, Routine, Settings } from '../engine/model';
 import { routineOn } from './training-facts';
 import type { NewRecord, Op } from '../engine/plan';
-import { dayKeyAt, diffDays } from '../engine/time';
+import { dayKeyAt, diffDays, isDayKey } from '../engine/time';
 import { deepEqual, newId } from '../engine/util';
 
 export type TargetKey = 'kcal' | 'protein' | 'carbs' | 'fat' | 'fibre' | 'waterMl';
@@ -40,7 +40,6 @@ export type FoodUnit = Portion['unit'];
 const FOOD_UNITS: readonly FoodUnit[] = ['g', 'ml', 'piece', 'portion'];
 export type Meal = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 const MEALS: readonly Meal[] = ['breakfast', 'lunch', 'dinner', 'snack'];
-const isDay = (v: unknown): v is string => typeof v === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(v);
 
 /** how the person asked: a direct command is done at once; a Coach suggestion arrives as a preview */
 export type Mode = 'command' | 'proposal';
@@ -80,7 +79,7 @@ export function readProposal(raw: unknown): Proposal | { error: string } {
     case 'log_weight':
       return isNum(o.kg) ? { name: 'log_weight', kg: Math.round(o.kg * 10) / 10 } : { error: 'kg is not a number' };
     case 'move_session':
-      return isDay(o.from) && isDay(o.to) ? { name: 'move_session', from: o.from, to: o.to } : { error: 'from and to must be YYYY-MM-DD' };
+      return isDayKey(o.from) && isDayKey(o.to) ? { name: 'move_session', from: o.from, to: o.to } : { error: 'from and to must be YYYY-MM-DD' };
     case 'log_food': {
       const food = str(o.food, 80);
       if (!food) return { error: 'food name must be 2–80 characters' };

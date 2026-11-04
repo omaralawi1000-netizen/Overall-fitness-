@@ -21,7 +21,7 @@ const W0 = '(?<![\\p{L}\\p{N}_])', W1 = '(?![\\p{L}\\p{N}_])';
 const words = (list: string) => new RegExp(`${W0}(?:${list})${W1}`, 'iu');
 
 /** words a person uses to ask for a change (English and Danish) */
-const ASK_WORDS = 'set|change|update|raise|lower|increase|decrease|bump|keep in mind|log|add|track|record|save|remember|note|forget|delete|remove|drop|move|put|make it|sæt|sætte|ændr|ændre|opdater|opdatere|hæv|hæve|sænk|sænke|tilføj|tilføje|registrer|registrere|log|logge|gem|gemme|husk|huske|glem|glemme|slet|slette|fjern|fjerne|flyt|flytte|skriv|skrive';
+const ASK_WORDS = 'set|change|update|raise|lower|increase|decrease|bump|keep in mind|log|add|track|record|save|remember|note|forget|delete|remove|drop|move|put|make it|sæt|sætte|ændr|ændre|opdater|opdatere|hæv|hæve|sænk|sænke|tilføj|tilføje|registrer|registrere|log|logge|gem|gemme|husk|huske|glem|glemme|slet|slette|fjern|fjerne|flyt|flytte|skriv|skrive|swap|reschedule|byt|bytte|ryk|rykke|læg|lægge|fix|correct|ret|rette';
 /** "don't change it", "do not log this", "ikke ændre", "lad være med at …": an ask turned down is not consent (Codex, PR #73) */
 const NOT_ASKED = new RegExp(`${W0}(?:don[’']?t|do not|never|not|no need to|without|ikke|aldrig|lad være med at|undlad at)\\s+(?:[\\p{L}\\p{N}_]+\\s+){0,2}?(?:${ASK_WORDS})${W1}`, 'giu');
 /** the words that ask for each kind of action: "log this bottle" asks to log, never to forget a memory (Codex, PR #73) */
@@ -45,6 +45,11 @@ export const saysNotTo = (text: string) => { NOT_ASKED.lastIndex = 0; return NOT
  * isn't asking for advice counts: "Set protein to 250. Should I eat more?" asks; "Should I lower my calories?" doesn't. */
 export const asksFor = (name: Proposal['name'], text: string) =>
   text.replace(NOT_ASKED, ' ').split(/(?<=[.!?\n])\s*/u).some((s) => !ADVICE.test(s) && ASK_FOR[name].test(s));
+/** "no wait, Sunday", "nej, søndag", "actually make it 1,800": a correction of the change just made asks for the same kind
+ * of change again, so it counts only right after that action was done (Codex, PR #82) */
+const CORRECTION = words('no|nope|wait|actually|instead|rather|nej|vent|faktisk|hellere|i stedet');
+export const corrects = (name: Proposal['name'], text: string, lastDid: Proposal['name'][] = []) =>
+  lastDid.includes(name) && !saysNotTo(text) && !ADVICE.test(text) && CORRECTION.test(text);
 
 /** "0.5 l", "2 dl", "33 cl" also as millilitres: a water log is proposed in ml (Codex, PR #73) */
 const VOLUME = /(\d[\d.,]*)\s*(l|liters?|litres?|liter|dl|cl)(?![\p{L}\p{N}_])/giu;

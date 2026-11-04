@@ -10,7 +10,7 @@ import type { Engine } from '../engine/engine';
 import { apply, check, didLines, readProposal, type Did, type Proposal } from './actions';
 import { renderFacts, sheetNumbers, type FactSheet } from './facts';
 import { KNOWLEDGE, renderKnowledge, type Guideline } from './knowledge';
-import { asksFor, fence, gate, saysNotTo, type UntrustedSource } from './untrusted';
+import { asksFor, corrects, fence, gate, saysNotTo, type UntrustedSource } from './untrusted';
 import { newId } from '../engine/util';
 
 /** the charts the app can draw from the fact sheet; the model picks one by name, never writes chart code (rule 2) */
@@ -182,7 +182,7 @@ export interface Shown {
  * "set it" counts only at the start of a sentence, so "how I'd set it up" and "days you logged it" are not claims.
  */
 const CLAIMS: [RegExp, Proposal['name'][]][] = [
-  [/\b(?:I(?:'ve| have)? (?:set|changed|updated|raised|lowered|increased|decreased)|(?:jeg har|har jeg) (?:sat|ændret|opdateret|hævet|sænket))\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)(?:set|changed|updated|raised|lowered|increased|decreased) (?:it|your|that|the)\b/im, ['set_target']],
+  [/\b(?:I(?:'ve| have)? (?:set|changed|updated|raised|lowered|increased|decreased)|(?:jeg har|har jeg) (?:sat|ændret|opdateret|hævet|sænket))\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)(?:set|changed|updated|raised|lowered|increased|decreased) (?:it|your|that|the)\b/im, ['set_target', 'fix_food', 'move_session']],
   [/\b(?:I(?:'ve| have)? logged|(?:jeg har|har jeg) logget)\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)logged (?:it|your|that)\b/im, ['log_water', 'log_weight', 'log_food', 'fix_food']],
   [/\b(?:I(?:'ve| have)? (?:saved|noted|added)|(?:jeg har|har jeg) (?:gemt|noteret|tilføjet))\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)saved (?:it|your|that)\b/im, ['remember', 'log_water', 'log_weight', 'log_food']],
   [/\b(?:I(?:'ve| have)? (?:removed|deleted|forgot|forgotten|dropped)|(?:jeg har|har jeg) (?:slettet|fjernet|glemt))\b/im, ['forget']],
@@ -199,7 +199,7 @@ export function unbackedClaims(say: string, did: Proposal['name'][]): string[] {
 /** a reply that only accepts what was offered: "ja, gør det", "yes, do it", "ok please" */
 const ACCEPT = /^\s*(?:(?:ja|jo|yes|yeah|yep|ok|okay|sure|klart|gerne|fint|do it|gør det|go ahead|kør|apply|please|tak|det)\b[\s,.!]*)+$/iu;
 
-export async function finishTurn(e: Engine, reply: ModelReply, ctx: { personText: string; untrusted: boolean; sheet: FactSheet; now: number; tz: string; lang: 'en' | 'da'; pending?: Offer[] }): Promise<Shown> {
+export async function finishTurn(e: Engine, reply: ModelReply, ctx: { personText: string; untrusted: boolean; sheet: FactSheet; now: number; tz: string; lang: 'en' | 'da'; pending?: Offer[]; lastDid?: Proposal['name'][] }): Promise<Shown> {
   const refused: string[] = [];
   const did: Shown['did'] = [];
   const offers: Offer[] = [];
@@ -218,7 +218,7 @@ export async function finishTurn(e: Engine, reply: ModelReply, ctx: { personText
     // a lasting fact the person states in their own words may be remembered without "remember" (rule 5), unless they said
     // not to (Codex, PR #81); anything else
     // runs only when their words asked for that kind of change
-    const asked = how === 'do' && (!!agreed || asksFor(proposal.name, ctx.personText) || (proposal.name === 'remember' && !ctx.untrusted && !saysNotTo(ctx.personText)));
+    const asked = how === 'do' && (!!agreed || asksFor(proposal.name, ctx.personText) || (!ctx.untrusted && corrects(proposal.name, ctx.personText, ctx.lastDid)) || (proposal.name === 'remember' && !ctx.untrusted && !saysNotTo(ctx.personText)));
     if (how === 'do' && !asked) { refused.push(`"do" ${proposal.name} without being asked: shown as an offer`); downgraded = true; }
     const c = check(proposal, asked ? 'command' : 'proposal', { records: e.allRecords(), now: ctx.now, tz: ctx.tz });
     if (!c.ok) { refused.push(c.reason); if (asked) failed.push(c.reason); continue; }

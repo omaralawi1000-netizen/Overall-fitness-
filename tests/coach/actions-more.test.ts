@@ -1,5 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import { apply, check, readProposal, type Proposal } from '../../src/coach/actions';
+import { finishTurn, unbackedClaims } from '../../src/coach/coach';
+import { buildFacts } from '../../src/coach/facts';
+import { asksFor, corrects } from '../../src/coach/untrusted';
 import { routineOn } from '../../src/coach/training-facts';
 import type { Plan } from '../../src/engine/model';
 import type { NewRecord } from '../../src/engine/plan';
@@ -79,5 +82,37 @@ describe('log_food and fix_food', () => {
     expect(foods.find((x) => x.name === 'eggs')).toMatchObject({ portion: { amount: 2 }, nutrients: { kcal: 140, protein: 12 } });
     expect(foods.find((x) => x.name === 'oats')).toMatchObject({ portion: { amount: 200 }, nutrients: { kcal: 740 } });
     expect(check({ name: 'fix_food', foodId: 'nope', amount: 2 }, 'command', ctx(f))).toMatchObject({ ok: false });
+  });
+});
+
+describe('corrections, refusals and real dates (Codex, PR #82)', () => {
+  it('"no wait, Sunday" right after a move moves it again; the same words with no move before stay an offer', async () => {
+    const f = await withPlan();
+    const base = { untrusted: false, now: f.c.now(), tz: TZ, lang: 'en' as const };
+    const sheet = () => buildFacts(f.e.allRecords(), { now: f.c.now(), tz: TZ });
+    const first = await finishTurn(f.e, { say: 'Moved it.', actions: [{ how: 'do', name: 'move_session', from: '2026-11-03', to: '2026-11-04' }] }, { ...base, personText: "move today's pull to Wednesday", sheet: sheet() });
+    expect(first.did.map((d) => d.name)).toEqual(['move_session']);
+    const second = await finishTurn(f.e, { say: 'Sunday it is.', actions: [{ how: 'do', name: 'move_session', from: '2026-11-04', to: '2026-11-08' }] }, { ...base, personText: 'no wait, Sunday', sheet: sheet(), lastDid: ['move_session'] });
+    expect(second.did.map((d) => d.name)).toEqual(['move_session']);
+    expect(routineOn(plan(f), '2026-11-04')).toBeNull();
+    expect(routineOn(plan(f), '2026-11-08')).toBe('r-pull');
+    expect(corrects('move_session', 'no wait, Sunday', [])).toBe(false);
+    expect(corrects('move_session', "no, don't move it", ['move_session'])).toBe(false);
+  });
+
+  it('a turned-down ask is not consent for the new actions', () => {
+    expect(asksFor('move_session', "don't reschedule anything")).toBe(false);
+    expect(asksFor('move_session', "don't swap anything")).toBe(false);
+    expect(asksFor('fix_food', "don't fix the 2 eggs")).toBe(false);
+    expect(asksFor('move_session', 'reschedule Tuesday to Friday')).toBe(true);
+  });
+
+  it('"I\'ve changed it to 2 eggs" is backed by a food fix', () => {
+    expect(unbackedClaims("I've changed it to 2 eggs.", ['fix_food'])).toEqual([]);
+    expect(unbackedClaims("I've changed it to 2 eggs.", [])).toHaveLength(1);
+  });
+
+  it('a move to a day that does not exist is refused', () => {
+    expect(readProposal({ name: 'move_session', from: '2026-02-26', to: '2026-02-30' })).toHaveProperty('error');
   });
 });
