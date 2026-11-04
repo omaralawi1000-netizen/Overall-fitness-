@@ -8,7 +8,8 @@
 // Behind an HTTPS proxy (the cloud), add NODE_USE_ENV_PROXY=1 so fetch goes through it.
 // A (case, setup, run) already saved with the same prompt is never paid for again.
 import { it } from 'vitest';
-import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { COACH_RULES } from '../../src/coach/coach';
 import { renderKnowledge } from '../../src/coach/knowledge';
@@ -47,7 +48,11 @@ it('runs the cases through the setups', async () => {
   const only = new Set(pick(process.env.EXAM_CASES));
   const cases = CASES.filter((c) => !only.size || only.has(c.id));
   // the prompt version: a change to the rules, the knowledge, the case or the records it makes is new work (Codex, PR #81)
-  const version = (setupRules: string, caseJson: string) => createHash('sha256').update(`${setupRules}|${renderKnowledge()}|${caseJson}`).digest('hex').slice(0, 16);
+  // the code that builds the request (fact sheet, reply schema, routing, checks) is part of it too: a fixed calculation
+  // in buildFacts is new work even when the rules, knowledge and case are unchanged (Codex, PR #81)
+  const BUILDERS = ['src/coach', 'exam/v2'].flatMap((d) => readdirSync(d).filter((f) => f.endsWith('.ts')).sort().map((f) => readFileSync(join(d, f), 'utf8')));
+  const code = createHash('sha256').update(BUILDERS.join('\n')).digest('hex');
+  const version = (setupRules: string, caseJson: string) => createHash('sha256').update(`${setupRules}|${renderKnowledge()}|${caseJson}|${code}`).digest('hex').slice(0, 16);
   const done = new Set((existsSync(file) ? readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []).map((l) => l.key as string));
   let failedInARow = 0;
   for (const c of cases) {

@@ -27,6 +27,8 @@ const THINK = W(['why', 'should', 'how do i', 'plan\\w*', 'program\\w*', 'help m
 /** a plain data question ("how much protein is left") */
 const LOOKUP = W(['how much', 'how many', 'what is my', "what's my", 'left', 'hvor meget', 'hvor mange', 'hvad er mit', 'tilbage'].join('|'));
 
+const MINOR = /\b1[0-7]\b.*(?:years? old|år)|^\s*1[0-7]\s*[,.;:]|\b(?:age|aged|alder)\s*:?\s*1[0-7]\b|\b1[0-7]\s*(?:y\/?o|-?years?-old|-årig)|\bunder 18\b|\bteen/i;
+
 /**
  * Route one person turn. `history` is the earlier turns of this conversation: once it went deep, it stays deep, so a
  * follow-up ("ok, and Saturday?") keeps the context of the hard question.
@@ -34,7 +36,8 @@ const LOOKUP = W(['how much', 'how many', 'what is my', "what's my", 'left', 'hv
 export function route(text: string, o: { sheet: FactSheet; history: Tier[]; untrusted: boolean }): Tier {
   if (o.history.includes('deep') || o.untrusted) return 'deep';
   // under 18 (or a memory that says so): every answer needs the strict rules
-  if (o.sheet.memory.some((m) => /\b1[0-7]\b.*(?:years? old|år)|\bunder 18\b|\bteen/i.test(m.text))) return 'deep';
+  // ("16 years old", "17, plays handball", "age 16", "16yo": Codex, PR #81)
+  if (o.sheet.memory.some((m) => MINOR.test(m.text))) return 'deep';
   if (RISK.test(text) || THINK.test(text)) return 'deep';
   const words = text.trim().split(/\s+/).length;
   if (ACTIONS.some((n) => asksFor(n, text)) && words <= 20) return 'quick';

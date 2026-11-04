@@ -27,4 +27,10 @@ describe('which model answers', () => {
     const teen = { ...sheet, memory: [{ id: 'm1', text: 'I am 16 years old', topic: 'about' as const }] };
     expect(r('log 500 ml water', [], teen)).toBe('deep');
   });
+
+  it('short ways of writing an age count too: "17, plays handball", "age 16", "15yo" (Codex, PR #81)', () => {
+    const said = (text: string) => ({ ...sheet, memory: [{ id: 'm1', text, topic: 'about' as const }] });
+    for (const t of ['17, plays handball', 'age 16', '15yo', '16-årig fodboldspiller']) expect(r('set my calories to 1500', [], said(t))).toBe('deep');
+    expect(r('set my calories to 1500', [], said('Benches 17 kg dumbbells'))).toBe('quick');
+  });
 });
