@@ -1095,12 +1095,14 @@ const restSec = s => SHORT ? 10 : s;
 /* ---------- saving: the screen keeps its own fast state; the engine keeps the workout (src/app/store.ts) ---------- */
 const EXID = { 'Bench press': 'bench-press', 'Incline dumbbell press': 'incline-db-press', 'Overhead press': 'overhead-press', 'Lateral raise': 'lateral-raise', 'Triceps pushdown': 'tricep-pushdown' };
 const saveRest = () => store.set('rest', W && W.rest && SAVER && SAVER.id ? JSON.stringify({ sid: SAVER.id, end: W.rest.end, total: W.rest.total, newEx: !!W.rest.newEx }) : ''); // a rest that survives the app being closed
-let SAVER = null, warned = false, foodDay = new Date().toDateString();
+let SAVER = null, warned = false, foodDay = new Date().toDateString(), eatenKey = '';
 const pendingFood = []; // foods tapped before the database was ready
 const saveFood = t => { if (SAVER) SAVER.addFood(t); else pendingFood.push({ t, at: Date.now() }); };
 const unsaveFood = id => { const q = pendingFood.findIndex(y => y.t.id === id); if (q >= 0) pendingFood.splice(q, 1); else if (SAVER) SAVER.removeFood(id); };
 const mealSaved = {}; // a planned meal the person ticked early -> its saved note (the meal's own numbers are counted by the plan, so the note holds none)
 const snapW = () => ({ name: 'Push', lifts: W.ex.map((e, ei) => ({ exerciseId: EXID[e.n], restSec: e.rest, sets: e.sets.map((s, j) => { const d = W.done[ei][j]; return { kg: d ? d[0] : s[0], reps: d ? d[1] : s[1], done: !!d }; }) })) });
+let psT = 0;
+const persistSoon = () => { clearTimeout(psT); psT = setTimeout(() => persist('Target changed'), 350); }; // a changed weight or rep target is saved once the thumb rests
 function persist(label) { // called after every change to the workout; the first call starts the saved session
   if (!SAVER || !W || W.saved) return;
   if (!SAVER.id) { SAVER.begin(snapW()); keepWhenUseful(SAVER.engine).catch(() => {}); }
@@ -1108,6 +1110,7 @@ function persist(label) { // called after every change to the workout; the first
 }
 // past midnight the food totals start over (an app left open overnight must not carry yesterday into today)
 function rollDay() {
+  const eaten = eatenAt(nowMin()).map(x => x.k).join(); if (eaten !== eatenKey) { eatenKey = eaten; afterFood(); } // a scheduled meal came due
   const d = new Date().toDateString(); if (d === foodDay) return; foodDay = d;
   Object.assign(FUEL, { extra: 0, extraK: 0, extraC: 0, extraF: 0, log: [] }); FUEL.manual.clear(); Object.keys(mealSaved).forEach(k => delete mealSaved[k]);
   if (SAVER) restoreFoods(); afterFood();
@@ -1297,7 +1300,7 @@ function setLine(E, s) {
 function nudge(n) { // one plate step at a time, never below what can be loaded
   if (!W || W.end || S.view !== 'train') return; const s = cur(), [kind, st] = kitOf(W.ex[W.e]), lo = kind === 'bar' ? 20 : st;
   const w = Math.max(lo, +(s[0] + n * st).toFixed(2)); if (w === s[0]) return;
-  s[0] = w; wR.set(kgFmt(w), { dir: n > 0 ? 1 : -1 }); buzz(5); fitNum(); syncStage();
+  s[0] = w; persistSoon(); wR.set(kgFmt(w), { dir: n > 0 ? 1 : -1 }); buzz(5); fitNum(); syncStage();
   $('#logL').textContent = t('logSet', { w: kgFmt(w), r: s[1] }); $('#wCoach').textContent = setLine(W.ex[W.e], s);
 }
 /* the set sheet: drag the dial and the plates change with it; reps are two big buttons */
@@ -1327,7 +1330,7 @@ function buildEd() {
   const D = $('#edD'), T = $('#edT'), PX = 2.4 * remPx(), toX = w => ((w - lo) / st) * PX;
   let x = toX(s[0]), drag = null, anim = 0;
   const place = v => { x = v; T.style.transform = `translate3d(${v}px,0,0)`; const i = clamp(Math.round(v / PX), 0, n), w = +(lo + i * st).toFixed(2);
-    if (w !== s[0]) { s[0] = w; $('#edW').textContent = kgFmt(w); D.setAttribute('aria-valuenow', w); wR.set(kgFmt(w), { dir: 1 }); $('#logL').textContent = t('logSet', { w: kgFmt(w), r: s[1] }); paintPlates(w); buzz(3); fitNum();
+    if (w !== s[0]) { s[0] = w; persistSoon(); $('#edW').textContent = kgFmt(w); D.setAttribute('aria-valuenow', w); wR.set(kgFmt(w), { dir: 1 }); $('#logL').textContent = t('logSet', { w: kgFmt(w), r: s[1] }); paintPlates(w); buzz(3); fitNum();
       clearTimeout(STG.dt); STG.dt = setTimeout(syncStage, 160); } }; // the bar behind the sheet takes the plates once the dial rests
   place(x);
   const band = (o, dd) => (1 - 1 / ((0.55 * Math.abs(o)) / dd + 1)) * dd * Math.sign(o); // iOS rubber band at the ends
@@ -1341,7 +1344,7 @@ function buildEd() {
     const st2 = () => { const k = clamp((performance.now() - t0) / ms, 0, 1); place(lerp(from, target, springAt(k))); if (k < 1) anim = requestAnimationFrame(st2); }; anim = requestAnimationFrame(st2); };
   D.addEventListener('pointerup', end); D.addEventListener('pointercancel', end);
   D.addEventListener('keydown', e => { if (e.key === 'ArrowRight') place(clamp(x + PX, 0, n * PX)); if (e.key === 'ArrowLeft') place(clamp(x - PX, 0, n * PX)); });
-  $$('#edIn [data-er]').forEach(btn => btn.addEventListener('click', () => { s[1] = clamp(s[1] + +btn.dataset.er, 1, 30); $('#edRv').textContent = s[1]; rR.set(String(s[1]), { dir: +btn.dataset.er }); $('#logL').textContent = t('logSet', { w: kgFmt(s[0]), r: s[1] }); buzz(4); fitNum(); }));
+  $$('#edIn [data-er]').forEach(btn => btn.addEventListener('click', () => { s[1] = clamp(s[1] + +btn.dataset.er, 1, 30); persistSoon(); $('#edRv').textContent = s[1]; rR.set(String(s[1]), { dir: +btn.dataset.er }); $('#logL').textContent = t('logSet', { w: kgFmt(s[0]), r: s[1] }); buzz(4); fitNum(); }));
   $$('#edIn [data-close]').forEach(c => c.addEventListener('click', () => { closeSheet(); $('#wCoach').textContent = setLine(W.ex[W.e], cur()); }));
 }
 function openEdit() { if (!W || W.end || S.view !== 'train') return; openSheet('edS', $('#setB'), buildEd); }
@@ -1552,6 +1555,7 @@ function bindHold() { // hold to commit: the world goes soft while the button fi
     const q = new DOMMatrix(getComputedStyle(fill).transform).a; a1.cancel(); a2.cancel();
     a1 = fill.animate([{ transform: `scaleX(${q})` }, { transform: 'scaleX(0)' }], { duration: 260, easing: SP.easing, fill: 'forwards' });
     a2 = soft.animate([{ opacity: q }, { opacity: 0 }], { duration: 260, easing: 'ease', fill: 'forwards' }); };
+  b.addEventListener('keydown', e => { if ((e.key === 'Enter' || e.key === ' ') && !e.repeat) down(e); }); b.addEventListener('keyup', up); b.addEventListener('blur', up); // the same hold, from the keyboard
   b.addEventListener('pointerdown', down); b.addEventListener('pointerup', up); b.addEventListener('pointerleave', up); b.addEventListener('pointercancel', up);
 }
 function finish() {
