@@ -53,4 +53,21 @@ describe('one request for every model', () => {
     const r = await askCoach('gemini-3.8-flash', req, { ledger: ledger(), purpose: 't', fetchFn: cut });
     expect(r.error).toBe('reply is not JSON (cut off at the token limit)');
   });
+
+  it('a candidate blocked with no content is a failed answer, not a crash (Codex, PR #81)', async () => {
+    const blocked = (async () => ({ status: 200, json: async () => ({ candidates: [{ finishReason: 'SAFETY' }], usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 0 } }) })) as unknown as typeof fetch;
+    const r = await askCoach('gemini-3.8-flash', req, { ledger: ledger(), purpose: 't', fetchFn: blocked });
+    expect(r.error).toBe('reply is not JSON');
+    expect(r.reply).toBeUndefined();
+  });
+
+  it('a retried turn reports what every attempt cost in the ledger (Codex, PR #81)', async () => {
+    const reply = { candidates: [{ content: { parts: [{ text: '{"say":"Hi.","actions":[]}' }] } }], usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 5 } };
+    const answers = [{ status: 500, body: { error: { message: 'oops' } } }, { status: 200, body: reply }];
+    const fetchFn = (async () => { const a = answers.shift()!; return { status: a.status, json: async () => a.body }; }) as unknown as typeof fetch;
+    const l = ledger();
+    const r = await askCoach('gemini-3.8-flash', req, { ledger: l, purpose: 't', fetchFn, wait: async () => {} });
+    expect(r.reply?.say).toBe('Hi.');
+    expect(r.usd).toBeCloseTo(l.spent, 10);
+  });
 });

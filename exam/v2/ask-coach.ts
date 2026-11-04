@@ -46,21 +46,25 @@ export async function askCoach(model: string, req: CoachRequest, o: CallOpts & {
   const wait = o.wait ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   try {
     let r;
+    // a failed attempt may still be billed: its ledger charge counts in the turn's cost too (Codex, PR #81)
+    const spentBefore = o.ledger.spent;
     for (let n = 0; ; n++) {
       try { r = await call(model, toBody(req, 1200, model), o); break; } catch (e) {
-        if (!(e instanceof CallError) || !busy(e) || n >= RETRY_WAITS_MS.length) throw e;
+        if (!(e instanceof CallError) || !busy(e) || n >= RETRY_WAITS_MS.length) { if (e instanceof CallError) (e as CallError & { usd?: number }).usd = o.ledger.spent - spentBefore; throw e; }
         await wait(RETRY_WAITS_MS[n]);
       }
     }
+    const usd = Math.max(r.usd, o.ledger.spent - spentBefore);
     const ms = Math.round(performance.now() - t0);
-    const text = r.candidates[0]?.content.parts.filter((p) => !p.thought).map((p) => p.text ?? '').join('') ?? '';
+    // a candidate blocked for safety has no content: that is an answer that failed, not a crash (Codex, PR #81)
+    const text = r.candidates[0]?.content?.parts?.filter((p) => !p.thought).map((p) => p.text ?? '').join('') ?? '';
     let raw: unknown;
     const cut = (r.candidates[0] as { finishReason?: string } | undefined)?.finishReason === 'MAX_TOKENS';
-    try { raw = JSON.parse(text); } catch { return { model, dropped: [], error: cut ? 'reply is not JSON (cut off at the token limit)' : 'reply is not JSON', usd: r.usd, ms }; }
+    try { raw = JSON.parse(text); } catch { return { model, dropped: [], error: cut ? 'reply is not JSON (cut off at the token limit)' : 'reply is not JSON', usd, ms }; }
     const read = readReply(raw);
-    return 'error' in read ? { model, dropped: [], error: read.error, usd: r.usd, ms } : { model, reply: read.reply, dropped: read.dropped, usd: r.usd, ms };
+    return 'error' in read ? { model, dropped: [], error: read.error, usd, ms } : { model, reply: read.reply, dropped: read.dropped, usd, ms };
   } catch (e) {
-    if (e instanceof CallError) return { model, dropped: [], error: `${e.status}: ${e.message}`, usd: 0, ms: Math.round(performance.now() - t0), callFailed: true };
+    if (e instanceof CallError) return { model, dropped: [], error: `${e.status}: ${e.message}`, usd: (e as CallError & { usd?: number }).usd ?? 0, ms: Math.round(performance.now() - t0), callFailed: true };
     throw e;
   }
 }

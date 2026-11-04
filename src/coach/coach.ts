@@ -150,6 +150,23 @@ export interface Shown {
  * - Every action passes the untrusted-input gate and the state check before anything is written.
  * - If a "do" fails, the model's text (written as if it worked) is never shown: the person gets a plain, true message.
  */
+/**
+ * Changes a reply says it made ("I've set…", "Logged it", "Jeg har flyttet…"), by the kind of action that would back them.
+ * "set it" counts only at the start of a sentence, so "how I'd set it up" and "days you logged it" are not claims.
+ */
+const CLAIMS: [RegExp, Proposal['name'][]][] = [
+  [/\b(?:I(?:'ve| have)? (?:set|changed|updated|raised|lowered)|(?:jeg har|har jeg) (?:sat|ændret|opdateret|hævet|sænket))\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)(?:set|changed|updated) (?:it|your|that)\b/im, ['set_target']],
+  [/\b(?:I(?:'ve| have)? logged|(?:jeg har|har jeg) logget)\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)logged (?:it|your|that)\b/im, ['log_water', 'log_weight']],
+  [/\b(?:I(?:'ve| have)? (?:saved|noted|added)|(?:jeg har|har jeg) (?:gemt|noteret|tilføjet))\b|(?:^|[.!?]\s+|\b(?:done|ok|okay|klart|færdig),\s*)saved (?:it|your|that)\b/im, ['remember', 'log_water', 'log_weight']],
+  [/\b(?:I(?:'ve| have)? (?:removed|deleted|forgot|forgotten|dropped)|(?:jeg har|har jeg) (?:slettet|fjernet|glemt))\b/im, ['forget']],
+  // the Coach cannot move, swap or start anything, so these are never backed
+  [/\b(?:I(?:'ve| have)? (?:moved|swapped|rescheduled|started)|(?:jeg har|har jeg) (?:flyttet|byttet|startet))\b/im, []],
+];
+/** claims in `say` that no action in `did` backs: a "moved your workout" next to a memory write still counts (Codex, PR #81) */
+export function unbackedClaims(say: string, did: Proposal['name'][]): string[] {
+  return CLAIMS.filter(([re, kinds]) => re.test(say) && !kinds.some((k) => did.includes(k))).map(([re]) => say.match(re)![0].trim());
+}
+
 /** a reply that only accepts what was offered: "ja, gør det", "yes, do it", "ok please" */
 const ACCEPT = /^\s*(?:(?:ja|jo|yes|yeah|yep|ok|okay|sure|klart|gerne|fint|do it|gør det|go ahead|kør|apply|please|tak|det)\b[\s,.!]*)+$/iu;
 
@@ -158,6 +175,7 @@ export async function finishTurn(e: Engine, reply: ModelReply, ctx: { personText
   const did: Shown['did'] = [];
   const offers: Offer[] = [];
   const failed: string[] = [...(reply.brokenDo ?? [])];
+  let downgraded = false;
   const turn = { userText: ctx.personText, untrusted: ctx.untrusted, sheet: sheetNumbers(ctx.sheet) };
   // the person said yes to an Apply button from the last turn in words: that exact change is what they agreed to (Codex, PR #81)
   const accepted = !ctx.untrusted && ACCEPT.test(ctx.personText) ? (ctx.pending ?? []) : [];
@@ -171,7 +189,7 @@ export async function finishTurn(e: Engine, reply: ModelReply, ctx: { personText
     // a lasting fact the person states in their own words may be remembered without "remember" (rule 5); anything else
     // runs only when their words asked for that kind of change
     const asked = how === 'do' && (!!agreed || asksFor(proposal.name, ctx.personText) || (proposal.name === 'remember' && !ctx.untrusted));
-    if (how === 'do' && !asked) refused.push(`"do" ${proposal.name} without being asked: shown as an offer`);
+    if (how === 'do' && !asked) { refused.push(`"do" ${proposal.name} without being asked: shown as an offer`); downgraded = true; }
     const c = check(proposal, asked ? 'command' : 'proposal', { records: e.allRecords(), now: ctx.now, tz: ctx.tz });
     if (!c.ok) { refused.push(c.reason); if (asked) failed.push(c.reason); continue; }
     if (asked) {
@@ -182,7 +200,10 @@ export async function finishTurn(e: Engine, reply: ModelReply, ctx: { personText
     else refused.push('more than one offer: kept the first');
   }
   // some changes may have gone through before one failed: then say so, never "nothing was changed" (Codex, PR #81)
-  const text = !failed.length ? reply.say
+  // a "do" that became an Apply button: the text must not say it already happened (Codex, PR #81)
+  const notYet = downgraded && unbackedClaims(reply.say, did.map((d) => d.name)).length > 0;
+  const text = !failed.length
+    ? (notYet ? (ctx.lang === 'da' ? 'Jeg har ikke ændret noget endnu. Tryk på knappen nedenfor, hvis du vil have det.' : "I haven't changed anything yet. Tap the button below if you want it.") : reply.say)
     : did.length
       ? (ctx.lang === 'da' ? `Kun en del lykkedes. Det kunne jeg ikke: ${failed.join('; ')}. Det, der blev ændret, står nedenfor.` : `Only part of that went through. I couldn't: ${failed.join('; ')}. What did change is below.`)
       : (ctx.lang === 'da' ? `Det kunne jeg ikke ændre: ${failed.join('; ')}. Intet er ændret.` : `I couldn't make that change: ${failed.join('; ')}. Nothing was changed.`);

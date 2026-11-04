@@ -95,10 +95,14 @@ export function trainingFacts(records: AnyRecord[], o: { today: string; dayStart
   const weeks = [0, 0, 0, 0];
   for (const d of recent.values()) { const back = Math.floor(diffDays(today, d) / 7); if (back < 4) weeks[3 - back]++; }
 
-  // ── sleep: the last 7 nights that ended before now ──
-  const nights = live<Sleep>(records, 'sleep')
-    .filter((s) => s.end <= o.now && o.now - s.end < 7 * 864e5)
-    .map((s) => (s.minutes ?? (s.end - s.start) / 60000) / 60);
+  // ── sleep: the last 7 days that ended before now. A record is a night or a nap, so each day's sleep is added up first:
+  // a nap is extra sleep, never another short night (Codex, PR #81) ──
+  const perDay = new Map<string, number>();
+  for (const s of live<Sleep>(records, 'sleep').filter((x) => x.end <= o.now && o.now - x.end < 7 * 864e5)) {
+    const d = dayKeyAt(s.end, s.tz ?? o.tz, dayStart);
+    perDay.set(d, (perDay.get(d) ?? 0) + (s.minutes ?? (s.end - s.start) / 60000) / 60);
+  }
+  const nights = [...perDay.values()];
   const sleep = nights.length >= 3
     ? { nights: nights.length, avgHours: Math.round((nights.reduce((a, b) => a + b, 0) / nights.length) * 10) / 10, under6: nights.filter((h) => h < 6).length, under6Of: nights.length }
     : undefined;

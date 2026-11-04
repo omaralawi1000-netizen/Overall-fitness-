@@ -55,6 +55,14 @@ describe('code decides what happens', () => {
     expect(s.text).not.toMatch(/Did in the app/);
   });
 
+  it('a "do" that became an Apply button never says it already happened (Codex, PR #81)', async () => {
+    const { f, turn } = await person({ waterMl: 2500 });
+    const s = await turn('I drank 500 ml of water', { say: "I've logged 500 ml.", actions: [{ how: 'do', name: 'log_water', ml: 500 }] });
+    expect(f.e.allRecords().some((x) => x.kind === 'water')).toBe(false);
+    expect(s.offers).toHaveLength(1);
+    expect(s.text).toBe("I haven't changed anything yet. Tap the button below if you want it.");
+  });
+
   it('a failed command never shows the model\'s "done" text', async () => {
     const { f, turn } = await person({ kcal: 2500 });
     const s = await turn('set my calories to 900', { say: 'Done, calories set to 900.', actions: [{ how: 'do', name: 'set_target', key: 'kcal', value: 900 }] });
