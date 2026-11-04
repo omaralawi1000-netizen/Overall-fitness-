@@ -10,7 +10,7 @@ Starting point: old Aven's Coach brain, memory and living-coach steps 1–2 (rea
 
 ---
 
-**Every answer must pass the Answer Bar** (`docs/coach/ANSWER-BAR.md`, 12 rules with examples, Omar 4 Nov).
+**Every answer must pass the Answer Bar** (`docs/coach/ANSWER-BAR.md`, 14 rules with examples, Omar 4 Nov; the voice: `docs/coach/VOICE.md`).
 
 ## 1. What it knows: memory
 
@@ -227,6 +227,24 @@ runs, length correlation, round 3 on his phone, targets 9/10 blind wins, 95 % ho
 - **Harsh score of this plan: 6/10.** Biggest weakness: kappa on ~36 picks from one person has an error bar of about
   ±0.2, so the 0.75 gate can pass or fail by luck. Mitigations: read-time guards, two repeats to measure his own
   consistency, and code checks for every rule that can be counted.
+
+### Second brief, 4 Nov 02:21 (replaces the brief above; everything built stays)
+Goal: a great coach who knows you, with an expert's depth one tap away; the coach wins a conflict. What changed and
+what was decided (Omar: "use only the good parts"):
+- **Answer Bar 14 rules** (adds expert on request, condition first, close the loop, one voice) and `VOICE.md`. Every
+  case is labelled text or expert (`mode`); a text is capped at 120 words, an expert answer at 250. "Why" alone stays
+  a text with More behind it, because his best-rated "why am I not gaining" reply was short.
+- **Stages, stop after each with cost and what to check:** (1) bar, VOICE.md, round 2 fixes; (2) round 3 on his phone;
+  (3) full exam, calibration, week tests, the Noticer.
+- **Calibration only on Omar's own picks.** The round 2 list in the brief is a Claude review: used as an extra review
+  only, never to calibrate (a Claude judge checked against a Claude review proves nothing). He has 0 usable picks, so
+  round 3 also carries the 26 round-2 pairs and re-tests the close ones (3, 13, 14, 19, 22).
+- **Speed (first words under ~2 s):** measured in the exam log now; streaming is built when the Coach goes into the
+  app, where it can be measured for real.
+- **Close the loop** needs the Coach's own recent changes in the fact sheet; that comes with the week tests (stage 3).
+- **Schema size (4 Nov):** 19 optional fields in the reply schema made every Sonnet call time out on Gunshot (Claude
+  compiles the schema into a grammar). Now 11, guarded by a test.
+- Harsh score: 7/10. Biggest weakness: ~40 picks from one person is a thin base, so judges may stay at "triage only".
 
 ### What it is
 - **Conversations**: realistic ones built from Omar's real week (the interview), plus friends of every type. Each one

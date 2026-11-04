@@ -1,6 +1,6 @@
 /**
  * Training facts for the Coach's fact sheet: the plan for today and the next week, how each lift has moved, sessions per
- * week, and sleep. Code computes every number; the AI only explains them (Answer Bar rule 3).
+ * week, and sleep. Code computes every number; the AI only explains them (Answer Bar rule 4).
  */
 import type { AnyRecord, CustomExercise, Plan, Routine, Session, Sleep, WorkSet, Slot } from '../engine/model';
 import { CATALOG_BY_ID } from '../engine/data/exercises';

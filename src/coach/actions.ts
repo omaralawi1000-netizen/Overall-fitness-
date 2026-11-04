@@ -19,7 +19,7 @@ import { deepEqual, newId } from '../engine/util';
 
 export type TargetKey = 'kcal' | 'protein' | 'carbs' | 'fat' | 'fibre' | 'waterMl';
 const TARGET_UNIT: Record<TargetKey, string> = { kcal: 'kcal', protein: 'g', carbs: 'g', fat: 'g', fibre: 'g', waterMl: 'ml' };
-/** sane ranges; kcal below 1,200 is never set by the Coach (Answer Bar rule 11: very low intake gets care, not a plan) */
+/** sane ranges; kcal below 1,200 is never set by the Coach (Answer Bar rule 12: very low intake gets care, not a plan) */
 const TARGET_RANGE: Record<TargetKey, [number, number]> = { kcal: [1200, 6000], protein: [20, 400], carbs: [20, 900], fat: [20, 300], fibre: [5, 100], waterMl: [500, 6000] };
 const TOPICS: readonly MemoryTopic[] = ['about', 'goal', 'promise', 'preference', 'health', 'life'];
 

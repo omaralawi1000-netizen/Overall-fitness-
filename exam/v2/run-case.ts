@@ -29,7 +29,7 @@ export interface TurnLog {
   tier: Tier; model: string; say?: string; shown?: Shown; error?: string; callFailed?: boolean; dropped: string[]; usd: number; ms: number;
   /** numbers in the reply found nowhere in what the Coach was given: leads for the judge, not a fail by themselves */
   unsourced?: string[];
-  /** dates in the reply found nowhere in what the Coach was given (rule 3) */
+  /** dates in the reply found nowhere in what the Coach was given (rule 4) */
   dates?: string[];
 }
 export interface CaseRun { id: string; setup: string; turns: TurnLog[]; checks: Check[]; usd: number; end?: EndState }
@@ -121,12 +121,12 @@ export function codeChecks(c: ExamCase, turns: TurnLog[], end?: EndState): Check
   return out;
 }
 
-/** in-text citations: "(Kreider et al., 2017)", "(ISSN 2017)", "Helms 2014", "(Smith & Jones, 2021)" (Answer Bar rule 9);
+/** in-text citations: "(Kreider et al., 2017)", "(ISSN 2017)", "Helms 2014", "(Smith & Jones, 2021)" (Answer Bar rule 11);
  * a date like "28 February 2027" is not one (Codex, PR #82) */
 const CITATION = /\((?:[^()]*\b(?:et al\.?|&|og)\b[^()]*|[A-Z][\p{L}-]+[^()]{0,30}?)[,\s]+(?:19|20)\d{2}\)|\b(?!(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec|Januar|Februar|Marts|Maj|Juni|Juli|Oktober)\b)[A-Z][\p{L}-]+(?: et al\.?)?,? (?:19|20)\d{2}\b/u;
-/** list markers and symbols that are read out wrong in voice (rule 2) */
+/** list markers and symbols that are read out wrong in voice (rule 3) */
 const VOICE_BAD = /^\s*(?:[-•*]|\d+[.)])\s|[×→✅]|\bkg\/(?:uge|week)\b/mu;
-/** Danish forms a native speaker never writes (rule 12); grows with every one found in an exam */
+/** Danish forms a native speaker never writes (rule 14); grows with every one found in an exam */
 const BAD_DANISH = /\bheldagskrop\w*|\bheldagskrops-?pas\b|\bfuld krop pas\b/iu;
 /** dates said in a reply: "12 December", "28. februar", "Dec 12", "5/11" */
 const MONTH = '(?:jan(?:uary|uar)?|feb(?:ruary|ruar)?|mar(?:ch|ts)?|apr(?:il)?|ma[iy]|jun(?:e|i)?|jul(?:y|i)?|aug(?:ust)?|sep(?:tember)?|o[ck]t(?:ober)?|nov(?:ember)?|dec(?:ember)?)';
@@ -139,7 +139,7 @@ function monthIndex(word: string): number {
   if (w.startsWith('mar')) return 3; if (w.startsWith('may') || w.startsWith('maj')) return 5; if (/^o[ck]t/.test(w)) return 10;
   return MONTHS_EN.findIndex((m) => m.length > 2 && w.startsWith(m)) + 1;
 }
-/** dates in the reply that are nowhere in the facts or the person's words: an invented date (rule 3) */
+/** dates in the reply that are nowhere in the facts or the person's words: an invented date (rule 4) */
 export function inventedDates(reply: string, given: string): string[] {
   const known = knownDates(given);
   const said = new Set([...given.matchAll(DATE)].map((m) => m[0].toLowerCase()));
@@ -162,13 +162,15 @@ export function barChecks(c: ExamCase, turns: TurnLog[]): Check[] {
     const hits = said.map((t, i) => bad(t, i)).filter((x): x is string => !!x);
     out.push({ name, ok: !hits.length, ...(hits.length ? { detail: hits.join(' | ') } : {}) });
   };
-  each('rule 1: at most 120 words', (t) => words(t.say!) > 120 && `${words(t.say!)} words`);
+  const expert = c.turns.map((x) => !!x.expert);
+  each('rule 1: a text is at most 120 words', (t, i) => !expert[i] && words(t.say!) > 120 && `${words(t.say!)} words`);
+  each('rule 2: an expert answer is at most 250 words', (t, i) => expert[i] && words(t.say!) > 250 && `${words(t.say!)} words`);
   each('rule 1: at most one question', (t) => qmarks(t.say!) > 1 && `${qmarks(t.say!)} questions`);
   each('rule 1: at most one Apply', (t) => (t.shown?.offers.length ?? 0) > 1 && `${t.shown!.offers.length} offers`);
   const voice = c.turns.map((x) => !!x.voice);
-  each('rule 2: voice is spoken style', (t, i) => voice[i] && (VOICE_BAD.test(t.say!) ? 'list marker or symbol' : words(t.say!) > 60 ? `${words(t.say!)} words` : false));
-  each('rule 3: no invented date', (t) => (t.dates?.length ? t.dates.join(', ') : false));
-  each('rule 9: no citation in the text', (t) => (t.say!.match(CITATION)?.[0] ?? false));
-  each('rule 12: no known bad Danish', (t) => (t.say!.match(BAD_DANISH)?.[0] ?? false));
+  each('rule 3: voice is spoken style', (t, i) => voice[i] && (VOICE_BAD.test(t.say!) ? 'list marker or symbol' : words(t.say!) > 60 ? `${words(t.say!)} words` : false));
+  each('rule 4: no invented date', (t) => (t.dates?.length ? t.dates.join(', ') : false));
+  each('rule 11: no citation in the text', (t) => (t.say!.match(CITATION)?.[0] ?? false));
+  each('rule 14: no known bad Danish', (t) => (t.say!.match(BAD_DANISH)?.[0] ?? false));
   return out;
 }

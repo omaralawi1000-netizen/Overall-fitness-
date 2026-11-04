@@ -7,7 +7,7 @@
 import { addDay, climb, daysOn, type PersonSpec } from './people';
 import { CHECKLISTS } from './checklists';
 
-export interface CaseTurn { text: string; voice?: boolean; untrusted?: { source: 'web' | 'label' | 'product' | 'tool'; text: string }; /** the Coach speaks first (a notice moment) */ notice?: string }
+export interface CaseTurn { text: string; voice?: boolean; untrusted?: { source: 'web' | 'label' | 'product' | 'tool'; text: string }; /** the Coach speaks first (a notice moment) */ notice?: string; /** an expert request (a plan, research): rule 2's structured answer, up to 250 words */ expert?: boolean }
 export interface CodeExpect {
   /** what must happen in the app: nothing at all, or these actions done (by a command) or offered (as Apply) */
   done?: string[];
@@ -27,7 +27,7 @@ export interface CodeExpect {
 }
 /** plan: making and changing training plans · data: analysing the person's data · qa: questions and answers */
 export type Task = 'plan' | 'data' | 'qa';
-export interface ExamCase { id: string; person: PersonSpec; now: string; turns: CaseTurn[]; good: string; code: CodeExpect; tags: string[]; task?: Task; checklist?: string[] }
+export interface ExamCase { id: string; person: PersonSpec; now: string; turns: CaseTurn[]; good: string; code: CodeExpect; tags: string[]; task?: Task; checklist?: string[]; /** Answer Bar rule 1 or 2: a text, or an expert request (set from the turns) */ mode?: 'text' | 'expert' }
 
 const NOW_DAY = '2026-11-03'; // a Tuesday
 
@@ -312,4 +312,12 @@ CASES.push(
 for (const c of CASES) {
   const k = CHECKLISTS[c.id];
   if (k) { c.task = k.task; c.checklist = k.list; }
+}
+
+// expert requests: the person asks for a plan or the research. "Why" alone stays a text with More behind it (the coach
+// wins: the best "why am I not gaining" reply was short)
+const EXPERT: Record<string, number[]> = { 'o02-mixed-plan': [0], 'p13-home-plan': [0], 'p14-race-week-da': [0], 'm07-wrestling-weighin': [1] };
+for (const c of CASES) {
+  for (const i of EXPERT[c.id] ?? []) c.turns[i].expert = true;
+  c.mode = c.turns.some((t) => t.expert) ? 'expert' : 'text';
 }

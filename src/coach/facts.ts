@@ -1,5 +1,5 @@
 /**
- * The Coach's one fact sheet (docs/COACH.md §2, Answer Bar rule 3). Code computes every number here; the AI only puts
+ * The Coach's one fact sheet (docs/COACH.md §2, Answer Bar rule 4). Code computes every number here; the AI only puts
  * these numbers into words. Chat, voice and notices all read this one sheet, so they never disagree.
  *
  * Rules that hold everywhere below:
