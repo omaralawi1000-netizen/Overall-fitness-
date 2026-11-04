@@ -10,7 +10,7 @@ Starting point: old Aven's Coach brain, memory and living-coach steps 1–2 (rea
 
 ---
 
-**Every answer must pass the Answer Bar** (`docs/coach/ANSWER-BAR.md`, 13 rules with examples, Omar 3 Nov).
+**Every answer must pass the Answer Bar** (`docs/coach/ANSWER-BAR.md`, 12 rules with examples, Omar 4 Nov).
 
 ## 1. What it knows: memory
 

@@ -1,7 +1,7 @@
 /**
  * One Coach turn, model-agnostic (brief v2): the prompt, the reply format, and the code that turns a reply into what the
  * person sees. The model only writes words and proposes actions; code decides what runs, runs it, verifies it, and writes
- * the "Did in the app" line (docs/coach/ANSWER-BAR.md rules 3 and 7).
+ * the "Did in the app" line (docs/coach/ANSWER-BAR.md rules 3 and 6).
  *
  * The same request goes to Gemini Flash, Claude Sonnet or the exam's opponent: `coachRequest` builds a neutral
  * {system, turns, schema}, and each provider adapter sends it its own way.
@@ -13,7 +13,7 @@ import { renderKnowledge } from './knowledge';
 import { asksFor, fence, gate, saysNotTo, type UntrustedSource } from './untrusted';
 import { newId } from '../engine/util';
 
-/** the charts the app can draw from the fact sheet; the model picks one by name, never writes chart code (rule 9) */
+/** the charts the app can draw from the fact sheet; the model picks one by name, never writes chart code (rule 2) */
 export const CHARTS = ['weight-trend', 'kcal-days', 'protein-days', 'sessions-weeks', 'lift-progress'] as const;
 export type Chart = (typeof CHARTS)[number];
 
