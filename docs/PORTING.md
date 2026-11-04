@@ -4,7 +4,8 @@ Window is the spine (Omar, 3 Nov 2026). It was designed as a single-file artifac
 
 ## Where things are
 - `src/app/index.html`: the markup of every screen. `src/app/app.css`: all styles, with the self-hosted `@font-face` rules on top.
-- `src/app/main.js`: the app (one ES module: sky, Today, Train, Fuel, Health, Coach, Settings, the workout, the warm-up). It still runs on example numbers for the plan, food, sleep and weight; the workout is not yet saved through the engine (see PROGRESS "Next step").
+- `src/app/main.js`: the app (one ES module: sky, Today, Train, Fuel, Health, Coach, Settings, the workout, the warm-up). It runs on example numbers for the plan, sleep and weight; workouts and foods are saved through the engine (`store.ts`).
+- `src/app/store.ts`: the screen's workout and food, mirrored into engine records (tests: `tests/app/store.test.ts`).
 - `src/app/stage.js`: the 3D equipment behind the workout (three.js). A dynamic `import()`, so three.js is its own file, fetched and built only after Today has settled.
 - `src/app/public/`: files served as they are: `photo.jpg` + `mask.png` (the picture), `hero/` (Train explainer stills; the Blender clay clips take their place when Omar's zips arrive), `thumbs/` (Train list pictures), `fonts/` (Geist and Instrument Serif, Latin only, SIL OFL), `manifest.webmanifest`, icons, `sw.js`.
 - Build: `npm run build` makes the engine page (`dist/engine/`) and the app (`dist/app/`). Dev: `npm run dev:app`. Config: `vite.app.config.ts` (relative base, so it works at `/app/` on Pages and at the root in dev).
