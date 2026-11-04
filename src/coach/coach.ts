@@ -104,6 +104,8 @@ export interface CoachTurn {
   text: string;
   /** a pasted page, a scanned label, product data or a tool result that came with this turn */
   untrusted?: { source: UntrustedSource; text: string };
+  /** the app opens the Coach without a message (a notice moment: "morning, before Pull"); the Coach may speak first */
+  notice?: string;
 }
 export interface CoachRequest { system: string; turns: { role: 'user' | 'model'; text: string }[]; schema: typeof REPLY_SCHEMA }
 
@@ -112,7 +114,7 @@ export function coachRequest(sheet: FactSheet, convo: CoachTurn[], o: { voice?: 
   const system = [o.rules ?? COACH_RULES, `FACTS (computed by the app, the only numbers you may use):\n${renderFacts(sheet)}`, `KNOWLEDGE (general guidelines; cite with "sources", never in the text):\n${renderKnowledge()}`].join('\n\n');
   const turns = convo.map((t, i) => ({
     role: t.role === 'person' ? ('user' as const) : ('model' as const),
-    text: [t.text, t.untrusted ? fence(t.untrusted.text, t.untrusted.source) : '', i === convo.length - 1 && t.role === 'person' && o.voice ? '(voice: true)' : '']
+    text: [t.notice ? `(No message from the person. The app asks you to speak first: ${t.notice}. Say something only if FACTS hold something worth their attention right now; otherwise reply with "say": "-" and no actions. At most two sentences.)` : t.text, t.untrusted ? fence(t.untrusted.text, t.untrusted.source) : '', i === convo.length - 1 && t.role === 'person' && o.voice ? '(voice: true)' : '']
       .filter(Boolean)
       .join('\n\n'),
   }));
@@ -151,7 +153,7 @@ export interface Offer { id: string; label: string; proposal: Proposal }
 export interface Shown {
   /** what the person sees: the model's words, or an honest fallback when a change it described didn't happen */
   text: string;
-  did: (Did & { name: Proposal['name'] })[];
+  did: (Did & { name: Proposal['name']; proposal: Proposal })[];
   /** Apply buttons, each checked against the current state; applied later through `apply` */
   offers: Offer[];
   show?: Chart;
@@ -214,7 +216,7 @@ export async function finishTurn(e: Engine, reply: ModelReply, ctx: { personText
     if (!c.ok) { refused.push(c.reason); if (asked) failed.push(c.reason); continue; }
     if (asked) {
       const r = await apply(e, c, newId(), { now: ctx.now, tz: ctx.tz });
-      if ('did' in r) did.push({ ...r.did, name: proposal.name });
+      if ('did' in r) did.push({ ...r.did, name: proposal.name, proposal: c.proposal });
       else { refused.push(r.failed); failed.push(r.failed); }
     } else if (offers.length < 1) offers.push({ id: newId(), label: c.label, proposal: c.proposal });
     else refused.push('more than one offer: kept the first');

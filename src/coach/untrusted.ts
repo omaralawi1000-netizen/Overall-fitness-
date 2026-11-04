@@ -31,7 +31,7 @@ const ASK_FOR: Record<Proposal['name'], RegExp> = {
   forget: words('forget|delete|remove|drop|glem|glemme|slet|slette|fjern|fjerne'),
   log_water: words('log|add|track|record|registrer|registrere|tilføj|tilføje|logge|skriv|skrive'),
   log_weight: words('log|add|track|record|registrer|registrere|tilføj|tilføje|logge|skriv|skrive'),
-  move_session: words('move|shift|swap|put|reschedule|push|flyt|flytte|byt|bytte|ryk|rykke|læg|lægge'),
+  move_session: words('move|swap|reschedule|flyt|flytte|byt|bytte|ryk|rykke|læg|lægge'),
   log_food: words('log|add|track|record|registrer|registrere|tilføj|tilføje|logge|skriv|skrive|ate|had|spiste|fik'),
   // a correction: "no, 2 eggs", "it was 150 g", "nej, to æg", "det var 3"
   fix_food: words('no|not|actually|wait|it was|only|change|fix|correct|nej|ikke|faktisk|vent|det var|kun|ret|rette|ændr|ændre'),

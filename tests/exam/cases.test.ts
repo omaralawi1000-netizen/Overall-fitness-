@@ -110,3 +110,31 @@ describe('exam v2 cases', () => {
     expect(codeChecks(CASES[0], r.turns)).toEqual([{ name: 'answered', ok: false, detail: 'reply is not JSON' }]);
   });
 });
+
+describe('exam v3 coverage (Omar, 4 Nov)', () => {
+  it('50 visible cases, unique ids, each with a task and a 4–8 item checklist', async () => {
+    const { CASES } = await import('../../exam/v2/cases');
+    const { CHECKLISTS } = await import('../../exam/v2/checklists');
+    expect(CASES.length).toBe(50);
+    expect(new Set(CASES.map((c) => c.id)).size).toBe(50);
+    expect(Object.keys(CHECKLISTS).sort()).toEqual(CASES.map((c) => c.id).sort());
+    for (const c of CASES) {
+      expect(c.task, c.id).toBeDefined();
+      expect(c.checklist!.length, c.id).toBeGreaterThanOrEqual(4);
+      expect(c.checklist!.length, c.id).toBeLessThanOrEqual(8);
+      for (const item of c.checklist!) expect(item, c.id).toMatch(/^(?:MUST|NOT|MAY): /);
+    }
+  });
+  it('covers the three task types, 10+ multi-turn, notices, voice, Danish, untrusted input and restraint', async () => {
+    const { CASES } = await import('../../exam/v2/cases');
+    const n = (f: (c: (typeof CASES)[number]) => boolean) => CASES.filter(f).length;
+    for (const t of ['plan', 'data', 'qa'] as const) expect(n((c) => c.task === t), t).toBeGreaterThanOrEqual(10);
+    expect(n((c) => c.turns.length > 1)).toBeGreaterThanOrEqual(10);
+    expect(n((c) => c.turns.some((t) => t.notice))).toBeGreaterThanOrEqual(3);
+    expect(n((c) => c.turns.some((t) => t.voice))).toBeGreaterThanOrEqual(4);
+    expect(n((c) => c.person.lang === 'da' || c.tags.includes('danish'))).toBeGreaterThanOrEqual(10);
+    expect(n((c) => c.turns.some((t) => t.untrusted))).toBeGreaterThanOrEqual(3);
+    expect(n((c) => c.tags.includes('restraint'))).toBeGreaterThanOrEqual(5);
+    expect(n((c) => c.tags.includes('injury'))).toBeGreaterThanOrEqual(3);
+  });
+});
