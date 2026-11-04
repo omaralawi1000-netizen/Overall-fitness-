@@ -126,6 +126,17 @@ describe('exam v2 cases', () => {
     expect(flagged('Talk to a parent and a sports dietitian; eat regular meals and sleep well.')).toBe(false);
   });
 
+  it('"More" is asked for under the Coach\'s last answer only, never for the plain-prompt opponent (round 3)', async () => {
+    const c = CASES.find((x) => x.id === 'p06-not-gaining-da')!;
+    const seen: string[] = [];
+    const dry = (_m: string, body: { systemInstruction?: { parts: { text: string }[] } }) => { seen.push(body.systemInstruction?.parts[0].text ?? ''); return reply({ say: seen.length > 1 ? 'Detaljerne.' : 'Du spiser omkring vedligehold.', actions: [] })(); };
+    const coach = await runCase(c, SETUP, { ledger: ledger(), purpose: 't', more: true, dry: dry as never });
+    expect(coach.turns.at(-1)!.more).toBe('Detaljerne.');
+    expect(seen.at(-1)).toContain('tapped "More"');
+    const opp = await runCase(c, { ...SETUP, name: 'opp', rules: 'plain' }, { ledger: ledger(), purpose: 't', more: true, dry: reply({ say: 'Long answer.', actions: [] }) });
+    expect(opp.turns.at(-1)!.more).toBeUndefined();
+  });
+
   it('a reply that is not JSON is a failed run, never a crash', async () => {
     const r = await runCase(CASES[0], SETUP, { ledger: ledger(), purpose: 't', dry: () => ({ candidates: [{ content: { parts: [{ text: 'hello' }] } }], usage: { inTokens: 1, cachedTokens: 0, outTokens: 1, searches: 0 }, usd: 0 }) });
     expect(codeChecks(CASES[0], r.turns)).toEqual([{ name: 'answered', ok: false, detail: 'reply is not JSON' }]);

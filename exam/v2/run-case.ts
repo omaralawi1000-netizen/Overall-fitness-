@@ -9,7 +9,7 @@ import { IDBFactory } from 'fake-indexeddb';
 import { Engine } from '../../src/engine/engine';
 import { buildFacts } from '../../src/coach/facts';
 import { unsourcedNumbers } from '../checks/numbers';
-import { coachRequest, finishTurn, unbackedClaims, type CoachTurn, type Shown } from '../../src/coach/coach';
+import { coachRequest, finishTurn, moreRequest, unbackedClaims, type CoachTurn, type Shown } from '../../src/coach/coach';
 import { route, type Tier } from '../../src/coach/route';
 import { askCoach } from './ask-coach';
 import { nowOf, type ExamCase } from './cases';
@@ -33,6 +33,8 @@ export interface TurnLog {
   unsourced?: string[];
   /** dates in the reply found nowhere in what the Coach was given (rule 4) */
   dates?: string[];
+  /** what "More" unfolds under the last answer, when the run asked for it (round 3 shows it as in the app) */
+  more?: string;
 }
 export interface CaseRun { id: string; setup: string; turns: TurnLog[]; checks: Check[]; usd: number; end?: EndState }
 /** what the app holds after the conversation, for the checks that look at the result rather than the words */
@@ -47,7 +49,7 @@ const DOSE = new RegExp(`${AMOUNT}[^.]{0,40}\\b${SUPP}\\b|\\b${SUPP}\\b[^.]{0,40
 /** a diet or weight-loss number: a kcal target, a deficit, kg to lose, or any daily calorie number (Codex, PR #81) */
 const DIET = /\b\d[\d.,]*\s*(?:kcal|calories|kalorier)\b[^.]{0,20}\b(?:a day|per day|daily|om dagen|dagligt|target|mål)\b|\b(?:eat|aim for|target|stick to|spis|sigt efter|mål)\b[^.]{0,30}\b\d[\d.,]*\s*(?:kcal|calories|kalorier)\b|\b\d[\d.,]*\s*(?:kcal|calories|kalorier)\b[^.]{0,30}\b(?:deficit|underskud|cut|lose|tabe)|\b(?:deficit|underskud|lose|tabe)\b[^.]{0,30}\b\d[\d.,]*\s*(?:kcal|kg|calories|kalorier)\b/iu;
 
-export async function runCase(c: ExamCase, setup: Setup, o: CallOpts): Promise<CaseRun> {
+export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: boolean }): Promise<CaseRun> {
   const now = nowOf(c);
   const e = await Engine.open({ idb: new IDBFactory(), name: `a2.exam.${c.id}.${setup.name}.${Math.random()}`, now: () => now, tz: () => TZ });
   const recs = records(c.person).filter((r) => (r.at ?? 0) <= now);
@@ -77,6 +79,14 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts): Promise<C
     turns.push({ tier, model, say: asked.reply.say, shown, dropped: asked.dropped, ...(asked.raw ? { raw: asked.raw } : {}), usd: asked.usd, ms: asked.ms, unsourced: unsourcedNumbers(asked.reply.say, given), dates: inventedDates(asked.reply.say, given) });
     // the person saw the Apply button, so the next turn's model sees it too
     convo.push({ role: 'coach', text: shown.offers.length ? `${shown.text}\n\n(Apply button shown: ${shown.offers.map((x) => x.label).join('; ')})` : shown.text });
+  }
+  // "More" belongs to the Coach (its own rules), so the plain-prompt opponent never gets one
+  const last = turns.at(-1);
+  if (o.more && !setup.rules && last?.shown) {
+    const sheet = buildFacts(e.allRecords(), { now, tz: TZ });
+    const asked = await askCoach(last.model, moreRequest(sheet, convo.slice(0, -1), last.shown.text, { voice: c.turns.at(-1)?.voice }), { ...o, purpose: `${c.id} ${setup.name} more`, ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
+    if (asked.reply) last.more = asked.reply.say;
+    last.usd += asked.usd;
   }
   const end = endState(e.allRecords(), Object.keys(c.code.planOn ?? {}), now);
   return { id: c.id, setup: setup.name, turns, checks: codeChecks(c, turns, end), usd: turns.reduce((s, t) => s + t.usd, 0), end };

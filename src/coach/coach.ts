@@ -178,12 +178,6 @@ export interface Shown {
   refused: string[];
 }
 
-/**
- * Turn a model's reply into what the person sees. Code decides:
- * - "do" runs only when the person's own words asked for that kind of change (`asksFor`); otherwise it becomes an offer.
- * - Every action passes the untrusted-input gate and the state check before anything is written.
- * - If a "do" fails, the model's text (written as if it worked) is never shown: the person gets a plain, true message.
- */
 /** "Logged it." or "Maden er logget." claims a change; "Logged so far: 863 kcal", "Logged food is not all you ate" and
  * "Det, der er logget, …" only describe what is there (Codex, PR #83) */
 const DESCRIBES = String.raw`(?!\s+(?:so far|indtil nu)\b)(?!\s+[a-zæøå]+\s+(?:is|are|was|were|shows?|averages?|covers?|er|var|viser)\b)`;
@@ -241,6 +235,12 @@ function couldNot(failed: Failed[], someDid: boolean, lang: 'en' | 'da'): string
   return da ? `Jeg kunne ikke ${what}, så intet er ændret.${why}` : `I couldn't ${what}, so nothing was changed.${why}`;
 }
 
+/**
+ * Turn a model's reply into what the person sees. Code decides:
+ * - "do" runs only when the person's own words asked for that kind of change (`asksFor`); otherwise it becomes an offer.
+ * - Every action passes the untrusted-input gate and the state check before anything is written.
+ * - If a "do" fails, the model's text (written as if it worked) is never shown: the person gets a plain, true message.
+ */
 export async function finishTurn(e: Engine, reply: ModelReply, ctx: { personText: string; untrusted: boolean; sheet: FactSheet; now: number; tz: string; lang: 'en' | 'da'; pending?: Offer[]; lastDid?: Proposal['name'][] }): Promise<Shown> {
   const refused: string[] = [];
   const did: Shown['did'] = [];
