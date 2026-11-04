@@ -307,3 +307,24 @@ Next: Omar times the cold start on his phone, then port Window v15 into the repo
 - In the Train list, the figure beside the name is minimal and static.
 - Z-Anatomy is CC BY-SA 4.0, so Settings needs a credit line.
 - Push day still needs bench, incline, OHP and lateral raise rendered.
+
+**Figures for ~400 lifts: faster route (4 Nov 2026, recommendation, waiting on Omar's yes; supersedes only the "how we get 400 clips" part of the figures decision)**
+- Problem: re-posing the clay figure in Blender takes 1–2 days per lift. A live three.js mannequin looked like a cheap game model (rejected). Omar: "That takes too long."
+- **Recommendation: buy a licensed 3D exercise library (MoveKit, the Complete pack, $299 once, about 2,000 DKK) for the long tail. Keep the clay clips for the 5 finished lifts plus Omar's ~30 main lifts, done by the Blender route only as time allows.** Harsh score **7/10**. Biggest weakness: it is not the clay look, and Omar has not seen it on his phone yet.
+- What MoveKit is (vendor pages, not independently verified): 582 exercises, one loopable MP4 each, faceless grey anatomy figure with worked muscles tagged (red in its own comparison), poster images, JSON/CSV metadata. Commercial licence for paid/freemium apps, self-hosting, resize, crop and recolour inside the product allowed. Not allowed: reselling raw files, public raw links, AI training or AI-derived content. Terms effective 4 Aug 2026.
+- Free sample (no signup, no watermark, two clips: Pull Ups, Dumbbell Chest Fly) at movekit.com/free-sample. **Step 0, free: Omar judges the sample on his phone next to the clay curl before any money moves.**
+- Open licence questions to settle in writing before buying: shipping the MP4s inside a released PWA/app (page says "mobile and web applications" are fine but also bans "sharing raw files publicly"), and recolouring to match Aven. Also check that Omar's ~400 lifts are actually in the 582.
+
+| Option | Look vs clay curl | Coverage | Time | Cost | Verdict |
+|---|---|---|---|---|---|
+| MoveKit Complete (582 clips) | Cleaner grey anatomy figure, muscles marked; not clay, not glowing | Most common lifts; unchecked for Omar's list | Days (download, trim, recolour, wire in) | $299 once (about 2,000 DKK); $4.99 per single clip | **Pick (7/10)** |
+| Vital Animations / ExerciseDB Pro (400 / 800 / 1,500+ clips) | 3D, no muscle overlay, generic | Large | Days | $49 / $149 / $299 once | Backup; weaker on muscles |
+| WorkoutX hosted API | 720p, watermarked free tier | 1,900+ | Days | Monthly plan, dependency on their CDN | No: runs against offline PWA and monthly cost |
+| GymVisual / Exercise Animatic | Anatomy figure, red muscles | Huge | Days | About $6–10 per clip, bundle about $299–599 | No: per-clip price at 400 lifts, licence bans AI training and is vague on client apps |
+| AI video from clay stills (Kling, Veo, Runway) | Style drifts between clips; barbell paths and joint angles often wrong; loops need retries | Any lift | Hours per lift with retries | About $0.05–0.07 per second plus many retries | No: wrong form in a coaching app is worse than no clip. Could suit a hero loop, not 400 |
+| Clay, 2 key-pose stills per lift (start, end) | Best match to clay | Any lift | About 2–4 hours per lift by hand; faster only with a retarget rig | Time only | Good for the ~30 main lifts; too slow for 400 |
+| Batch auto-posing (text-to-motion, SMPL retarget) | Clay look kept | Any lift | Fast once built, but a big build | Free tools, but SMPL parts are non-commercial and equipment is not modelled | No: licence blocks release, and no equipment |
+
+- Why it wins: it is the only option that covers hundreds of lifts in days, at a fixed price, with a licence meant for apps that may be released. Everything else is either not fast, not safe on form, or not releasable.
+- Plan if Omar says yes: (1) judge the free sample; (2) read the licence text and email MoveKit the two questions above; (3) check his lift list against their library; (4) buy; (5) wire clips into the explainer, keep the clay clips for lifts where they exist; (6) static poster frame for the Train list; (7) credit lines in Settings (Z-Anatomy CC BY-SA 4.0 stays for clay clips).
+- Nothing was bought or signed up for.
