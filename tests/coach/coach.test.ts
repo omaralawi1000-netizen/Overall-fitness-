@@ -150,3 +150,28 @@ describe('code decides what happens', () => {
     expect(s.text).toMatch(/^Det kunne jeg ikke ændre/);
   });
 });
+
+describe('More, notices and source chips (Answer Bar rules 2 and 9)', () => {
+  it('"More" continues the same conversation with the short answer and no new actions', async () => {
+    const { sheet } = await person({ kcal: 3000 });
+    const { moreRequest, MORE_RULES } = await import('../../src/coach/coach');
+    const r = moreRequest(sheet(), [{ role: 'person', text: 'why am I not gaining?' }], 'You eat about maintenance.');
+    expect(r.system).toContain(MORE_RULES);
+    expect(r.turns.map((t) => t.role)).toEqual(['user', 'model', 'user']);
+    expect(r.turns[1].text).toBe('You eat about maintenance.');
+  });
+  it('a notice turn asks the Coach to speak first or stay silent', async () => {
+    const { sheet } = await person({});
+    const r = coachRequest(sheet(), [{ role: 'person', text: '', notice: 'evening' }]);
+    expect(r.turns[0].text).toMatch(/speak first: evening[\s\S]*"-"/);
+  });
+  it('source chips come only from the knowledge pack', async () => {
+    const { turn } = await person({});
+    const read = readReply({ say: 'Yes, 3–5 g a day.', actions: [], sources: ['creatine', 'made-up-2024'] });
+    if ('error' in read) throw new Error(read.error);
+    expect(read.dropped).toContain('unknown source made-up-2024');
+    const shown = await turn('is creatine worth it?', read.reply);
+    expect(shown.sources?.map((s) => s.id)).toEqual(['creatine']);
+    expect(shown.sources?.[0].titles.length).toBeGreaterThan(0);
+  });
+});

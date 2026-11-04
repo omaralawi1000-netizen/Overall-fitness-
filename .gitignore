@@ -3,3 +3,4 @@ node_modules
 dist/
 *.mp4
 
+exam/v2/cases-heldout.ts

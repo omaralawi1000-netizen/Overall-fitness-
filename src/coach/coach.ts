@@ -121,6 +121,14 @@ export function coachRequest(sheet: FactSheet, convo: CoachTurn[], o: { voice?: 
   return { system, turns, schema: REPLY_SCHEMA };
 }
 
+/** What "More" adds (Answer Bar rule 2): generated only when tapped, so the short answer stays fast. */
+export const MORE_RULES = `The person tapped "More" under your short answer. Now unfold what the short answer left out: the full plan, the details, the reasoning, what to watch for. Up to about 250 words; short lists are fine here. Don't repeat the short answer. Same rules as before: only numbers from FACTS, the person's language, no new actions (put none in "actions"). If there is honestly nothing more worth saying, say so in one line.`;
+/** A "More" tap in voice is "Want the details?" answered yes: the same request, spoken style. */
+export function moreRequest(sheet: FactSheet, convo: CoachTurn[], short: string, o: { voice?: boolean; rules?: string } = {}): CoachRequest {
+  const base = coachRequest(sheet, convo, o);
+  return { ...base, system: `${base.system}\n\n${MORE_RULES}`, turns: [...base.turns, { role: 'model', text: short }, { role: 'user', text: o.voice ? '(yes, the details please; voice: true)' : '(tapped More)' }] };
+}
+
 export interface ModelReply {
   say: string; actions: ({ how: 'do' | 'offer' } & Proposal)[]; show?: Chart; sources?: Guideline['id'][];
   /** "do" actions dropped as broken: the text may claim them, so they count as failed when shown (Codex, PR #81) */
