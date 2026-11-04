@@ -216,14 +216,15 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
 
   // ── maintenance: what intake would hold weight steady, from complete days and the trend over the same weeks ──
   // 7,700 kcal per kg of body weight change is the usual rule of thumb, so this is an estimate and is labelled one
-  // count only the days that are in the kcal average, not every day marked complete (Codex, PR #81)
-  const kcalAvg = food28.find((f) => f.id === 'food28.kcalAvgComplete');
-  const kcalDays = done.filter((d) => whole(d, 'kcal') && perDay.get(d)!.kcal !== undefined).length;
-  if (trend && kcalAvg && kcalDays >= 7) {
-    const maint = Math.round((kcalAvg.value - (trend.value * 7700) / 7) / 10) * 10;
-    food28.push({ id: 'food28.maintenanceKcal', value: maint, unit: 'kcal', confidence: 'estimate', note: `from ${kcalDays} complete days and the weight trend; ±150 kcal` });
+  // only complete days with calories, and only inside the weeks the trend measured: intake from one fortnight and weight
+  // change from another say nothing about maintenance (Codex, PR #81)
+  const kcalDays = trend ? done.filter((d) => d >= recent[0] && d <= recent.at(-1)! && whole(d, 'kcal') && perDay.get(d)!.kcal !== undefined) : [];
+  if (trend && kcalDays.length >= 7) {
+    const kcalAvg = kcalDays.reduce((s, d) => s + perDay.get(d)!.kcal!, 0) / kcalDays.length;
+    const maint = Math.round((kcalAvg - (trend.value * 7700) / 7) / 10) * 10;
+    food28.push({ id: 'food28.maintenanceKcal', value: maint, unit: 'kcal', confidence: 'estimate', note: `from ${kcalDays.length} complete days and the weight trend over the same weeks (${recent[0]} to ${recent.at(-1)}); ±150 kcal` });
     for (const perWeek of [-0.5, -0.25, 0.25]) food28.push({ id: `food28.kcalFor${perWeek > 0 ? 'Gain' : 'Loss'}${Math.abs(perWeek) * 1000}g`, value: Math.round((maint + (perWeek * 7700) / 7) / 10) * 10, unit: 'kcal', confidence: 'estimate', note: `about ${Math.abs(perWeek)} kg a week ${perWeek > 0 ? 'gain' : 'loss'}` });
-  } else trust.push('No maintenance estimate yet: it needs a weight trend and at least 7 complete food days with calories.');
+  } else trust.push('No maintenance estimate yet: it needs a weight trend and at least 7 complete food days with calories in the same weeks.');
 
   // ── goals ──
   const goals: GoalFact[] = [];

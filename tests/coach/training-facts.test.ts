@@ -109,6 +109,20 @@ describe('maintenance', () => {
     expect(few.food28.facts.find((x) => x.id === 'food28.kcalAvgComplete')?.note).toMatch(/average of 3 complete days/);
     expect(few.food28.facts.find((x) => x.id === 'food28.maintenanceKcal')).toBeUndefined();
     expect(few.trust.join(' ')).toMatch(/No maintenance estimate yet/);
-    expect(build(8).food28.facts.find((x) => x.id === 'food28.maintenanceKcal')?.note).toMatch(/^from 8 complete days/);
+    // 8 days with calories, 7 of them inside the weigh-ins' weeks (the newest is after the last weigh-in)
+    expect(build(8).food28.facts.find((x) => x.id === 'food28.maintenanceKcal')?.note).toMatch(/^from 7 complete days and the weight trend over the same weeks/);
+  });
+
+  it('never mixes intake from one fortnight with weight change from another (Codex, PR #81)', () => {
+    const rs: AnyRecord[] = [env('settings', '2026-10-01', { language: 'da', dayStartHour: 0, weekStart: 1, units: {}, restDefaultSec: 120, targets: { kcal: 3000 } })];
+    for (const d of ['2026-10-06', '2026-10-07', '2026-10-08', '2026-10-09', '2026-10-10', '2026-10-11', '2026-10-12']) {
+      rs.push(env('food', d, { name: 'x', meal: 'lunch', dataSource: 'reference', portion: { amount: 1, unit: 'portion' }, estimated: false, nutrients: { kcal: 1800 } }));
+      rs.push({ ...env('dayNote', d, { foodComplete: true }), id: `day:${d}` } as AnyRecord);
+    }
+    for (const d of ['2026-10-14', '2026-10-17', '2026-10-20', '2026-10-23', '2026-10-26', '2026-10-29']) rs.push(env('bodyweight', d, { kg: 74.7 }));
+    const s = buildFacts(rs, { now: NOW, tz: TZ });
+    expect(s.food28.facts.find((x) => x.id === 'food28.maintenanceKcal')).toBeUndefined();
+    expect(s.food28.facts.find((x) => x.id.startsWith('food28.kcalFor'))).toBeUndefined();
+    expect(s.trust.join(' ')).toMatch(/No maintenance estimate yet: .* in the same weeks/);
   });
 });
