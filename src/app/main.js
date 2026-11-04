@@ -826,6 +826,7 @@ $('#sFuel').addEventListener('click', e => {
 });
 // the meals' columns grow in from the day line, then what you have eaten pours into them in order
 ENTER.fuel = () => { $$('#msky .bar').forEach((b, i) => b.animate([{ transform: 'scaleY(0)' }, { transform: 'none' }], { duration: RM ? 1 : SP.dur + 200, delay: 120 + i * 70, easing: SP.easing, fill: 'backwards' })); };
+const esc = v => String(v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); // saved text is data, never markup
 function paintFuelNums(instant) {
   if (!fR) return; const m = nowMin(), pl = proteinLeftAt(m), kl = kcalLeftAt(m), ea = eatenAt(m);
   fR.set(String(pl), instant ? { instant: true } : {});
@@ -840,7 +841,7 @@ function paintFuelNums(instant) {
   const cb = ea.reduce((a, x) => a + x.c, 0) + FUEL.extraC, ft = ea.reduce((a, x) => a + x.f, 0) + FUEL.extraF;
   $('#fK').textContent = t('fkLine', { k: intFmt(kl), c: cb, f: ft, C: FUEL.carbs, F: FUEL.fat });
   const rows = ea.map(x => ({ m: x.m, n: t(x.k), d: `${t(x.d)} · ${x.p} g` })).concat(FUEL.log.map(x => ({ m: x.m, n: x.n, d: `${x.p} g · ${x.k} kcal` }))).sort((a, b) => a.m - b.m);
-  $('#mealList').innerHTML = rows.length ? rows.map(x => `<div class="meal"><span class="tm tab">${hm(x.m)}</span><div><div class="n">${x.n}</div><div class="d">${x.d}</div></div><span class="lg done"><svg viewBox="0 0 20 20"><path d="M4.5 10.5l3.5 3.5 7.5-8"/></svg></span></div>`).join('')
+  $('#mealList').innerHTML = rows.length ? rows.map(x => `<div class="meal"><span class="tm tab">${hm(x.m)}</span><div><div class="n">${esc(x.n)}</div><div class="d">${x.d}</div></div><span class="lg done"><svg viewBox="0 0 20 20"><path d="M4.5 10.5l3.5 3.5 7.5-8"/></svg></span></div>`).join('')
     : `<div class="fempty">${t('logEmpty')}</div>`;
 }function logMeal(k, btn) {
   const x = MEALS.find(y => y.k === k); buzz(10); FUEL.manual.add(k);
@@ -1132,10 +1133,14 @@ function resumeDraft() {
   if (ex.some(x => !x)) { SAVER.id = null; return; } // a lift this screen does not know: leave it open in the engine, never guess
   const done = d.snap.lifts.map(l => { const a = []; for (const s of l.sets) { if (!s.done) break; a.push([s.kg, s.reps]); } return a; });
   const flags = []; done.forEach((dn, i) => dn.forEach((_, j) => { flags[ex.slice(0, i).reduce((a, x) => a + x.sets.length, 0) + j] = 'd'; }));
+  const rec = []; done.forEach((dn, i) => dn.forEach((x, j) => { // the records already earned come back with the sets, so the summary and the medal still count them
+    const E = ex[i], heavy = x[0] > E.best[0], repB = !heavy && x[0] >= E.best[0] && x[1] > E.best[1];
+    if (heavy || repB) { flags[ex.slice(0, i).reduce((a, y) => a + y.sets.length, 0) + j] = 'g'; rec.push({ e: i, w: x[0], r: x[1], heavy }); }
+  }));
   const e = Math.max(0, done.findIndex((dn, i) => dn.length < ex[i].sets.length)), n = done.flat().length;
   const total = ex.reduce((a, x) => a + x.sets.length, 0);
   if (n >= total) { SAVER.closeDraft(d.snap); return; } // everything was logged but the finish never came: close it in the engine, so the next workout starts a new one
-  W = { ex, e, s: done[e].length, idx: ex.slice(0, e).reduce((a, x) => a + x.sets.length, 0) + done[e].length, total, done, t0: d.session.startedAt || Date.now(), rest: null, coach: 0, rec: [], vol: done.flat().reduce((a, x) => a + x[0] * x[1], 0), flags };
+  W = { ex, e, s: done[e].length, idx: ex.slice(0, e).reduce((a, x) => a + x.sets.length, 0) + done[e].length, total, done, t0: d.session.startedAt || Date.now(), rest: null, coach: 0, rec, vol: done.flat().reduce((a, x) => a + x[0] * x[1], 0), flags };
   S.live = true; buildSess(); renderSet(true); $('#live').classList.add('on'); paintLive(); paintCta();
   try { const r = JSON.parse(store.get('rest') || 'null'); if (r && r.sid === d.session.id && r.end - Date.now() > 1500) { startRest(Math.round((r.end - Date.now()) / 1000), r.newEx, true); W.rest.end = r.end; W.rest.total = r.total; paintLive(); } } catch {} // the rest that was running keeps its remaining time
 }
@@ -1538,7 +1543,7 @@ $('#sessB').addEventListener('click', openSess);
 $('#sill').addEventListener('click', () => { if (S.view === 'train' || S.view === 'rest') openSess(); });
 $('#sessT').addEventListener('click', e => {
   if (e.target.closest('[data-sclose]')) return closeSess();
-  const j = e.target.closest('[data-j]'); if (!j || !W || W.rest) return;
+  const j = e.target.closest('[data-j]'); if (!j || !W || W.rest || W.busy) return; // not inside the 300 ms hand-off after a set
   const ei = +j.dataset.j; if (ei === W.e) return closeSess();
   const dn = W.done[ei].filter(Boolean).length; if (dn >= W.ex[ei].sets.length) return closeSess(); // a finished lift cannot be logged twice
   W.end = false; W.e = ei; W.s = dn; W.idx = idxAt(ei, W.s);

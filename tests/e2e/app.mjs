@@ -132,6 +132,24 @@ r = await ev(`({ e: __aven.W.e, s: __aven.W.s, idx: __aven.W.idx })`);
 check('after a reload the strip is on the set it resumes at', r.e === 0 && r.s === 0 && r.idx === 0, r);
 await ev(`indexedDB.deleteDatabase('a2.data')`);
 
+// P5d. a record earned before a reload is still counted after it; food names are text, never markup
+await p.goto(base + '?rest=8&nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(400);
+await ev(`__aven.startWorkout()`); await sleep(900);
+await ev(`__aven.W.ex[0].sets[0][0] = 250`); await ev(`__aven.logSet()`); await sleep(1200);
+await p.waitForFunction(() => !window.__saver.engine.busy(), null, { timeout: 8000 });
+await p.goto(base + '?rest=8&nosw'); await p.waitForFunction(() => window.__ready && window.__saver && document.getElementById('live').classList.contains('on'), null, { timeout: 90000 });
+r = await ev(`({ rec: __aven.W.rec.length, flag: __aven.W.flags[0] })`);
+check('a record earned before a reload is still counted after it', r.rec === 1 && r.flag === 'g', r);
+await ev(`indexedDB.deleteDatabase('a2.data')`);
+await p.goto(base + '?nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(400);
+await ev(`__saver.addFood({ id: 'xss1', name: '<img src=x onerror="window.__injected=1">', p: 5, k: 50, c: 1, f: 1 })`); await sleep(500);
+await p.waitForFunction(() => !window.__saver.engine.busy(), null, { timeout: 8000 });
+await p.goto(base + '?nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(800);
+await ev(`__aven.show('fuel')`); await sleep(900);
+r = await ev(`({ injected: !!window.__injected, imgs: document.querySelectorAll('#mealList img').length, text: document.querySelector('#mealList')?.textContent.includes('<img') })`);
+check('a saved food name is shown as text, never run as markup', !r.injected && r.imgs === 0 && r.text, r);
+await ev(`indexedDB.deleteDatabase('a2.data')`);
+
 // P5c. a rest in progress is still running after a reload; a finish tapped before the database opened is still saved
 await p.goto(base + '?rest=8&nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(400);
 await ev(`__aven.startWorkout()`); await sleep(900);
