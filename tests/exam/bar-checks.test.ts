@@ -44,6 +44,12 @@ describe('the Answer Bar checks in code', () => {
     // across the new year: early January is read in the coming year
     expect(wrongWeekdays('torsdag den 1. januar', '2026-12-20')).toEqual(['torsdag den 1. januar']);
     expect(wrongWeekdays('fredag den 1. januar', '2026-12-20')).toEqual([]);
+    // a year that is said wins over the nearest one (Codex, PR #83)
+    expect(wrongWeekdays('Thursday 1 January 2026', '2026-11-03')).toEqual([]);
+    expect(wrongWeekdays('Friday 1 January 2026', '2026-11-03')).toEqual(['Friday 1 January 2026']);
+    expect(wrongWeekdays('Sunday, November 8th, 2026', '2026-11-02')).toEqual([]);
+    expect(wrongWeekdays('Sunday, November 8th', '2026-11-02')).toEqual([]);
+    expect(wrongWeekdays('Saturday, November 8th', '2026-11-02')).toEqual(['Saturday, November 8th']);
     expect(wrongWeekdays('Thursday 1 January', '2026-01-03')).toEqual([]);
     const fails = barChecks(CASES[0], [turn('Moved to Monday 8 November.')]).filter((c) => !c.ok).map((c) => c.name);
     expect(fails).toContain('rule 4: a weekday matches its date');

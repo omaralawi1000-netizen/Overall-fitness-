@@ -184,6 +184,12 @@ export interface Shown {
  * - Every action passes the untrusted-input gate and the state check before anything is written.
  * - If a "do" fails, the model's text (written as if it worked) is never shown: the person gets a plain, true message.
  */
+/** "Logged it." or "Maden er logget." claims a change; "Logged so far: 863 kcal", "Logged food is not all you ate" and
+ * "Det, der er logget, …" only describe what is there (Codex, PR #83) */
+const DESCRIBES = String.raw`(?!\s+(?:so far|indtil nu)\b)(?!\s+[a-zæøå]+\s+(?:is|are|was|were|shows?|averages?|covers?|er|var|viser)\b)`;
+const opener = (verbs: string, passive: string) =>
+  new RegExp(String.raw`(?:^|[.!?]\s+)(?:${verbs})\b${DESCRIBES}|(?<!\b(?:what|der|som),?\s)(?<![a-zæøå] that\s)\b(?:er|is) (?:nu |now )?(?:${passive})\b(?!\s+(?:so far|indtil nu)\b)`, 'im');
+
 /**
  * Changes a reply says it made ("I've set…", "Logged it", "Jeg har flyttet…"), by the kind of action that would back them.
  * "set it" counts only at the start of a sentence, so "how I'd set it up" and "days you logged it" are not claims.
@@ -198,9 +204,9 @@ const CLAIMS: [RegExp, Proposal['name'][]][] = [
   // a sentence that opens with what was done, or a passive "er logget": the 4 Nov speed run showed "Moved Pull to
   // Sunday instead." and "Done: Full body A moves to Tuesday" with nothing moved
   [/(?:^|[.!?]\s+)(?:moved|flyttede|flyttet)\b/im, ['move_session']],
-  [/(?:^|[.!?]\s+)(?:logged|logget|loggede)\b|\b(?:er|is) (?:nu |now )?(?:logget|logged)\b/im, ['log_water', 'log_weight', 'log_food', 'fix_food']],
+  [opener('logged|logget|loggede', 'logget|logged'), ['log_water', 'log_weight', 'log_food', 'fix_food']],
   [/(?:^|[.!?]\s+)(?:set|updated|changed|raised|lowered|sat|ændret|opdateret|hævet|sænket)\b(?! (?:a|an|up)\b)/im, ['set_target', 'fix_food', 'move_session']],
-  [/(?:^|[.!?]\s+)(?:saved|noted|gemt|noteret)\b|\ber (?:nu )?(?:gemt|noteret)\b/im, ['remember', 'log_water', 'log_weight', 'log_food']],
+  [opener('saved|noted|gemt|noteret', 'gemt|noteret'), ['remember', 'log_water', 'log_weight', 'log_food']],
   [/(?:^|[.!?]\s+)(?:removed|deleted|slettet|fjernet)\b/im, ['forget']],
   [/(?:^|[.!?]\s+)(?:fixed|corrected|rettet)\b/im, ['fix_food']],
   [/(?:^|[.!?]\s+)(?:done|all set|gjort|klaret)\s*[,:.!–—-]/im, ['set_target', 'remember', 'forget', 'log_water', 'log_weight', 'move_session', 'log_food', 'fix_food']],

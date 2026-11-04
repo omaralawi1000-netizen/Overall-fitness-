@@ -158,8 +158,8 @@ const qmarks = (t: string) => (t.match(/\?/g) ?? []).length;
 
 /** a weekday said next to a date: "mandag den 31. oktober", "Monday 2 November", "Sunday, November 8" */
 const WEEKDAYS = [['sunday', 'søndag'], ['monday', 'mandag'], ['tuesday', 'tirsdag'], ['wednesday', 'onsdag'], ['thursday', 'torsdag'], ['friday', 'fredag'], ['saturday', 'lørdag']];
-const WEEKDAY_DATE = new RegExp(`\\b(${WEEKDAYS.flat().join('|')}),?\\s+(?:the\\s+|den\\s+|d\\.\\s*)?(?:(\\d{1,2})(?:st|nd|rd|th|\\.)?\\s+(?:of\\s+)?(${MONTH})|(${MONTH})\\.?\\s+(\\d{1,2}))\\b`, 'giu');
-/** weekdays that don't match their date, in the year closest to the case's today (rule 4: the 4 Nov "mandag den 31. oktober" was a Saturday) */
+const WEEKDAY_DATE = new RegExp(`\\b(${WEEKDAYS.flat().join('|')}),?\\s+(?:the\\s+|den\\s+|d\\.\\s*)?(?:(\\d{1,2})(?:st|nd|rd|th|\\.)?\\s+(?:of\\s+)?(${MONTH})|(${MONTH})\\.?\\s+(\\d{1,2}))(?:st|nd|rd|th)?(?:,?\\s+(20\\d\\d))?\\b`, 'giu');
+/** weekdays that don't match their date: in the year said, else the one closest to the case's today (rule 4: the 4 Nov "mandag den 31. oktober" was a Saturday) */
 export function wrongWeekdays(reply: string, today: string): string[] {
   const t = Date.UTC(Number(today.slice(0, 4)), Number(today.slice(5, 7)) - 1, Number(today.slice(8, 10)));
   const out: string[] = [];
@@ -168,7 +168,7 @@ export function wrongWeekdays(reply: string, today: string): string[] {
     const day = Number(m[2] ?? m[5]);
     const mon = monthIndex(m[3] ?? m[4]);
     if (mon < 1) continue;
-    const years = [-1, 0, 1].map((k) => Date.UTC(Number(today.slice(0, 4)) + k, mon - 1, day));
+    const years = m[6] ? [Date.UTC(Number(m[6]), mon - 1, day)] : [-1, 0, 1].map((k) => Date.UTC(Number(today.slice(0, 4)) + k, mon - 1, day));
     const at = years.reduce((a, b) => (Math.abs(b - t) < Math.abs(a - t) ? b : a));
     if (new Date(at).getUTCDay() !== said) out.push(m[0]);
   }

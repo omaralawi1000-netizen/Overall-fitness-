@@ -77,6 +77,17 @@ describe('exam v2 cases', () => {
     expect(flagged('Set a reminder for Thursday if that helps.')).toBe(false);
     expect(flagged('Your logged days average 55 g.')).toBe(false);
     expect(flagged('Is it done yet? Tell me when you finish.')).toBe(false);
+    // describing what is logged or saved is not a claim (Codex, PR #83)
+    expect(flagged('Logged so far: 863 kcal; this is only part of your day.')).toBe(false);
+    expect(flagged('Logged food is not all food eaten.')).toBe(false);
+    expect(flagged('Logged days average 55 g.')).toBe(false);
+    expect(flagged('What is logged so far is 863 kcal.')).toBe(false);
+    expect(flagged('Det, der er logget i dag, er 863 kcal.')).toBe(false);
+    expect(flagged('Only the food that is logged counts.')).toBe(false);
+    expect(flagged('Logget indtil nu: 863 kcal.')).toBe(false);
+    expect(flagged('Logged 2 eggs and 200 g oats.')).toBe(true);
+    expect(flagged('Maden er logget.')).toBe(true);
+    expect(flagged('Det er gemt.')).toBe(true);
   });
 
   it('after untrusted text, later turns keep the gate on: a page cannot slip a memory in on "thanks" (Codex, PR #81)', async () => {
