@@ -204,6 +204,24 @@ await ev(`(() => { const W = __aven.W; W.done[3] = [[20, 12]]; W.e = 0; W.s = 0;
 r = await ev(`__aven.canTrimLive()`);
 check('a plan that would drop a lift with logged sets is refused', r === false, { can: r });
 
+// 12. the explainer: a rendered clay figure plays for the pushdown only while it is open, other lifts keep their picture, and Settings credits Z-Anatomy
+await open('?rest=8');
+await ev(`__aven.show('train')`); await sleep(1200);
+await ev(`document.querySelector('.exc[data-x="4"]').click()`); await sleep(2200);
+r = await ev(`(() => { const v = document.querySelector('#exIn video'); return v ? { playing: !v.paused, w: v.videoWidth, img: !!document.querySelector('#exIn .ex-hero img') } : null; })()`);
+check('the pushdown explainer plays its clay figure', r && r.playing && r.w > 0 && !r.img, r);
+await ev(`document.querySelector('#exIn [data-close]').click()`); await sleep(900);
+r = await ev(`document.querySelector('#exIn video')?.paused ?? 'gone'`);
+check('the clip stops when the explainer closes', r === true || r === 'gone', { r });
+await ev(`document.querySelector('.exc[data-x="0"]').click()`); await sleep(1800);
+r = await ev(`({ video: !!document.querySelector('#exIn video'), img: document.querySelector('#exIn .ex-hero img')?.getAttribute('src') })`);
+check('a lift with no figure yet keeps its equipment picture', !r.video && /hero\/bench\.webp$/.test(r.img || ''), r);
+await ev(`document.querySelector('#exIn [data-close]').click()`); await sleep(900);
+await ev(`document.getElementById('setB0')?.click() || __aven.show('today')`); await sleep(500);
+await ev(`__aven.show('today')`); await sleep(900); await ev(`document.getElementById('setB0').click()`); await sleep(900);
+r = await ev(`document.getElementById('setIn').textContent`);
+check('Settings credits Z-Anatomy and its licence', /Z-Anatomy/.test(r) && /CC BY-SA 4\.0/.test(r), { has: /Z-Anatomy/.test(r) });
+
 // --- the picture itself (3 Nov: an inline comment twice swallowed code that drew the playhead and the weather) ---
 // 9. every uniform the shader declares is set on every frame
 await open();

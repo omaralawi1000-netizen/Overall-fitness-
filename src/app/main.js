@@ -62,7 +62,7 @@ const T = {
     offline:'I’ll answer that in full once I’m connected to your account. For now, try one of the three questions above.', keepS:'Keep plan',
     setH:'Settings', lang:'Language', win:'Sky', live:'Live', shortR:'Short rests', shortS:'10 seconds, for trying it out', replay:'Watch this morning again', on:'On', off:'Off',
     units:'Units', metric:'Metric · kg', windowG:'The window', placeS:'The real sun, moon and weather', skyS:'Live follows the weather', workoutG:'Workout', hap:'Haptics', preview:'preview',
-    credit:'Health, sleep and food numbers in this preview are examples. Photo: Kallur lighthouse, Kalsoy, Faroe Islands, by Olegs Jonins on Unsplash. Light: the real sun and moon over Copenhagen. Weather: the Open-Meteo forecast for Copenhagen, saved on 3 November.',
+    credit:'Health, sleep and food numbers in this preview are examples. Photo: Kallur lighthouse, Kalsoy, Faroe Islands, by Olegs Jonins on Unsplash. Light: the real sun and moon over Copenhagen. Weather: the Open-Meteo forecast for Copenhagen, saved on 3 November. Body figures: Z-Anatomy (z-anatomy.com), CC BY-SA 4.0; the clips are adaptations, shared under the same licence.',
     set:'Set {a} of {b}', logSet:'Log {w} × {r}', skip:'Skip rest', rest:'Rest', nextSet:'Next set', thenEx:'then', lastEx:'Last exercise. Finish strong.', next:'Next',
     coachK:'Coach', coachP:'85 kg for sets 3 and 4? Sets 1 and 2 moved fast.', use85:'Use 85 kg', keep:'Keep 82.5', applied:'Sets 3–4 are 85 kg', undo:'Undo', noSave:'Not saved. Free up space on the phone.',
     oldBest:'old best', sunAfter:'Sunset {s}, {n} minutes after you finish', continue:'Continue', recK:'Heaviest bench ever', recP:'2.5 kg over your best from 20 October. It is on the bench card in Train now.', repBest:'Rep best',
@@ -112,7 +112,7 @@ const T = {
     offline:'Det svarer jeg fuldt på, når jeg er koblet til din konto. Prøv indtil videre et af de tre spørgsmål ovenfor.', keepS:'Behold planen',
     setH:'Indstillinger', lang:'Sprog', win:'Himmel', live:'Live', shortR:'Korte pauser', shortS:'10 sekunder, til afprøvning', replay:'Se morgenen igen', on:'Til', off:'Fra',
     units:'Enheder', metric:'Metrisk · kg', windowG:'Vinduet', placeS:'Den rigtige sol, måne og vejr', skyS:'Live følger vejret', workoutG:'Træning', hap:'Vibration', preview:'prøve',
-    credit:'Tal for helbred, søvn og mad i denne prøve er eksempler. Foto: Kallur fyr, Kalsoy, Færøerne, af Olegs Jonins på Unsplash. Lys: den rigtige sol og måne over København. Vejr: Open-Meteos prognose for København, gemt 3. november.',
+    credit:'Tal for helbred, søvn og mad i denne prøve er eksempler. Foto: Kallur fyr, Kalsoy, Færøerne, af Olegs Jonins på Unsplash. Lys: den rigtige sol og måne over København. Vejr: Open-Meteos prognose for København, gemt 3. november. Kropsfigurer: Z-Anatomy (z-anatomy.com), CC BY-SA 4.0; klippene er bearbejdelser, delt under samme licens.',
     set:'Sæt {a} af {b}', logSet:'Gem {w} × {r}', skip:'Spring pause over', rest:'Pause', nextSet:'Næste sæt', thenEx:'derefter', lastEx:'Sidste øvelse. Slut stærkt.', next:'Næste',
     coachK:'Coach', coachP:'85 kg i sæt 3 og 4? Sæt 1 og 2 gik hurtigt.', use85:'Brug 85 kg', keep:'Behold 82,5', applied:'Sæt 3–4 er 85 kg', undo:'Fortryd', noSave:'Ikke gemt. Frigør plads på telefonen.',
     oldBest:'gl. rekord', sunAfter:'Solnedgang {s}, {n} minutter efter du er færdig', continue:'Fortsæt', recK:'Tungeste bænk nogensinde', recP:'2,5 kg over din bedste fra 20. oktober. Den står nu på bænkkortet i Træn.', repBest:'Rekord i gentagelser',
@@ -624,6 +624,8 @@ const exN = e => LANG === 'da' ? e.da : e.n;
 // what each lift is lifted with: kind, the weight step that can really be loaded, and its 3D picture (drawn by the workout build)
 const KIT = { 'Bench press': ['bar', 2.5, 'bench'], 'Incline dumbbell press': ['db', 2, 'incline'], 'Overhead press': ['bar', 2.5, 'overhead'], 'Lateral raise': ['db', 1, 'lateral'], 'Triceps pushdown': ['cable', 2.5, 'pushdown'] };
 const kitOf = e => KIT[e.n] || ['bar', 2.5, 'bench'];
+// the lifts that have a rendered clay-figure clip (public/figures/<pic>.mp4 + .webp); the rest show their equipment picture until theirs is rendered
+const FIGURE = new Set(['pushdown']);
 // how each lift is done, in four cues, and what it works (the first muscle is the main one)
 const HOW = {
   'Bench press': { m: ['chest', 'fShoulders', 'triceps'],
@@ -756,7 +758,7 @@ BUILD.train = () => {
 function buildExplain(e) {
   const H = HOW[e.n], da = LANG === 'da', pic = kitOf(e)[2], h = e.hist, w = h.length, up = +(h[w - 1] - h[0]).toFixed(2), top = e.sets[e.sets.length - 1];
   $('#exIn').innerHTML = `<h4>${exN(e)}<button class="circ close" data-close aria-label="Close" style="background:rgba(255,255,255,.1);width:4.6rem;height:4.6rem"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></h4>
-    <div class="ex-hero"><img src="${ASSET}hero/${pic}.webp" alt="" decoding="async"><span class="tg glass tab">${t('exToday')} · ${t('exTodayV', { s: e.sets.length, r: e.sets[0][1], w: kgFmt(top[0]) })}</span></div>
+    <div class="ex-hero${FIGURE.has(pic) ? ' fig' : ''}">${FIGURE.has(pic) ? `<video src="${ASSET}figures/${pic}.mp4" poster="${ASSET}figures/${pic}.webp" muted loop playsinline preload="auto" aria-hidden="true"></video>` : `<img src="${ASSET}hero/${pic}.webp" alt="" decoding="async">`}<span class="tg glass tab">${t('exToday')} · ${t('exTodayV', { s: e.sets.length, r: e.sets[0][1], w: kgFmt(top[0]) })}</span></div>
     <div class="ed-k">${t('exHow')}</div><ol class="ex-how">${H[da ? 'da' : 'en'].map(x => `<li>${x}</li>`).join('')}</ol>
     <div class="ed-k">${t('exMus')}</div><div class="ex-mus">${H.m.map((m, i) => `<span class="${i ? '' : 'p'}">${MUS[m][da ? 1 : 0]}</span>`).join('')}</div>
     <div class="ed-k">${t('exProg')}</div>
@@ -766,6 +768,7 @@ function buildExplain(e) {
     <div class="ex-cl">${t('trCoach')[PUSH.findIndex(p => p.n === e.n)]}</div>`;
   $$('#exIn [data-close]').forEach(c => c.addEventListener('click', () => closeSheet()));
   $('#exIn').scrollTop = 0;
+  const fv = $('#exIn video'); if (fv && !RM) fv.play().catch(() => {}); // the clip plays only while the explainer is open
   // the line draws itself once the sheet has grown, so the progress reads as a climb
   $('#exIn .spark').animate([{ clipPath: 'inset(-20% 100% -20% 0)' }, { clipPath: 'inset(-20% 0% -20% 0)' }], { duration: RM ? 1 : 900, delay: RM ? 0 : 380, easing: 'cubic-bezier(.45,.05,.2,1)', fill: 'backwards' });
 }
@@ -1034,7 +1037,7 @@ function openSheet(id, from, build) {
   go(sh.firstElementChild, [{ opacity: 0, transform: 'translate3d(0,1.4rem,0)' }, { opacity: 1, transform: 'none' }], { key: 'in', delay: 60 });
 }
 function closeSheet(instant) {
-  if (!sheetOpen) return; const { sh, from } = sheetOpen; sheetOpen = null; sh.classList.remove('on'); $('#scrim').classList.remove('on'); phone.classList.remove('sheetOn');
+  if (!sheetOpen) return; $$('#exIn video').forEach(v => v.pause()); const { sh, from } = sheetOpen; sheetOpen = null; sh.classList.remove('on'); $('#scrim').classList.remove('on'); phone.classList.remove('sheetOn');
   go(sh, [{ clipPath: 'inset(0rem 0rem 0rem 0rem round 3.6rem)' }, { clipPath: rectInsetIn(from, sh, 2.4) }], { pseudo: '::before', key: 'clip', dur: instant ? 1 : undefined }).finished.then(x => x.cancel()).catch(() => {});
   go(sh.firstElementChild, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translate3d(0,1.4rem,0)' }], { key: 'in', dur: instant ? 1 : 180 });
 }

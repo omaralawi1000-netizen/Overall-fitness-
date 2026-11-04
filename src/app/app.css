@@ -665,3 +665,6 @@ button.srow:active{background:rgba(255,255,255,.07);transition-duration:0s}
 #splash .scr .hero>*,#splash .swap span{opacity:1!important;transform:none!important}
 #veil.off{opacity:0}
 @media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+/* a clay-figure clip is rendered on a light studio floor: the tag gets a dark glass so its words stay readable on it */
+.ex-hero.fig{background:#cfd1d4;aspect-ratio:4/5}
+.ex-hero.fig .tg{background:linear-gradient(180deg,rgba(14,14,18,.62),rgba(14,14,18,.5))}
