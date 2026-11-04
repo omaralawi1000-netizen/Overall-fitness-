@@ -18,12 +18,15 @@ import { Ledger, type GeminiReply } from '../providers';
 import { CASES } from './cases';
 import { records } from './people';
 import { OPPONENT_RULES, runCase, type Setup } from './run-case';
+import { PREV_RULES } from './prev-rules';
 
 export const SETUPS: Record<string, Setup> = {
   flash: { name: 'flash', quick: 'gemini-3.8-flash', deep: 'gemini-3.8-flash' },
   sonnet: { name: 'sonnet', quick: 'claude-sonnet-5-5', deep: 'claude-sonnet-5-5' },
   mix: { name: 'mix', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5' },
   opponent: { name: 'opponent', quick: 'claude-opus-5-5', deep: 'claude-opus-5-5', rules: OPPONENT_RULES },
+  // the previous Coach (PR #81's instructions) on the ship setup
+  prev: { name: 'prev', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5', rules: PREV_RULES },
 };
 
 const DRY = !!process.env.EXAM_DRY;

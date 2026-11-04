@@ -34,7 +34,7 @@ export function longerPicked(pairs: { pick: Outcome; wordsA: number; wordsB: num
 
 /** Pearson correlation of the judge's preference for A (+1 A, 0 tie, −1 B) with A's share of the words, for the report */
 export function lengthCorrelation(pairs: { pick: Outcome; wordsA: number; wordsB: number }[]): number {
-  const xs = pairs.map((p) => (p.pick === 'A' ? 1 : p.pick === 'B' ? -1 : 0));
+  const xs: number[] = pairs.map((p) => (p.pick === 'A' ? 1 : p.pick === 'B' ? -1 : 0));
   const ys = pairs.map((p) => (p.wordsA + p.wordsB ? (p.wordsA - p.wordsB) / (p.wordsA + p.wordsB) : 0));
   const mean = (v: number[]) => v.reduce((a, b) => a + b, 0) / v.length;
   const mx = mean(xs), my = mean(ys);
