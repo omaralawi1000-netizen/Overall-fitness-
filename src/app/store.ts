@@ -127,6 +127,8 @@ export class Saver {
     this.run('session.finish', `Finished ${snap.name}`, finishOps(this.engine.allRecords(), this.id, now));
     this.id = null;
   }
+  /** A fully logged workout whose finish never came: close it in the engine and let go of it. */
+  closeDraft(snap: Snap, now = Date.now()) { this.finish(snap, now); this.id = null; }
   addFood(t: FoodTap, now = Date.now()) { this.run('food.add', `Logged ${t.name}`, foodOps(t, now, dayKeyAt(now, deviceTz())), undefined); }
   removeFood(id: string) { this.run('food.remove', 'Removed food', [{ op: 'delete', id, ifExists: true }]); }
   foods(now = Date.now()) { return foodsOfDay(this.engine.allRecords(), dayKeyAt(now, deviceTz())); }

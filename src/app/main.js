@@ -675,8 +675,8 @@ const FOODS = [{ n: 'Skyr', da: 'Skyr', p: 10, k: 63, c: 4, f: 0 }, { n: 'Chicke
 // the food is counted the moment you tap and gets its own id; only the picture waits for the flying amount, so an Undo
 // tapped before it lands removes exactly this entry (never the one before it)
 let foodId = 0, restoring = false;
-function addFood(p, k, c, f, name, paintIn = 0, eid = null) { const id = ++foodId; FUEL.extra += p; FUEL.extraK += k; FUEL.extraC += c; FUEL.extraF += f; eid = eid || 'fd' + Date.now().toString(36) + id; FUEL.log.push({ id, eid, n: name, p, k, c, f, m: nowMin() }); if (SAVER && !restoring) SAVER.addFood({ id: eid, name, p, k, c, f }); if (paintIn) setTimeout(afterFood, paintIn); else afterFood(); return id; }
-function removeFood(id) { const i = FUEL.log.findIndex(x => x.id === id); if (i < 0) return; const [x] = FUEL.log.splice(i, 1); if (SAVER) SAVER.removeFood(x.eid); FUEL.extra -= x.p; FUEL.extraK -= x.k; FUEL.extraC -= x.c; FUEL.extraF -= x.f; afterFood(); }
+function addFood(p, k, c, f, name, paintIn = 0, eid = null) { const id = ++foodId; FUEL.extra += p; FUEL.extraK += k; FUEL.extraC += c; FUEL.extraF += f; eid = eid || 'fd' + Date.now().toString(36) + id; FUEL.log.push({ id, eid, n: name, p, k, c, f, m: nowMin() }); if (!restoring) { const t = { id: eid, name, p, k, c, f }; if (SAVER) SAVER.addFood(t); else pendingFood.push({ t, at: Date.now() }); } if (paintIn) setTimeout(afterFood, paintIn); else afterFood(); return id; }
+function removeFood(id) { const i = FUEL.log.findIndex(x => x.id === id); if (i < 0) return; const [x] = FUEL.log.splice(i, 1); { const q = pendingFood.findIndex(y => y.t.id === x.eid); if (q >= 0) pendingFood.splice(q, 1); else if (SAVER) SAVER.removeFood(x.eid); } FUEL.extra -= x.p; FUEL.extraK -= x.k; FUEL.extraC -= x.c; FUEL.extraF -= x.f; afterFood(); }
 function afterFood() { paintHero(nowMin()); paintFuelNums(); const cf = $('#cfN'); if (cf) cf.textContent = `${proteinLeftAt(nowMin())} ${t('gLeft')}`; const ck = $('#cfK'); if (ck) ck.textContent = t('kcalOf', { k: intFmt(kcalLeftAt(nowMin())) }); $$('#cFuel .lvl i').forEach(i => i.style.transform = `scaleX(${((FUEL.target - proteinLeftAt(nowMin())) / FUEL.target).toFixed(3)})`); }
 function fly(fromEl, toEl, txt) { // the amount travels from where you tapped into the total
   if (!fromEl || !toEl) return; const r0 = fromEl.getBoundingClientRect(), r1 = toEl.getBoundingClientRect();
@@ -1093,16 +1093,24 @@ let W = null, SHORT = Q.get('rest') !== null || store.get('short') === '1';
 const restSec = s => SHORT ? 10 : s;
 /* ---------- saving: the screen keeps its own fast state; the engine keeps the workout (src/app/store.ts) ---------- */
 const EXID = { 'Bench press': 'bench-press', 'Incline dumbbell press': 'incline-db-press', 'Overhead press': 'overhead-press', 'Lateral raise': 'lateral-raise', 'Triceps pushdown': 'tricep-pushdown' };
-let SAVER = null, warned = false;
+let SAVER = null, warned = false, foodDay = new Date().toDateString();
+const pendingFood = []; // foods tapped before the database was ready
 const snapW = () => ({ name: 'Push', lifts: W.ex.map((e, ei) => ({ exerciseId: EXID[e.n], restSec: e.rest, sets: e.sets.map((s, j) => { const d = W.done[ei][j]; return { kg: d ? d[0] : s[0], reps: d ? d[1] : s[1], done: !!d }; }) })) });
 function persist(label) { // called after every change to the workout; the first call starts the saved session
   if (!SAVER || !W || W.saved) return;
   if (!SAVER.id) { SAVER.begin(snapW()); keepWhenUseful(SAVER.engine).catch(() => {}); }
   SAVER.sync(snapW(), label);
 }
+// past midnight the food totals start over (an app left open overnight must not carry yesterday into today)
+function rollDay() {
+  const d = new Date().toDateString(); if (d === foodDay) return; foodDay = d;
+  Object.assign(FUEL, { extra: 0, extraK: 0, extraC: 0, extraF: 0, log: [] }); FUEL.manual.clear();
+  if (SAVER) restoreFoods(); afterFood();
+}
 function saveFailed() { if (warned) return; warned = true; toast(t('noSave')); }
 // today's foods come back after a reload (the totals, the list and the Coach line all start from them)
 function restoreFoods() {
+  pendingFood.splice(0).forEach(y => SAVER.addFood(y.t, y.at)); // taps from before the database opened are saved now, at the time they were tapped
   restoring = true;
   try { SAVER.foods().forEach(x => { if (!FUEL.log.some(y => y.eid === x.id)) { addFood(x.p, x.k, x.c, x.f, x.name, 0, x.id); FUEL.log[FUEL.log.length - 1].m = cphMin(new Date(x.at)); } }); } finally { restoring = false; }
 }
@@ -1111,12 +1119,12 @@ function resumeDraft() {
   const d = SAVER.draft();
   if (!d || W) return;
   const ex = d.snap.lifts.map(l => { const base = PUSH.find(p => EXID[p.n] === l.exerciseId); return base && { ...base, sets: l.sets.map(s => [s.kg, s.reps]) }; });
-  if (ex.some(x => !x)) return; // a lift this screen does not know: leave it open in the engine, never guess
+  if (ex.some(x => !x)) { SAVER.id = null; return; } // a lift this screen does not know: leave it open in the engine, never guess
   const done = d.snap.lifts.map(l => { const a = []; for (const s of l.sets) { if (!s.done) break; a.push([s.kg, s.reps]); } return a; });
   const flags = []; done.forEach((dn, i) => dn.forEach((_, j) => { flags[ex.slice(0, i).reduce((a, x) => a + x.sets.length, 0) + j] = 'd'; }));
   const e = Math.max(0, done.findIndex((dn, i) => dn.length < ex[i].sets.length)), n = done.flat().length;
   const total = ex.reduce((a, x) => a + x.sets.length, 0);
-  if (n >= total) return; // everything was logged but the finish never came: it stays in the engine for the history, not as a live workout
+  if (n >= total) { SAVER.closeDraft(d.snap); return; } // everything was logged but the finish never came: close it in the engine, so the next workout starts a new one
   W = { ex, e, s: done[e].length, idx: n, total, done, t0: d.session.startedAt || Date.now(), rest: null, coach: 0, rec: [], vol: done.flat().reduce((a, x) => a + x[0] * x[1], 0), flags };
   S.live = true; buildSess(); renderSet(true); $('#live').classList.add('on'); paintLive(); paintCta();
 }
@@ -1125,6 +1133,7 @@ function freshW() {
   return { ex, e: 0, s: 0, idx: 0, total: ex.reduce((a, e) => a + e.sets.length, 0), done: ex.map(() => []), t0: Date.now(), rest: null, coach: 0, rec: [], vol: 0, flags: [] };
 }
 const cur = () => W.ex[W.e].sets[W.s];
+const idxAt = (e, s) => W.ex.slice(0, e).reduce((a, x) => a + x.sets.length, 0) + s; // a set's place on the strip
 const wR = new Roller($('#wW')), rR = new Roller($('#wR')), cdR = new Roller($('#rNum'));
 const shortName = e => ({ 'Bench press': LANG === 'da' ? 'Bænk' : 'Bench', 'Incline dumbbell press': LANG === 'da' ? 'Skrå' : 'Incline', 'Overhead press': LANG === 'da' ? 'Skulder' : 'OHP', 'Lateral raise': LANG === 'da' ? 'Sideløft' : 'Raise', 'Triceps pushdown': 'Pushdown' })[e.n];
 function buildSess() {
@@ -1370,8 +1379,8 @@ function logSet() {
     W.busy = false;
     flyInto($('#setB'), k);
     const nx = nextOf(W.e, W.s);
-    if (!nx) { W.idx++; W.end = true; $('#logL').textContent = t('finishP'); paintSess(); setTimeout(openSess, 420); return; } // the last set: Log now means Finish
-    W.e = nx.e; W.s = nx.si; W.idx++; paintSess();
+    if (!nx) { W.idx = W.total; W.end = true; $('#logL').textContent = t('finishP'); paintSess(); setTimeout(openSess, 420); return; } // the last set: Log now means Finish
+    W.e = nx.e; W.s = nx.si; W.idx = idxAt(nx.e, nx.si); paintSess();
     if (W.e === 0 && W.s === 2 && W.coach === 0) W.coach = 1;
     const mini = S.view === 'today'; // minimised inside the 300 ms: the workout moves on quietly, the screen stays where the person went
     startRest(E.rest, nx.e !== prev.e, mini);
@@ -1450,7 +1459,7 @@ function useCoach() {
   toast(t('applied'), () => { rest.forEach((x, i) => x[0] = prev[i]); W.coach = 3; if (W.rest) $('#rNext b').textContent = `${kgFmt(prev[0])} × 8`; else renderSet(); });
 }
 // the 30-minute plan on a running workout: drop the cut lifts and sets, keep every logged set and its place on the strip
-const canTrimLive = () => W.e < 3 && (W.s < 3 || W.e < 2);
+const canTrimLive = () => W.e < 3 && (W.s < 3 || W.e < 2) && !W.done.slice(plan().length).some(d => d.some(Boolean)); // never drop a lift that already has logged sets
 function trimLive() {
   const P = plan(), keep = P.map((e, i) => Math.max(e.sets.length, W.done[i] ? W.done[i].filter(Boolean).length : 0)), start = ex => ex.map((_, i) => ex.slice(0, i).reduce((a, x) => a + x.sets.length, 0));
   const o = start(W.ex), nex = W.ex.slice(0, P.length).map((e, i) => ({ ...e, sets: e.sets.slice(0, keep[i]) })), n = start(nex), flags = [];
@@ -1518,7 +1527,7 @@ $('#sessT').addEventListener('click', e => {
   const j = e.target.closest('[data-j]'); if (!j || !W || W.rest) return;
   const ei = +j.dataset.j; if (ei === W.e) return closeSess();
   const dn = W.done[ei].filter(Boolean).length; if (dn >= W.ex[ei].sets.length) return closeSess(); // a finished lift cannot be logged twice
-  W.end = false; W.e = ei; W.s = dn; W.idx = W.ex.slice(0, ei).reduce((a, x) => a + x.sets.length, 0) + W.s;
+  W.end = false; W.e = ei; W.s = dn; W.idx = idxAt(ei, W.s);
   closeSess(); renderSet(); go($('#exName'), [{ transform: 'translate3d(6rem,0,0)', opacity: 0 }, { transform: 'none', opacity: 1 }], { key: 'nm' });
 });
 function bindHold() { // hold to commit: the world goes soft while the button fills, one calm finish
@@ -1622,7 +1631,8 @@ async function boot() {
   setTimeout(() => (window.requestIdleCallback || (f => setTimeout(f, 1)))(loadStage, { timeout: 2500 }), 1800);
   // the database opens once Today is up (it never holds up the numbers); a workout started before it was ready is saved the moment it is
   if (Q.get('nosave') === null) Engine.open().then(e => { SAVER = new Saver(e, saveFailed); window.__saver = SAVER; restoreFoods(); resumeDraft(); if (W && !W.saved) persist('Started Push'); }).catch(err => { console.warn('save', err); saveFailed(); });
-  setInterval(() => { if (S.scrub === null && springIdle()) { const n = nowMin(); applyLight(n); placeDot(n); paintHero(n); paintWx(n); } }, 20000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) rollDay(); });
+  setInterval(() => { rollDay(); if (S.scrub === null && springIdle()) { const n = nowMin(); applyLight(n); placeDot(n); paintHero(n); paintWx(n); } }, 20000);
 }
 const springIdle = () => true;
 function showSplash() {
@@ -1695,7 +1705,7 @@ async function warmUp() {
   await nf(); await nf(); quiet.remove();
 }
 boot();
-window.__aven = { S, get W() { return W; }, startWorkout, show, logSet: () => $('#logB').click(), endRest, finish, minimise, morning, scrubTo: m => { placeDot(m); applyLight(m); paintHero(m); paintWx(m); },
+window.__aven = { S, canTrimLive: () => canTrimLive(), get W() { return W; }, startWorkout, show, logSet: () => $('#logB').click(), endRest, finish, minimise, morning, scrubTo: m => { placeDot(m); applyLight(m); paintHero(m); paintWx(m); },
   // test hooks: which of the shader's uniforms one frame leaves unset, and a small grid of the sky at an hour and weather
   uniformsUnset: () => { const set = new Set(), ks = ['uniform1f', 'uniform2f', 'uniform3f', 'uniform4f', 'uniform1i']; ks.forEach(k => { const o = gl[k]; gl[k] = function (loc, ...a) { set.add(loc); return o.call(gl, loc, ...a); }; }); try { draw(); } finally { ks.forEach(k => delete gl[k]); } return Object.keys(U).filter(n => !set.has(U[n])); },
   sky: (m, mode) => { WXMODE = mode; LIGHT = lightAt(dateAtMin(m)); draw(); const c = document.createElement('canvas'); c.width = 43; c.height = 93; const x = c.getContext('2d'); x.drawImage(cv, 0, 0, 43, 93); const d = x.getImageData(0, 0, 43, 93).data, g = []; for (let i = 0; i < d.length; i += 4) g.push(d[i], d[i + 1], d[i + 2]);

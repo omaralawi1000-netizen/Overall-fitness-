@@ -89,6 +89,18 @@ describe('saving the workout', () => {
     expect(e.get<'session'>(saver.id!)!.state).toBe('abandoned');
   });
 
+  it('a fully logged workout whose finish never came is closed, and the saver lets go of it', async () => {
+    const { e, c, saver, snap } = await setup(); await settle(e);
+    const id = saver.id!;
+    snap.lifts.forEach((l) => l.sets.forEach((s) => { s.done = true; }));
+    saver.sync(snap, 'all logged', c.now()); await settle(e);
+    const again = new Saver(e); const d = again.draft(c.now())!;
+    again.closeDraft(d.snap, c.now()); await settle(e);
+    expect(again.id).toBeNull();
+    expect(e.get<'session'>(id)!.state).toBe('finished');
+    expect(openDraft(e.allRecords())).toBeNull();
+  });
+
   it('a tapped food is saved, comes back after a reload, and Undo removes exactly it', async () => {
     const { e, saver, c } = await setup();
     saver.addFood({ id: 'fdA', name: '3 eggs', p: 19, k: 215, c: 1, f: 15 }, c.now());

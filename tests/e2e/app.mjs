@@ -121,7 +121,7 @@ check('Use 85 kg on the trimmed plan', r.tray && r.sets.length === 3 && r.sets[2
 await open('?rest');
 await ev(`__aven.startWorkout()`); await sleep(900); await ev(`__aven.logSet()`); await sleep(800);
 await ev(`__aven.minimise()`); await sleep(800); await ev(`__aven.show('fuel')`);
-await sleep(11500);
+await sleep(14000);
 r = await ev(`({ view: __aven.S.view, tab: __aven.S.tab, rest: !!__aven.W.rest, phoneV: document.getElementById('phone').dataset.v })`);
 check('rest ending while minimised keeps the screen', r.view === 'today' && r.tab === 'fuel' && !r.rest && r.phoneV === 'today', r);
 await ev(`__aven.show('today')`); await sleep(700); await ev(`__aven.startWorkout()`);
@@ -187,7 +187,8 @@ await open('?rest=8');
 await ev(`__aven.startWorkout()`); await sleep(900);
 r = await ev(`(() => { const W = __aven.W; W.done[1] = [[30, 10], [30, 10], [30, 10]]; W.e = 0; W.s = 3; W.idx = 3; W.flags[4] = W.flags[5] = W.flags[6] = 'd'; W.done[0] = [[80, 8], [82.5, 8], [82.5, 8]]; return { total: W.total }; })()`);
 await ev(`__aven.logSet()`); await sleep(1200);
-r = await ev(`({ e: __aven.W.e, s: __aven.W.s, vol: __aven.W.vol })`);
+r = await ev(`({ e: __aven.W.e, s: __aven.W.s, vol: __aven.W.vol, idx: __aven.W.idx, want: __aven.W.ex[0].sets.length + __aven.W.ex[1].sets.length })`);
+check('the strip follows the set it moved to, not a count', r.idx === r.want, r);
 check('after the last bench set the workout skips the finished incline and goes to overhead press', r.e === 2 && r.s === 0, r);
 await open('?rest=8');
 await ev(`__aven.startWorkout()`); await sleep(900);
@@ -197,6 +198,11 @@ await ev(`__aven.show('coach')`); await sleep(900); await ev(`document.querySele
 await ev(`document.querySelector('#sCoach [data-apply="1"]')?.click()`); await sleep(800);
 r = await ev(`({ logged: __aven.W.done[0].filter(Boolean).length, sets0: __aven.W.ex[0].sets.length })`);
 check('a trimmed plan keeps every set already logged', r.logged === 4 && r.sets0 === 4, r);
+await open('?rest=8');
+await ev(`__aven.startWorkout()`); await sleep(900);
+await ev(`(() => { const W = __aven.W; W.done[3] = [[20, 12]]; W.e = 0; W.s = 0; __aven.S.trimmed = true; })()`);
+r = await ev(`__aven.canTrimLive()`);
+check('a plan that would drop a lift with logged sets is refused', r === false, { can: r });
 
 // --- the picture itself (3 Nov: an inline comment twice swallowed code that drew the playhead and the weather) ---
 // 9. every uniform the shader declares is set on every frame
