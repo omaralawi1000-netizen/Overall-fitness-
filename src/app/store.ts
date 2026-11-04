@@ -11,7 +11,7 @@ import type { Action } from '../engine/model';
 import type { Op } from '../engine/plan';
 import { dayKeyAt, deviceTz } from '../engine/time';
 import { openDrafts, setsOf, startSession, finishSession, abandonSession } from '../engine/workout';
-import type { AnyRecord, Session } from '../engine/model';
+import type { AnyRecord, FoodLog, Session } from '../engine/model';
 
 export interface SnapSet { kg: number; reps: number; done: boolean }
 export interface SnapLift { exerciseId: string; restSec: number; sets: SnapSet[] }
@@ -78,6 +78,17 @@ export function openDraft(records: AnyRecord[]): { session: Session; snap: Snap 
   return { session: s, snap: { name: s.name, lifts } };
 }
 
+/** One tapped food, as a record (the screen knows grams of protein, carbs, fat and kcal; the engine stores them as nutrients). */
+export interface FoodTap { id: string; name: string; p: number; k: number; c: number; f: number }
+export function foodOps(t: FoodTap, now: number, day: string): Op[] {
+  return [{ op: 'create', record: { id: t.id, kind: 'food', day, at: now, name: t.name, meal: 'other', dataSource: 'quick', portion: { amount: 1, unit: 'portion' }, estimated: false, nutrients: { protein: t.p, kcal: t.k, carbs: t.c, fat: t.f } } as never }];
+}
+/** Today's foods (oldest first) as the screen shows them. */
+export function foodsOfDay(records: AnyRecord[], day: string): (FoodTap & { at: number })[] {
+  return records.filter((r): r is FoodLog => r.kind === 'food' && !r.deleted && r.day === day).sort((a, b) => a.at - b.at)
+    .map((r) => ({ id: r.id, name: r.name, p: r.nutrients.protein ?? 0, k: r.nutrients.kcal ?? 0, c: r.nutrients.carbs ?? 0, f: r.nutrients.fat ?? 0, at: r.at }));
+}
+
 /** The thin layer the screen calls. Every method returns at once: the screen never waits for the database. */
 export class Saver {
   id: string | null = null;
@@ -116,6 +127,9 @@ export class Saver {
     this.run('session.finish', `Finished ${snap.name}`, finishOps(this.engine.allRecords(), this.id, now));
     this.id = null;
   }
+  addFood(t: FoodTap, now = Date.now()) { this.run('food.add', `Logged ${t.name}`, foodOps(t, now, dayKeyAt(now, deviceTz())), undefined); }
+  removeFood(id: string) { this.run('food.remove', 'Removed food', [{ op: 'delete', id, ifExists: true }]); }
+  foods(now = Date.now()) { return foodsOfDay(this.engine.allRecords(), dayKeyAt(now, deviceTz())); }
   /** newest actions of the open workout, for tests and the debug page */
   actions(): Action[] { return this.engine.actions(); }
 }

@@ -650,7 +650,7 @@ function paintCards() {
     P.map(e => { const w = e.sets[e.sets.length - 1][0], d = w - e.last[0]; return `<button class="row" data-go="train"><div><div class="n">${exN(e)}</div><div class="d tab">${e.sets.length} × ${e.sets[0][1]}</div></div><div class="r tab">${kgFmt(w)} kg${d > 0 ? `<small>+${kgFmt(d)} ${t('vsLast')}</small>` : ''}</div></button>`; }).join('');
   const m = nowMin(), pl = proteinLeftAt(m), kl = kcalLeftAt(m);
   $('#cFuel').innerHTML = `<div class="ch3"><span class="k">${t('fuelK')}</span><span class="val tab" id="cfN">${pl} ${t('gLeft')}</span></div>
-    <div class="lvl"><i style="background:var(--amber);transform:scaleX(${((FUEL.target - pl) / FUEL.target).toFixed(3)})"></i></div><div class="d" style="font-size:1.35rem;color:var(--ink3);margin:.8rem 0 1.4rem">${t('kcalOf', { k: intFmt(kl) })}</div>
+    <div class="lvl"><i style="background:var(--amber);transform:scaleX(${((FUEL.target - pl) / FUEL.target).toFixed(3)})"></i></div><div class="d" id="cfK" style="font-size:1.35rem;color:var(--ink3);margin:.8rem 0 1.4rem">${t('kcalOf', { k: intFmt(kl) })}</div>
     <div class="chips">${QUICK.slice(0, 4).map((q, i) => `<button class="chip" data-q="${i}">${LANG === 'da' ? q.da : q.n}<small>+${q.p} g</small></button>`).join('')}</div>`;
   const D = [[1, .78], [-1, 0], [0, 0], [0, 0], [0, 0], [0, 0], [0, 0]], wd = new Date().getDay();
   $('#cWeek').innerHTML = `<div class="ch3"><span class="k">${t('weekK')}</span><span class="val tab">${t('weekSub', { n: 1 + (S.done ? 1 : 0) })}</span></div><div class="week">${t('days1').map((d, i) => { const h = [.62, S.done ? .92 : 0, 0, 0, 0, 0, 0][i] || 0; return `<div class="day ${i === 1 ? 'now' : ''}">${d}<div class="b"><i style="background:${i === 0 ? 'linear-gradient(180deg,#d9c6ff,#8f7bd8)' : 'linear-gradient(180deg,#fff,#c6d3df)'}" data-h="${h}"></i></div><div class="t">${t('dayT')[i]}</div></div>`; }).join('')}</div>`;
@@ -674,10 +674,10 @@ const QUICK = [{ n: 'Skyr 200 g', da: 'Skyr 200 g', p: 20, k: 130, c: 8, f: 0 },
 const FOODS = [{ n: 'Skyr', da: 'Skyr', p: 10, k: 63, c: 4, f: 0 }, { n: 'Chicken breast', da: 'Kyllingebryst', p: 31, k: 165, c: 0, f: 4 }, { n: 'Oats', da: 'Havregryn', p: 13, k: 372, c: 60, f: 7 }, { n: 'Eggs', da: 'Æg', p: 13, k: 143, c: 1, f: 10 }, { n: 'Rice, cooked', da: 'Ris, kogt', p: 3, k: 130, c: 28, f: 0 }, { n: 'Salmon', da: 'Laks', p: 20, k: 208, c: 0, f: 13 }];
 // the food is counted the moment you tap and gets its own id; only the picture waits for the flying amount, so an Undo
 // tapped before it lands removes exactly this entry (never the one before it)
-let foodId = 0;
-function addFood(p, k, c, f, name, paintIn = 0) { const id = ++foodId; FUEL.extra += p; FUEL.extraK += k; FUEL.extraC += c; FUEL.extraF += f; FUEL.log.push({ id, n: name, p, k, c, f, m: nowMin() }); if (paintIn) setTimeout(afterFood, paintIn); else afterFood(); return id; }
-function removeFood(id) { const i = FUEL.log.findIndex(x => x.id === id); if (i < 0) return; const [x] = FUEL.log.splice(i, 1); FUEL.extra -= x.p; FUEL.extraK -= x.k; FUEL.extraC -= x.c; FUEL.extraF -= x.f; afterFood(); }
-function afterFood() { paintHero(nowMin()); paintFuelNums(); const cf = $('#cfN'); if (cf) cf.textContent = `${proteinLeftAt(nowMin())} ${t('gLeft')}`; $$('#cFuel .lvl i').forEach(i => i.style.transform = `scaleX(${((FUEL.target - proteinLeftAt(nowMin())) / FUEL.target).toFixed(3)})`); }
+let foodId = 0, restoring = false;
+function addFood(p, k, c, f, name, paintIn = 0, eid = null) { const id = ++foodId; FUEL.extra += p; FUEL.extraK += k; FUEL.extraC += c; FUEL.extraF += f; eid = eid || 'fd' + Date.now().toString(36) + id; FUEL.log.push({ id, eid, n: name, p, k, c, f, m: nowMin() }); if (SAVER && !restoring) SAVER.addFood({ id: eid, name, p, k, c, f }); if (paintIn) setTimeout(afterFood, paintIn); else afterFood(); return id; }
+function removeFood(id) { const i = FUEL.log.findIndex(x => x.id === id); if (i < 0) return; const [x] = FUEL.log.splice(i, 1); if (SAVER) SAVER.removeFood(x.eid); FUEL.extra -= x.p; FUEL.extraK -= x.k; FUEL.extraC -= x.c; FUEL.extraF -= x.f; afterFood(); }
+function afterFood() { paintHero(nowMin()); paintFuelNums(); const cf = $('#cfN'); if (cf) cf.textContent = `${proteinLeftAt(nowMin())} ${t('gLeft')}`; const ck = $('#cfK'); if (ck) ck.textContent = t('kcalOf', { k: intFmt(kcalLeftAt(nowMin())) }); $$('#cFuel .lvl i').forEach(i => i.style.transform = `scaleX(${((FUEL.target - proteinLeftAt(nowMin())) / FUEL.target).toFixed(3)})`); }
 function fly(fromEl, toEl, txt) { // the amount travels from where you tapped into the total
   if (!fromEl || !toEl) return; const r0 = fromEl.getBoundingClientRect(), r1 = toEl.getBoundingClientRect();
   const el = document.createElement('div'); el.textContent = txt; el.style.cssText = `position:fixed;left:${r0.left + r0.width / 2}px;top:${r0.top + r0.height / 2}px;transform:translate(-50%,-50%);font:500 ${1.6 * remPx()}px var(--sans);color:var(--ink);z-index:99;pointer-events:none;white-space:nowrap`;
@@ -1101,6 +1101,11 @@ function persist(label) { // called after every change to the workout; the first
   SAVER.sync(snapW(), label);
 }
 function saveFailed() { if (warned) return; warned = true; toast(t('noSave')); }
+// today's foods come back after a reload (the totals, the list and the Coach line all start from them)
+function restoreFoods() {
+  restoring = true;
+  try { SAVER.foods().forEach(x => { if (!FUEL.log.some(y => y.eid === x.id)) { addFood(x.p, x.k, x.c, x.f, x.name, 0, x.id); FUEL.log[FUEL.log.length - 1].m = cphMin(new Date(x.at)); } }); } finally { restoring = false; }
+}
 // a workout the phone still holds as open (the app was closed or killed mid-workout) comes back as the live pill
 function resumeDraft() {
   const d = SAVER.draft();
@@ -1197,7 +1202,13 @@ function renderSet(instant) {
   $('#logL').textContent = W.end ? t('finishP') : t('logSet', { w: kgFmt(s[0]), r: s[1] });
   paintSess(); paintLive(); fitNum(); syncStage(instant);
 }
-function nextOf(e, s) { if (s + 1 < W.ex[e].sets.length) return { e, si: s + 1, s: W.ex[e].sets[s + 1] }; if (e + 1 < W.ex.length) return { e: e + 1, si: 0, s: W.ex[e + 1].sets[0] }; return null; }
+// the next set not yet logged, after this one and wrapping round once, so a lift done out of order is never logged twice
+function nextOf(e, s) {
+  const pos = []; W.ex.forEach((x, ei) => x.sets.forEach((_, si) => pos.push([ei, si])));
+  const at = pos.findIndex(p => p[0] === e && p[1] === s);
+  for (let k = 1; k < pos.length; k++) { const [ei, si] = pos[(at + k) % pos.length]; if (!W.done[ei][si]) return { e: ei, si, s: W.ex[ei].sets[si] }; }
+  return null;
+}
 let clkTm = 0;
 function tickClock() { if (!W) return; const s = Math.floor((Date.now() - W.t0) / 1000), tx = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; $('#clkT').textContent = tx; $('#liveC').textContent = tx; }
 function paintLive() { if (!W) return; $('#liveT').innerHTML = W.rest ? `${t('liveR', { ex: exN(W.ex[W.e]) })}<small>${t('nextSet')} · ${kgFmt(cur()[0])} × ${cur()[1]}</small>` : `${t('liveT', { ex: exN(W.ex[W.e]) })}<small>${t('liveS', { a: W.idx + 1, b: W.total })}</small>`; }
@@ -1362,9 +1373,10 @@ function logSet() {
     if (!nx) { W.idx++; W.end = true; $('#logL').textContent = t('finishP'); paintSess(); setTimeout(openSess, 420); return; } // the last set: Log now means Finish
     W.e = nx.e; W.s = nx.si; W.idx++; paintSess();
     if (W.e === 0 && W.s === 2 && W.coach === 0) W.coach = 1;
-    startRest(E.rest, nx.e !== prev.e);
-    if (heavy) setTimeout(() => record(s, k), 380);
-    else if (repB) toast(`${t('repBest')} · ${exN(E)} ${kgFmt(s[0])} × ${s[1]}`);
+    const mini = S.view === 'today'; // minimised inside the 300 ms: the workout moves on quietly, the screen stays where the person went
+    startRest(E.rest, nx.e !== prev.e, mini);
+    if (heavy && !mini) setTimeout(() => record(s, k), 380);
+    else if (heavy || repB) toast(`${t('repBest')} · ${exN(E)} ${kgFmt(s[0])} × ${s[1]}`);
     else toast(t('loggedU', { w: kgFmt(s[0]), r: s[1] }), () => undoLog(prev, k));
   }, 300);
 }
@@ -1374,10 +1386,10 @@ function undoLog(p, k) {
   setView('train'); restFades(false); renderSet(true); resetPearl(); flyInto($('#setB'), k, true); fades(true); moodStage(false);
 }
 let restTm = 0;
-function startRest(sec, newEx) {
+function startRest(sec, newEx, quiet) {
   sec = restSec(sec);
   W.rest = { end: Date.now() + sec * 1000, total: sec * 1000, newEx };
-  setView('rest');
+  if (!quiet) setView('rest');
   $$('#wNameW,#wCoach,#wMeta,#wNext').forEach(el => el.classList.remove('in'));
   const nx = cur();
   $('#rLabel').textContent = t('rest');
@@ -1387,7 +1399,7 @@ function startRest(sec, newEx) {
   const lv = $('#level'); lv.getAnimations().forEach(a => a.cancel());
   lv.animate([{ transform: 'translate3d(0,100%,0)' }, { transform: 'translate3d(0,0%,0)' }], { duration: sec * 1000, easing: 'linear', fill: 'forwards' });
   clearInterval(restTm); restTm = setInterval(restTick, 250);
-  if (W.coach === 1) setTimeout(openTray, 900);
+  if (W.coach === 1 && !quiet) setTimeout(openTray, 900);
   paintLive(); moodStage(true);
 }
 const fmtS = s => `${Math.floor(s / 60)}:${String(Math.max(0, s % 60)).padStart(2, '0')}`;
@@ -1440,7 +1452,7 @@ function useCoach() {
 // the 30-minute plan on a running workout: drop the cut lifts and sets, keep every logged set and its place on the strip
 const canTrimLive = () => W.e < 3 && (W.s < 3 || W.e < 2);
 function trimLive() {
-  const P = plan(), keep = P.map(e => e.sets.length), start = ex => ex.map((_, i) => ex.slice(0, i).reduce((a, x) => a + x.sets.length, 0));
+  const P = plan(), keep = P.map((e, i) => Math.max(e.sets.length, W.done[i] ? W.done[i].filter(Boolean).length : 0)), start = ex => ex.map((_, i) => ex.slice(0, i).reduce((a, x) => a + x.sets.length, 0));
   const o = start(W.ex), nex = W.ex.slice(0, P.length).map((e, i) => ({ ...e, sets: e.sets.slice(0, keep[i]) })), n = start(nex), flags = [];
   nex.forEach((e, i) => e.sets.forEach((_, s) => { flags[n[i] + s] = W.flags[o[i] + s]; }));
   if (W.s >= keep[W.e]) { W.e++; W.s = 0; }
@@ -1609,7 +1621,7 @@ async function boot() {
   // the workout's 3D equipment loads once Today has settled; until it is ready the workout shows its numbers on the photo
   setTimeout(() => (window.requestIdleCallback || (f => setTimeout(f, 1)))(loadStage, { timeout: 2500 }), 1800);
   // the database opens once Today is up (it never holds up the numbers); a workout started before it was ready is saved the moment it is
-  if (Q.get('nosave') === null) Engine.open().then(e => { SAVER = new Saver(e, saveFailed); window.__saver = SAVER; resumeDraft(); if (W && !W.saved) persist('Started Push'); }).catch(err => { console.warn('save', err); saveFailed(); });
+  if (Q.get('nosave') === null) Engine.open().then(e => { SAVER = new Saver(e, saveFailed); window.__saver = SAVER; restoreFoods(); resumeDraft(); if (W && !W.saved) persist('Started Push'); }).catch(err => { console.warn('save', err); saveFailed(); });
   setInterval(() => { if (S.scrub === null && springIdle()) { const n = nowMin(); applyLight(n); placeDot(n); paintHero(n); paintWx(n); } }, 20000);
 }
 const springIdle = () => true;

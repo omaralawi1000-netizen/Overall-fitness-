@@ -88,4 +88,15 @@ describe('saving the workout', () => {
     await settle(e);
     expect(e.get<'session'>(saver.id!)!.state).toBe('abandoned');
   });
+
+  it('a tapped food is saved, comes back after a reload, and Undo removes exactly it', async () => {
+    const { e, saver, c } = await setup();
+    saver.addFood({ id: 'fdA', name: '3 eggs', p: 19, k: 215, c: 1, f: 15 }, c.now());
+    saver.addFood({ id: 'fdB', name: 'Skyr 200 g', p: 20, k: 130, c: 8, f: 0 }, c.now() + 1000);
+    await settle(e);
+    expect(saver.foods(c.now()).map((x) => [x.name, x.p, x.k])).toEqual([['3 eggs', 19, 215], ['Skyr 200 g', 20, 130]]);
+    saver.removeFood('fdB'); await settle(e);
+    expect(saver.foods(c.now()).map((x) => x.id)).toEqual(['fdA']);
+    expect(saver.foods(c.now() + 36 * 3600e3)).toEqual([]); // another day shows nothing
+  });
 });

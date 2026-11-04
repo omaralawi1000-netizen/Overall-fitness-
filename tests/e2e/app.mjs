@@ -61,7 +61,7 @@ const icons = await Promise.all(man.icons.map(async (i) => (await ctx.request.ge
 check('manifest is standalone with working icons', man.display === 'standalone' && icons.every((c) => c === 200) && man.icons.some((i) => i.purpose === 'maskable'), { display: man.display, icons });
 await p.goto(base); await p.waitForFunction(() => window.__ready, null, { timeout: 90000 });
 const sw = await ev(`navigator.serviceWorker.ready.then(r => !!r.active)`);
-await sleep(1500); await p.reload(); await p.waitForFunction(() => window.__ready, null, { timeout: 90000 }); // second visit: everything is saved now
+// no second online visit: the first one must be enough
 await ctx.setOffline(true);
 let offlineOk = true; try { await p.reload(); await p.waitForFunction(() => window.__ready, null, { timeout: 60000 }); } catch { offlineOk = false; }
 await ctx.setOffline(false);
@@ -87,6 +87,19 @@ check('finishing saves a finished session and marks the unlogged sets skipped', 
 await p.goto(base + '?nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(400);
 r = await ev(`({ live: document.getElementById('live').classList.contains('on'), W: !!__aven.W })`);
 check('a finished workout does not come back as live', !r.live && !r.W, r);
+await ev(`indexedDB.deleteDatabase('a2.data')`);
+
+// P6. food that saves: a quick add survives a reload, and Undo removes it from the database too
+await p.goto(base + '?nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(400);
+await ev(`__aven.show('fuel')`); await sleep(1000);
+await ev(`document.querySelector('#sFuel [data-q="1"]').click()`); await sleep(1200);
+await ev(`document.querySelector('#sFuel [data-q="0"]').click()`); await sleep(1200);
+await p.waitForFunction(() => !window.__saver.engine.busy(), null, { timeout: 8000 });
+await p.goto(base + '?nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(800);
+await ev(`__aven.show('fuel')`); await sleep(1000);
+r = await ev(`({ rows: document.querySelectorAll('#mealList .meal').length, names: [...document.querySelectorAll('#mealList .meal .n')].map(x => x.textContent), db: __saver.foods().length })`);
+check('food logged before a reload is still there after it', r.db === 2 && r.rows >= 2 && r.names.includes('3 eggs'), r);
+await ev(`document.getElementById('toastU')?.click()`);
 await ev(`indexedDB.deleteDatabase('a2.data')`);
 
 // 1. two taps on Log inside the 300 ms hand-off log one set
@@ -169,6 +182,22 @@ check('set sheet opens from the number, closes on minimise, changes nothing hidd
 await ev(`__aven.startWorkout()`); await sleep(900);
 r = await ev(`(() => { const b = document.getElementById('setB'), w0 = __aven.W.ex[0].sets[0][0], rem = parseFloat(getComputedStyle(document.documentElement).fontSize); const P = (ty, x) => b.dispatchEvent(new PointerEvent(ty, { bubbles: true, clientX: x, clientY: 400, pointerId: 2 })); P('pointerdown', 100); P('pointermove', 115); P('pointermove', 100 + 4.6 * rem); P('pointerup', 100 + 4.6 * rem); return { w0, w1: __aven.W.ex[0].sets[0][0], sheet: document.getElementById('edS').classList.contains('on') }; })()`);
 check('a sideways drag nudges +2.5 kg without opening the sheet', r.w1 === r.w0 + 2.5 && !r.sheet, r);
+// 11. Codex review of the port: a lift done out of order is never logged twice; a trimmed plan keeps logged sets
+await open('?rest=8');
+await ev(`__aven.startWorkout()`); await sleep(900);
+r = await ev(`(() => { const W = __aven.W; W.done[1] = [[30, 10], [30, 10], [30, 10]]; W.e = 0; W.s = 3; W.idx = 3; W.flags[4] = W.flags[5] = W.flags[6] = 'd'; W.done[0] = [[80, 8], [82.5, 8], [82.5, 8]]; return { total: W.total }; })()`);
+await ev(`__aven.logSet()`); await sleep(1200);
+r = await ev(`({ e: __aven.W.e, s: __aven.W.s, vol: __aven.W.vol })`);
+check('after the last bench set the workout skips the finished incline and goes to overhead press', r.e === 2 && r.s === 0, r);
+await open('?rest=8');
+await ev(`__aven.startWorkout()`); await sleep(900);
+await ev(`(() => { const W = __aven.W; for (let i = 0; i < 4; i++) W.done[0][i] = [80, 8]; W.e = 1; W.s = 0; W.idx = 4; })()`);
+await ev(`__aven.S.trimmed = true; document.getElementById('minB').click()`); await sleep(700);
+await ev(`__aven.show('coach')`); await sleep(900); await ev(`document.querySelector('#sCoach [data-a="1"]').click()`); await sleep(2600);
+await ev(`document.querySelector('#sCoach [data-apply="1"]')?.click()`); await sleep(800);
+r = await ev(`({ logged: __aven.W.done[0].filter(Boolean).length, sets0: __aven.W.ex[0].sets.length })`);
+check('a trimmed plan keeps every set already logged', r.logged === 4 && r.sets0 === 4, r);
+
 // --- the picture itself (3 Nov: an inline comment twice swallowed code that drew the playhead and the weather) ---
 // 9. every uniform the shader declares is set on every frame
 await open();
