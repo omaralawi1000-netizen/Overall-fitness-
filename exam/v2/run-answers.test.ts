@@ -71,13 +71,23 @@ it('runs the cases through the setups', async () => {
   const BUILDERS = ['src/coach', 'exam/v2'].flatMap((d) => readdirSync(d).filter((f) => f.endsWith('.ts')).sort().map((f) => readFileSync(join(d, f), 'utf8')));
   const code = createHash('sha256').update(BUILDERS.join('\n')).digest('hex');
   const version = (setupRules: string, caseJson: string) => createHash('sha256').update(`${setupRules}|${renderKnowledge()}|${caseJson}|${code}`).digest('hex').slice(0, 16);
-  const done = new Set((existsSync(file) ? readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []).map((l) => l.key as string));
+  // saved answers by key: they are never paid for again, and still count in the cost and speed per reply (Codex, PR #87)
+  const done = new Map<string, Awaited<ReturnType<typeof runCase>>>((existsSync(file) ? readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []).map((l) => [l.key as string, l]));
+  // the answer and its More are counted apart: each row is one kind of call, its cost and its time (Codex, PR #87)
+  const count = (setup: string, r: Awaited<ReturnType<typeof runCase>>) => {
+    const add = (k: string, usd: number, ms: number) => { const g = perReply.get(k) ?? { n: 0, usd: 0, ms: 0 }; g.n++; g.usd += usd; g.ms += ms; perReply.set(k, g); };
+    for (const t of r.turns) {
+      add(`${setup} · ${t.tier} (${t.model})`, t.usd - (t.moreUsd ?? 0), t.ms);
+      if (t.moreUsd !== undefined) add(`${setup} · More (${t.model})`, t.moreUsd, t.moreMs ?? 0);
+    }
+  };
   let failedInARow = 0;
   for (const c of cases) {
     for (const s of setups) {
       for (let run = 1; run <= RUNS; run++) {
-        const key = `${c.id}|${s.name}|${s.quick}|${s.deep}|${run}|${version(s.rules ?? COACH_RULES, JSON.stringify([c, records(c.person)]))}${process.env.EXAM_MORE ? '|more' : ''}`;
-        if (done.has(key)) continue;
+        const key = `${c.id}|${s.name}|${s.quick}|${s.deep}${s.big ? `|${s.big}` : ''}|${run}|${version(s.rules ?? COACH_RULES, JSON.stringify([c, records(c.person)]))}${process.env.EXAM_MORE ? '|more' : ''}`;
+        const saved = done.get(key);
+        if (saved) { count(s.name, saved); continue; }
         const r = await runCase(c, s, { ledger, purpose: 'answers', more: !!process.env.EXAM_MORE, ...(DRY ? { dry } : {}) });
         // a failed call is no answer: never saved, so the next run asks again; three in a row stop the run
         const lost = r.turns.find((t) => t.callFailed);
@@ -89,12 +99,7 @@ it('runs the cases through the setups', async () => {
         failedInARow = 0;
         appendFileSync(file, `${JSON.stringify({ key, at: new Date().toISOString(), run, ...r, caseHash: caseHash(c) })}\n`);
         const failed = r.checks.filter((x) => !x.ok).map((x) => x.name);
-        // the answer and its More are counted apart: each row is one kind of call, its cost and its time (Codex, PR #87)
-        const add = (k: string, usd: number, ms: number) => { const g = perReply.get(k) ?? { n: 0, usd: 0, ms: 0 }; g.n++; g.usd += usd; g.ms += ms; perReply.set(k, g); };
-        for (const t of r.turns) {
-          add(`${s.name} · ${t.tier} (${t.model})`, t.usd - (t.moreUsd ?? 0), t.ms);
-          if (t.moreUsd !== undefined) add(`${s.name} · More (${t.model})`, t.moreUsd, t.moreMs ?? 0);
-        }
+        count(s.name, r);
         console.log(`${c.id} · ${s.name} · run ${run}: $${r.usd.toFixed(4)}${failed.length ? ` · FAILED ${failed.join(', ')}` : ''}`);
       }
     }

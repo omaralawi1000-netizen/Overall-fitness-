@@ -41,13 +41,13 @@ describe('the biggest tasks go to the big model (Omar, 8 Nov)', () => {
       'make me a new training plan', 'can you build a 3 day program for me', 'rebuild my split around wrestling', 'lav en ny træningsplan til mig',
       'review my week', 'gennemgå ugen', 'I want to make 74 kg for the tournament', 'which weight class should I wrestle in?', 'plan my cut',
       'why have I been stuck on bench for weeks?', 'hvorfor står min squat stille?', 'why am I not gaining?',
-      'hvorfor tager jeg ikke på?', 'kan du lave en plan for this week', 'jeg løber 10 km på søndag, hvordan skal ugen se ud?', 'how do I cut 3 kg for the season?', 'I want to compete in wrestling next spring, help me get ready to compete', '83 kg class, weigh-in the day before', 'gennemgå min uge', 'help me prepare for the tournament in March', 'gør mig klar til stævnet',
+      'hvorfor tager jeg ikke på?', 'kan du lave en plan for this week', 'jeg løber 10 km på søndag, hvordan skal ugen se ud?', 'how do I cut 3 kg for the season?', 'I want to compete in wrestling next spring, help me get ready to compete', '83 kg class, weigh-in the day before', 'gennemgå min uge', 'help me prepare for the tournament in March', 'gør mig klar til stævnet', 'I need a new program', 'jeg vil have en ny træningsplan',
     ]) expect(r(t), t).toBe('big');
     expect(route('', { sheet, history: [], untrusted: false, notice: 'weekly review' })).toBe('big');
   });
 
   it('everyday logging, chat and single questions stay off it', () => {
-    for (const t of ['log 500 ml water', 'thanks!', 'my knee hurts when I squat', 'what should I eat before my weigh-in?', 'why is protein important?', "help me get ready for today's workout", 'gennemgå min squat', 'gennemgå mit måltid', 'gør mig klar til træning', 'I have a late shift Thursday, what do I do with my workout?', 'move today to tomorrow']) expect(r(t), t).not.toBe('big');
+    for (const t of ['log 500 ml water', 'thanks!', 'my knee hurts when I squat', 'what should I eat before my weigh-in?', 'why is protein important?', "help me get ready for today's workout", 'gennemgå min squat', 'gennemgå mit måltid', 'gør mig klar til træning', 'what is my new plan?', 'how many sessions are in my new routine?', 'hvad er min nye plan?', 'I have a late shift Thursday, what do I do with my workout?', 'move today to tomorrow']) expect(r(t), t).not.toBe('big');
     expect(route('', { sheet, history: [], untrusted: false, notice: 'morning, Pull day' })).toBe('deep');
   });
 

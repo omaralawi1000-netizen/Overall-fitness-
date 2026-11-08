@@ -34,8 +34,8 @@ const LOOKUP = W(['how much', 'how many', 'what is my', "what's my", 'left', 'hv
 
 /** the biggest tasks in the app (Omar, 8 Nov): only these may go to the most expensive model */
 const BIG = [
-  // build or rebuild a training plan or program
-  W('(?:make|build|write|create|design|redo|rebuild|rework|new|lav\\w*|byg\\w*|skriv\\w*|ny|nyt)(?:\\s+[\\p{L}\\p{N}-]+){0,3}\\s+(?:plan|program(?:me)?|split|routine|træningsplan|træningsprogram)'),
+  // build or rebuild a training plan or program: a verb that asks for one, never "new" alone ("what is my new plan?" is a lookup: Codex, PR #87)
+  W('(?:make|build|write|create|design|redo|rebuild|rework|(?:want|need|give me|get me) (?:a )?new|lav\\w*|byg\\w*|skriv\\w*|(?:vil have|brug for|giv mig) (?:en |et )?nyt?)(?:\\s+[\\p{L}\\p{N}-]+){0,4}\\s+(?:plan|program(?:me)?|split|routine|træningsplan|træningsprogram)'),
   W('plan (?:my|me|a|out my) (?:week|training|program\\w*|split|cut|bulk)|planlæg (?:min|mit|en|et) \\p{L}+|how should (?:my|the|this|next) week look|hvordan skal (?:ugen|min uge) se ud|plan for (?:ugen|næste uge)'),
   // getting ready for a competition or a season: a plan over weeks
   // only with a competition or a season in the sentence: "get ready for today's workout" is not one (Codex, PR #87)
