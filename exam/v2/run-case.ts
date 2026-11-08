@@ -128,6 +128,7 @@ export function codeChecks(c: ExamCase, turns: TurnLog[], end?: EndState): Check
   if (x.nothing) out.push({ name: 'changed nothing', ok: !did.length, detail: kinds(did.map((d) => d.label)) });
   for (const name of x.done ?? []) out.push({ name: `did ${name}`, ok: did.some((d) => d.name === name), detail: kinds(did.map((d) => d.label)) });
   for (const name of x.offered ?? []) out.push({ name: `offered ${name}`, ok: offers.some((f) => f.proposal.name === name), detail: kinds(offers.map((f) => f.label)) });
+  for (const name of x.notOffered ?? []) out.push({ name: `did not offer ${name}`, ok: !offers.some((f) => f.proposal.name === name), detail: kinds(offers.map((f) => f.label)) });
   for (const [day, want] of Object.entries(x.planOn ?? {})) out.push({ name: `plan on ${day}: ${want ?? 'nothing'}`, ok: end?.planOn[day] === want, detail: String(end?.planOn[day] ?? 'nothing') });
   for (const f of x.foodToday ?? []) {
     const re = new RegExp(f.name, 'iu');
@@ -161,12 +162,12 @@ const CITATION = /\((?:[^()]*\b(?:et al\.?|&|og)\b[^()]*|[A-Z][\p{L}-]+[^()]{0,3
 const VOICE_BAD = /^\s*(?:[-•*]|\d+[.)])\s|[×→✅]|\bkg\/(?:uge|week)\b/mu;
 /** Danish forms a native speaker never writes (rule 14); grows with every one found in an exam */
 // round 3 (8 Nov): "Når er der …?" for "Hvornår", "din sidste måltid", "øm hvis", "Går det samme knæ", "Det data viser",
-// "Læg vægt på" (= emphasise) for adding weight, "mavebøjninger" (crunches) for hip hinges
-const BAD_DANISH = /\bheldagskrop\w*|\bheldagskrops-?pas\b|\bfuld krop pas\b|(?:^|[.!?]\s+)Når (?:er|skal|kan|bliver) (?:der|du|jeg|det|den)\b[^.!?]*\?|\b(?:din|min) (?:sidste |første |næste )?(?:rigtige )?måltid\b|(?<!\p{L})øm hvis\b|\bGår det samme\b|\bDet data\b|\bLæg vægt på,? når\b|\bmavebøjning\w*/iu;
+// "Læg vægt på" (= emphasise) for adding weight, "mavebøjninger" (crunches) for hip hinges, "et lille snack", "har tåle"
+const BAD_DANISH = /\bheldagskrop\w*|\bheldagskrops-?pas\b|\bfuld krop pas\b|(?:^|[.!?]\s+)Når (?:er|skal|kan|bliver) (?:der|du|jeg|det|den)\b[^.!?]*\?|\b(?:din|min) (?:sidste |første |næste )?(?:rigtige )?måltid\b|(?<!\p{L})øm hvis\b|\bGår det samme\b|\bDet data\b|\bLæg vægt på,? når\b|\bmavebøjning\w*|\bet lille snack\b|\bhar tåle\b/iu;
 /** the Coach's own input names leaking into what the person reads (round 3: "FACTS shows…") */
 const INTERNAL = /\b(?:FACTS|MEMORY|KNOWLEDGE|PLAN|fact sheet)\b/u;
 /** More taking back the answer above it (round 3: "One correction first…", "I shouldn't have said…") */
-const RETRACTS = /\b(?:a correction|one correction|correction first|I was wrong|that was wrong|I shouldn't have said|my last reply|en rettelse|det var forkert|jeg tog fejl|mit sidste svar)\b/iu;
+const RETRACTS = /\b(?:a correction|one correction|correction first|I was wrong|that was wrong|I shouldn't have said|my last reply (?:said|was)|en rettelse|det var forkert|jeg tog fejl|mit sidste svar (?:sagde|var))\b/iu;
 /** dates said in a reply: "12 December", "28. februar", "Dec 12", "5/11" */
 const MONTH = '(?:jan(?:uary|uar)?|feb(?:ruary|ruar)?|mar(?:ch|ts)?|apr(?:il)?|ma[iy]|jun(?:e|i)?|jul(?:y|i)?|aug(?:ust)?|sep(?:tember)?|o[ck]t(?:ober)?|nov(?:ember)?|dec(?:ember)?)';
 const DATE = new RegExp(`\\b(\\d{1,2})\\.?\\s+${MONTH}\\b|\\b${MONTH}\\.?\\s+(\\d{1,2})\\b`, 'giu');

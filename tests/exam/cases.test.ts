@@ -89,6 +89,7 @@ describe('exam v2 cases', () => {
     expect(flagged('Har du spist noget, der ikke er logget, er der mindre plads.')).toBe(false);
     expect(flagged('Intet er logget endnu, så jeg kan ikke sige noget.')).toBe(false);
     expect(flagged('Food is logged on 10 of 28 days and none complete.')).toBe(false);
+    expect(flagged("No weight is logged, so I can't say.")).toBe(false);
     expect(flagged('Logged 2 eggs and 200 g oats.')).toBe(true);
     expect(flagged('Maden er logget.')).toBe(true);
     expect(flagged('Det er gemt.')).toBe(true);
@@ -184,6 +185,7 @@ describe('exam v2 cases', () => {
     expect(bad('Done.', "First, a correction: FACTS shows 215 g. I shouldn't have said 16 of 28.")).toEqual(expect.arrayContaining(['no internal words', 'More never contradicts the answer']));
     expect(bad('Done.', 'One correction first: there was no note.')).toContain('More never contradicts the answer');
     expect(bad('Your log shows 215 g; the plan has Legs on Thursday.', 'Here is the full plan.')).not.toContain('no internal words');
+    expect(bad('Done.', 'Say the word, or use the Undo under my last reply.')).not.toContain('More never contradicts the answer');
   });
 
   it('a reply that is not JSON is a failed run, never a crash', async () => {

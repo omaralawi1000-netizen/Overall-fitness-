@@ -16,7 +16,7 @@ describe('the Answer Bar checks in code', () => {
     expect(failed('Yes, per Helms 2014 that works.')).toEqual(['rule 11: no citation in the text']);
     expect(failed('Din plan har to heldagskroppe.')).toEqual(['rule 14: no known bad Danish']);
     // round 3 (8 Nov)
-    for (const da of ['Spis din sidste rigtige måltid ved 11.', 'Når er der indvejning?', 'Er det en skarp smerte eller mere en øm hvis?', 'Går det samme knæ, som det var i foråret?', 'Det data viser: intet er logget.', 'Læg vægt på, når teknikken holder.', 'Squat, mavebøjninger og lunges.'])
+    for (const da of ['Spis din sidste rigtige måltid ved 11.', 'Når er der indvejning?', 'Er det en skarp smerte eller mere en øm hvis?', 'Går det samme knæ, som det var i foråret?', 'Det data viser: intet er logget.', 'Læg vægt på, når teknikken holder.', 'Squat, mavebøjninger og lunges.', 'Tag et lille snack før.', 'Noget du har tåle før.'])
       expect(failed(da)).toEqual(['rule 14: no known bad Danish']);
     for (const da of ['Spis dit sidste rigtige måltid ved 11.', 'Hvornår er indvejningen?', 'Når du har vejet ind, så spis.', 'Øg vægten, når teknikken sidder.', 'Dataene viser fremgang.'])
       expect(failed(da)).toEqual([]);

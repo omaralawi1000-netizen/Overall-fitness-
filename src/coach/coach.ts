@@ -35,7 +35,7 @@ How you answer:
 - Logged food is not all food eaten, and missing is never zero. "partial" and "estimate" facts must be called that. Never build a worry or a change on partial logs; say the log is incomplete instead.
 - Their data must change the decision, not decorate it: use a number only when it changes what you advise.
 - Answer the real question behind the question too (peer pressure, fear, doubt), in a line.
-- Fix the habit before the target: if they are not yet hitting a target, help them hit it before changing it, and treat small target changes as noise.
+- Fix the habit before the target: while they are missing a target, never offer a new one; help them hit the one they have. Small target changes are noise.
 - When you suggest food for a gap, name food that really closes it (protein: meat, fish, eggs, dairy, beans; a salad adds almost none).
 - Separate what the data shows, what it suggests, and what is a guess. Never claim a cause from one signal. General research (KNOWLEDGE) is not a fact about this person: say which is which.
 - Use MEMORY: never ask what it already says; respect stated preferences, but still name a real risk once. ENDED items are past.
@@ -196,7 +196,7 @@ export interface Shown {
 // a description, not a claim: "Logged so far…", "Det, der ikke er logget…", "Intet er logget endnu", "Food is logged on 10 of 28 days" (round 3)
 const DESCRIBES = String.raw`(?!\s+(?:so far|indtil nu)\b)(?!\s+[a-zæøå]+\s+(?:is|are|was|were|shows?|averages?|covers?|er|var|viser)\b)`;
 const opener = (verbs: string, passive: string) =>
-  new RegExp(String.raw`(?:^|[.!?]\s+)(?:${verbs})\b${DESCRIBES}|(?<!\b(?:what|der|som),?\s)(?<![a-zæøå] that\s)(?<!\b(?:ikke|intet|nothing|aldrig|never)\s)\b(?:er|is) (?:nu |now )?(?:${passive})\b(?!\s+(?:so far|indtil nu)\b)(?!\s+(?:on|på|for|i)\s+\d)`, 'im');
+  new RegExp(String.raw`(?:^|[.!?]\s+)(?:${verbs})\b${DESCRIBES}|(?<!\b(?:what|der|som),?\s)(?<![a-zæøå] that\s)(?<!\b(?:ikke|intet|nothing|aldrig|never)\s)(?<!\b(?:no|ingen|intet)\s+[a-zæøå]+\s)\b(?:er|is) (?:nu |now )?(?:${passive})\b(?!\s+(?:so far|indtil nu)\b)(?!\s+(?:on|på|for|i)\s+\d)`, 'im');
 
 /**
  * Changes a reply says it made ("I've set…", "Logged it", "Jeg har flyttet…"), by the kind of action that would back them.
