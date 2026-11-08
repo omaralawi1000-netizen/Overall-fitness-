@@ -64,9 +64,12 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
   let lastDid: Proposal['name'][] = [];
   // untrusted text stays in what the model reads on later turns, so the gate stays on from then (Codex, PR #81)
   let untrusted = false;
+  // the snapshot the last answer was built from: More must use it, not the state after that answer's actions
+  let lastSheet: ReturnType<typeof buildFacts> | undefined;
   for (const t of c.turns) {
     untrusted ||= !!t.untrusted;
     const sheet = buildFacts(e.allRecords(), { now, tz: TZ });
+    lastSheet = sheet;
     const tier = route(t.text, { sheet, history, untrusted });
     history.push(tier);
     const model = tier === 'quick' ? setup.quick : setup.deep;
@@ -85,8 +88,7 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
   // "More" belongs to the Coach (its own rules), so the plain-prompt opponent never gets one
   const last = turns.at(-1);
   if (o.more && !setup.rules && last?.shown) {
-    const sheet = buildFacts(e.allRecords(), { now, tz: TZ });
-    const req = moreRequest(sheet, convo.slice(0, -1), last.shown.text, { voice: c.turns.at(-1)?.voice });
+    const req = moreRequest(lastSheet!, convo.slice(0, -1), last.shown.text, { voice: c.turns.at(-1)?.voice, did: last.shown.did.map((d) => d.label) });
     const asked = await askCoach(last.model, req, { ...o, purpose: `${c.id} ${setup.name} more`, ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
     last.usd += asked.usd;
     if (asked.reply) {
@@ -158,7 +160,13 @@ const CITATION = /\((?:[^()]*\b(?:et al\.?|&|og)\b[^()]*|[A-Z][\p{L}-]+[^()]{0,3
 /** list markers and symbols that are read out wrong in voice (rule 3) */
 const VOICE_BAD = /^\s*(?:[-•*]|\d+[.)])\s|[×→✅]|\bkg\/(?:uge|week)\b/mu;
 /** Danish forms a native speaker never writes (rule 14); grows with every one found in an exam */
-const BAD_DANISH = /\bheldagskrop\w*|\bheldagskrops-?pas\b|\bfuld krop pas\b/iu;
+// round 3 (8 Nov): "Når er der …?" for "Hvornår", "din sidste måltid", "øm hvis", "Går det samme knæ", "Det data viser",
+// "Læg vægt på" (= emphasise) for adding weight, "mavebøjninger" (crunches) for hip hinges
+const BAD_DANISH = /\bheldagskrop\w*|\bheldagskrops-?pas\b|\bfuld krop pas\b|(?:^|[.!?]\s+)Når (?:er|skal|kan|bliver) (?:der|du|jeg|det|den)\b[^.!?]*\?|\b(?:din|min) (?:sidste |første |næste )?(?:rigtige )?måltid\b|(?<!\p{L})øm hvis\b|\bGår det samme\b|\bDet data\b|\bLæg vægt på,? når\b|\bmavebøjning\w*/iu;
+/** the Coach's own input names leaking into what the person reads (round 3: "FACTS shows…") */
+const INTERNAL = /\b(?:FACTS|MEMORY|KNOWLEDGE|PLAN|fact sheet)\b/u;
+/** More taking back the answer above it (round 3: "One correction first…", "I shouldn't have said…") */
+const RETRACTS = /\b(?:a correction|one correction|correction first|I was wrong|that was wrong|I shouldn't have said|my last reply|en rettelse|det var forkert|jeg tog fejl|mit sidste svar)\b/iu;
 /** dates said in a reply: "12 December", "28. februar", "Dec 12", "5/11" */
 const MONTH = '(?:jan(?:uary|uar)?|feb(?:ruary|ruar)?|mar(?:ch|ts)?|apr(?:il)?|ma[iy]|jun(?:e|i)?|jul(?:y|i)?|aug(?:ust)?|sep(?:tember)?|o[ck]t(?:ober)?|nov(?:ember)?|dec(?:ember)?)';
 const DATE = new RegExp(`\\b(\\d{1,2})\\.?\\s+${MONTH}\\b|\\b${MONTH}\\.?\\s+(\\d{1,2})\\b`, 'giu');
@@ -225,5 +233,7 @@ export function barChecks(c: ExamCase, turns: TurnLog[]): Check[] {
   each('rule 4: a weekday matches its date', (t) => wrongWeekdays(full(t), c.now.slice(0, 10)).join(', ') || false);
   each('rule 11: no citation in the text', (t) => (full(t).match(CITATION)?.[0] ?? false));
   each('rule 14: no known bad Danish', (t) => (full(t).match(BAD_DANISH)?.[0] ?? false));
+  each('no internal words', (t) => (full(t).match(INTERNAL)?.[0] ?? false));
+  each('More never contradicts the answer', (t) => (t.more?.match(RETRACTS)?.[0] ?? false));
   return out;
 }

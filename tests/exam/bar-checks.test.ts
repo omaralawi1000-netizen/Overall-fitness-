@@ -15,6 +15,11 @@ describe('the Answer Bar checks in code', () => {
     expect(failed('Creatine is safe (Kreider et al., 2017).')).toEqual(['rule 11: no citation in the text']);
     expect(failed('Yes, per Helms 2014 that works.')).toEqual(['rule 11: no citation in the text']);
     expect(failed('Din plan har to heldagskroppe.')).toEqual(['rule 14: no known bad Danish']);
+    // round 3 (8 Nov)
+    for (const da of ['Spis din sidste rigtige måltid ved 11.', 'Når er der indvejning?', 'Er det en skarp smerte eller mere en øm hvis?', 'Går det samme knæ, som det var i foråret?', 'Det data viser: intet er logget.', 'Læg vægt på, når teknikken holder.', 'Squat, mavebøjninger og lunges.'])
+      expect(failed(da)).toEqual(['rule 14: no known bad Danish']);
+    for (const da of ['Spis dit sidste rigtige måltid ved 11.', 'Hvornår er indvejningen?', 'Når du har vejet ind, så spis.', 'Øg vægten, når teknikken sidder.', 'Dataene viser fremgang.'])
+      expect(failed(da)).toEqual([]);
     expect(failed('Creatine 3–5 g a day is fine, and 2026 is a good year.')).toEqual([]);
     expect(failed('Your goal date is 28 February 2027.')).not.toContain('rule 11: no citation in the text');
   });
