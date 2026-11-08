@@ -35,14 +35,13 @@ const LOOKUP = W(['how much', 'how many', 'what is my', "what's my", 'left', 'hv
 /** the biggest tasks in the app (Omar, 8 Nov): only these may go to the most expensive model */
 const BIG = [
   // build or rebuild a training plan or program: a verb that asks for one, never "new" alone ("what is my new plan?" is a lookup: Codex, PR #87)
-  W('(?:make|build|write|create|design|redo|rebuild|rework|(?:want|need|give me|get me) (?:a )?new|lav\\w*|byg\\w*|skriv\\w*|(?:vil have|brug for|giv mig) (?:en |et )?nyt?)(?:\\s+[\\p{L}\\p{N}-]+){0,4}\\s+(?:plan|program(?:me)?|split|routine|træningsplan|træningsprogram)'),
-  W('plan (?:my|me|a|out my) (?:week|training|program\\w*|split|cut|bulk)|planlæg (?:min|mit|en|et) \\p{L}+|how should (?:my|the|this|next) week look|hvordan skal (?:ugen|min uge) se ud|plan for (?:ugen|næste uge)'),
+  W('(?:make|build|write|create|design|redo|rebuild|rework|(?:want|need|give me|get me) (?:a )?new|lav|lave|byg|bygge|skriv|skrive|(?:vil have|brug for|giv mig) (?:en |et )?nyt?)(?:\\s+[\\p{L}\\p{N}-]+){0,4}\\s+(?:plan|program(?:me)?|split|routine|træningsplan|træningsprogram)'),
+  W('plan (?:my|me|a|out my) (?:week|training|program\\w*|split|cut|bulk)|planlæg (?:min|mit|en|et|næste) (?:uge|træning|program\\p{L}*|split|cut|sæson)|how should (?:my|the|this|next) week look|hvordan skal (?:ugen|min uge|næste uge) se ud'),
   // getting ready for a competition or a season: a plan over weeks
   // only with a competition or a season in the sentence: "get ready for today's workout" is not one (Codex, PR #87)
   W('get(?:ting)? (?:me )?ready (?:to compete|for (?:a |the |my )?(?:tournament|competition|season|meet))|klar til (?:at konkurrere|(?:en |et |mit |min )?(?:stævne|turnering|konkurrence|sæson))'),
-
-  // the weekly (or monthly) review
-  W('weekly review|(?:review|go over|look at) (?:my|the|this|last) (?:week|month)|ugentlig\\w*|ugens gennemgang|gennemgå (?:min uge|min måned|ugen|måneden)'),
+  // the weekly (or monthly) review: a review asked for, not any mention of "weekly" ("mit ugentlige kaloriemål" is a lookup)
+  W('weekly review|(?:review|go over|look at) (?:my|the|this|last) (?:week|month)|ugentlig (?:gennemgang|opsummering|status)|ugens (?:gennemgang|opsummering)|gennemgå (?:min uge|min måned|ugen|måneden)'),
   // weight class and cut planning
   W('weight class|make weight|make \\d+(?:[.,]\\d)? ?kg|cut (?:plan|to \\d+)|cut \\d+(?:[.,]\\d)? ?kg|tabe \\d+(?:[.,]\\d)? ?kg|\\d+ ?kg[ -]?(?:class|klasse)|(?:plan|start) (?:my|a) cut|vægtklasse|nå (?:ned på )?\\d+(?:[.,]\\d)? ?kg'),
 ];
@@ -51,7 +50,8 @@ const COMPETE = W('compet\\p{L}*|tournament\\p{L}*|konkurr\\p{L}*|stævne\\p{L}*
 const READY = W('get(?:ting)? (?:me )?ready|prepare|prep|klar|forberede?');
 /** "why" across weeks of data: a why (or hvorfor) next to a trend or a time span */
 const WHY = W('why|hvorfor');
-const SPAN = W('weeks?|months?|lately|anymore|stalled|plateau\\w*|stuck|not (?:gaining|losing|progressing|getting stronger)|uger?|måned\\w*|længe|står(?:\\s+\\p{L}+){0,2}\\s+stille|ikke (?:tager på|taber|bliver stærkere)|tager (?:jeg )?ikke på|taber (?:jeg )?ikke');
+// a span of time, not a frequency: "why do I train 3 times a week?" is a single question
+const SPAN = W('weeks|months|(?:this|last|past) (?:week|month)|lately|anymore|stalled|plateau\\w*|stuck|not (?:gaining|losing|progressing|getting stronger)|uger|måneder|(?:denne|sidste|i) (?:uge|måned)|ugen|måneden|længe|står(?:\\s+\\p{L}+){0,2}\\s+stille|ikke (?:tager på|taber|bliver stærkere)|tager (?:jeg )?ikke på|taber (?:jeg )?ikke');
 
 /** One of the biggest tasks in the app: a plan, the weekly review, a weight-class or cut plan, or a why across weeks. */
 export function isBigTask(text: string, notice?: string): boolean {
