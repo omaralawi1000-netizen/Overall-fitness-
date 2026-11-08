@@ -297,6 +297,20 @@ what was decided (Omar: "use only the good parts"):
   - Re-run of the Coach on the same 20 cases ($0.89, then 6 again $0.29): every content fix showed up; left: one
     two-question reply (p10) and new Danish slips ("Ret søvn", a garbled sentence in m04).
 
+### Stage 3 exam (8 Nov: 50 cases, today's Coach vs Opus, two judges; report /mnt/project-files/e2/stage3/REPORT.md)
+- Rulebook pairwise judge (Answer Bar + checklists): Coach 36.5 of 50 (73 %); 7 wins on length/format only.
+- Neutral judge (EXAM_NEUTRAL=1, no bar or checklist): Coach 13.5 of 50 (27 %). Main reasons: holds advice back behind a
+  question or More, uses less of the person's data, slips in More (and More in Danish to an English user, m03), missed
+  the 863 kcal low intake (p03). The truth sits between the two; target 9 of 10 not met.
+- Cost: answers $4.28, judging $6.50 (+ $1.73 slice). Paid rounds paused by Omar (8 Nov) until a newer model can be
+  tested; `fable` setup ready (needs its price in exam/providers.ts).
+- Decided after stage 3 (free prompt fixes, not yet measured; no paid run until Omar says go): the useful advice comes
+  first in the text (a question only when the answer truly depends on it, and then still give what you can); use the
+  facts that change the decision instead of generic advice; asked-for depth comes in full, not behind More; More always
+  in the language the person writes, numbers checked against FACTS; a very low logged day or week is a gentle "is the
+  log complete?", never an alarm, unless complete logs show a pattern. New code check: More in the person's language.
+  The length (text ≤120 words) and safety rules are unchanged.
+
 ### What it is
 - **Conversations**: realistic ones built from Omar's real week (the interview), plus friends of every type. Each one
   runs against fake data built in old Aven's data format, so the old Coach and Aven 2's Coach face exactly the same

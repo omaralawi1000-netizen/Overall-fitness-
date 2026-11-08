@@ -18,7 +18,7 @@ import { renderKnowledge } from '../../src/coach/knowledge';
 import { Ledger, type GeminiReply } from '../providers';
 import { CASES } from './cases';
 import { records } from './people';
-import { OPPONENT_RULES, runCase, type Setup } from './run-case';
+import { caseHash, OPPONENT_RULES, runCase, type Setup } from './run-case';
 import { PREV_RULES } from './prev-rules';
 
 export const SETUPS: Record<string, Setup> = {
@@ -27,6 +27,9 @@ export const SETUPS: Record<string, Setup> = {
   mix: { name: 'mix', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5' },
   // Flash thinking 4,096 tokens took 7–34 s a quick answer on 4 Nov (Sonnet: 2–3 s): the same mix with a small budget
   flashlow: { name: 'flashlow', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5', thinking: 512 },
+  // a newer, bigger model as the Coach brain (Omar, 8 Nov): same Coach rules, so it compares with sonnet case by case;
+  // add its price to exam/providers.ts first (a model with no price fails closed)
+  fable: { name: 'fable', quick: 'claude-fable-5-1', deep: 'claude-fable-5-1' },
   opponent: { name: 'opponent', quick: 'claude-opus-5-5', deep: 'claude-opus-5-5', rules: OPPONENT_RULES },
   // the previous Coach (PR #81's instructions) on the ship setup
   prev: { name: 'prev', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5', rules: PREV_RULES },
@@ -78,7 +81,7 @@ it('runs the cases through the setups', async () => {
           continue;
         }
         failedInARow = 0;
-        appendFileSync(file, `${JSON.stringify({ key, at: new Date().toISOString(), run, ...r })}\n`);
+        appendFileSync(file, `${JSON.stringify({ key, at: new Date().toISOString(), run, ...r, caseHash: caseHash(c) })}\n`);
         const failed = r.checks.filter((x) => !x.ok).map((x) => x.name);
         console.log(`${c.id} · ${s.name} · run ${run}: $${r.usd.toFixed(4)}${failed.length ? ` · FAILED ${failed.join(', ')}` : ''}`);
       }

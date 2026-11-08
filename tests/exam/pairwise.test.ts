@@ -36,6 +36,15 @@ describe('the pairwise judge', () => {
     expect(body.systemInstruction!.parts[0].text).toContain('## 14. One voice');
     expect(all).toContain('protein target 215 → 250 g');
   });
+
+  it('the neutral judge sees no Answer Bar, checklist or writer\'s note, only facts, conversation and replies', () => {
+    const body = pairBody({ id: 'x', facts: 'kcal target 3,000', conversation: [{ role: 'user', text: 'hi' }], good: 'WRITER NOTE', checklist: ['MUST: CHECK ITEM'], a: { reply: 'A reply', did: [] }, b: { reply: 'B reply', did: ['logged 2 eggs'] }, neutral: true });
+    const all = JSON.stringify(body);
+    expect(all).not.toMatch(/## 14\. One voice|ANSWER BAR|WRITER NOTE|CHECK ITEM/);
+    expect(all).toContain('kcal target 3,000');
+    expect(all).toContain('logged 2 eggs');
+    expect(all).toContain('no house style');
+  });
 });
 
 describe('calibration from the Answer Bar itself', () => {
@@ -115,5 +124,24 @@ describe('each paid order is kept (Codex, PR #75)', () => {
     const r = await judgePair('claude-opus-5-5', x, { ledger: ledger(), purpose: 't', dry: () => { rerunCalls++; return verdict('B'); } }, [saved[0], undefined]);
     expect(rerunCalls).toBe(1);
     expect(r.winner).toBe('A');
+  });
+});
+
+describe('the calibration print (Codex, PR #86)', () => {
+  it('changes with the judge, the effort and the neutral prompt, so an old pass never vouches for a new setup', async () => {
+    const { calibrationPrint } = await import('../../exam/judge/pairwise');
+    const base = calibrationPrint('claude-opus-5-5', 'medium', false);
+    expect(calibrationPrint('claude-opus-5-5', 'medium', false)).toBe(base);
+    expect(calibrationPrint('claude-opus-5-5', 'high', false)).not.toBe(base);
+    expect(calibrationPrint('claude-opus-5-5', 'medium', true)).not.toBe(base);
+  });
+
+  it('scores the worst of repeated runs, a safer-B run first (Codex, PR #86)', async () => {
+    const { worstRun } = await import('../../exam/judge/pairwise');
+    const r = (winner: 'A' | 'B' | 'tie', saferIs: 'A' | 'B' | 'tie' = 'tie') => ({ id: 'x', winner, saferIs, brokenA: [], brokenB: [], orders: [] }) as never;
+    expect(worstRun([r('A'), r('tie'), r('A')]).winner).toBe('tie');
+    expect(worstRun([r('A'), r('B'), r('tie')]).winner).toBe('B');
+    expect(worstRun([r('B'), r('A', 'B')]).saferIs).toBe('B');
+    expect(worstRun([r('A')]).winner).toBe('A');
   });
 });

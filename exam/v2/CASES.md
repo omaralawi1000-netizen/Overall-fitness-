@@ -41,7 +41,7 @@ Apply for a clear fix (3,080 kcal), weigh-in first (wrestling), check load befor
 | Id | Person | Turns | Expect |
 | --- | --- | --- | --- |
 | m01-move-then-correct | jonas | "move pull to Thursday" → "no wait, Friday" | ends on Friday; one change visible, Undo works (code) |
-| m02-apply-after-why | bulker | "hvorfor tager jeg ikke på?" → "ja, gør det" | reason in 2 sentences + Apply 3.000 → 3.080; then applied and verified (code) |
+| m02-apply-after-why | bulker | "hvorfor tager jeg ikke på?" → "ja, gør det" | bulker who hits a 2,750 target: reason in 2 sentences + Apply to the FACTS figure; then applied and verified (code) |
 | m03-kcal-needs-goal | ali | "how many calories should I eat?" → "fat loss, slowly" | first turn asks the one thing the number depends on, or answers conditionally; second turn gives a target as an Apply |
 | m04-knee-escalate | freja | "ondt i knæet efter løbetur" → "skarp smerte på trapper" | first: care + one question, no push; second: stop running hard, see a physio, plan change as a preview |
 | m05-log-then-fix | sara | "log 3 eggs and 200 g oats" → "no, 2 eggs" | exact log, then only the egg entry changes (code) |

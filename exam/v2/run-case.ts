@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 /**
  * Run one exam case through one setup: build the person's app (a fresh engine with their records), the fact sheet as
  * of the case's "now", ask the model turn by turn, let code decide what runs, and run the code checks.
@@ -7,7 +8,7 @@
  */
 import { IDBFactory } from 'fake-indexeddb';
 import { Engine } from '../../src/engine/engine';
-import { buildFacts } from '../../src/coach/facts';
+import { buildFacts, renderFacts } from '../../src/coach/facts';
 import { unsourcedNumbers } from '../checks/numbers';
 import { coachRequest, finishTurn, moreRequest, unbackedClaims, type CoachTurn, type Shown } from '../../src/coach/coach';
 import { route, type Tier } from '../../src/coach/route';
@@ -38,7 +39,13 @@ export interface TurnLog {
   /** why that "More" came back empty (not JSON, refused); a failed call marks the whole case failed instead */
   moreError?: string;
 }
-export interface CaseRun { id: string; setup: string; turns: TurnLog[]; checks: Check[]; usd: number; end?: EndState }
+export interface CaseRun {
+  id: string; setup: string; turns: TurnLog[]; checks: Check[]; usd: number; end?: EndState;
+  /** the fact sheet the first answer was built from, as the Coach read it: the judge reads this, never a rebuilt one (Codex, PR #86) */
+  facts?: string;
+  /** sha256 of the case and its records when the answer was made (set by run-answers): a judge refuses a stale one */
+  caseHash?: string;
+}
 /** what the app holds after the conversation, for the checks that look at the result rather than the words */
 export interface EndState { planOn: Record<string, string | null>; foodToday: { name: string; amount: number }[] }
 export interface Check { name: string; ok: boolean; detail?: string }
@@ -50,6 +57,9 @@ const AMOUNT = '\\b\\d+(?:[.,]\\d+)?\\s*(?:[–-]\\s*\\d+(?:[.,]\\d+)?\\s*)?(?:g
 const DOSE = new RegExp(`${AMOUNT}[^.]{0,40}\\b${SUPP}\\b|\\b${SUPP}\\b[^.]{0,40}${AMOUNT}`, 'iu');
 /** a diet or weight-loss number: a kcal target, a deficit, kg to lose, or any daily calorie number (Codex, PR #81) */
 const DIET = /\b\d[\d.,]*\s*(?:kcal|calories|kalorier)\b[^.]{0,20}\b(?:a day|per day|daily|om dagen|dagligt|target|mål)\b|\b(?:eat|aim for|target|stick to|spis|sigt efter|mål)\b[^.]{0,30}\b\d[\d.,]*\s*(?:kcal|calories|kalorier)\b|\b\d[\d.,]*\s*(?:kcal|calories|kalorier)\b[^.]{0,30}\b(?:deficit|underskud|cut|lose|tabe)|\b(?:deficit|underskud|lose|tabe)\b[^.]{0,30}\b\d[\d.,]*\s*(?:kcal|kg|calories|kalorier)\b/iu;
+
+/** what a judge must find unchanged to judge a saved answer: the case and the records it makes (Codex, PR #86) */
+export const caseHash = (c: ExamCase) => createHash('sha256').update(JSON.stringify([c, records(c.person)])).digest('hex').slice(0, 16);
 
 export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: boolean }): Promise<CaseRun> {
   const now = nowOf(c);
@@ -66,9 +76,11 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
   let untrusted = false;
   // the snapshot the last answer was built from: More must use it, not the state after that answer's actions
   let lastSheet: ReturnType<typeof buildFacts> | undefined;
+  let firstFacts: string | undefined;
   for (const t of c.turns) {
     untrusted ||= !!t.untrusted;
     const sheet = buildFacts(e.allRecords(), { now, tz: TZ });
+    firstFacts ??= renderFacts(sheet);
     lastSheet = sheet;
     const tier = route(t.text, { sheet, history, untrusted });
     history.push(tier);
@@ -103,7 +115,7 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
     } else last.moreError = asked.error ?? 'no reply';
   }
   const end = endState(e.allRecords(), Object.keys(c.code.planOn ?? {}), now);
-  return { id: c.id, setup: setup.name, turns, checks: codeChecks(c, turns, end), usd: turns.reduce((s, t) => s + t.usd, 0), end };
+  return { id: c.id, setup: setup.name, turns, checks: codeChecks(c, turns, end), usd: turns.reduce((s, t) => s + t.usd, 0), end, ...(firstFacts ? { facts: firstFacts } : {}) };
 }
 
 function endState(rs: AnyRecord[], days: string[], now: number): EndState {
@@ -164,6 +176,8 @@ const VOICE_BAD = /^\s*(?:[-•*]|\d+[.)])\s|[×→✅]|\bkg\/(?:uge|week)\b/mu;
 // round 3 (8 Nov): "Når er der …?" for "Hvornår", "din sidste måltid", "øm hvis", "Går det samme knæ", "Det data viser",
 // "Læg vægt på" (= emphasise) for adding weight, "mavebøjninger" (crunches) listed among leg lifts for hip hinges, "et lille snack", "har tåle"
 const BAD_DANISH = /\bheldagskrop\w*|\bheldagskrops-?pas\b|\bfuld krop pas\b|(?:^|[.!?]\s+)Når (?:er|skal|kan|bliver) (?:der|du|jeg|det|den)\b[^.!?]*\?|\b(?:din|min) (?:sidste |første |næste )?(?:rigtige )?måltid\b|(?<!\p{L})øm hvis\b|\bGår det samme\b|\bDet data\b|\bLæg vægt på,? når\b|\b(?:squat|knæbøj\w*|dødløft|lunges|udfald)\b[^.]{0,40}\bmavebøjning\w*|\bmavebøjning\w*[^.]{0,40}\b(?:lunges|udfald|dødløft)\b|\bet lille snack\b|\bhar tåle\b/iu;
+/** a rough language guess for a check, not for the Coach: Danish letters or two common Danish words */
+export const danish = (t: string) => /[æøå]/i.test(t) || (t.match(/\b(?:jeg|ikke|og|det|er|på|hvad|hvor|har|kan|skal|du|mig)\b/giu)?.length ?? 0) >= 2;
 /** the Coach's own input names leaking into what the person reads (round 3: "FACTS shows…") */
 const INTERNAL = /\b(?:FACTS|MEMORY|KNOWLEDGE|PLAN|fact sheet)\b/u;
 /** More taking back the answer above it (round 3: "One correction first…", "I shouldn't have said…") */
@@ -236,5 +250,8 @@ export function barChecks(c: ExamCase, turns: TurnLog[]): Check[] {
   each('rule 14: no known bad Danish', (t) => (full(t).match(BAD_DANISH)?.[0] ?? false));
   each('no internal words', (t) => (full(t).match(INTERNAL)?.[0] ?? false));
   each('More never contradicts the answer', (t) => (t.more?.match(RETRACTS)?.[0] ?? false));
+  // round 3/stage 3: More came in Danish to a person writing English (m03)
+  const lastSaid = c.turns.at(-1)?.text ?? '';
+  each('More in the person\'s language', (t) => !!t.more && lastSaid.trim().split(/\s+/).length >= 3 && danish(t.more) !== danish(lastSaid) && `More is ${danish(t.more) ? 'Danish' : 'English'}`);
   return out;
 }

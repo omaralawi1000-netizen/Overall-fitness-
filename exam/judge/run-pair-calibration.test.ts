@@ -10,12 +10,15 @@ import { it } from 'vitest';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { Ledger, type GeminiReply } from '../providers';
-import { barPairs, fromBarPair, judgePair, pairBody, pairGate, type OrderDone, type PairInput } from './pairwise';
+import { barPairs, calibrationPrint, fromBarPair, judgePair, pairBody, pairGate, type OrderDone, type PairInput } from './pairwise';
 
 const DRY = !!process.env.EXAM_DRY;
 const OUT = `${process.env.EXAM_OUT ?? '/home/user/Overall-fitness-/reference/e2v2'}${DRY ? '/dry' : ''}`;
 const JUDGE = process.env.EXAM_PAIR_JUDGE ?? 'claude-opus-5-5';
 const EFFORT = (process.env.EXAM_JUDGE_EFFORT ?? 'medium') as 'low' | 'medium' | 'high';
+// EXAM_NEUTRAL=1: the neutral judge (no Answer Bar, no checklist), with its own files
+const NEUTRAL = !!process.env.EXAM_NEUTRAL;
+const TAG = NEUTRAL ? '-neutral' : '';
 const CAP = Number(process.env.EXAM_CAP_USD ?? (DRY ? 1000 : NaN));
 const LEDGER = process.env.EXAM_LEDGER ?? `${OUT}/ledger.jsonl`;
 
@@ -23,7 +26,7 @@ const dry = (): GeminiReply => ({ candidates: [{ content: { parts: [{ text: JSON
 
 it('calibrates the pairwise judge on the Answer Bar', async () => {
   mkdirSync(OUT, { recursive: true });
-  const file = `${OUT}/pair-calibration-orders.jsonl`;
+  const file = `${OUT}/pair-calibration${TAG}-orders.jsonl`;
   // the key is the exact request body of that order: any change to the pair, its facts, the rules or the prompt is new work
   const key = (x: PairInput, k: 0 | 1) => {
     const body = pairBody(k === 0 ? x : { ...x, a: x.b, b: x.a });
@@ -33,8 +36,9 @@ it('calibrates the pairwise judge on the Answer Bar', async () => {
   const ledger = new Ledger(LEDGER, CAP);
   const results = [];
   const report: string[] = [];
-  for (const pair of barPairs()) {
-    const x = fromBarPair(pair, true);
+  // the neutral judge knows no house style, so it is checked only on the substance rules (4-14), never on length (1-3)
+  for (const pair of barPairs().filter((p) => !NEUTRAL || p.rule >= 4)) {
+    const x = { ...fromBarPair(pair, true), ...(NEUTRAL ? { neutral: true } : {}) };
     const keys = [key(x, 0), key(x, 1)] as const;
     const r = await judgePair(JUDGE, x, { ledger, purpose: 'pair calibration', effort: EFFORT, ...(DRY ? { dry } : {}) }, [saved.get(keys[0]), saved.get(keys[1])], (k, d) => {
       appendFileSync(file, `${JSON.stringify({ key: keys[k], d })}\n`);
@@ -43,7 +47,7 @@ it('calibrates the pairwise judge on the Answer Bar', async () => {
     report.push(`${pair.id}: ${r.winner === 'A' ? 'Good' : r.winner === 'B' ? 'BAD' : 'tie'} (orders: ${r.orders.map((o) => o.winner).join('/')}) · Good broke [${r.brokenA}] · Bad broke [${r.brokenB}] · ${r.orders[0].reason}`);
   }
   const g = pairGate(results);
-  report.push(`\nGATE ${g.pass ? 'PASS' : 'FAIL'}: Good won ${g.right} of ${results.length}; wrong ${g.wrong.join(', ') || 'none'}; ties ${g.ties.join(', ') || 'none'}. Spent $${ledger.spent.toFixed(2)} of $${CAP}.`);
-  writeFileSync(`${OUT}/pair-calibration-report.md`, `${report.join('\n')}\n`);
+  report.push(`\nGATE ${g.pass ? 'PASS' : 'FAIL'} for judge ${JUDGE} (${EFFORT})${NEUTRAL ? ' neutral' : ''}: Good won ${g.right} of ${results.length}; wrong ${g.wrong.join(', ') || 'none'}; ties ${g.ties.join(', ') || 'none'}. Spent $${ledger.spent.toFixed(2)} of $${CAP}.`, `PRINT ${calibrationPrint(JUDGE, EFFORT, NEUTRAL)}`);
+  writeFileSync(`${OUT}/pair-calibration${TAG}-report.md`, `${report.join('\n')}\n`);
   console.log(report.join('\n'));
 });

@@ -75,15 +75,15 @@ about 60 words; a chart names a component and data references only) and judge (d
 chart have explained it better).
 
 > Kasper: "hvorfor tager jeg ikke på?"
-Facts: kcal target 3,000; average 2,738 kcal on complete days; maintenance about 2,800; weight trend flat for 4 weeks;
-4 sessions a week, every main lift up.
+Facts: kcal target 2,750; average 2,738 kcal on complete days (he hits his target); maintenance about 2,800; weight
+trend flat for 4 weeks; 4 sessions a week, every main lift up.
 
 **Good:** "Fordi du spiser lige omkring vedligehold: 2.738 kcal mod cirka 2.800. Træningen er ikke problemet, alle dine
 hovedløft går frem. For et kvart kilo om ugen skal du op på cirka 3.080." + *Chart: weight trend vs. intake, 4 weeks* +
-*Apply: kalorie-mål 3.000 → 3.080 · Undo* + *More: week-by-week numbers, food ideas for +340 kcal, source*
+*Apply: kalorie-mål 2.750 → 3.080 · Undo* + *More: week-by-week numbers, food ideas for +340 kcal, source*
 
 **Bad:** "Du spiser i snit 2.738 kcal om dagen. Uge 1: 2.701, uge 2: 2.760, uge 3: 2.744, uge 4: 2.747. Din vægt var
-74,9, 74,6, 74,8 og 74,7 kg. Din vedligeholdelse er cirka 2.800, dit mål er 3.000, og et kvart kilo om ugen kræver cirka
+74,9, 74,6, 74,8 og 74,7 kg. Din vedligeholdelse er cirka 2.800, dit mål er 2.750, og et kvart kilo om ugen kræver cirka
 3.080. Kilder: ISSN 2017, Iraki 2019. Ideer: en shake med mælk og banan, ekstra ris, nødder, rugbrød med pålæg…"
 (every detail up front, no chart, no Apply)
 
@@ -165,10 +165,12 @@ but no data and no concern when the data had one)
 Facts: kcal target 3,000; average 2,738 kcal on complete days; maintenance about 2,800; weight trend flat for 4 weeks.
 
 **Good:** "Du spiser i snit 2.738 kcal, lige under din vedligeholdelse på cirka 2.800, så kroppen har intet at bygge
-med. Træningen er fin, det er maden. Skal jeg hæve målet?" + *Apply: kalorie-mål 3.000 → 3.080 kcal · Undo*
+med. Målet på 3.000 er fint, det er at ramme det, der mangler. Et ekstra måltid om dagen, fx havregryn med mælk og
+banan, lukker det meste."
 
-**Bad:** "Du spiser 2.738 kcal, og din vedligeholdelse er omkring 2.800, så du er ikke i overskud. Prøv at spise lidt
-mere." (right, but no Apply when 3,000 → 3,080 clearly fitted)
+**Bad:** "Du spiser 2.738 kcal, og din vedligeholdelse er omkring 2.800, så du er ikke i overskud. Skal jeg hæve
+målet?" + *Apply: kalorie-mål 3.000 → 3.080 kcal · Undo* (a new target while he misses the one he has: the habit
+comes first, and 80 kcal is noise; Omar, round 3)
 
 ## 8. Close the loop
 
