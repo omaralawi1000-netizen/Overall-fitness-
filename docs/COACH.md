@@ -279,6 +279,24 @@ what was decided (Omar: "use only the good parts"):
   sentence ("Moved…", "Set to 250 g", "Done:") or in the passive ("er logget", "er gemt") now needs a done action of
   its kind; "Set a reminder…" and "Your logged days…" stay ordinary words.
 
+### Round 3 (4–8 Nov: today's Coach vs Opus with the same data, 20 cases, on Omar's phone)
+- Run in the cloud, $1.76. Rule, key, answers and page: /mnt/project-files/e2/round3/ (fixed before any answer).
+- The 22 picks Omar sent (8 Nov) are an AI review (Claude + ChatGPT combined), NOT his taps: he has no time to tap and
+  trusts the two reviews as the working direction. They are never used to calibrate the judges. Human calibration still
+  comes from 3–5 testers before release, plus a native Danish read.
+- His feedback and what changed:
+  - More was built from the state AFTER the answer's actions, so it "corrected" answers that had just removed a note or
+    raised a target, and it said "FACTS". Now More gets the answer's own snapshot plus "Done in the app"; code checks
+    fail any reply naming FACTS/MEMORY/KNOWLEDGE/PLAN and any More that takes the answer back.
+  - Rules added as principles, not per case: a weight class is a maximum; no blanket "wait to eat" before the weigh-in
+    time is known; urgent signs in the visible injury answer; no added load because an injury note ended; plans fit
+    time, equipment and level; food that really closes a gap; partial logs never build a worry; data must change the
+    decision; the question behind the question; habit before target (p06 now expects no target offer); depth fits the
+    moment. Still open: learning each person's depth from More taps (needs the app wiring).
+  - 9 more bad-Danish forms in the rule 14 check. A native read is still needed: the check knows only forms seen.
+  - Re-run of the Coach on the same 20 cases ($0.89, then 6 again $0.29): every content fix showed up; left: one
+    two-question reply (p10) and new Danish slips ("Ret søvn", a garbled sentence in m04).
+
 ### What it is
 - **Conversations**: realistic ones built from Omar's real week (the interview), plus friends of every type. Each one
   runs against fake data built in old Aven's data format, so the old Coach and Aven 2's Coach face exactly the same

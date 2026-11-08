@@ -85,6 +85,14 @@ describe('exam v2 cases', () => {
     expect(flagged('Det, der er logget i dag, er 863 kcal.')).toBe(false);
     expect(flagged('Only the food that is logged counts.')).toBe(false);
     expect(flagged('Logget indtil nu: 863 kcal.')).toBe(false);
+    // round 3: More describing an incomplete log is not a claim either
+    expect(flagged('Har du spist noget, der ikke er logget, er der mindre plads.')).toBe(false);
+    expect(flagged('Intet er logget endnu, så jeg kan ikke sige noget.')).toBe(false);
+    expect(flagged('Food is logged on 10 of 28 days and none complete.')).toBe(false);
+    expect(flagged("No weight is logged, so I can't say.")).toBe(false);
+    // a quantity after a passive claim is still a claim (Codex, PR #85)
+    expect(flagged('Your water is logged for 500 ml.')).toBe(true);
+    expect(flagged('Vandet er logget på 500 ml.')).toBe(true);
     expect(flagged('Logged 2 eggs and 200 g oats.')).toBe(true);
     expect(flagged('Maden er logget.')).toBe(true);
     expect(flagged('Det er gemt.')).toBe(true);
@@ -154,6 +162,33 @@ describe('exam v2 cases', () => {
     n = 0;
     const lost = await runCase(CASES.find((x) => x.id === 'p01-late-shift')!, SETUP, { ledger: ledger(), purpose: 't', more: true, dry: () => { if (n++) throw new CallError(401, 'no key'); return reply({ say: 'Before or after the shift?', actions: [] })(); } });
     expect(lost.turns.at(-1)).toMatchObject({ callFailed: true, error: expect.stringContaining('More: 401') });
+  });
+
+  it('More reads the snapshot the answer used and what it did, never the state after it (round 3)', async () => {
+    const c = CASES.find((x) => x.id === 'p11-forget-shoulder')!;
+    const seen: { system: string; turns: string }[] = [];
+    const dry = (_m: string, body: { systemInstruction?: { parts: { text: string }[] }; contents?: { parts: { text: string }[] }[] }) => {
+      seen.push({ system: body.systemInstruction?.parts[0].text ?? '', turns: JSON.stringify(body.contents ?? []) });
+      const id = /- (\S+) \[health\] Left shoulder sore/.exec(seen[0].system)![1];
+      return reply(seen.length > 1 ? { say: 'More.', actions: [] } : { say: "Good to hear. I've dropped the shoulder note.", actions: [{ how: 'do', name: 'forget', memoryId: id }] })();
+    };
+    const r = await runCase(c, SETUP, { ledger: ledger(), purpose: 't', more: true, dry: dry as never });
+    expect(seen).toHaveLength(2);
+    // the note the answer saw is still in what More reads
+    expect(seen[1].system).toContain('Left shoulder sore');
+    expect(seen[1].system.split('FACTS (computed')[1].split('KNOWLEDGE')[0]).toBe(seen[0].system.split('FACTS (computed')[1].split('KNOWLEDGE')[0]);
+    expect(r.turns.at(-1)!.shown!.did).toHaveLength(1);
+    expect(seen[1].turns).toContain('Done in the app: ');
+    expect(r.turns.at(-1)!.more).toBe('More.');
+  });
+
+  it('More taking the answer back, or naming FACTS, fails a check (round 3)', () => {
+    const t = (say: string, more?: string) => [{ tier: 'deep' as const, model: 'm', say, ...(more ? { more } : {}), shown: { text: say, did: [], offers: [], refused: [] } as never, dropped: [], usd: 0, ms: 0 }];
+    const bad = (say: string, more?: string) => codeChecks(CASES[0], t(say, more)).filter((x) => !x.ok).map((x) => x.name);
+    expect(bad('Done.', "First, a correction: FACTS shows 215 g. I shouldn't have said 16 of 28.")).toEqual(expect.arrayContaining(['no internal words', 'More never contradicts the answer']));
+    expect(bad('Done.', 'One correction first: there was no note.')).toContain('More never contradicts the answer');
+    expect(bad('Your log shows 215 g; the plan has Legs on Thursday.', 'Here is the full plan.')).not.toContain('no internal words');
+    expect(bad('Done.', 'Say the word, or use the Undo under my last reply.')).not.toContain('More never contradicts the answer');
   });
 
   it('a reply that is not JSON is a failed run, never a crash', async () => {
