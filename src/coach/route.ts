@@ -41,10 +41,13 @@ const BIG = [
   // only with a competition or a season in the sentence: "get ready for today's workout" is not one (Codex, PR #87)
   W('get(?:ting)? (?:me )?ready (?:to compete|for (?:a |the |my )?(?:tournament|competition|season|meet))|klar til (?:at konkurrere|(?:en |et |mit |min )?(?:stævne|turnering|konkurrence|sæson))'),
   // the weekly (or monthly) review: a review asked for, not any mention of "weekly" ("mit ugentlige kaloriemål" is a lookup)
-  W('weekly review|(?:review|go over|look at) (?:my|the|this|last) (?:week|month)|ugentlig (?:gennemgang|opsummering|status)|ugens (?:gennemgang|opsummering)|gennemgå (?:min uge|min måned|ugen|måneden)'),
-  // weight class and cut planning
-  W('weight class|make weight|make \\d+(?:[.,]\\d)? ?kg|cut (?:plan|to \\d+)|cut \\d+(?:[.,]\\d)? ?kg|tabe \\d+(?:[.,]\\d)? ?kg|\\d+ ?kg[ -]?(?:class|klasse)|(?:plan|start) (?:my|a) cut|vægtklasse|nå (?:ned på )?\\d+(?:[.,]\\d)? ?kg'),
+  W('(?:do|give me|run|start|time for|let\'s do) (?:my |the |a )?weekly review|^\\s*weekly review\\W*$|(?:review|go over|look at) (?:my|the|this|last) (?:week|month)|ugentlig (?:gennemgang|opsummering|status)|ugens (?:gennemgang|opsummering)|gennemgå (?:min uge|min måned|ugen|måneden)'),
+  // cut planning (each phrase asks for it); a weight class counts only with a choice or a plan (WCLASS below)
+  W('make weight|make \\d+(?:[.,]\\d)? ?kg|cut (?:plan|to \\d+)|cut \\d+(?:[.,]\\d)? ?kg|tabe \\d+(?:[.,]\\d)? ?kg|(?:plan|start) (?:my|a) cut|nå (?:ned på )?\\d+(?:[.,]\\d)? ?kg'),
 ];
+/** a weight class with a choice or a plan in the message: "what is my weight class?" is a lookup (Codex, PR #87) */
+const WCLASS = W('weight class\\w*|\\d+ ?kg[ -]?(?:class|klasse)|vægtklasse\\p{L}*');
+const DECIDE = W('which|should|choose|pick|move (?:up|down)|drop|get (?:to|down)|make|plan\\p{L}*|hvilken|skal jeg|vælge?|rykke|nå|ned i|ned på');
 /** preparing for a competition: a competition word and a get-ready word anywhere in the message */
 const COMPETE = W('compet\\p{L}*|tournament\\p{L}*|konkurr\\p{L}*|stævne\\p{L}*|turnering\\p{L}*');
 const READY = W('get(?:ting)? (?:me )?ready|prepare|prep|klar|forberede?');
@@ -56,7 +59,7 @@ const SPAN = W('weeks|months|(?:this|last|past) (?:week|month)|lately|anymore|st
 /** One of the biggest tasks in the app: a plan, the weekly review, a weight-class or cut plan, or a why across weeks. */
 export function isBigTask(text: string, notice?: string): boolean {
   if (notice && /weekly review|ugentlig/i.test(notice)) return true;
-  return BIG.some((r) => r.test(text)) || (WHY.test(text) && SPAN.test(text)) || (COMPETE.test(text) && READY.test(text));
+  return BIG.some((r) => r.test(text)) || (WHY.test(text) && SPAN.test(text)) || (COMPETE.test(text) && READY.test(text)) || (WCLASS.test(text) && DECIDE.test(text));
 }
 
 const MINOR = /\b1[0-7]\b.*(?:years? old|år)|^\s*1[0-7]\s*[,.;:]|\b(?:age|aged|alder)\s*:?\s*1[0-7]\b|\b1[0-7]\s*(?:y\/?o|-?years?-old|-årig)|\bunder 18\b|\bteen/i;
