@@ -28,6 +28,8 @@ export const OPPONENT_RULES = `You are an expert fitness and nutrition coach ins
 
 export interface TurnLog {
   tier: Tier; model: string; say?: string; shown?: Shown; error?: string; callFailed?: boolean; dropped: string[]; usd: number; ms: number;
+  /** the More call under this answer, already counted in usd (not in ms) */
+  moreUsd?: number; moreMs?: number;
   /** what the model sent when code could not use it (dropped actions, or the end of a reply that is not JSON) */
   raw?: string;
   /** numbers in the reply found nowhere in what the Coach was given: leads for the judge, not a fail by themselves */
@@ -103,6 +105,9 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
     const req = moreRequest(lastSheet!, convo.slice(0, -1), last.shown.text, { voice: c.turns.at(-1)?.voice, did: last.shown.did.map((d) => d.label) });
     const asked = await askCoach(last.model, req, { ...o, purpose: `${c.id} ${setup.name} more`, ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
     last.usd += asked.usd;
+    // kept apart too, so cost and seconds per reply compare the same work (Codex, PR #87)
+    last.moreUsd = asked.usd;
+    last.moreMs = asked.ms;
     if (asked.reply) {
       last.more = asked.reply.say;
       // More is checked like the answer: its numbers and dates are leads for the judge too (Codex, PR #84)

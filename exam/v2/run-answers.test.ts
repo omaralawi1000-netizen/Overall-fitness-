@@ -89,7 +89,12 @@ it('runs the cases through the setups', async () => {
         failedInARow = 0;
         appendFileSync(file, `${JSON.stringify({ key, at: new Date().toISOString(), run, ...r, caseHash: caseHash(c) })}\n`);
         const failed = r.checks.filter((x) => !x.ok).map((x) => x.name);
-        for (const t of r.turns) { const k = `${s.name} · ${t.tier} (${t.model})`; const g = perReply.get(k) ?? { n: 0, usd: 0, ms: 0 }; g.n++; g.usd += t.usd; g.ms += t.ms; perReply.set(k, g); }
+        // the answer and its More are counted apart: each row is one kind of call, its cost and its time (Codex, PR #87)
+        const add = (k: string, usd: number, ms: number) => { const g = perReply.get(k) ?? { n: 0, usd: 0, ms: 0 }; g.n++; g.usd += usd; g.ms += ms; perReply.set(k, g); };
+        for (const t of r.turns) {
+          add(`${s.name} · ${t.tier} (${t.model})`, t.usd - (t.moreUsd ?? 0), t.ms);
+          if (t.moreUsd !== undefined) add(`${s.name} · More (${t.model})`, t.moreUsd, t.moreMs ?? 0);
+        }
         console.log(`${c.id} · ${s.name} · run ${run}: $${r.usd.toFixed(4)}${failed.length ? ` · FAILED ${failed.join(', ')}` : ''}`);
       }
     }
