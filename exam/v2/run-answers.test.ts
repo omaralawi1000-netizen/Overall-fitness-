@@ -6,6 +6,7 @@
 //      EXAM_RUNS     runs per case (default 1; the scored exam uses 3 and reports the worst)
 //      EXAM_CAP_USD  required unless EXAM_DRY · EXAM_LEDGER (this provider's ledger) · EXAM_OUT (default reference/e2v2)
 //      EXAM_DRY=1    no calls: a made-up reply, files under <EXAM_OUT>/dry
+//      EXAM_BIG=1    only the cases with a big task (a plan, the weekly review, a cut or weight-class plan, a why across weeks)
 //      EXAM_MORE=1   also ask for "More" under the Coach's last answer (round 3 shows it; the opponent gets none)
 // Behind an HTTPS proxy (the cloud), add NODE_USE_ENV_PROXY=1 so fetch goes through it.
 // A (case, setup, run) already saved with the same prompt is never paid for again.
@@ -18,6 +19,7 @@ import { renderKnowledge } from '../../src/coach/knowledge';
 import { Ledger, type GeminiReply } from '../providers';
 import { CASES } from './cases';
 import { records } from './people';
+import { isBigTask } from '../../src/coach/route';
 import { caseHash, OPPONENT_RULES, runCase, type Setup } from './run-case';
 import { PREV_RULES } from './prev-rules';
 
@@ -30,6 +32,8 @@ export const SETUPS: Record<string, Setup> = {
   // a newer, bigger model as the Coach brain (Omar, 8 Nov): same Coach rules, so it compares with sonnet case by case;
   // add its price to exam/providers.ts first (a model with no price fails closed)
   fable: { name: 'fable', quick: 'claude-fable-5-1', deep: 'claude-fable-5-1' },
+  // Omar, 8 Nov: Fable only on the biggest tasks (route.ts isBigTask), Sonnet for everything else
+  sonnetfable: { name: 'sonnetfable', quick: 'claude-sonnet-5-5', deep: 'claude-sonnet-5-5', big: 'claude-fable-5-1' },
   opponent: { name: 'opponent', quick: 'claude-opus-5-5', deep: 'claude-opus-5-5', rules: OPPONENT_RULES },
   // the previous Coach (PR #81's instructions) on the ship setup
   prev: { name: 'prev', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5', rules: PREV_RULES },
@@ -58,7 +62,9 @@ it('runs the cases through the setups', async () => {
   const only = new Set(pick(process.env.EXAM_CASES));
   // the 10 held-out cases live outside the repo; EXAM_HELDOUT=1 runs only them, from the gitignored local copy
   const pool = process.env.EXAM_HELDOUT ? (await import(/* @vite-ignore */ './cases-heldout' + '.ts')).HELDOUT as typeof CASES : CASES;
-  const cases = pool.filter((c) => !only.size || only.has(c.id));
+  const cases = pool.filter((c) => (!only.size || only.has(c.id)) && (!process.env.EXAM_BIG || c.turns.some((t) => isBigTask(t.text, t.notice))));
+  // cost and speed per reply, by setup and tier, so a pricier model is weighed against what it costs (Omar, 8 Nov)
+  const perReply = new Map<string, { n: number; usd: number; ms: number }>();
   // the prompt version: a change to the rules, the knowledge, the case or the records it makes is new work (Codex, PR #81)
   // the code that builds the request (fact sheet, reply schema, routing, checks) is part of it too: a fixed calculation
   // in buildFacts is new work even when the rules, knowledge and case are unchanged (Codex, PR #81)
@@ -83,9 +89,11 @@ it('runs the cases through the setups', async () => {
         failedInARow = 0;
         appendFileSync(file, `${JSON.stringify({ key, at: new Date().toISOString(), run, ...r, caseHash: caseHash(c) })}\n`);
         const failed = r.checks.filter((x) => !x.ok).map((x) => x.name);
+        for (const t of r.turns) { const k = `${s.name} · ${t.tier} (${t.model})`; const g = perReply.get(k) ?? { n: 0, usd: 0, ms: 0 }; g.n++; g.usd += t.usd; g.ms += t.ms; perReply.set(k, g); }
         console.log(`${c.id} · ${s.name} · run ${run}: $${r.usd.toFixed(4)}${failed.length ? ` · FAILED ${failed.join(', ')}` : ''}`);
       }
     }
   }
+  for (const [k, g] of perReply) console.log(`per reply · ${k}: ${g.n} replies, $${(g.usd / g.n).toFixed(4)} and ${(g.ms / g.n / 1000).toFixed(1)} s on average`);
   console.log(`spent $${ledger.spent.toFixed(2)} of $${CAP}`);
 });

@@ -21,7 +21,7 @@ import type { AnyRecord, FoodLog, Plan, Routine } from '../../src/engine/model';
 import type { CallOpts } from '../providers';
 import type { Proposal } from '../../src/coach/actions';
 
-export interface Setup { name: string; quick: string; deep: string; rules?: string; /** Gemini's thinking budget, when not the default */ thinking?: number }
+export interface Setup { name: string; quick: string; deep: string; /** the biggest tasks (route.ts); unset = the deep model */ big?: string; rules?: string; /** Gemini's thinking budget, when not the default */ thinking?: number }
 
 /** the benchmark opponent's instructions: a capable general coach, no tuning, same facts and knowledge, same JSON format */
 export const OPPONENT_RULES = `You are an expert fitness and nutrition coach inside a training and food app. Help the person as well as you can. FACTS hold their data; KNOWLEDGE holds general guidelines. Reply in their language. You may change things in the app with the actions in the JSON schema: "do" for what they asked, "offer" for a suggestion.`;
@@ -82,9 +82,9 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
     const sheet = buildFacts(e.allRecords(), { now, tz: TZ });
     firstFacts ??= renderFacts(sheet);
     lastSheet = sheet;
-    const tier = route(t.text, { sheet, history, untrusted });
+    const tier = route(t.text, { sheet, history, untrusted, ...(t.notice ? { notice: t.notice } : {}) });
     history.push(tier);
-    const model = tier === 'quick' ? setup.quick : setup.deep;
+    const model = tier === 'quick' ? setup.quick : tier === 'big' ? (setup.big ?? setup.deep) : setup.deep;
     convo.push({ role: 'person', text: t.text, ...(t.untrusted ? { untrusted: t.untrusted } : {}), ...(t.notice ? { notice: t.notice } : {}) });
     const req = coachRequest(sheet, convo, { voice: t.voice, ...(setup.rules ? { rules: setup.rules } : {}) });
     const asked = await askCoach(model, req, { ...o, purpose: `${c.id} ${setup.name}`, ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
