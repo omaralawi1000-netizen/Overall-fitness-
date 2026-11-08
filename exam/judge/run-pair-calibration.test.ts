@@ -43,7 +43,7 @@ it('calibrates the pairwise judge on the Answer Bar', async () => {
     report.push(`${pair.id}: ${r.winner === 'A' ? 'Good' : r.winner === 'B' ? 'BAD' : 'tie'} (orders: ${r.orders.map((o) => o.winner).join('/')}) · Good broke [${r.brokenA}] · Bad broke [${r.brokenB}] · ${r.orders[0].reason}`);
   }
   const g = pairGate(results);
-  report.push(`\nGATE ${g.pass ? 'PASS' : 'FAIL'}: Good won ${g.right} of ${results.length}; wrong ${g.wrong.join(', ') || 'none'}; ties ${g.ties.join(', ') || 'none'}. Spent $${ledger.spent.toFixed(2)} of $${CAP}.`);
+  report.push(`\nGATE ${g.pass ? 'PASS' : 'FAIL'} for judge ${JUDGE} (${EFFORT}): Good won ${g.right} of ${results.length}; wrong ${g.wrong.join(', ') || 'none'}; ties ${g.ties.join(', ') || 'none'}. Spent $${ledger.spent.toFixed(2)} of $${CAP}.`);
   writeFileSync(`${OUT}/pair-calibration-report.md`, `${report.join('\n')}\n`);
   console.log(report.join('\n'));
 });
