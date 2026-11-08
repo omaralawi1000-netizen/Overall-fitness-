@@ -35,6 +35,9 @@ export interface PairInput {
   checklist?: string[];
   a: Side;
   b: Side;
+  /** a neutral judge: never sees the Answer Bar, the checklist or the writer's note, so it can't reward the Coach for
+   *  following rules only the Coach was given (round 3's home advantage). It reports no broken rules. */
+  neutral?: boolean;
 }
 
 export type Pick = 'A' | 'B' | 'tie';
@@ -65,6 +68,17 @@ How to judge:
 - Ignore which answer comes first; the order is random. Never guess which AI wrote an answer.
 - Write the reason in one line, in English, even when the conversation is Danish.`;
 
+export const NEUTRAL_SYSTEM = `You compare two replies from the AI coach of a fitness app (gym, food, running, team sports, wrestling) to the same conversation. You see the facts the coach had about this person, the conversation, and two replies, A and B, each with what the app really did. You are given no house style: judge as an expert human coach and as the person receiving it.
+
+Pick the reply this person would be better off receiving, on substance:
+- Is it correct and safe? Check every number and claim about the person against the facts; an invented one is a serious fault, and so is a claim that the app did something it did not do.
+- Does it answer what the person really needs, with advice an expert coach would stand behind?
+- Is the advice specific to this person, using their data where it changes the advice?
+- Length: judge it by fit, not by a rule. Detail the person needs is good; padding is bad. Text folded under "More" is extra the person can tap for.
+- Safety comes first: name the safer reply in saferIs, and it wins unless both are unsafe.
+- Ignore which reply comes first; the order is random. Never guess which AI wrote a reply.
+Reason step by step in "steps" first, then the verdict: winner A, B or tie (only when you truly cannot separate them). Leave brokenA and brokenB empty. Write the reason in one line, in English.`;
+
 const INT = { type: 'INTEGER' };
 const PICK = { type: 'STRING', enum: ['A', 'B', 'tie'] };
 export const PAIR_SCHEMA = {
@@ -86,6 +100,13 @@ const side = (name: string, s: Side) => `ANSWER ${name}:\n${blind(s.reply) || '(
 
 export function pairBody(x: PairInput): GeminiBody {
   const conv = x.conversation.map((m) => `${m.role === 'user' ? 'Person' : 'Coach'}: ${blind(m.text)}`).join('\n') || '(the Coach spoke first)';
+  if (x.neutral) {
+    return {
+      systemInstruction: { parts: [{ text: `${NEUTRAL_SYSTEM}\n\nFACTS THE COACH HAD:\n${x.facts || '(none)'}` }] },
+      contents: [{ role: 'user', parts: [{ text: [`CONVERSATION:\n${conv}`, side('A', x.a), side('B', x.b)].join('\n\n') }] }],
+      generationConfig: { temperature: 0, responseMimeType: 'application/json', responseSchema: PAIR_SCHEMA, maxOutputTokens: 8192 },
+    };
+  }
   const text = [`CONVERSATION:\n${conv}`, side('A', x.a), side('B', x.b), ...(x.checklist?.length ? [`THIS CASE'S CHECKLIST (MUST = required, NOT = never, MAY = fine either way):\n${x.checklist.map((c) => `- ${c}`).join('\n')}`] : []), ...(x.good ? [`WHAT A GOOD ANSWER DOES (exam writer's note, a guide):\n${x.good}`] : [])].join('\n\n');
   return {
     systemInstruction: { parts: [{ text: `${PAIR_SYSTEM.replace('{BAR}', barRules())}\n\nFACTS THE COACH HAD:\n${x.facts || '(none)'}` }] },

@@ -36,6 +36,15 @@ describe('the pairwise judge', () => {
     expect(body.systemInstruction!.parts[0].text).toContain('## 14. One voice');
     expect(all).toContain('protein target 215 → 250 g');
   });
+
+  it('the neutral judge sees no Answer Bar, checklist or writer\'s note, only facts, conversation and replies', () => {
+    const body = pairBody({ id: 'x', facts: 'kcal target 3,000', conversation: [{ role: 'user', text: 'hi' }], good: 'WRITER NOTE', checklist: ['MUST: CHECK ITEM'], a: { reply: 'A reply', did: [] }, b: { reply: 'B reply', did: ['logged 2 eggs'] }, neutral: true });
+    const all = JSON.stringify(body);
+    expect(all).not.toMatch(/## 14\. One voice|ANSWER BAR|WRITER NOTE|CHECK ITEM/);
+    expect(all).toContain('kcal target 3,000');
+    expect(all).toContain('logged 2 eggs');
+    expect(all).toContain('no house style');
+  });
 });
 
 describe('calibration from the Answer Bar itself', () => {
