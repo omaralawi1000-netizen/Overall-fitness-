@@ -2,7 +2,7 @@
 // calibrated pairwise judge (run-pair-calibration first: a judge that fails the gate judges nothing).
 //   npx vitest run --config exam/vitest.config.ts exam/judge/run-pair-exam.test.ts
 // Env: EXAM_OUT (the folder with answers.jsonl from run-answers) · EXAM_PAIR (default sonnet,opponent: Coach first)
-//      EXAM_CASES (comma list, default all answered by both) · EXAM_CAP_USD (required unless EXAM_DRY) · EXAM_LEDGER
+//      EXAM_CASES (comma list, default all answered by both) · EXAM_CAP_USD (required unless EXAM_DRY) · EXAM_LEDGER · EXAM_HELDOUT=1 (judge the held-out answers)
 //      EXAM_PAIR_JUDGE (default claude-opus-5-5) · EXAM_JUDGE_EFFORT (default medium) · EXAM_DRY=1 (no calls)
 // Every order is saved as it arrives and reused only for the exact same request, so a stopped run resumes for free.
 // The report splits wins by kind of person (language, level, age, goal, text or expert), so a Coach that is great for
@@ -49,22 +49,28 @@ export function kinds(c: ExamCase): string[] {
   return out;
 }
 
+/** what the Coach is told for a spoken turn, said plainly to the judge (Codex, PR #86) */
+const VOICE = '(said by voice: the reply is read aloud)';
+
 /** One side as the judge sees it: every Coach turn with the person's later turns between them, More kept apart. */
 function sideOf(c: ExamCase, run: CaseRun): Side {
   const parts: string[] = [];
   run.turns.forEach((t, i) => {
-    if (i > 0) parts.push(`Person: ${c.turns[i].text}`);
+    if (i > 0) parts.push(`Person: ${c.turns[i].text}${c.turns[i].voice ? ` ${VOICE}` : ''}`);
     parts.push(run.turns.length > 1 ? `Coach: ${t.shown?.text ?? t.say ?? '(no answer: the app showed "I couldn\'t answer that")'}` : (t.shown?.text ?? t.say ?? '(no answer: the app showed "I couldn\'t answer that")'));
     if (t.more) parts.push(`[Folded under "More", shown only if the person taps it:]\n${t.more}`);
   });
-  // everything the person sees besides the words: done changes, Apply buttons, the chart and the source chips (Codex, PR #86)
-  const did = run.turns.flatMap((t) => [...(t.shown?.did ?? []).map((d) => d.label), ...(t.shown?.offers ?? []).map((o) => `Apply button: ${o.label}`), ...(t.shown?.show ? [`Chart shown: ${t.shown.show}`] : []), ...(t.shown?.sources ?? []).map((x) => `Source chip: ${x.topic}`)]);
+  // everything the person sees besides the words: done changes, Apply buttons, the chart and the source chips (Codex, PR #86),
+  // each with the Coach turn that showed it when there are several, so an offer's timing is visible (Codex, PR #86)
+  const did = run.turns.flatMap((t, i) => [...(t.shown?.did ?? []).map((d) => d.label), ...(t.shown?.offers ?? []).map((o) => `Apply button: ${o.label}`), ...(t.shown?.show ? [`Chart shown: ${t.shown.show}`] : []), ...(t.shown?.sources ?? []).map((x) => `Source chip: ${x.topic}`)].map((d) => (run.turns.length > 1 ? `Coach turn ${i + 1}: ${d}` : d)));
   return { reply: parts.join('\n\n'), did };
 }
 
 
 it('judges the Coach against the other setup, case by case', async () => {
   mkdirSync(OUT, { recursive: true });
+  // EXAM_HELDOUT=1 judges the held-out answers, from the same gitignored pool run-answers used (Codex, PR #86)
+  const POOL = process.env.EXAM_HELDOUT ? (await import(/* @vite-ignore */ '../v2/cases-heldout' + '.ts')).HELDOUT as typeof CASES : CASES;
   // a judge that has not passed calibration in this folder, with this model and effort, judges nothing
   const cal = existsSync(`${OUT}/pair-calibration${TAG}-report.md`) ? readFileSync(`${OUT}/pair-calibration${TAG}-report.md`, 'utf8') : '';
   // and only for the exact calibration it passed: the same bar examples, judge prompt and gate (Codex, PR #86)
@@ -80,7 +86,7 @@ it('judges the Coach against the other setup, case by case', async () => {
   const pairsOf = (c: ExamCase) => [...new Set([...runs.values()].filter((r) => r.id === c.id).map((r) => (r as { run?: number }).run ?? 1))].sort((a, b) => a - b).filter((n) => get(c, COACH, n) && get(c, OTHER, n));
   // only answers made from today's case and records, with their fact sheet saved, are judged; the rest are named (Codex, PR #86)
   const fresh = (c: ExamCase, setup: string, n: number) => { const r = get(c, setup, n); return !!r && r.caseHash === caseHash(c) && !!r.facts; };
-  const wanted = CASES.filter((c) => (!ONLY.length || ONLY.includes(c.id)) && pairsOf(c).length);
+  const wanted = POOL.filter((c) => (!ONLY.length || ONLY.includes(c.id)) && pairsOf(c).length);
   // a run only one side answered is never silently dropped either
   const unpaired = (c: ExamCase) => [COACH, OTHER].some((st) => [...runs.values()].some((r) => r.id === c.id && r.setup === st && !pairsOf(c).includes((r as { run?: number }).run ?? 1)));
   const stale = wanted.filter((c) => unpaired(c) || pairsOf(c).some((n) => !fresh(c, COACH, n) || !fresh(c, OTHER, n))).map((c) => c.id);
@@ -99,7 +105,7 @@ it('judges the Coach against the other setup, case by case', async () => {
     coachSide.set(c.id, coachA);
     const t0 = c.turns[0];
     // what both coaches were given: the saved fact sheet, and any attached page or label inside its untrusted fence (Codex, PR #86)
-    const said = t0.notice ? `(no message: the app asks the Coach to speak first: ${t0.notice})` : [t0.text, t0.untrusted ? fence(t0.untrusted.text, t0.untrusted.source) : ''].filter(Boolean).join('\n');
+    const said = t0.notice ? `(no message: the app asks the Coach to speak first: ${t0.notice})` : [t0.text, t0.untrusted ? fence(t0.untrusted.text, t0.untrusted.source) : '', t0.voice ? VOICE : ''].filter(Boolean).join('\n');
     const each: PairResult[] = [];
     for (const n of pairsOf(c)) {
       const mine = sideOf(c, get(c, COACH, n)!), theirs = sideOf(c, get(c, OTHER, n)!);
