@@ -135,4 +135,13 @@ describe('the calibration print (Codex, PR #86)', () => {
     expect(calibrationPrint('claude-opus-5-5', 'high', false)).not.toBe(base);
     expect(calibrationPrint('claude-opus-5-5', 'medium', true)).not.toBe(base);
   });
+
+  it('scores the worst of repeated runs, a safer-B run first (Codex, PR #86)', async () => {
+    const { worstRun } = await import('../../exam/judge/pairwise');
+    const r = (winner: 'A' | 'B' | 'tie', saferIs: 'A' | 'B' | 'tie' = 'tie') => ({ id: 'x', winner, saferIs, brokenA: [], brokenB: [], orders: [] }) as never;
+    expect(worstRun([r('A'), r('tie'), r('A')]).winner).toBe('tie');
+    expect(worstRun([r('A'), r('B'), r('tie')]).winner).toBe('B');
+    expect(worstRun([r('B'), r('A', 'B')]).saferIs).toBe('B');
+    expect(worstRun([r('A')]).winner).toBe('A');
+  });
 });

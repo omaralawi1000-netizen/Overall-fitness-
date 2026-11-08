@@ -11,7 +11,7 @@ import { it } from 'vitest';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { Ledger, type GeminiReply } from '../providers';
-import { calibrationPrint, judgePair, pairBody, type OrderDone, type PairInput, type PairResult, type Side } from './pairwise';
+import { calibrationPrint, judgePair, pairBody, worstRun, type OrderDone, type PairInput, type PairResult, type Side } from './pairwise';
 import { CASES, type ExamCase } from '../v2/cases';
 import { CHECKLISTS } from '../v2/checklists';
 import { caseHash, type CaseRun } from '../v2/run-case';
@@ -72,35 +72,47 @@ it('judges the Coach against the other setup, case by case', async () => {
   const runs = new Map<string, CaseRun>();
   for (const l of readFileSync(`${IN}/answers.jsonl`, 'utf8').split('\n').filter(Boolean)) {
     const r = JSON.parse(l) as CaseRun;
-    if (!(r as { dry?: boolean }).dry) runs.set(`${r.id}|${r.setup}`, r);
+    // keyed by the run too, so repeated runs (EXAM_RUNS) are each judged, never overwritten by the last (Codex, PR #86)
+    if (!(r as { dry?: boolean }).dry) runs.set(`${r.id}|${r.setup}|${(r as { run?: number }).run ?? 1}`, r);
   }
+  const get = (c: ExamCase, setup: string, n: number) => runs.get(`${c.id}|${setup}|${n}`);
+  // run n of the Coach is judged against run n of the other setup
+  const pairsOf = (c: ExamCase) => [...new Set([...runs.values()].filter((r) => r.id === c.id).map((r) => (r as { run?: number }).run ?? 1))].sort((a, b) => a - b).filter((n) => get(c, COACH, n) && get(c, OTHER, n));
   // only answers made from today's case and records, with their fact sheet saved, are judged; the rest are named (Codex, PR #86)
-  const fresh = (c: ExamCase, setup: string) => { const r = runs.get(`${c.id}|${setup}`); return !!r && r.caseHash === caseHash(c) && !!r.facts; };
-  const wanted = CASES.filter((c) => (!ONLY.length || ONLY.includes(c.id)) && runs.has(`${c.id}|${COACH}`) && runs.has(`${c.id}|${OTHER}`));
-  const stale = wanted.filter((c) => !fresh(c, COACH) || !fresh(c, OTHER)).map((c) => c.id);
-  if (stale.length) console.log(`NOT JUDGED (answers made from an older case, or without a saved fact sheet; run the answers again): ${stale.join(', ')}`);
+  const fresh = (c: ExamCase, setup: string, n: number) => { const r = get(c, setup, n); return !!r && r.caseHash === caseHash(c) && !!r.facts; };
+  const wanted = CASES.filter((c) => (!ONLY.length || ONLY.includes(c.id)) && pairsOf(c).length);
+  // a run only one side answered is never silently dropped either
+  const unpaired = (c: ExamCase) => [COACH, OTHER].some((st) => [...runs.values()].some((r) => r.id === c.id && r.setup === st && !pairsOf(c).includes((r as { run?: number }).run ?? 1)));
+  const stale = wanted.filter((c) => unpaired(c) || pairsOf(c).some((n) => !fresh(c, COACH, n) || !fresh(c, OTHER, n))).map((c) => c.id);
+  if (stale.length) console.log(`NOT JUDGED (answers made from an older case, without a saved fact sheet, or a run only one side has; run the answers again): ${stale.join(', ')}`);
   const cases = wanted.filter((c) => !stale.includes(c.id));
   if (!cases.length) throw new Error(`no case answered by both ${COACH} and ${OTHER} in ${IN}`);
   const file = `${OUT}/pair-exam${TAG}-orders.jsonl`;
   const key = (x: PairInput, k: 0 | 1) => createHash('sha256').update(`${JUDGE}|${EFFORT}|${JSON.stringify(pairBody(k === 0 ? x : { ...x, a: x.b, b: x.a }))}`).digest('hex');
   const saved = new Map<string, OrderDone>((existsSync(file) ? readFileSync(file, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l)) : []).map((l) => [l.key, l.d]));
   const ledger = new Ledger(LEDGER, CAP);
-  const rows: { c: ExamCase; r: PairResult }[] = [];
+  const rows: { c: ExamCase; r: PairResult; runs: number }[] = [];
   const coachSide = new Map<string, boolean>();
   for (const c of cases) {
     // the Coach is A on even-hashed ids, so the judge never sees it in one fixed place
     const coachA = parseInt(createHash('sha256').update(c.id).digest('hex').slice(-1), 16) % 2 === 0;
     coachSide.set(c.id, coachA);
-    const mine = sideOf(c, runs.get(`${c.id}|${COACH}`)!), theirs = sideOf(c, runs.get(`${c.id}|${OTHER}`)!);
     const t0 = c.turns[0];
     // what both coaches were given: the saved fact sheet, and any attached page or label inside its untrusted fence (Codex, PR #86)
     const said = t0.notice ? `(no message: the app asks the Coach to speak first: ${t0.notice})` : [t0.text, t0.untrusted ? fence(t0.untrusted.text, t0.untrusted.source) : ''].filter(Boolean).join('\n');
-    const x: PairInput = { id: c.id, facts: runs.get(`${c.id}|${COACH}`)!.facts!, conversation: [{ role: 'user', text: said }], good: c.good, checklist: c.checklist ?? CHECKLISTS[c.id]?.list, a: coachA ? mine : theirs, b: coachA ? theirs : mine, ...(NEUTRAL ? { neutral: true } : {}) };
-    const keys = [key(x, 0), key(x, 1)] as const;
-    const r = await judgePair(JUDGE, x, { ledger, purpose: 'pair exam', effort: EFFORT, ...(DRY ? { dry } : {}) }, [saved.get(keys[0]), saved.get(keys[1])], (k, d) => appendFileSync(file, `${JSON.stringify({ key: keys[k], id: c.id, d })}\n`));
-    // turned to the Coach's view: A is always the Coach from here on
-    const flip = (p: PairResult['winner']) => (coachA ? p : p === 'A' ? 'B' : p === 'B' ? 'A' : 'tie');
-    rows.push({ c, r: { ...r, winner: flip(r.winner), saferIs: flip(r.saferIs), brokenA: coachA ? r.brokenA : r.brokenB, brokenB: coachA ? r.brokenB : r.brokenA } });
+    const each: PairResult[] = [];
+    for (const n of pairsOf(c)) {
+      const mine = sideOf(c, get(c, COACH, n)!), theirs = sideOf(c, get(c, OTHER, n)!);
+      const x: PairInput = { id: c.id, facts: get(c, COACH, n)!.facts!, conversation: [{ role: 'user', text: said }], good: c.good, checklist: c.checklist ?? CHECKLISTS[c.id]?.list, a: coachA ? mine : theirs, b: coachA ? theirs : mine, ...(NEUTRAL ? { neutral: true } : {}) };
+      const keys = [key(x, 0), key(x, 1)] as const;
+      const r = await judgePair(JUDGE, x, { ledger, purpose: 'pair exam', effort: EFFORT, ...(DRY ? { dry } : {}) }, [saved.get(keys[0]), saved.get(keys[1])], (k, d) => appendFileSync(file, `${JSON.stringify({ key: keys[k], id: c.id, d })}\n`));
+      // turned to the Coach's view: A is always the Coach from here on
+      const flip = (p: PairResult['winner']) => (coachA ? p : p === 'A' ? 'B' : p === 'B' ? 'A' : 'tie');
+      each.push({ ...r, winner: flip(r.winner), saferIs: flip(r.saferIs), brokenA: coachA ? r.brokenA : r.brokenB, brokenB: coachA ? r.brokenB : r.brokenA });
+    }
+    // the case scores the Coach's worst run, and any run where the other side was safer marks it
+    const w = worstRun(each);
+    rows.push({ c, runs: each.length, r: { ...w, saferIs: each.some((r) => r.saferIs === 'B') ? 'B' : w.saferIs } });
   }
   const pts = (w: string) => (w === 'A' ? 1 : w === 'tie' ? 0.5 : 0);
   const out: string[] = [`# ${COACH} (the Coach) vs ${OTHER}, judged by ${JUDGE} (${EFFORT})${NEUTRAL ? ', NEUTRAL judge (no Answer Bar, no checklist)' : ''}, both orders`, ''];
@@ -120,7 +132,8 @@ it('judges the Coach against the other setup, case by case', async () => {
   for (const x of rows) for (const k of kinds(x.c)) { const g = groups.get(k) ?? { n: 0, s: 0 }; g.n++; g.s += pts(x.r.winner); groups.set(k, g); }
   for (const [k, g] of [...groups].sort((a, b) => a[1].s / a[1].n - b[1].s / b[1].n)) out.push(`- ${k}: ${g.s} of ${g.n} (${Math.round((100 * g.s) / g.n)} %)`);
   out.push('', '## Every case (Coach view: A = Coach)', '');
-  for (const x of rows) out.push(`- ${x.c.id}: ${x.r.winner === 'A' ? 'Coach' : x.r.winner === 'B' ? OTHER.toUpperCase() : 'tie'} (orders ${x.r.orders.map((o) => (o.winner === 'tie' ? 'tie' : (o.winner === 'A') === coachSide.get(x.c.id) ? 'Coach' : 'other')).join('/')}) · Coach broke [${x.r.brokenA}] · other broke [${x.r.brokenB}] · ${x.r.orders[0].reason}`);
+  if (rows.some((x) => x.runs > 1)) out.push('Cases answered more than once score the Coach\'s worst run.', '');
+  for (const x of rows) out.push(`- ${x.c.id}${x.runs > 1 ? ` (worst of ${x.runs} runs)` : ''}: ${x.r.winner === 'A' ? 'Coach' : x.r.winner === 'B' ? OTHER.toUpperCase() : 'tie'} (orders ${x.r.orders.map((o) => (o.winner === 'tie' ? 'tie' : (o.winner === 'A') === coachSide.get(x.c.id) ? 'Coach' : 'other')).join('/')}) · Coach broke [${x.r.brokenA}] · other broke [${x.r.brokenB}] · ${x.r.orders[0].reason}`);
   out.push('', `Spent $${ledger.spent.toFixed(2)} of $${CAP} on this ledger.`);
   writeFileSync(`${OUT}/pair-exam${TAG}-report.md`, `${out.join('\n')}\n`);
   console.log(out.join('\n'));
