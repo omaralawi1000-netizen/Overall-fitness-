@@ -126,3 +126,13 @@ describe('each paid order is kept (Codex, PR #75)', () => {
     expect(r.winner).toBe('A');
   });
 });
+
+describe('the calibration print (Codex, PR #86)', () => {
+  it('changes with the judge, the effort and the neutral prompt, so an old pass never vouches for a new setup', async () => {
+    const { calibrationPrint } = await import('../../exam/judge/pairwise');
+    const base = calibrationPrint('claude-opus-5-5', 'medium', false);
+    expect(calibrationPrint('claude-opus-5-5', 'medium', false)).toBe(base);
+    expect(calibrationPrint('claude-opus-5-5', 'high', false)).not.toBe(base);
+    expect(calibrationPrint('claude-opus-5-5', 'medium', true)).not.toBe(base);
+  });
+});

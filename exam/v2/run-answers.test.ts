@@ -18,7 +18,7 @@ import { renderKnowledge } from '../../src/coach/knowledge';
 import { Ledger, type GeminiReply } from '../providers';
 import { CASES } from './cases';
 import { records } from './people';
-import { OPPONENT_RULES, runCase, type Setup } from './run-case';
+import { caseHash, OPPONENT_RULES, runCase, type Setup } from './run-case';
 import { PREV_RULES } from './prev-rules';
 
 export const SETUPS: Record<string, Setup> = {
@@ -81,7 +81,7 @@ it('runs the cases through the setups', async () => {
           continue;
         }
         failedInARow = 0;
-        appendFileSync(file, `${JSON.stringify({ key, at: new Date().toISOString(), run, ...r })}\n`);
+        appendFileSync(file, `${JSON.stringify({ key, at: new Date().toISOString(), run, ...r, caseHash: caseHash(c) })}\n`);
         const failed = r.checks.filter((x) => !x.ok).map((x) => x.name);
         console.log(`${c.id} · ${s.name} · run ${run}: $${r.usd.toFixed(4)}${failed.length ? ` · FAILED ${failed.join(', ')}` : ''}`);
       }

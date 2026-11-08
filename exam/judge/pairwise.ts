@@ -8,6 +8,7 @@
  * every Answer Bar rule (`barPairs`).
  */
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { call, CallError, type CallOpts, type GeminiBody } from '../providers';
 
 export const BAR = readFileSync(new URL('../../docs/coach/ANSWER-BAR.md', import.meta.url), 'utf8');
@@ -238,4 +239,17 @@ export function pairGate(results: { pair: BarPair; goodFirst: boolean; r: PairRe
     else wrong.push(pair.id);
   }
   return { pass: !wrong.length && right / Math.max(results.length, 1) >= 0.9, right, wrong, ties };
+}
+
+/**
+ * What a passing calibration vouches for: the judge, its effort, every calibration request in both orders (so the bar's
+ * examples and the judge prompt) and the gate's own code. The exam judges only under a report with this exact print
+ * (Codex, PR #86).
+ */
+export function calibrationPrint(judge: string, effort: string, neutral: boolean): string {
+  const bodies = barPairs().filter((p) => !neutral || p.rule >= 4).flatMap((p) => {
+    const x = { ...fromBarPair(p, true), ...(neutral ? { neutral: true } : {}) };
+    return [pairBody(x), pairBody({ ...x, a: x.b, b: x.a })];
+  });
+  return createHash('sha256').update(`${judge}|${effort}|${JSON.stringify(bodies)}|${pairGate.toString()}`).digest('hex').slice(0, 16);
 }

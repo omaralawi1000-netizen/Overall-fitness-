@@ -10,15 +10,12 @@
 import { it } from 'vitest';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
-import { IDBFactory } from 'fake-indexeddb';
 import { Ledger, type GeminiReply } from '../providers';
-import { judgePair, pairBody, type OrderDone, type PairInput, type PairResult, type Side } from './pairwise';
-import { CASES, nowOf, type ExamCase } from '../v2/cases';
+import { calibrationPrint, judgePair, pairBody, type OrderDone, type PairInput, type PairResult, type Side } from './pairwise';
+import { CASES, type ExamCase } from '../v2/cases';
 import { CHECKLISTS } from '../v2/checklists';
-import { records, TZ } from '../v2/people';
-import { Engine } from '../../src/engine/engine';
-import { buildFacts, renderFacts } from '../../src/coach/facts';
-import type { CaseRun } from '../v2/run-case';
+import { caseHash, type CaseRun } from '../v2/run-case';
+import { fence } from '../../src/coach/untrusted';
 
 const DRY = !!process.env.EXAM_DRY;
 const IN = process.env.EXAM_OUT ?? '/home/user/Overall-fitness-/reference/e2v2';
@@ -60,28 +57,29 @@ function sideOf(c: ExamCase, run: CaseRun): Side {
     parts.push(run.turns.length > 1 ? `Coach: ${t.shown?.text ?? t.say ?? '(no answer: the app showed "I couldn\'t answer that")'}` : (t.shown?.text ?? t.say ?? '(no answer: the app showed "I couldn\'t answer that")'));
     if (t.more) parts.push(`[Folded under "More", shown only if the person taps it:]\n${t.more}`);
   });
-  const did = run.turns.flatMap((t) => [...(t.shown?.did ?? []).map((d) => d.label), ...(t.shown?.offers ?? []).map((o) => `Apply button: ${o.label}`)]);
+  // everything the person sees besides the words: done changes, Apply buttons, the chart and the source chips (Codex, PR #86)
+  const did = run.turns.flatMap((t) => [...(t.shown?.did ?? []).map((d) => d.label), ...(t.shown?.offers ?? []).map((o) => `Apply button: ${o.label}`), ...(t.shown?.show ? [`Chart shown: ${t.shown.show}`] : []), ...(t.shown?.sources ?? []).map((x) => `Source chip: ${x.topic}`)]);
   return { reply: parts.join('\n\n'), did };
 }
 
-async function factsOf(c: ExamCase): Promise<string> {
-  const now = nowOf(c);
-  const e = await Engine.open({ idb: new IDBFactory(), name: `a2.pair.${c.id}.${Math.random()}`, now: () => now, tz: () => TZ });
-  await e.commit({ type: 'import', label: 'exam data', source: 'import', ops: records(c.person).filter((r) => (r.at ?? 0) <= now).map((record) => ({ op: 'create', record })) });
-  return renderFacts(buildFacts(e.allRecords(), { now, tz: TZ }));
-}
 
 it('judges the Coach against the other setup, case by case', async () => {
   mkdirSync(OUT, { recursive: true });
   // a judge that has not passed calibration in this folder, with this model and effort, judges nothing
   const cal = existsSync(`${OUT}/pair-calibration${TAG}-report.md`) ? readFileSync(`${OUT}/pair-calibration${TAG}-report.md`, 'utf8') : '';
-  if (!DRY && !(cal.includes('GATE PASS') && cal.includes(`judge ${JUDGE} (${EFFORT})${NEUTRAL ? ' neutral' : ''}:`))) throw new Error(`run run-pair-calibration with EXAM_OUT=${IN} first: no passing gate for ${JUDGE} (${EFFORT})`);
+  // and only for the exact calibration it passed: the same bar examples, judge prompt and gate (Codex, PR #86)
+  if (!DRY && !(cal.includes('GATE PASS') && cal.includes(`judge ${JUDGE} (${EFFORT})${NEUTRAL ? ' neutral' : ''}:`) && cal.includes(`PRINT ${calibrationPrint(JUDGE, EFFORT, NEUTRAL)}`))) throw new Error(`run run-pair-calibration with EXAM_OUT=${IN} first: no passing gate for ${JUDGE} (${EFFORT}) with today's bar, prompt and gate`);
   const runs = new Map<string, CaseRun>();
   for (const l of readFileSync(`${IN}/answers.jsonl`, 'utf8').split('\n').filter(Boolean)) {
     const r = JSON.parse(l) as CaseRun;
     if (!(r as { dry?: boolean }).dry) runs.set(`${r.id}|${r.setup}`, r);
   }
-  const cases = CASES.filter((c) => runs.has(`${c.id}|${COACH}`) && runs.has(`${c.id}|${OTHER}`) && (!ONLY.length || ONLY.includes(c.id)));
+  // only answers made from today's case and records, with their fact sheet saved, are judged; the rest are named (Codex, PR #86)
+  const fresh = (c: ExamCase, setup: string) => { const r = runs.get(`${c.id}|${setup}`); return !!r && r.caseHash === caseHash(c) && !!r.facts; };
+  const wanted = CASES.filter((c) => (!ONLY.length || ONLY.includes(c.id)) && runs.has(`${c.id}|${COACH}`) && runs.has(`${c.id}|${OTHER}`));
+  const stale = wanted.filter((c) => !fresh(c, COACH) || !fresh(c, OTHER)).map((c) => c.id);
+  if (stale.length) console.log(`NOT JUDGED (answers made from an older case, or without a saved fact sheet; run the answers again): ${stale.join(', ')}`);
+  const cases = wanted.filter((c) => !stale.includes(c.id));
   if (!cases.length) throw new Error(`no case answered by both ${COACH} and ${OTHER} in ${IN}`);
   const file = `${OUT}/pair-exam${TAG}-orders.jsonl`;
   const key = (x: PairInput, k: 0 | 1) => createHash('sha256').update(`${JUDGE}|${EFFORT}|${JSON.stringify(pairBody(k === 0 ? x : { ...x, a: x.b, b: x.a }))}`).digest('hex');
@@ -94,7 +92,10 @@ it('judges the Coach against the other setup, case by case', async () => {
     const coachA = parseInt(createHash('sha256').update(c.id).digest('hex').slice(-1), 16) % 2 === 0;
     coachSide.set(c.id, coachA);
     const mine = sideOf(c, runs.get(`${c.id}|${COACH}`)!), theirs = sideOf(c, runs.get(`${c.id}|${OTHER}`)!);
-    const x: PairInput = { id: c.id, facts: await factsOf(c), conversation: [{ role: 'user', text: c.turns[0].notice ? `(no message: the app asks the Coach to speak first: ${c.turns[0].notice})` : c.turns[0].text }], good: c.good, checklist: c.checklist ?? CHECKLISTS[c.id]?.list, a: coachA ? mine : theirs, b: coachA ? theirs : mine, ...(NEUTRAL ? { neutral: true } : {}) };
+    const t0 = c.turns[0];
+    // what both coaches were given: the saved fact sheet, and any attached page or label inside its untrusted fence (Codex, PR #86)
+    const said = t0.notice ? `(no message: the app asks the Coach to speak first: ${t0.notice})` : [t0.text, t0.untrusted ? fence(t0.untrusted.text, t0.untrusted.source) : ''].filter(Boolean).join('\n');
+    const x: PairInput = { id: c.id, facts: runs.get(`${c.id}|${COACH}`)!.facts!, conversation: [{ role: 'user', text: said }], good: c.good, checklist: c.checklist ?? CHECKLISTS[c.id]?.list, a: coachA ? mine : theirs, b: coachA ? theirs : mine, ...(NEUTRAL ? { neutral: true } : {}) };
     const keys = [key(x, 0), key(x, 1)] as const;
     const r = await judgePair(JUDGE, x, { ledger, purpose: 'pair exam', effort: EFFORT, ...(DRY ? { dry } : {}) }, [saved.get(keys[0]), saved.get(keys[1])], (k, d) => appendFileSync(file, `${JSON.stringify({ key: keys[k], id: c.id, d })}\n`));
     // turned to the Coach's view: A is always the Coach from here on
@@ -112,6 +113,7 @@ it('judges the Coach against the other setup, case by case', async () => {
   // length/format rules (1 text length, 2 expert length, 3 More/voice) is home advantage, not substance
   const FORM = new Set([1, 2, 3]);
   const formOnly = rows.filter((x) => x.r.winner === 'A' && x.r.brokenB.length > 0 && x.r.brokenB.every((n) => FORM.has(n)));
+  if (stale.length) out.push(`Not judged (stale answers): ${stale.join(', ')}.`);
   out.push(`The judge disagreed with itself across the two orders on ${split} of ${rows.length}.`);
   out.push(`Coach wins where the other side broke only length/format rules (1-3): ${formOnly.length} (${formOnly.map((x) => x.c.id).join(', ') || 'none'}). Without them the Coach scores ${total - formOnly.length} of ${rows.length - formOnly.length}.`, '', '## By kind of person', '');
   const groups = new Map<string, { n: number; s: number }>();
