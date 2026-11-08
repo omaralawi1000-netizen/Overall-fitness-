@@ -311,6 +311,17 @@ what was decided (Omar: "use only the good parts"):
   log complete?", never an alarm, unless complete logs show a pattern. New code check: More in the person's language.
   The length (text ≤120 words) and safety rules are unchanged.
 
+### Fable only for the biggest tasks (decided 8 Nov, Omar: "Fable only on the biggest tasks in the app, because it costs a ton")
+- Router (`src/coach/route.ts`, `isBigTask`): a third tier, **big**, for building or rebuilding a training plan, the
+  weekly review, weight-class or cut planning, getting ready for a competition, and "why" questions across weeks of data.
+  A big conversation keeps the big model for its follow-ups, so the plan is finished by the model that began it.
+  Everything else stays on Sonnet: logging, lookups, everyday chat, single safety questions (an injury, a weigh-in meal).
+- Price: Fable 5.1 is $10 in / $50 out per million tokens, 5× Sonnet. A setup without a big model answers big turns with
+  its deep one, so today's Coach is unchanged: Fable goes in only if the exam shows it is worth it.
+- The test (paused until Omar says go): `EXAM_BIG=1 EXAM_SETUPS=sonnet,sonnetfable` runs only the 11 big cases (14 replies).
+  Both judges then compare the two, and the runner prints cost and seconds per reply by tier. Ship rule: Fable must
+  clearly win on substance (the neutral judge) at a cost per reply Omar accepts.
+
 ### What it is
 - **Conversations**: realistic ones built from Omar's real week (the interview), plus friends of every type. Each one
   runs against fake data built in old Aven's data format, so the old Coach and Aven 2's Coach face exactly the same

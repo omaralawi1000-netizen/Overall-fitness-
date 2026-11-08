@@ -21,13 +21,15 @@ import type { AnyRecord, FoodLog, Plan, Routine } from '../../src/engine/model';
 import type { CallOpts } from '../providers';
 import type { Proposal } from '../../src/coach/actions';
 
-export interface Setup { name: string; quick: string; deep: string; rules?: string; /** Gemini's thinking budget, when not the default */ thinking?: number }
+export interface Setup { name: string; quick: string; deep: string; /** the biggest tasks (route.ts); unset = the deep model */ big?: string; rules?: string; /** Gemini's thinking budget, when not the default */ thinking?: number }
 
 /** the benchmark opponent's instructions: a capable general coach, no tuning, same facts and knowledge, same JSON format */
 export const OPPONENT_RULES = `You are an expert fitness and nutrition coach inside a training and food app. Help the person as well as you can. FACTS hold their data; KNOWLEDGE holds general guidelines. Reply in their language. You may change things in the app with the actions in the JSON schema: "do" for what they asked, "offer" for a suggestion.`;
 
 export interface TurnLog {
   tier: Tier; model: string; say?: string; shown?: Shown; error?: string; callFailed?: boolean; dropped: string[]; usd: number; ms: number;
+  /** the More call under this answer, already counted in usd (not in ms) */
+  moreUsd?: number; moreMs?: number;
   /** what the model sent when code could not use it (dropped actions, or the end of a reply that is not JSON) */
   raw?: string;
   /** numbers in the reply found nowhere in what the Coach was given: leads for the judge, not a fail by themselves */
@@ -82,9 +84,9 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
     const sheet = buildFacts(e.allRecords(), { now, tz: TZ });
     firstFacts ??= renderFacts(sheet);
     lastSheet = sheet;
-    const tier = route(t.text, { sheet, history, untrusted });
+    const tier = route(t.text, { sheet, history, untrusted, ...(t.notice ? { notice: t.notice } : {}) });
     history.push(tier);
-    const model = tier === 'quick' ? setup.quick : setup.deep;
+    const model = tier === 'quick' ? setup.quick : tier === 'big' ? (setup.big ?? setup.deep) : setup.deep;
     convo.push({ role: 'person', text: t.text, ...(t.untrusted ? { untrusted: t.untrusted } : {}), ...(t.notice ? { notice: t.notice } : {}) });
     const req = coachRequest(sheet, convo, { voice: t.voice, ...(setup.rules ? { rules: setup.rules } : {}) });
     const asked = await askCoach(model, req, { ...o, purpose: `${c.id} ${setup.name}`, ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
@@ -103,6 +105,9 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
     const req = moreRequest(lastSheet!, convo.slice(0, -1), last.shown.text, { voice: c.turns.at(-1)?.voice, did: last.shown.did.map((d) => d.label) });
     const asked = await askCoach(last.model, req, { ...o, purpose: `${c.id} ${setup.name} more`, ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
     last.usd += asked.usd;
+    // kept apart too, so cost and seconds per reply compare the same work (Codex, PR #87)
+    last.moreUsd = asked.usd;
+    last.moreMs = asked.ms;
     if (asked.reply) {
       last.more = asked.reply.say;
       // More is checked like the answer: its numbers and dates are leads for the judge too (Codex, PR #84)
