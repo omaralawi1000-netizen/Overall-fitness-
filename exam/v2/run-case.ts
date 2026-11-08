@@ -164,6 +164,8 @@ const VOICE_BAD = /^\s*(?:[-•*]|\d+[.)])\s|[×→✅]|\bkg\/(?:uge|week)\b/mu;
 // round 3 (8 Nov): "Når er der …?" for "Hvornår", "din sidste måltid", "øm hvis", "Går det samme knæ", "Det data viser",
 // "Læg vægt på" (= emphasise) for adding weight, "mavebøjninger" (crunches) listed among leg lifts for hip hinges, "et lille snack", "har tåle"
 const BAD_DANISH = /\bheldagskrop\w*|\bheldagskrops-?pas\b|\bfuld krop pas\b|(?:^|[.!?]\s+)Når (?:er|skal|kan|bliver) (?:der|du|jeg|det|den)\b[^.!?]*\?|\b(?:din|min) (?:sidste |første |næste )?(?:rigtige )?måltid\b|(?<!\p{L})øm hvis\b|\bGår det samme\b|\bDet data\b|\bLæg vægt på,? når\b|\b(?:squat|knæbøj\w*|dødløft|lunges|udfald)\b[^.]{0,40}\bmavebøjning\w*|\bmavebøjning\w*[^.]{0,40}\b(?:lunges|udfald|dødløft)\b|\bet lille snack\b|\bhar tåle\b/iu;
+/** a rough language guess for a check, not for the Coach: Danish letters or two common Danish words */
+export const danish = (t: string) => /[æøå]/i.test(t) || (t.match(/\b(?:jeg|ikke|og|det|er|på|hvad|hvor|har|kan|skal|du|mig)\b/giu)?.length ?? 0) >= 2;
 /** the Coach's own input names leaking into what the person reads (round 3: "FACTS shows…") */
 const INTERNAL = /\b(?:FACTS|MEMORY|KNOWLEDGE|PLAN|fact sheet)\b/u;
 /** More taking back the answer above it (round 3: "One correction first…", "I shouldn't have said…") */
@@ -236,5 +238,8 @@ export function barChecks(c: ExamCase, turns: TurnLog[]): Check[] {
   each('rule 14: no known bad Danish', (t) => (full(t).match(BAD_DANISH)?.[0] ?? false));
   each('no internal words', (t) => (full(t).match(INTERNAL)?.[0] ?? false));
   each('More never contradicts the answer', (t) => (t.more?.match(RETRACTS)?.[0] ?? false));
+  // round 3/stage 3: More came in Danish to a person writing English (m03)
+  const lastSaid = c.turns.at(-1)?.text ?? '';
+  each('More in the person\'s language', (t) => !!t.more && lastSaid.trim().split(/\s+/).length >= 3 && danish(t.more) !== danish(lastSaid) && `More is ${danish(t.more) ? 'Danish' : 'English'}`);
   return out;
 }

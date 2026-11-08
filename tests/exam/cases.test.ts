@@ -189,6 +189,9 @@ describe('exam v2 cases', () => {
     expect(bad('Done.', 'One correction first: there was no note.')).toContain('More never contradicts the answer');
     expect(bad('Your log shows 215 g; the plan has Legs on Thursday.', 'Here is the full plan.')).not.toContain('no internal words');
     expect(bad('Done.', 'Say the word, or use the Undo under my last reply.')).not.toContain('More never contradicts the answer');
+    // More in another language than the person writes (stage 3, m03); CASES[0] is an English case
+    expect(bad('Done.', 'Her er detaljerne: du har ikke ramt dit mål, og det er fint.')).toContain("More in the person's language");
+    expect(bad('Done.', 'Here are the details: keep the target and add one meal.')).not.toContain("More in the person's language");
   });
 
   it('a reply that is not JSON is a failed run, never a crash', async () => {
