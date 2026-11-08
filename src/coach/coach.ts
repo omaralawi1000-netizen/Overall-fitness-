@@ -196,7 +196,7 @@ export interface Shown {
 // a description, not a claim: "Logged so far…", "Det, der ikke er logget…", "Intet er logget endnu", "Food is logged on 10 of 28 days" (round 3)
 const DESCRIBES = String.raw`(?!\s+(?:so far|indtil nu)\b)(?!\s+[a-zæøå]+\s+(?:is|are|was|were|shows?|averages?|covers?|er|var|viser)\b)`;
 const opener = (verbs: string, passive: string) =>
-  new RegExp(String.raw`(?:^|[.!?]\s+)(?:${verbs})\b${DESCRIBES}|(?<!\b(?:what|der|som),?\s)(?<![a-zæøå] that\s)(?<!\b(?:ikke|intet|nothing|aldrig|never)\s)(?<!\b(?:no|ingen|intet)\s+[a-zæøå]+\s)\b(?:er|is) (?:nu |now )?(?:${passive})\b(?!\s+(?:so far|indtil nu)\b)(?!\s+(?:on|på|for|i)\s+\d)`, 'im');
+  new RegExp(String.raw`(?:^|[.!?]\s+)(?:${verbs})\b${DESCRIBES}|(?<!\b(?:what|der|som),?\s)(?<![a-zæøå] that\s)(?<!\b(?:ikke|intet|nothing|aldrig|never)\s)(?<!\b(?:no|ingen|intet)\s+[a-zæøå]+\s)\b(?:er|is) (?:nu |now )?(?:${passive})\b(?!\s+(?:so far|indtil nu)\b)(?!\s+(?:on|på)\s+\d+\s+(?:of|af)\b)`, 'im');
 
 /**
  * Changes a reply says it made ("I've set…", "Logged it", "Jeg har flyttet…"), by the kind of action that would back them.

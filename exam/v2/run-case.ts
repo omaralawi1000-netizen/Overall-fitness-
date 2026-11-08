@@ -162,8 +162,8 @@ const CITATION = /\((?:[^()]*\b(?:et al\.?|&|og)\b[^()]*|[A-Z][\p{L}-]+[^()]{0,3
 const VOICE_BAD = /^\s*(?:[-•*]|\d+[.)])\s|[×→✅]|\bkg\/(?:uge|week)\b/mu;
 /** Danish forms a native speaker never writes (rule 14); grows with every one found in an exam */
 // round 3 (8 Nov): "Når er der …?" for "Hvornår", "din sidste måltid", "øm hvis", "Går det samme knæ", "Det data viser",
-// "Læg vægt på" (= emphasise) for adding weight, "mavebøjninger" (crunches) for hip hinges, "et lille snack", "har tåle"
-const BAD_DANISH = /\bheldagskrop\w*|\bheldagskrops-?pas\b|\bfuld krop pas\b|(?:^|[.!?]\s+)Når (?:er|skal|kan|bliver) (?:der|du|jeg|det|den)\b[^.!?]*\?|\b(?:din|min) (?:sidste |første |næste )?(?:rigtige )?måltid\b|(?<!\p{L})øm hvis\b|\bGår det samme\b|\bDet data\b|\bLæg vægt på,? når\b|\bmavebøjning\w*|\bet lille snack\b|\bhar tåle\b/iu;
+// "Læg vægt på" (= emphasise) for adding weight, "mavebøjninger" (crunches) listed among leg lifts for hip hinges, "et lille snack", "har tåle"
+const BAD_DANISH = /\bheldagskrop\w*|\bheldagskrops-?pas\b|\bfuld krop pas\b|(?:^|[.!?]\s+)Når (?:er|skal|kan|bliver) (?:der|du|jeg|det|den)\b[^.!?]*\?|\b(?:din|min) (?:sidste |første |næste )?(?:rigtige )?måltid\b|(?<!\p{L})øm hvis\b|\bGår det samme\b|\bDet data\b|\bLæg vægt på,? når\b|\b(?:squat|knæbøj\w*|dødløft|lunges|udfald)\b[^.]{0,40}\bmavebøjning\w*|\bmavebøjning\w*[^.]{0,40}\b(?:lunges|udfald|dødløft)\b|\bet lille snack\b|\bhar tåle\b/iu;
 /** the Coach's own input names leaking into what the person reads (round 3: "FACTS shows…") */
 const INTERNAL = /\b(?:FACTS|MEMORY|KNOWLEDGE|PLAN|fact sheet)\b/u;
 /** More taking back the answer above it (round 3: "One correction first…", "I shouldn't have said…") */

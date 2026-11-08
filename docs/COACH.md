@@ -281,7 +281,10 @@ what was decided (Omar: "use only the good parts"):
 
 ### Round 3 (4–8 Nov: today's Coach vs Opus with the same data, 20 cases, on Omar's phone)
 - Run in the cloud, $1.76. Rule, key, answers and page: /mnt/project-files/e2/round3/ (fixed before any answer).
-- Omar's feedback (8 Nov, with two AI reviews as extra reviews only; calibration waits for his own taps) and what changed:
+- The 22 picks Omar sent (8 Nov) are an AI review (Claude + ChatGPT combined), NOT his taps: he has no time to tap and
+  trusts the two reviews as the working direction. They are never used to calibrate the judges. Human calibration still
+  comes from 3–5 testers before release, plus a native Danish read.
+- His feedback and what changed:
   - More was built from the state AFTER the answer's actions, so it "corrected" answers that had just removed a note or
     raised a target, and it said "FACTS". Now More gets the answer's own snapshot plus "Done in the app"; code checks
     fail any reply naming FACTS/MEMORY/KNOWLEDGE/PLAN and any More that takes the answer back.

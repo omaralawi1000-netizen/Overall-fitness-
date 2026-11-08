@@ -90,6 +90,9 @@ describe('exam v2 cases', () => {
     expect(flagged('Intet er logget endnu, så jeg kan ikke sige noget.')).toBe(false);
     expect(flagged('Food is logged on 10 of 28 days and none complete.')).toBe(false);
     expect(flagged("No weight is logged, so I can't say.")).toBe(false);
+    // a quantity after a passive claim is still a claim (Codex, PR #85)
+    expect(flagged('Your water is logged for 500 ml.')).toBe(true);
+    expect(flagged('Vandet er logget på 500 ml.')).toBe(true);
     expect(flagged('Logged 2 eggs and 200 g oats.')).toBe(true);
     expect(flagged('Maden er logget.')).toBe(true);
     expect(flagged('Det er gemt.')).toBe(true);
