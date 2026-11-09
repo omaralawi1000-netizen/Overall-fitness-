@@ -7,6 +7,9 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 - **After every test, prototype or rejection:** add a dated entry. His words go in quotes. Our reading of them is marked "Reading".
 - **Rounds alternate:** a wide search (Sonnet), then one small polished slice (Opus).
 
+## RETIRED (9 Nov 2026, 21:58): the "old Aven ingredients" look
+Asked whether design threads should keep using it, Omar said: "No, delete that." The look (near-black room, one soft glow, clear glass, italic serif names, thin numbers, one orange thing to tap, the orb) is **not his taste anymore and not a rule**. Never feed it to a design thread, a judge or a prototype brief. Everything below that praises it is history only. Italic serif titles, which he picked in the taste test, are not part of this retirement; they stand or fall on his latest words.
+
 ## What it suggests now (2 Nov 2026, before the bar-picture workout screen)
 - **One seamless picture beats panels.** His Today notes ("seamless", "a blurred gradient … like Oura", "make it make sense") and now the picture that blurs at the bottom point the same way: one continuous image is the identity, and boxes on top of it break it.
 - **The picture has to mean something.** "Make it make sense": a pretty image that says nothing is decoration. So the picture is the equipment for this set, and it changes with what he does.
@@ -150,7 +153,7 @@ Decision: each moment is built from one clip he picked, matched frame by frame (
 ### 2 Nov 2026: the workout slice (round 1, /_prototypes/slice/)
 Verdict: no. His words: "This is very in my old style. I actually don't like it, but maybe it's because the color or something. … Maybe you can do another style that's a little better. And when you say the motion is 6 out of 10 and the design is 7 out of 10, try to make it an 8 or a 9."
 On the motion: "Yes, the set [tick], but I feel like it needs better motion and number shrinking. It doesn't really shrink. Yes, it shrinks, but then it fades away and there's a number replacing it. Yes, the ring [filling], but I don't know. This just seems a little boring."
-Reading: the tick is a keeper. "Transform, not replace" must be literal: the same numbers have to travel and land, never cross-fade into a copy. The rest ring needs more life than a filling line. Old Aven's paint (near-black, warm orange glow) reads as old Aven even in a new layout, so it goes. Judges must reach 8+ before he sees a round.
+Reading: the tick is a keeper. "Transform, not replace" must be literal: the same numbers have to travel and land, never cross-fade into a copy. The rest ring needs more life than a filling line. Old Aven's paint (near-black, warm orange glow) reads as old Aven even in a new layout, so it goes. (Retired for good 9 Nov 2026.) Judges must reach 8+ before he sees a round.
 
 ### 2 Nov 2026: his motion language, from the 48 picks
 His words: "My narrowing in the Motion Library ("picks3", 48 kept) is my real taste. Note what I DROPPED: every sky/time item and almost every whole-room colour flood. Round 3 leaned on skies, and I only hearted 2 of 32. So drop "time is a sky" and "light owns the room" as signatures."
@@ -214,7 +217,7 @@ Why: "They look like those", meaning ordinary, like other apps.
 Rejected: Ink as the direction.
 Why: "Ink sounds too safe … I'm going for exceptional design."
 
-### Before Aven 2: old Aven (Oct 2026)
+### Before Aven 2: old Aven (Oct 2026) [history only, look retired 9 Nov 2026]
 The verdicts that shaped old Aven, from its history (details in `docs/research/taste-2026-11-01.md`):
 - Clear glass over a glow: "what I've been looking for" (v0.1.130).
 - Grey: "dead". Navy cards: "very ugly". Charcoal: "ruined".

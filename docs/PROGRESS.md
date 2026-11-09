@@ -176,7 +176,7 @@ can really do on Android and iPhone. Nothing built.
 - Needs phone: blur and banding on his screen, tap latency on Log, slide-to-accept feel, Skip within 250 ms,
   rest running out.
 
-## Session 8: what Omar loves in old Aven (1 Nov 2026, late night)
+## Session 8: what Omar loves in old Aven (1 Nov 2026, late night) [look RETIRED 9 Nov 2026: Omar, "No, delete that." History only]
 - Omar rejected all six looks (Ink, Ink rich, Heat, Day line, Rooms, Ordinary) and asked for many reviewers on old Aven.
 - Ran old Aven with demo data: 48 screenshots, plus films of tick to rest, finish, tabs and opening a workout (filmed
   with time slowed 10x so the headless computer gives smooth motion). Seven reviewers, two rounds of debate.
@@ -197,7 +197,7 @@ can really do on Android and iPhone. Nothing built.
   games and OS motion: 51 more clips (Round 2 tab on the same page). Today-through-the-day gap now covered (sky scrubbers);
   next set and undo still only partly.
 
-## Session 10: one polished workout slice (2 Nov 2026)
+## Session 10: one polished workout slice (2 Nov 2026) [its room recipe RETIRED 9 Nov 2026: Omar, "No, delete that." History only]
 Omar named his motion language (physical and continuous, six rules; in `docs/keepers.md` and `docs/taste-log.md`).
 Build plan, one screen, prototype only (`site/_prototypes/slice/`, live at /_prototypes/slice/, no storage):
 - **Room:** near-black, one soft warm glow drawn dithered, clear glass card, italic serif names (Newsreader), thin
