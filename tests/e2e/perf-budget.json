@@ -1,0 +1,18 @@
+{
+  "_why": "PROVISIONAL (9 Nov 2026). `limit` is what the app does today plus a little room: it must not get worse, and nothing is cut to meet it. `goal` is the research target (docs/LESSONS.md): the script reports screens above it but does not fail. Tighten `limit` toward `goal` after the phone baseline (docs/perf-baseline.md). A new look that breaks `limit` is changed, not the number. Frame limits are huge on purpose: headless runs on software GL (a few hundred ms per frame is normal there), so they only catch a catastrophe; real frame rate is the phone baseline.",
+  "limit": {
+    "blurPerScreen": 28,
+    "blurInScroller": 8,
+    "blurHidden": 20,
+    "maxBlurPx": 76,
+    "layersPerScreen": 200,
+    "worstFrameMs": 4000,
+    "longFramesPerMoment": 40
+  },
+  "goal": {
+    "visibleBlurPerScreen": 6,
+    "blurInScroller": 0,
+    "blurHidden": 0,
+    "maxBlurPx": 40
+  }
+}

@@ -16,6 +16,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 - Code `src/engine/`, debug page `src/debug/` (live at `/engine/`), tests `tests/engine/`. `npm run verify` checks all.
 - The Coach brain: `src/coach/` (`facts.ts` the one fact sheet, `actions.ts` validate → apply → verify → Undo, `untrusted.ts` untrusted input as data), tests `tests/coach/`. Rules: `docs/COACH.md` §2–3 and `docs/coach/ANSWER-BAR.md`.
 - `docs/parser-examples.md`: what the instant parser reads, row by row (checked by a test). Code `src/engine/parse/`, tests `tests/parse/`.
+- Performance check: `tests/e2e/perf.mjs` (`npm run perf`, also inside `npm run verify`; about 2 minutes), numbers in `tests/e2e/perf-budget.json`, rules in `docs/TASTE.md` §4c, phone steps in `docs/perf-baseline.md`.
 - Browser check: `tests/e2e/engine-page.mjs` (39 checks in real Chromium; see `docs/engine/PROGRESS.md`).
 
 ## Design
