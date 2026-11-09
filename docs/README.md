@@ -20,7 +20,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 
 ## The app
 - `docs/PORTING.md`: Window as the app: where each file is, what changed from the artifact, and the rules the build must keep.
-- Code `src/app/` (page, styles, `main.js`, `stage.js`, `public/`), built to `dist/app/` and live at `/app/`. Config `vite.app.config.ts`. Browser check: `npm run build && npm run test:app` (`tests/e2e/app.mjs`).
+- Code `src/app/` (page, styles, `main.js`, `stage.js`, `public/`), built to `dist/app/` and live at `/app/`. Config `tools/vite.app.config.ts`. Browser check: `npm run build && npm run test:app` (`tests/e2e/app.mjs`).
 
 ## Design
 - `docs/inspiration/notes.md`: what Omar likes. `docs/inspiration/web-references.md`: his web links. The numbered images are screenshots.
@@ -34,6 +34,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 
 ## Tools and filing
 - `tools/looks/` and `tools/round/`: screenshot and clip scripts (`shot.mjs`, `clip.mjs`, `banding.py`) used for the look and round pages.
+- `tools/hooks/stop-check.mjs`: Stop hook that blocks "done" while `npm run verify` fails (skips when nothing changed). `tools/hooks/protect-files.mjs`: Claude Code hook (wired in `.claude/settings.json`) that blocks edits to the files that define the checks (tsconfig, vite and knip config, workflows, the filing test, the hook itself) so a check can't be weakened to pass. Ask Omar first. `knip.json`: the dead-code scan (unused files and dependencies) that `npm run verify` runs.
 - `tests/repo/layout.test.ts`: the filing check inside `npm run verify`. Fails if a file lands outside the allowed top-level folders, a video, zip or file over 2 MB is committed, a doc, page or tool folder is missing from this map, or this map points at a path that doesn't exist. Rules: "Filing" in `CLAUDE.md`.
 
 ## Research

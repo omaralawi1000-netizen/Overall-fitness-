@@ -8,7 +8,7 @@ Window is the spine (Omar, 3 Nov 2026). It was designed as a single-file artifac
 - `src/app/store.ts`: the screen's workout and food, mirrored into engine records (tests: `tests/app/store.test.ts`).
 - `src/app/stage.js`: the 3D equipment behind the workout (three.js). A dynamic `import()`, so three.js is its own file, fetched and built only after Today has settled.
 - `src/app/public/`: files served as they are: `photo.jpg` + `mask.png` (the picture), `hero/` (Train explainer stills; the Blender clay clips take their place when Omar's zips arrive), `thumbs/` (Train list pictures), `fonts/` (Geist and Instrument Serif, Latin only, SIL OFL), `manifest.webmanifest`, icons, `sw.js`.
-- Build: `npm run build` makes the engine page (`dist/engine/`) and the app (`dist/app/`). Dev: `npm run dev:app`. Config: `vite.app.config.ts` (relative base, so it works at `/app/` on Pages and at the root in dev).
+- Build: `npm run build` makes the engine page (`dist/engine/`) and the app (`dist/app/`). Dev: `npm run dev:app`. Config: `tools/vite.app.config.ts` (relative base, so it works at `/app/` on Pages and at the root in dev).
 - Checks: `npm run build && npm run test:app` (`tests/e2e/app.mjs`, real Chromium on made-up data; the picture is compared with `tests/e2e/fixtures/app-sky-ref.json`).
 - The artifact build's other tools (frame timing `perf.mjs`, screenshot driver, photo cutter `process.mjs`) stay in the zip; port one when needed.
 - Live: https://omaralawi1000-netizen.github.io/Overall-fitness-/app/ (installable; Chrome offers "Install app").
