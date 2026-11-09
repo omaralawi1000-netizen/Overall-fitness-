@@ -1,0 +1,16 @@
+{
+  "entry": [
+    "src/debug/*.ts",
+    "tests/**/*.test.ts",
+    "exam/**/*.test.ts"
+  ],
+  "project": [
+    "src/**/*.ts",
+    "exam/**/*.ts",
+    "tests/**/*.ts"
+  ],
+  "ignore": [
+    "exam/v1/**",
+    "exam/vitest.config.ts"
+  ]
+}
