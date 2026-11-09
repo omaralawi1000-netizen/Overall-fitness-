@@ -12,7 +12,10 @@ if (input.stop_hook_active) process.exit(0);
 const git = (...a) => execFileSync('git', a, { encoding: 'utf8', maxBuffer: 1 << 28 });
 const gitDir = git('rev-parse', '--git-dir').trim();
 const stamp = `${gitDir}/stop-check-ok`;
-const key = createHash('sha1').update(git('rev-parse', 'HEAD') + git('status', '--porcelain') + git('diff', 'HEAD')).digest('hex');
+// The key covers HEAD, tracked changes and the CONTENT of untracked files (git diff leaves those out).
+const h = createHash('sha1').update(git('rev-parse', 'HEAD') + git('status', '--porcelain') + git('diff', 'HEAD'));
+for (const f of git('ls-files', '-o', '--exclude-standard', '-z').split('\0').filter(Boolean)) h.update(f).update(readFileSync(f));
+const key = h.digest('hex');
 if (existsSync(stamp) && readFileSync(stamp, 'utf8') === key) process.exit(0);
 
 const r = spawnSync('npm', ['run', 'verify'], { encoding: 'utf8', shell: process.platform === 'win32' });
