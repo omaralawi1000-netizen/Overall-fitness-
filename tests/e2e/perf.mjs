@@ -58,7 +58,7 @@ const ev = (s) => p.evaluate(s);
 const scan = async () => { layers = 0; await cdp.send('LayerTree.disable').catch(() => {}); await cdp.send('LayerTree.enable'); await ev(`document.body.style.outline = '0'`); await sleep(500); return scanDom(); };
 const scanDom = () => p.evaluate(() => {
   const vh = innerHeight, vw = innerWidth, out = { blur: 0, inScroller: 0, hidden: 0, maxPx: 0, list: [] };
-  const scroller = (el) => { for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) { const s = getComputedStyle(a); if (/(auto|scroll)/.test(s.overflowY) && a.scrollHeight > a.clientHeight + 4) return true; } return false; };
+  const scroller = (el) => { for (let a = el.parentElement; a && a !== document.body; a = a.parentElement) { const s = getComputedStyle(a); if ((/(auto|scroll)/.test(s.overflowY) && a.scrollHeight > a.clientHeight + 4) || (/(auto|scroll)/.test(s.overflowX) && a.scrollWidth > a.clientWidth + 4)) return true; } return false; };
   const shown = (el) => { for (let a = el; a; a = a.parentElement) { const s = getComputedStyle(a); if (s.display === 'none' || s.visibility === 'hidden') return 'none'; if (+s.opacity < 0.02) return 'hidden'; } const r = el.getBoundingClientRect(); return (r.width < 1 || r.height < 1 || r.bottom < 0 || r.top > vh || r.right < 0 || r.left > vw) ? 'hidden' : 'shown'; };
   const targets = [];
   for (const el of document.querySelectorAll('*')) { targets.push([el, null]); for (const ps of ['::before', '::after']) { const c = getComputedStyle(el, ps).content; if (c && c !== 'none' && c !== 'normal') targets.push([el, ps]); } }
