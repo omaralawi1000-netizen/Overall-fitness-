@@ -198,6 +198,15 @@ describe('exam v2 cases', () => {
     const r = await runCase(CASES[0], SETUP, { ledger: ledger(), purpose: 't', dry: () => ({ candidates: [{ content: { parts: [{ text: 'hello' }] } }], usage: { inTokens: 1, cachedTokens: 0, outTokens: 1, searches: 0 }, usd: 0 }) });
     expect(codeChecks(CASES[0], r.turns)).toEqual([{ name: 'answered', ok: false, detail: 'reply is not JSON' }]);
   });
+
+  it('a big turn goes to the big model at its own effort; a setup without one keeps the deep model at medium (Omar, 9 Nov)', async () => {
+    const c = CASES.find((x) => x.id === 'd01-why-tired')!;
+    const sent: { model: string; effort?: string }[] = [];
+    const client = { messages: { create: async (req: { model: string; output_config?: { effort?: string } }) => { sent.push({ model: req.model, effort: req.output_config?.effort }); return { content: [{ type: 'text', text: JSON.stringify({ say: 'Sleep.', actions: [] }) }], stop_reason: 'end_turn', usage: { input_tokens: 1, output_tokens: 1 } }; } } } as never;
+    await runCase(c, { ...SETUP, big: 'claude-fable-5-2', bigEffort: 'high' }, { ledger: ledger(), purpose: 't', client });
+    await runCase(c, { ...SETUP, bigEffort: 'high' }, { ledger: ledger(), purpose: 't', client });
+    expect(sent).toEqual([{ model: 'claude-fable-5-2', effort: 'high' }, { model: 'claude-sonnet-5-5', effort: 'medium' }]);
+  });
 });
 
 describe('exam v3 coverage (Omar, 4 Nov)', () => {

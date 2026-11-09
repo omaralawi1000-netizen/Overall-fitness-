@@ -31,9 +31,9 @@ export const SETUPS: Record<string, Setup> = {
   flashlow: { name: 'flashlow', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5', thinking: 512 },
   // a newer, bigger model as the Coach brain (Omar, 8 Nov): same Coach rules, so it compares with sonnet case by case;
   // add its price to exam/providers.ts first (a model with no price fails closed)
-  fable: { name: 'fable', quick: 'claude-fable-5-1', deep: 'claude-fable-5-1' },
-  // Omar, 8 Nov: Fable only on the biggest tasks (route.ts isBigTask), Sonnet for everything else
-  sonnetfable: { name: 'sonnetfable', quick: 'claude-sonnet-5-5', deep: 'claude-sonnet-5-5', big: 'claude-fable-5-1' },
+  fable: { name: 'fable', quick: 'claude-fable-5-2', deep: 'claude-fable-5-2' },
+  // Omar, 8 Nov: Fable only on the biggest tasks (route.ts isBigTask), Sonnet for everything else; 9 Nov: "Fable 5.2 on High"
+  sonnetfable: { name: 'sonnetfable', quick: 'claude-sonnet-5-5', deep: 'claude-sonnet-5-5', big: 'claude-fable-5-2', bigEffort: 'high' },
   opponent: { name: 'opponent', quick: 'claude-opus-5-5', deep: 'claude-opus-5-5', rules: OPPONENT_RULES },
   // the previous Coach (PR #81's instructions) on the ship setup
   prev: { name: 'prev', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5', rules: PREV_RULES },
@@ -85,7 +85,7 @@ it('runs the cases through the setups', async () => {
   for (const c of cases) {
     for (const s of setups) {
       for (let run = 1; run <= RUNS; run++) {
-        const key = `${c.id}|${s.name}|${s.quick}|${s.deep}${s.big ? `|${s.big}` : ''}|${run}|${version(s.rules ?? COACH_RULES, JSON.stringify([c, records(c.person)]))}${process.env.EXAM_MORE ? '|more' : ''}`;
+        const key = `${c.id}|${s.name}|${s.quick}|${s.deep}${s.big ? `|${s.big}` : ''}${s.bigEffort ? `|${s.bigEffort}` : ''}|${run}|${version(s.rules ?? COACH_RULES, JSON.stringify([c, records(c.person)]))}${process.env.EXAM_MORE ? '|more' : ''}`;
         const saved = done.get(key);
         if (saved) { count(s.name, saved); continue; }
         const r = await runCase(c, s, { ledger, purpose: 'answers', more: !!process.env.EXAM_MORE, ...(DRY ? { dry } : {}) });

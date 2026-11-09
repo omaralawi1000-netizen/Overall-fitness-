@@ -316,11 +316,32 @@ what was decided (Omar: "use only the good parts"):
   weekly review, weight-class or cut planning, getting ready for a competition, and "why" questions across weeks of data.
   A big conversation keeps the big model for its follow-ups, so the plan is finished by the model that began it.
   Everything else stays on Sonnet: logging, lookups, everyday chat, single safety questions (an injury, a weigh-in meal).
-- Price: Fable 5.1 is $10 in / $50 out per million tokens, 5× Sonnet. A setup without a big model answers big turns with
-  its deep one, so today's Coach is unchanged: Fable goes in only if the exam shows it is worth it.
-- The test (paused until Omar says go): `EXAM_BIG=1 EXAM_SETUPS=sonnet,sonnetfable` runs only the 11 big cases (14 replies).
-  Both judges then compare the two, and the runner prints cost and seconds per reply by tier. Ship rule: Fable must
-  clearly win on substance (the neutral judge) at a cost per reply Omar accepts.
+- Model (Omar, 9 Nov: "Fable 5.2 on High"): Fable 5.2 at high effort on big turns, $8 in / $40 out per million tokens,
+  4× Sonnet (`bigEffort` in the setup; every other turn stays at medium). A setup without a big model answers big turns
+  with its deep one.
+- The test: `EXAM_BIG=1 EXAM_MORE=1 EXAM_SETUPS=sonnet,sonnetfable` runs only the 11 big cases (14 replies), then
+  `EXAM_NEUTRAL=1 EXAM_PAIR=sonnetfable,sonnet` judges them. Ship rule: Fable must clearly win on substance (the neutral
+  judge) at a cost per reply Omar accepts.
+
+#### Result, 9 Nov 2026 (11 big cases, one run each; files in `/mnt/project-files/e2/fable-2026-11-09/`)
+- **Fable wins on substance: 10.5 of 11** against today's Coach (Sonnet 5.5, medium), neutral judge (Opus 5.5, passed
+  calibration 19 of 19), both orders. 10 clear wins, 1 split (n02), safety never lost, every kind of person 90–100 %.
+  No failed calls, no refusals.
+- Why it wins (the judge's reasons): it gives the concrete action up front, uses more of the person's data and offers
+  the change as an Apply button (d01, d02 and m07: spots the cut is faster than the goal needs and offers 2,900 kcal),
+  respects stored preferences (d01: no lighter training), and builds plans on the person's own schedule (p13, p14).
+- Cost per reply: $0.113 against $0.019 (6×); More $0.166 against $0.027. A big case with More: $0.31 against $0.05.
+- Speed per reply: 16.6 s against 4.7 s (slowest 27 s); More 27.5 s against 7.8 s (slowest 42 s).
+- Rules: Fable went over 120 words on 3 plan answers (o02 129, p13 163, p14 167; Sonnet on 1) and asked two questions
+  once (m06; Sonnet once, p06). One false line in More (n02: "the chart shows" with no chart shown). Numbers the
+  code check could not trace to the data: 1 case (p13; Sonnet: 4 cases).
+- Not measured: the rulebook judge (its calibration alone costs $1; the code checks above cover the rules); whether
+  Sonnet at high effort closes part of the gap (Fable ran at high, Sonnet at medium); repeat runs; real people.
+- Spent $5.05: Fable answers $3.42, Sonnet answers $0.56, judge calibration $0.42, judging $0.65.
+- **Recommendation: yes, Fable 5.2 (high) is the brain for big tasks only. 8/10.** Biggest weakness: the wait, 17 s for
+  the answer and 28 s for More, so the app must show the answer as it is written (streaming) or a clear "thinking"
+  state. Before it ships: a length line for plan answers, and the Sonnet-at-high check (about $1.30). The full
+  50-case exam stays a separate decision.
 
 ### What it is
 - **Conversations**: realistic ones built from Omar's real week (the interview), plus friends of every type. Each one
