@@ -50,6 +50,15 @@ Default model is **Sonnet 5.5, high effort**. It costs half of Opus 5.5 per toke
 ## References
 - Read only the reference file for the topic you're working on. Layout: `docs/README.md`.
 
+## Filing (automatic: `tests/repo/layout.test.ts`, part of `npm run verify`)
+Where things go. Put it there in the same PR, and add it to `docs/README.md` (the map) in that PR.
+- Decisions, rules, plans, research notes: `docs/` (an existing file if one fits). Never only in chat.
+- Omar's likes, links and inspiration notes: `docs/inspiration/` (notes.md, web-references.md); approved ideas `docs/keepers.md`; reactions in his words `docs/taste-log.md`.
+- Code `src/`, tests `tests/`, Coach exam `exam/`, scripts `tools/`, live pages `site/` (prototypes only in `site/_prototypes/`).
+- Never in git: videos, zips, files over 2 MB, real data, keys. They go in the shared project folder `aven2/` (cloud) or Omar's local App-UI-Library folder, which is for big visual files only (screenshots, clips, inspiration images, prototype zips). Docs are never kept only there.
+- New top-level folder or file: not allowed without Omar's yes (the check lists the allowed ones).
+- The shared folder has duplicates (`_app-ui-library-stage/` copies `aven2/`; `aven-window-*.zip` in its root). Never delete there without asking Omar.
+
 ## Keep it clean
 - Prototypes live only under `site/_prototypes/`. After Omar picks, delete the losers in the same session.
 - No new doc if an existing one fits. Decisions go in BRIEF or the dated design doc.
