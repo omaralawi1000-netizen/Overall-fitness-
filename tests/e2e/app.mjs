@@ -109,6 +109,33 @@ await ev(`(() => { const W = __aven.W; W.done[0] = [[80, 8], [82.5, 8], [82.5, 8
 r = await ev(`({ end: !!__aven.W.end, e: __aven.W.e, s: __aven.W.s, idx: __aven.W.idx, total: __aven.W.total })`);
 check('a plan trimmed to sets that are all logged is ready to finish', r.end && r.idx === r.total && !errs.length, { ...r, errs: errs.slice() });
 
+// P7. the weight log: empty at first, saved on the phone, survives a reload, Undo puts the old state back, nonsense is refused
+await p.goto(base + '?nosw'); await p.waitForFunction(() => window.__ready, null, { timeout: 90000 }); await sleep(400);
+await ev(`localStorage.removeItem('a2:weights'); __aven.show('health')`); await sleep(1200);
+await ev(`document.getElementById('pager').scrollLeft = document.getElementById('pager').clientWidth`); await sleep(900);
+r = await ev(`({ num: document.querySelectorAll('#pager .hpan .num')[1].textContent, btn: !!document.getElementById('wLog') })`);
+check('with nothing logged the weight page is empty, not an example', r.num.trim() === '—' && r.btn, r);
+await ev(`document.getElementById('wLog').click()`); await sleep(700);
+await ev(`(() => { const i = document.getElementById('wtV'); i.value = '3'; document.getElementById('wtSave').click(); })()`); await sleep(300);
+r = await ev(`({ note: document.getElementById('wtN').textContent, saved: localStorage.getItem('a2:weights') })`);
+check('a number that is not a weight is refused and nothing is saved', r.note.length > 0 && r.saved === null, r);
+await ev(`(() => { const i = document.getElementById('wtV'); i.value = '81,4'; document.getElementById('wtSave').click(); })()`); await sleep(1400);
+r = await ev(`({ saved: JSON.parse(localStorage.getItem('a2:weights')), num: document.querySelectorAll('#pager .hpan .num')[1].textContent })`);
+check('a logged weight is kept on the phone and shown', r.saved.length === 1 && r.saved[0].kg === 81.4 && /81\.4/.test(r.num), r);
+await p.goto(base + '?nosw'); await p.waitForFunction(() => window.__ready, null, { timeout: 90000 }); await sleep(600);
+await ev(`__aven.show('health')`); await sleep(1000);
+await ev(`document.getElementById('pager').scrollLeft = document.getElementById('pager').clientWidth`); await sleep(900);
+r = await ev(`({ num: document.querySelectorAll('#pager .hpan .num')[1].textContent, sub: document.querySelectorAll('#pager .sub')[1].textContent })`);
+check('the weight is still there after a reload', /81\.4/.test(r.num), r);
+await ev(`document.getElementById('wLog').click()`); await sleep(700);
+await ev(`document.querySelector('#wtIn [data-wd="0.1"]').click(); document.querySelector('#wtIn [data-wd="0.1"]').click(); document.getElementById('wtSave').click()`); await sleep(1400);
+r = await ev(`JSON.parse(localStorage.getItem('a2:weights'))`);
+check('logging again today replaces today, in 0.1 steps', r.length === 1 && r[0].kg === 81.6, r);
+await ev(`document.getElementById('toastU').click()`); await sleep(500);
+r = await ev(`JSON.parse(localStorage.getItem('a2:weights'))`);
+check('Undo puts the earlier weight back', r.length === 1 && r[0].kg === 81.4 && !errs.length, { r, errs: errs.slice() });
+await ev(`localStorage.removeItem('a2:weights')`);
+
 // P6b. a planned meal ticked before its time is still ticked after a reload
 await p.goto(base + '?nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(400);
 await ev(`__aven.show('fuel')`); await sleep(1000);

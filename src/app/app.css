@@ -487,6 +487,9 @@ button.srow:active{background:rgba(255,255,255,.07);transition-duration:0s}
 .ed-v{display:flex;align-items:baseline;justify-content:center;gap:.6rem;margin-top:.4rem}
 .ed-v b{font-size:7.6rem;font-weight:300;letter-spacing:-.04em;line-height:1}
 .ed-v span{font-size:2rem;color:var(--ink2)}
+.ed-v input{width:20rem;min-width:0;background:none;border:0;outline:0;padding:0;margin:0;color:inherit;font:inherit;font-size:7.6rem;font-weight:300;letter-spacing:-.04em;line-height:1;text-align:right;caret-color:var(--ink);font-variant-numeric:tabular-nums}
+.wlogb{margin-top:1.8rem;height:5.2rem;padding:0 3rem;border-radius:2.6rem;background:rgba(255,255,255,.16);color:var(--ink);font-size:1.7rem;font-weight:500}
+.wst{font-size:2rem!important;color:var(--ink2);font-weight:400!important;letter-spacing:0!important}
 .dial{position:relative;height:7.2rem;margin:1rem -2.2rem 0;overflow:hidden;touch-action:pan-y;cursor:grab;-webkit-mask-image:linear-gradient(90deg,transparent,#000 7rem,#000 calc(100% - 7rem),transparent);mask-image:linear-gradient(90deg,transparent,#000 7rem,#000 calc(100% - 7rem),transparent)}
 .dial .tk{position:absolute;top:1.8rem;left:50%;height:3.6rem;will-change:transform}
 .dial .tk i{position:absolute;top:.8rem;width:.2rem;height:2rem;margin-left:-.1rem;border-radius:.1rem;background:rgba(244,241,236,.35)}

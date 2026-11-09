@@ -1,6 +1,7 @@
 import { Engine } from '../engine/engine';
 import { keepWhenUseful } from '../engine/storage';
 import { Saver } from './store';
+import { parseWeights, putWeight, weekChange, recent, dayNum } from './weights';
 const $ = s => document.querySelector(s), $$ = s => [...document.querySelectorAll(s)];
 const phone = $('#phone');
 const ASSET = import.meta.env.BASE_URL; // the photo, mask, hero and thumbnail files sit next to the page
@@ -45,8 +46,8 @@ const T = {
     fuK:'Tuesday · cutting', fuH:'Fuel', protein:'Protein', carbs:'Carbs', fat:'Fat', logFood:'Log food', meals:'Today’s meals', quick:'Quick add', logBtn:'Log', logged:'Logged',
     breakfast:'Breakfast', lunch:'Lunch', meal:'After training', dinner:'Dinner', mB:'Skyr, oats, berries', mL:'Chicken, rice, salad', mM:'Whey shake, banana', mD:'Salmon, potatoes, greens',
     lsH:'Log food', lsAdd:'Add {g} g', lsPer:'{p} g protein · {k} kcal',
-    heK:'Tuesday · sleep, weight, recovery', heH:'Health', pSleep:'Sleep', pWeight:'Weight', pRec:'Recovery', wSleep:'Rested', wWeight:'On pace', wRec:'Ready', sSleep:'90% of your 8-hour goal · 7h 42m in bed', sWeight:'1.4 kg to go to 77 kg', sRec:'Resting heart rate · 3 below normal',
-    sleepD:'Last night', deep:'Deep', rem:'REM', light:'Light', awake:'Awake', moonFull:'7 hours or more', moonLess:'Short night', moonNote:'A fuller moon is a longer night · full is 8 hours', lastWk:'Last week', thisWk:'This week', weekMin:'Minutes trained, this week and last', wksAgo:'{n} weeks ago', nights:'Last seven nights', wTrend:'Two weeks', wNote:'−1.2 kg in two weeks. 77 kg by December is on pace.',
+    heK:'Tuesday · sleep, weight, recovery', heH:'Health', pSleep:'Sleep', pWeight:'Weight', pRec:'Recovery', wSleep:'Rested', wRec:'Ready', sSleep:'90% of your 8-hour goal · 7h 42m in bed', sRec:'Resting heart rate · 3 below normal',
+    sleepD:'Last night', deep:'Deep', rem:'REM', light:'Light', awake:'Awake', moonFull:'7 hours or more', moonLess:'Short night', moonNote:'A fuller moon is a longer night · full is 8 hours', lastWk:'Last week', thisWk:'This week', weekMin:'Minutes trained, this week and last', wksAgo:'{n} weeks ago', nights:'Last seven nights', wTrend:'Recent weigh-ins', wNote:'{d} kg in the last week.', wNote0:'Weigh in twice in a week and the change shows here.', wEmpty:'Log your weight on two days and the trend appears here.', wNone:'Not logged yet', wFirst:'First weigh-in', wDown:'Down', wUp:'Up', wSteady:'Steady', sWTap:'Tap Log weight to start', sWToday:'Logged today', sWAgo:'Last logged {n} days ago', sWWeek:'{d} kg this week', wLogB:'Log weight', wLogK:'Weight today', wSave:'Save', wBad:'Enter a weight between 20 and 400 kg.', wSaved:'Weight saved · {w} kg', wStep:'0.1 kg',
     rhr:'Resting heart rate', hrv:'HRV', recNote:'Resting heart rate is 3 below your normal. Train as planned.', src:'From your Galaxy Watch through Health Connect.',
     notNow:'Not now', remembers:'Remembers {n} things', leadNight:'Sleep averaged 6h 53m this week. Bed by 23:30 tonight?', leadSmall:'Your alarm is in {d}. Rest until then; Push at 15:15 is still on.', leadSmallA:'Move the alarm to 06:45', leadSmallD:'Alarm moved to 06:45', leadNightA:'Wind down at 23:00', leadNightD:'Wind-down set for 23:00',
     leadDay:'Bench is ready for 82.5 × 8 today. Leave at 14:50 and you are warm by 15:15.', leadDayA:'Remind me at 14:40', leadDayD:'Reminder set for 14:40',
@@ -95,8 +96,8 @@ const T = {
     fuK:'Tirsdag · vægttab', fuH:'Mad', protein:'Protein', carbs:'Kulhydrat', fat:'Fedt', logFood:'Log mad', meals:'Dagens måltider', quick:'Tilføj hurtigt', logBtn:'Log', logged:'Logget',
     breakfast:'Morgenmad', lunch:'Frokost', meal:'Efter træning', dinner:'Aftensmad', mB:'Skyr, havregryn, bær', mL:'Kylling, ris, salat', mM:'Proteinshake, banan', mD:'Laks, kartofler, grønt',
     lsH:'Log mad', lsAdd:'Tilføj {g} g', lsPer:'{p} g protein · {k} kcal',
-    heK:'Tirsdag · søvn, vægt, restitution', heH:'Sundhed', pSleep:'Søvn', pWeight:'Vægt', pRec:'Restitution', wSleep:'Udhvilet', wWeight:'På sporet', wRec:'Klar', sSleep:'90 % af dit mål på 8 timer · 7t 42m i seng', sWeight:'1,4 kg til 77 kg', sRec:'Hvilepuls · 3 under normal',
-    sleepD:'I nat', deep:'Dyb', rem:'REM', light:'Let', awake:'Vågen', moonFull:'7 timer eller mere', moonLess:'Kort nat', moonNote:'Jo fuldere måne, jo længere nat · fuld er 8 timer', lastWk:'Sidste uge', thisWk:'Denne uge', weekMin:'Minutter trænet, denne og sidste uge', wksAgo:'for {n} uger siden', nights:'De sidste syv nætter', wTrend:'To uger', wNote:'−1,2 kg på to uger. 77 kg til december er på sporet.',
+    heK:'Tirsdag · søvn, vægt, restitution', heH:'Sundhed', pSleep:'Søvn', pWeight:'Vægt', pRec:'Restitution', wSleep:'Udhvilet', wRec:'Klar', sSleep:'90 % af dit mål på 8 timer · 7t 42m i seng', sRec:'Hvilepuls · 3 under normal',
+    sleepD:'I nat', deep:'Dyb', rem:'REM', light:'Let', awake:'Vågen', moonFull:'7 timer eller mere', moonLess:'Kort nat', moonNote:'Jo fuldere måne, jo længere nat · fuld er 8 timer', lastWk:'Sidste uge', thisWk:'Denne uge', weekMin:'Minutter trænet, denne og sidste uge', wksAgo:'for {n} uger siden', nights:'De sidste syv nætter', wTrend:'Seneste vejninger', wNote:'{d} kg den seneste uge.', wNote0:'Vej dig to gange på en uge, så vises ændringen her.', wEmpty:'Log din vægt to dage, så vises tendensen her.', wNone:'Ikke logget endnu', wFirst:'Første vejning', wDown:'Ned', wUp:'Op', wSteady:'Uændret', sWTap:'Tryk Log vægt for at starte', sWToday:'Logget i dag', sWAgo:'Sidst logget for {n} dage siden', sWWeek:'{d} kg denne uge', wLogB:'Log vægt', wLogK:'Vægt i dag', wSave:'Gem', wBad:'Skriv en vægt mellem 20 og 400 kg.', wSaved:'Vægt gemt · {w} kg', wStep:'0,1 kg',
     rhr:'Hvilepuls', hrv:'HRV', recNote:'Hvilepulsen er 3 under din normale. Træn som planlagt.', src:'Fra dit Galaxy Watch via Health Connect.',
     notNow:'Ikke nu', remembers:'Husker {n} ting', leadNight:'Søvnen var i snit 6t 53m denne uge. I seng kl. 23:30 i aften?', leadSmall:'Din alarm ringer om {d}. Hvil til da; Push kl. 15:15 står stadig.', leadSmallA:'Flyt alarmen til 06:45', leadSmallD:'Alarm flyttet til 06:45', leadNightA:'Slap af fra kl. 23:00', leadNightD:'Afslapning sat til 23:00',
     leadDay:'Bænk er klar til 82,5 × 8 i dag. Gå kl. 14:50, så er du varm kl. 15:15.', leadDayA:'Påmind mig kl. 14:40', leadDayD:'Påmindelse sat til 14:40',
@@ -879,25 +880,34 @@ $('#logS').addEventListener('click', e => {
 });
 
 /* ---------- Health: ring, number, word and colour move together as you swipe ---------- */
-const HP = [
+// the weight log is the person's own (kept on the phone, one weigh-in a day); sleep and recovery are still examples
+const dayKey = (d = new Date()) => d.toLocaleDateString('sv'); // the local day, YYYY-MM-DD
+let WTL = parseWeights(store.get('weights'));
+const sgn = x => (x > 0 ? '+' : x < 0 ? '−' : '') + num(Math.abs(x));
+function weightPanel() {
+  const last = WTL[WTL.length - 1], ch = weekChange(WTL), today = !!last && last.d === dayKey();
+  const w = !last ? 'wNone' : ch === null ? 'wFirst' : ch <= -.05 ? 'wDown' : ch >= .05 ? 'wUp' : 'wSteady';
+  const sub = !last ? t('sWTap') : today ? (ch !== null ? `${t('sWToday')} · ${t('sWWeek', { d: sgn(ch) })}` : t('sWToday')) : t('sWAgo', { n: dayNum(dayKey()) - dayNum(last.d) });
+  return { k: 'pWeight', n: last ? `${last.kg.toFixed(1)}kg` : '—', w, f: today ? 1 : last ? .45 : .12, c: '#7fe0c0', sub };
+}
+const hpList = () => [
   { k: 'pSleep', n: '7h 12m', w: 'wSleep', f: .9, c: '#9cc4ff', s: 'sSleep' },
-  { k: 'pWeight', n: '78.4kg', w: 'wWeight', f: .62, c: '#7fe0c0', s: 'sWeight' },
+  weightPanel(),
   { k: 'pRec', n: '52', w: 'wRec', f: .82, c: '#ffbf72', u: 'bpm', s: 'sRec' }
 ];
 const HRC = 2 * Math.PI * 107;
 BUILD.health = () => {
-  const wt = [79.6, 79.4, 79.5, 79.2, 79.1, 79.2, 78.9, 78.8, 78.9, 78.7, 78.6, 78.6, 78.5, 78.4];
+  WT = recent(WTL).map(x => x.kg); WTD = recent(WTL).map(x => x.d);
   $('#sHealth').innerHTML = `<div class="title rise"><div class="k">${t('heK')}</div><h1>${t('heH')}</h1></div>
-    <div class="pager rise" id="pager">${HP.map((p, i) => `<div class="pgp"><div class="hpan glass" style="--pc:${p.c}"><div class="lb">${t(p.k)}</div><div class="num tab">${(LANG === 'da' ? p.n.replace('.', ',').replace(/(\d)h/g, '$1t') : p.n).replace(/([a-z]+)/g, '<span class="u">$1</span>')}${p.u ? `<span class="u">${p.u}</span>` : ''}</div>
-      <div class="rw"><span class="dim">${t(p.w)}</span><span class="lit hl" data-f="${p.f}" aria-hidden="true">${t(p.w)}</span></div><div class="sub">${t(p.s)}</div>${p.k === 'pSleep' ? moonsRow() : ''}</div></div>`).join('')}</div>
+    <div class="pager rise" id="pager">${hpList().map((p, i) => `<div class="pgp"><div class="hpan glass" style="--pc:${p.c}"><div class="lb">${t(p.k)}</div><div class="num tab">${(LANG === 'da' ? p.n.replace('.', ',').replace(/(\d)h/g, '$1t') : p.n).replace(/([a-z]+)/g, '<span class="u">$1</span>')}${p.u ? `<span class="u">${p.u}</span>` : ''}</div>
+      <div class="rw"><span class="dim">${t(p.w)}</span><span class="lit hl" data-f="${p.f}" aria-hidden="true">${t(p.w)}</span></div><div class="sub">${p.sub ?? t(p.s)}</div>${p.k === 'pSleep' ? moonsRow() : ''}${p.k === 'pWeight' ? `<button class="wlogb" id="wLog">${t('wLogB')}</button>` : ''}</div></div>`).join('')}</div>
     <div class="pdots rise" id="pdots"><i class="on"></i><i></i><i></i></div><div class="sp"></div>
     <div class="card glass rise" id="hDet"></div>`;
   hDetail(0, true);
   const pg = $('#pager'); let raf = 0, cur = 0;
   pg.addEventListener('scroll', () => { if (raf) return; raf = requestAnimationFrame(() => { raf = 0; const x = pg.scrollLeft / pg.clientWidth; healthTint(x); const i = Math.round(x); if (i !== cur) { cur = i; $$('#pdots i').forEach((d, k) => d.classList.toggle('on', k === i)); hDetail(i); buzz(4); } }); }, { passive: true });
-  WT = wt;
 };
-let WT = [];
+let WT = [], WTD = [];
 function healthTint(x) { [0, 1, 2].forEach(i => { $('#tH' + i).style.opacity = clamp(1 - Math.abs(x - i), 0, 1).toFixed(3); }); }
 ENTER.health = () => { const pg = $('#pager'); healthTint(pg ? pg.scrollLeft / pg.clientWidth : 0);
   const rb = $('#sHealth .rib'); if (rb) rb.animate([{ clipPath: 'inset(0 100% 0 0 round 1rem)' }, { clipPath: 'inset(0 0% 0 0 round 1rem)' }], { duration: RM ? 1 : 1300, delay: 320, easing: 'cubic-bezier(.45,.05,.2,1)', fill: 'backwards' }); /* the night passes left to right */
@@ -921,14 +931,46 @@ function hDetail(i, instant) {
       <div class="rib" style="background:${ribbon()}"></div><div class="ribT tab"><span>☾ 22:33</span><span>00:00</span><span>02:00</span><span>04:00</span><span>06:15</span></div>
       <div class="legend"><span><b style="background:#4f6fd8"></b>${t('deep')} ${hT('1h 12m')}</span><span><b style="background:#9cc4ff"></b>${t('rem')} ${hT('1h 54m')}</span><span><b style="background:rgba(156,196,255,.34)"></b>${t('light')} ${hT('4h 06m')}</span><span><b style="background:rgba(255,246,230,.8)"></b>${t('awake')} 30m</span></div>
       <div class="src">${t('src')}</div>`
-    : i === 1 ? `<div class="ch3"><span class="k">${t('wTrend')}</span><span class="val tab" id="wVal">${num(78.4)} kg</span></div><div class="chart" id="wChart"><svg viewBox="0 0 380 130" preserveAspectRatio="none" id="wSvg"></svg><div id="hair"></div><div id="bub" class="tab"></div></div><div class="src">${t('wNote')}</div>`
+    : i === 1 ? `<div class="ch3"><span class="k">${t('wTrend')}</span><span class="val tab" id="wVal">${WT.length ? kgIn(WT[WT.length - 1]) + ' kg' : '—'}</span></div>${WT.length > 1 ? '<div class="chart" id="wChart"><svg viewBox="0 0 380 130" preserveAspectRatio="none" id="wSvg"></svg><div id="hair"></div><div id="bub" class="tab"></div></div>' : ''}<div class="src">${WT.length < 2 ? t('wEmpty') : weekChange(WTL) === null ? t('wNote0') : t('wNote', { d: sgn(weekChange(WTL)) })}</div>`
     : `<div class="ch3"><span class="k">${t('rhr')}</span><span class="val tab">52 bpm</span></div><div class="row"><div class="n">${t('hrv')}</div><div class="r tab">64 ms</div></div><div class="row"><div class="n">${t('rhr')}</div><div class="r tab">52 · 55 · 54 · 53 · 52</div></div><div class="src">${t('recNote')} ${t('src')}</div>`;
-  if (instant) { box.innerHTML = html; if (i === 1) wChart(); return; }
+  if (instant) { box.innerHTML = html; if (i === 1 && WT.length > 1) wChart(); return; }
   go(box.firstElementChild ? box : box, [{ opacity: 1 }, { opacity: 1 }], { key: 'noop', dur: 1 });
   const kids = [...box.children]; kids.forEach(k => k.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 120, fill: 'forwards' }));
-  setTimeout(() => { const h0 = box.offsetHeight; box.innerHTML = html; if (i === 1) wChart(); const h1 = box.offsetHeight; [...box.children].forEach((k, n) => k.animate([{ opacity: 0, transform: 'translate3d(0,.8rem,0)' }, { opacity: 1, transform: 'none' }], { duration: SP.dur, delay: n * 30, easing: SP.easing, fill: 'backwards' }));
+  setTimeout(() => { const h0 = box.offsetHeight; box.innerHTML = html; if (i === 1 && WT.length > 1) wChart(); const h1 = box.offsetHeight; [...box.children].forEach((k, n) => k.animate([{ opacity: 0, transform: 'translate3d(0,.8rem,0)' }, { opacity: 1, transform: 'none' }], { duration: SP.dur, delay: n * 30, easing: SP.easing, fill: 'backwards' }));
     if (h1 !== h0) go(box, [{ clipPath: `inset(0 0 ${Math.max(0, h1 - h0)}px 0 round 3rem)` }, { clipPath: 'inset(0 0 0px 0 round 3rem)' }], { key: 'clip', drop: true }); }, 120);
 }
+/* ---------- the weight log: one number a day, typed or nudged, kept on the phone ---------- */
+const kg1 = x => (Math.round(x * 10) / 10).toFixed(1);
+const kgIn = x => (LANG === 'da' ? kg1(x).replace('.', ',') : kg1(x));
+function buildWt() {
+  const last = WTL[WTL.length - 1], v = last ? last.kg : 70; // no one's weight is built in: the first entry starts from a neutral 70
+  $('#wtIn').innerHTML = `<h4>${t('wLogK')}<button class="circ close" data-close aria-label="Close" style="background:rgba(255,255,255,.1);width:4.6rem;height:4.6rem"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg></button></h4>
+    <div class="ed-v tab"><input id="wtV" inputmode="decimal" autocomplete="off" aria-label="${t('wLogK')}" value="${kgIn(v)}"><span>kg</span></div>
+    <div class="ed-r"><button data-wd="-0.1" aria-label="−${t('wStep')}">−</button><b class="tab wst">${t('wStep')}</b><button data-wd="0.1" aria-label="+${t('wStep')}">+</button></div>
+    <div class="ed-n" id="wtN" role="status"></div>
+    <button class="ed-done" id="wtSave">${t('wSave')}</button>`;
+}
+const wtRead = () => parseFloat($('#wtV').value.replace(',', '.'));
+function wtSave() {
+  const next = putWeight(WTL, dayKey(), wtRead());
+  if (!next) { $('#wtN').textContent = t('wBad'); buzz([20, 40, 20]); return; }
+  const before = WTL; WTL = next; store.set('weights', JSON.stringify(WTL));
+  closeSheet(); buzz(10); refreshWeight();
+  toast(t('wSaved', { w: kgIn(WTL[WTL.length - 1].kg) }), () => { WTL = before; store.set('weights', JSON.stringify(WTL)); refreshWeight(); });
+}
+function refreshWeight() { // rebuild Health and stay on the weight page
+  BUILD.health(); const pg = $('#pager'); if (!pg) return;
+  pg.scrollLeft = pg.clientWidth; $$('#pdots i').forEach((d, k) => d.classList.toggle('on', k === 1)); healthTint(1); hDetail(1, true);
+  $$('#sHealth .hl').forEach(l => l.style.setProperty('--f', `${(+l.dataset.f * 100).toFixed(1)}%`));
+}
+$('#sHealth').addEventListener('click', e => { const b = e.target.closest('#wLog'); if (b) openSheet('wtS', b, buildWt); });
+$('#wtIn').addEventListener('click', e => {
+  if (e.target.closest('[data-close]')) return closeSheet();
+  const d = e.target.closest('[data-wd]');
+  if (d) { const v = wtRead(); $('#wtV').value = kgIn(clamp(Math.round(((Number.isFinite(v) ? v : 70) + +d.dataset.wd) * 10) / 10, 20, 400)); $('#wtN').textContent = ''; buzz(5); return; }
+  if (e.target.closest('#wtSave')) wtSave();
+});
+$('#wtIn').addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'wtV') { e.preventDefault(); wtSave(); } });
 function wChart() { // a smooth trend you can scrub: a hairline follows the finger and the line glows near it
   const W2 = 380, H2 = 120, mn = Math.min(...WT) - .2, mx = Math.max(...WT) + .2, pts = WT.map((v, i) => [i / (WT.length - 1) * W2, H2 - (v - mn) / (mx - mn) * (H2 - 10)]);
   let d = `M${pts[0][0]} ${pts[0][1]}`; for (let i = 1; i < pts.length; i++) { const [x0, y0] = pts[i - 1], [x1, y1] = pts[i]; const cx = (x0 + x1) / 2; d += ` C${cx} ${y0} ${cx} ${y1} ${x1} ${y1}`; }
@@ -936,11 +978,11 @@ function wChart() { // a smooth trend you can scrub: a hairline follows the fing
     <path d="${d} L${W2} 130 L0 130Z" fill="url(#wg)"/><path d="${d}" fill="none" stroke="#7fe0c0" stroke-width="2.4" vector-effect="non-scaling-stroke"/><circle id="gDot" r="16" fill="url(#glo)" opacity="0"/><circle cx="${pts[pts.length - 1][0]}" cy="${pts[pts.length - 1][1]}" r="4" fill="#fff"/>`;
   const ch = $('#wChart');
   const at = e => { const r = ch.getBoundingClientRect(); const x = clamp((e.clientX - r.left) / r.width, 0, 1); const i = Math.round(x * (WT.length - 1)); const p = pts[i];
-    $('#hair').style.transform = `translateX(${p[0] / W2 * r.width}px)`; $('#bub').style.left = `${p[0] / W2 * 100}%`; $('#bub').textContent = `${num(WT[i])} kg · ${i === WT.length - 1 ? t('today') : `−${WT.length - 1 - i}d`}`;
-    const g = $('#gDot'); g.setAttribute('cx', p[0]); g.setAttribute('cy', p[1]); g.setAttribute('opacity', '1'); $('#wVal').textContent = `${num(WT[i])} kg`; };
+    $('#hair').style.transform = `translateX(${p[0] / W2 * r.width}px)`; $('#bub').style.left = `${p[0] / W2 * 100}%`; $('#bub').textContent = `${kgIn(WT[i])} kg · ${WTD[i] === dayKey() ? t('today') : `−${dayNum(dayKey()) - dayNum(WTD[i])}d`}`;
+    const g = $('#gDot'); g.setAttribute('cx', p[0]); g.setAttribute('cy', p[1]); g.setAttribute('opacity', '1'); $('#wVal').textContent = `${kgIn(WT[i])} kg`; };
   ch.addEventListener('pointerdown', e => { ch.classList.add('on'); ch.setPointerCapture(e.pointerId); at(e); buzz(4); });
   ch.addEventListener('pointermove', e => { if (ch.classList.contains('on')) at(e); });
-  const up = () => { ch.classList.remove('on'); $('#gDot').setAttribute('opacity', '0'); $('#wVal').textContent = `${num(78.4)} kg`; };
+  const up = () => { ch.classList.remove('on'); $('#gDot').setAttribute('opacity', '0'); $('#wVal').textContent = `${kgIn(WT[WT.length - 1])} kg`; };
   ch.addEventListener('pointerup', up); ch.addEventListener('pointercancel', up);
 }
 

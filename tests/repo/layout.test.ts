@@ -8,7 +8,7 @@ const files = execFileSync('git', ['ls-files'], { encoding: 'utf8' }).split('\n'
 const map = readFileSync('docs/README.md', 'utf8');
 
 const TOP = new Set(['.claude', '.github', '.gitignore', 'CLAUDE.md', 'README.md', 'docs', 'exam', 'package-lock.json',
-  'package.json', 'site', 'skills-lock.json', 'src', 'tests', 'tools', 'tsconfig.json', 'vite.config.ts']);
+  'package.json', 'site', 'skills-lock.json', 'src', 'tests', 'tools', 'tsconfig.json', 'vite.app.config.ts', 'vite.config.ts']);
 const IMAGE = /\.(jpe?g|png|webp)$/i;
 
 describe('repo layout', () => {
