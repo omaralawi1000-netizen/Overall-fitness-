@@ -21,7 +21,7 @@ import type { AnyRecord, FoodLog, Plan, Routine } from '../../src/engine/model';
 import type { CallOpts } from '../providers';
 import type { Proposal } from '../../src/coach/actions';
 
-export interface Setup { name: string; quick: string; deep: string; /** the biggest tasks (route.ts); unset = the deep model */ big?: string; rules?: string; /** Gemini's thinking budget, when not the default */ thinking?: number }
+export interface Setup { name: string; quick: string; deep: string; /** the biggest tasks (route.ts); unset = the deep model */ big?: string; /** thinking effort on big turns (default medium, as every other turn) */ bigEffort?: 'low' | 'medium' | 'high'; rules?: string; /** Gemini's thinking budget, when not the default */ thinking?: number }
 
 /** the benchmark opponent's instructions: a capable general coach, no tuning, same facts and knowledge, same JSON format */
 export const OPPONENT_RULES = `You are an expert fitness and nutrition coach inside a training and food app. Help the person as well as you can. FACTS hold their data; KNOWLEDGE holds general guidelines. Reply in their language. You may change things in the app with the actions in the JSON schema: "do" for what they asked, "offer" for a suggestion.`;
@@ -72,6 +72,7 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
   const convo: CoachTurn[] = [];
   const turns: TurnLog[] = [];
   const history: Tier[] = [];
+  const bigEffort = (tier: Tier) => (tier === 'big' && setup.big && setup.bigEffort ? { effort: setup.bigEffort } : {});
   let pending: Shown['offers'] = [];
   let lastDid: Proposal['name'][] = [];
   // untrusted text stays in what the model reads on later turns, so the gate stays on from then (Codex, PR #81)
@@ -89,7 +90,7 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
     const model = tier === 'quick' ? setup.quick : tier === 'big' ? (setup.big ?? setup.deep) : setup.deep;
     convo.push({ role: 'person', text: t.text, ...(t.untrusted ? { untrusted: t.untrusted } : {}), ...(t.notice ? { notice: t.notice } : {}) });
     const req = coachRequest(sheet, convo, { voice: t.voice, ...(setup.rules ? { rules: setup.rules } : {}) });
-    const asked = await askCoach(model, req, { ...o, purpose: `${c.id} ${setup.name}`, ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
+    const asked = await askCoach(model, req, { ...o, purpose: `${c.id} ${setup.name}`, ...bigEffort(tier), ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
     if (!asked.reply) { turns.push({ tier, model, error: asked.error, ...(asked.callFailed ? { callFailed: true } : {}), ...(asked.raw ? { raw: asked.raw } : {}), dropped: asked.dropped, usd: asked.usd, ms: asked.ms }); break; }
     const shown = await finishTurn(e, asked.reply, { personText: t.text, untrusted, sheet, now, tz: TZ, lang: c.person.lang, pending, lastDid });
     pending = shown.offers;
@@ -103,7 +104,7 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
   const last = turns.at(-1);
   if (o.more && !setup.rules && last?.shown) {
     const req = moreRequest(lastSheet!, convo.slice(0, -1), last.shown.text, { voice: c.turns.at(-1)?.voice, did: last.shown.did.map((d) => d.label) });
-    const asked = await askCoach(last.model, req, { ...o, purpose: `${c.id} ${setup.name} more`, ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
+    const asked = await askCoach(last.model, req, { ...o, purpose: `${c.id} ${setup.name} more`, ...bigEffort(last.tier), ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
     last.usd += asked.usd;
     // kept apart too, so cost and seconds per reply compare the same work (Codex, PR #87)
     last.moreUsd = asked.usd;

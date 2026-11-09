@@ -35,8 +35,8 @@ export const PRICES: Record<string, Price> = {
   'gemini-4-argon': { in: 2, out: 10, cacheRead: 0.1, search: 0.035, until: '2026-11-30' },
   'claude-sonnet-5-5': { in: 2, out: 10, cacheRead: 0.2, search: 0.01, until: '2026-12-31' },
   'claude-opus-5-5': { in: 4, out: 20, cacheRead: 0.2, search: 0.01, until: '2026-12-31' },
-  // Fable 5.1 (8 Nov, the claude-api reference table dated 6 Oct): 5x Sonnet per token; checked again before 30 Nov
-  'claude-fable-5-1': { in: 10, out: 50, cacheRead: 0.25, search: 0.01, until: '2026-11-30' },
+  // Fable 5.2 (9 Nov, the claude-api reference table dated 3 Nov): 4x Sonnet per token; check again before 31 Dec
+  'claude-fable-5-2': { in: 8, out: 40, cacheRead: 0.2, search: 0.01, until: '2026-12-31' },
 };
 
 export class SpendCapError extends Error {}
