@@ -34,6 +34,8 @@ export const SETUPS: Record<string, Setup> = {
   fable: { name: 'fable', quick: 'claude-fable-5-2', deep: 'claude-fable-5-2' },
   // Omar, 8 Nov: Fable only on the biggest tasks (route.ts isBigTask), Sonnet for everything else; 9 Nov: "Fable 5.2 on High"
   sonnetfable: { name: 'sonnetfable', quick: 'claude-sonnet-5-5', deep: 'claude-sonnet-5-5', big: 'claude-fable-5-2', bigEffort: 'high' },
+  // the control for sonnetfable (Omar, 9 Nov): the same big turns on Sonnet at high effort, a quarter of Fable's price
+  sonnethigh: { name: 'sonnethigh', quick: 'claude-sonnet-5-5', deep: 'claude-sonnet-5-5', big: 'claude-sonnet-5-5', bigEffort: 'high' },
   opponent: { name: 'opponent', quick: 'claude-opus-5-5', deep: 'claude-opus-5-5', rules: OPPONENT_RULES },
   // the previous Coach (PR #81's instructions) on the ship setup
   prev: { name: 'prev', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5', rules: PREV_RULES },
