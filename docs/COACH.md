@@ -335,13 +335,25 @@ what was decided (Omar: "use only the good parts"):
 - Rules: Fable went over 120 words on 3 plan answers (o02 129, p13 163, p14 167; Sonnet on 1) and asked two questions
   once (m06; Sonnet once, p06). One false line in More (n02: "the chart shows" with no chart shown). Numbers the
   code check could not trace to the data: 1 case (p13; Sonnet: 4 cases).
-- Not measured: the rulebook judge (its calibration alone costs $1; the code checks above cover the rules); whether
-  Sonnet at high effort closes part of the gap (Fable ran at high, Sonnet at medium); repeat runs; real people.
+- Not measured: the rulebook judge (its calibration alone costs $1; the code checks above cover the rules); repeat
+  runs; real people.
 - Spent $5.05: Fable answers $3.42, Sonnet answers $0.56, judge calibration $0.42, judging $0.65.
-- **Recommendation: yes, Fable 5.2 (high) is the brain for big tasks only. 8/10.** Biggest weakness: the wait, 17 s for
-  the answer and 28 s for More, so the app must show the answer as it is written (streaming) or a clear "thinking"
-  state. Before it ships: a length line for plan answers, and the Sonnet-at-high check (about $1.30). The full
-  50-case exam stays a separate decision.
+- **Decided (Omar, 9 Nov 21:57: "Yes, plus a $1.30 check"): Fable 5.2 at high effort is the brain for big tasks only.**
+  Scored 8/10. Biggest weakness: the wait, 17 s for the answer and 28 s for More, so the app must show the answer as it
+  is written (streaming) or a clear "thinking" state. No model is wired into `src/` yet: this is the setting to use
+  when the Coach goes into the app. The full 50-case exam stays a separate decision.
+
+#### The check: is it the model or the effort? (9 Nov, setup `sonnethigh`: the same big turns on Sonnet at high effort)
+- **It is the model. Fable wins 10 of 11** against Sonnet at high effort (neutral judge, both orders, no splits).
+  Sonnet at high makes the same kind of misses as at medium: it leans on protein that is already on target (p05, p06,
+  m02, d01), leaves the over-fast cut alone (m07, d02), and gives vaguer plans (o02, p14).
+- Fable's one loss is n02: its More says "the chart shows" when no chart was shown. A real defect, not a safety one
+  (the judge calls both answers safe; the report's "Safety: LOST" line only marks a loss on a safety-tagged case).
+- Sonnet at high: $0.023 a reply and 7.7 s (medium: $0.019 and 4.7 s); More $0.031 and 11.6 s. Sonnet at high against
+  Sonnet at medium was not judged, so no change to the everyday setting.
+- Spent $1.33 (answers $0.66, judging $0.67). Both rounds together: $6.38.
+- Before Fable ships in the app: a length line for plan answers (3 of 11 over 120 words) and a check that the Coach
+  never names a chart it did not show.
 
 ### What it is
 - **Conversations**: realistic ones built from Omar's real week (the interview), plus friends of every type. Each one
