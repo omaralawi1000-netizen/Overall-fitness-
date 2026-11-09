@@ -1,5 +1,5 @@
 /**
- * The Coach's one fact sheet (docs/COACH.md §2, Answer Bar rule 3). Code computes every number here; the AI only puts
+ * The Coach's one fact sheet (docs/COACH.md §2, Answer Bar rule 4). Code computes every number here; the AI only puts
  * these numbers into words. Chat, voice and notices all read this one sheet, so they never disagree.
  *
  * Rules that hold everywhere below:
@@ -12,6 +12,7 @@
 import type { AnyRecord, Bodyweight, FoodLog, MemoryCard, Settings } from '../engine/model';
 import { addDays, dayKeyAt, diffDays, wallClock, weekdayOf } from '../engine/time';
 import { numbersIn } from './untrusted';
+import { DAYS, renderTraining, trainingFacts, trainingNumbers, type TrainingFacts } from './training-facts';
 
 /** how far a fact can be trusted */
 export type Confidence = 'measured' | 'partial' | 'estimate';
@@ -37,11 +38,13 @@ export interface FactSheet {
   /** memory that has run out (an old injury, a past exam week): never to be treated as current */
   ended: { id: string; text: string; endedOn: string }[];
   goals: GoalFact[];
-  today: { food: Fact[]; foodComplete: boolean; left: Fact[]; water?: Fact; weighIn?: Fact; sessions: { name: string; state: string }[] };
+  today: { food: Fact[]; foodComplete: boolean; left: Fact[]; water?: Fact; weighIn?: Fact; sessions: { name: string; state: string }[];
+    /** today's food entries, so a correction ("no, 2 eggs") can name the one entry it changes */
+    entries: { id: string; name: string; amount: number; unit: string; kcal?: number; protein?: number; estimated: boolean }[] };
   /** the last 28 days, today not included */
   food28: { daysLogged: number; daysComplete: number; facts: Fact[] };
   weight: { latest?: Fact; latestDay?: string; trend?: Fact; odd: { id: string; kg: number; day: string }[] };
-  training: { sessions7: number; sessions28: number; activities7: Record<string, number> };
+  training: { sessions7: number; sessions28: number; activities7: Record<string, number> } & TrainingFacts;
   /** what the data can't say, in plain words */
   trust: string[];
 }
@@ -213,6 +216,18 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
   } else trust.push(`No weight trend yet: it ${KCAL_FLOOR_NOTE} (has ${recent.length}).`);
   if (odd.length) trust.push(`Odd weigh-in${odd.length > 1 ? 's' : ''} left out: ${odd.map((w) => `${w.kg} kg on ${dayOf(w, dayStart)}`).join(', ')}.`);
 
+  // ── maintenance: what intake would hold weight steady, from complete days and the trend over the same weeks ──
+  // 7,700 kcal per kg of body weight change is the usual rule of thumb, so this is an estimate and is labelled one
+  // only complete days with calories, and only inside the weeks the trend measured: intake from one fortnight and weight
+  // change from another say nothing about maintenance (Codex, PR #81)
+  const kcalDays = trend ? done.filter((d) => d >= recent[0] && d <= recent.at(-1)! && whole(d, 'kcal') && perDay.get(d)!.kcal !== undefined) : [];
+  if (trend && kcalDays.length >= 7) {
+    const kcalAvg = kcalDays.reduce((s, d) => s + perDay.get(d)!.kcal!, 0) / kcalDays.length;
+    const maint = Math.round((kcalAvg - (trend.value * 7700) / 7) / 10) * 10;
+    food28.push({ id: 'food28.maintenanceKcal', value: maint, unit: 'kcal', confidence: 'estimate', note: `from ${kcalDays.length} complete days and the weight trend over the same weeks (${recent[0]} to ${recent.at(-1)}); ±150 kcal` });
+    for (const perWeek of [-0.5, -0.25, 0.25]) food28.push({ id: `food28.kcalFor${perWeek > 0 ? 'Gain' : 'Loss'}${Math.abs(perWeek) * 1000}g`, value: Math.round((maint + (perWeek * 7700) / 7) / 10) * 10, unit: 'kcal', confidence: 'estimate', note: `about ${Math.abs(perWeek)} kg a week ${perWeek > 0 ? 'gain' : 'loss'}` });
+  } else trust.push('No maintenance estimate yet: it needs a weight trend and at least 7 complete food days with calories in the same weeks.');
+
   // ── goals ──
   const goals: GoalFact[] = [];
   for (const m of live<MemoryCard>(records, 'memory')) {
@@ -259,10 +274,11 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
       ...(water ? { water } : {}),
       ...(lastDay === today && latest ? { weighIn: { ...latest, id: 'today.weighIn' } } : {}),
       sessions: sessions.filter((s) => sessionDay(s) === today).map((s) => ({ name: s.name, state: s.state })),
+      entries: foods.filter((f) => dayOf(f, dayStart) === today).sort((a, b) => a.at - b.at).map((f) => ({ id: f.id, name: f.name, amount: f.portion.amount, unit: f.portion.unit, ...(f.nutrients.kcal !== undefined ? { kcal: Math.round(f.nutrients.kcal) } : {}), ...(f.nutrients.protein !== undefined ? { protein: Math.round(f.nutrients.protein) } : {}), estimated: f.estimated })),
     },
     food28: { daysLogged: logged.length, daysComplete: done.length, facts: food28 },
     weight: { ...(latest ? { latest, latestDay: lastDay } : {}), ...(trend ? { trend } : {}), odd: odd.map((w) => ({ id: w.id, kg: w.kg, day: dayOf(w, dayStart) })) },
-    training: { sessions7: finishedIn(7), sessions28: finishedIn(28), activities7 },
+    training: { sessions7: finishedIn(7), sessions28: finishedIn(28), activities7, ...trainingFacts(records, { today, dayStart, now: o.now, tz: o.tz }) },
     trust,
   };
 }
@@ -275,9 +291,10 @@ export function sheetNumbers(s: FactSheet): number[] {
   for (const f of [s.today.water, s.today.weighIn, s.weight.latest, s.weight.trend]) if (f) out.push(f.value);
   for (const g of s.goals) { if (g.target !== undefined) out.push(g.target); if (g.neededKgPerWeek !== undefined) out.push(g.neededKgPerWeek); }
   for (const w of s.weight.odd) out.push(w.kg);
+  for (const f of s.today.entries) out.push(f.amount, ...(f.kcal !== undefined ? [f.kcal] : []), ...(f.protein !== undefined ? [f.protein] : []));
   // memory is the person's own words, shown on the sheet: "my old protein target was 215 g" is a number they gave (Codex, PR #73)
   for (const m of [...s.memory, ...s.ended]) out.push(...numbersIn(m.text));
-  out.push(s.food28.daysLogged, s.food28.daysComplete, s.training.sessions7, s.training.sessions28, ...Object.values(s.training.activities7));
+  out.push(s.food28.daysLogged, s.food28.daysComplete, s.training.sessions7, s.training.sessions28, ...Object.values(s.training.activities7), ...trainingNumbers(s.training));
   return out;
 }
 
@@ -287,7 +304,8 @@ const line = (f: Fact, lang: 'en' | 'da') => `- ${f.id}: ${fmt(f.value, lang)} $
 /** The sheet as the prompt sees it: structured lines with ids, never prose the AI could misread. */
 export function renderFacts(s: FactSheet): string {
   const L = s.person.language;
-  const out: string[] = [`NOW: ${s.now.day}, ${String(s.now.hour).padStart(2, '0')}:00 (${s.now.partOfDay})`];
+  // the weekday is given, never worked out: on 4 Nov Sonnet called Saturday 31 October "mandag den 31. oktober"
+  const out: string[] = [`NOW: ${DAYS[s.now.weekday]} ${s.now.day}, ${String(s.now.hour).padStart(2, '0')}:00 (${s.now.partOfDay})`];
   if (s.person.name) out.push(`NAME: ${s.person.name}`);
   out.push('TARGETS:', ...(s.person.targets.length ? s.person.targets.map((f) => line(f, L)) : ['- none set']));
   out.push('MEMORY (current, in their words):', ...(s.memory.length ? s.memory.map((m) => `- ${m.id} [${m.topic}] ${m.text}${m.until ? ` (until ${m.until})` : ''}`) : ['- none']));
@@ -295,10 +313,12 @@ export function renderFacts(s: FactSheet): string {
   if (s.goals.length) out.push('GOALS:', ...s.goals.map((g) => `- ${g.text}: ${g.status}${g.target !== undefined ? `, target ${fmt(g.target, L)}` : ''}${g.by ? ` by ${g.by}` : ''}${g.neededKgPerWeek !== undefined ? `, needs ${fmt(g.neededKgPerWeek, L)} kg/week` : ''}`));
   out.push(`TODAY (food ${s.today.foodComplete ? 'marked complete' : 'not finished'}):`, ...[...s.today.food, ...s.today.left].map((f) => line(f, L)));
   for (const f of [s.today.water, s.today.weighIn]) if (f) out.push(line(f, L));
+  if (s.today.entries.length) out.push("- today's entries:", ...s.today.entries.map((f) => `  - ${f.id}: ${f.name}, ${fmt(f.amount, L)} ${f.unit}${f.kcal !== undefined ? `, ${fmt(f.kcal, L)} kcal` : ''}${f.protein !== undefined ? `, ${fmt(f.protein, L)} g protein` : ''}${f.estimated ? ' (estimate)' : ''}`));
   if (s.today.sessions.length) out.push(...s.today.sessions.map((x) => `- session: ${x.name} (${x.state})`));
   out.push(`LAST 28 DAYS: food logged ${s.food28.daysLogged} days, ${s.food28.daysComplete} complete; ${s.training.sessions28} sessions (${s.training.sessions7} in the last 7 days)`, ...s.food28.facts.map((f) => line(f, L)));
   const acts = Object.entries(s.training.activities7);
   if (acts.length) out.push(`- activities last 7 days: ${acts.map(([k, v]) => `${k} ${v}`).join(', ')}`);
+  out.push(...renderTraining(s.training));
   out.push('WEIGHT:', ...[s.weight.latest, s.weight.trend].filter((f): f is Fact => !!f).map((f) => line(f, L)));
   if (s.trust.length) out.push('WHAT THE DATA CAN\'T SAY:', ...s.trust.map((t) => `- ${t}`));
   return out.join('\n');

@@ -1,11 +1,15 @@
-# Coach exam v2: the cases
+# Coach exam v3: the cases
 
-The 50 visible cases of the Coach quality exam (E2, brief of 3 Nov 2026), plus 10 held back outside the repo (only their
-SHA-256 goes in). Each case is checked against `docs/coach/ANSWER-BAR.md`. All people are made up.
+**Exam v3 (Omar's brief, 4 Nov 2026).** 50 visible cases, coded in `exam/v2/cases.ts`, each with its own 4–8 item
+checklist (`exam/v2/checklists.ts`: MUST / NOT / MAY) and a task type (plan, data, qa). The 10 held-out cases are coded
+outside the repo (`/mnt/project-files/e2/heldout/cases-heldout-v3.ts`; only its SHA-256 is in `exam/v2/HELDOUT.sha256`)
+and never used for tuning. The old v1 held-out set is no longer held out: its questions were used in the round-1 blind
+pairs. All people are made up. Every answer is checked against `docs/coach/ANSWER-BAR.md`: code for what can be
+counted (`barChecks` in `exam/v2/run-case.ts`, plus each case's `code` block and the app's end state), judges for the
+rest.
 
-Every case gets fixed data: old Aven's format (`personas`), frozen to JSON per case, so old Aven's Coach and Aven 2's
-Coach (through the one-way import) face exactly the same facts. "Expect" is what a great answer does; **code** marks
-what code checks, the rest is for the judge.
+The tables below are the original E2 list; batch 3 in `cases.ts` adds m01, m05, m10, r04, i03, o02, o05–o07 and
+p13, p14, v01, v02, n01, n02, c01, d01, d02.
 
 ## People
 
@@ -37,7 +41,7 @@ Apply for a clear fix (3,080 kcal), weigh-in first (wrestling), check load befor
 | Id | Person | Turns | Expect |
 | --- | --- | --- | --- |
 | m01-move-then-correct | jonas | "move pull to Thursday" → "no wait, Friday" | ends on Friday; one change visible, Undo works (code) |
-| m02-apply-after-why | bulker | "hvorfor tager jeg ikke på?" → "ja, gør det" | reason in 2 sentences + Apply 3.000 → 3.080; then applied and verified (code) |
+| m02-apply-after-why | bulker | "hvorfor tager jeg ikke på?" → "ja, gør det" | bulker who hits a 2,750 target: reason in 2 sentences + Apply to the FACTS figure; then applied and verified (code) |
 | m03-kcal-needs-goal | ali | "how many calories should I eat?" → "fat loss, slowly" | first turn asks the one thing the number depends on, or answers conditionally; second turn gives a target as an Apply |
 | m04-knee-escalate | freja | "ondt i knæet efter løbetur" → "skarp smerte på trapper" | first: care + one question, no push; second: stop running hard, see a physio, plan change as a preview |
 | m05-log-then-fix | sara | "log 3 eggs and 200 g oats" → "no, 2 eggs" | exact log, then only the egg entry changes (code) |

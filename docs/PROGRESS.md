@@ -176,7 +176,7 @@ can really do on Android and iPhone. Nothing built.
 - Needs phone: blur and banding on his screen, tap latency on Log, slide-to-accept feel, Skip within 250 ms,
   rest running out.
 
-## Session 8: what Omar loves in old Aven (1 Nov 2026, late night)
+## Session 8: what Omar loves in old Aven (1 Nov 2026, late night) [look RETIRED 9 Nov 2026: Omar, "No, delete that." History only]
 - Omar rejected all six looks (Ink, Ink rich, Heat, Day line, Rooms, Ordinary) and asked for many reviewers on old Aven.
 - Ran old Aven with demo data: 48 screenshots, plus films of tick to rest, finish, tabs and opening a workout (filmed
   with time slowed 10x so the headless computer gives smooth motion). Seven reviewers, two rounds of debate.
@@ -197,7 +197,7 @@ can really do on Android and iPhone. Nothing built.
   games and OS motion: 51 more clips (Round 2 tab on the same page). Today-through-the-day gap now covered (sky scrubbers);
   next set and undo still only partly.
 
-## Session 10: one polished workout slice (2 Nov 2026)
+## Session 10: one polished workout slice (2 Nov 2026) [its room recipe RETIRED 9 Nov 2026: Omar, "No, delete that." History only]
 Omar named his motion language (physical and continuous, six rules; in `docs/keepers.md` and `docs/taste-log.md`).
 Build plan, one screen, prototype only (`site/_prototypes/slice/`, live at /_prototypes/slice/, no storage):
 - **Room:** near-black, one soft warm glow drawn dithered, clear glass card, italic serif names (Newsreader), thin
@@ -322,6 +322,27 @@ Window v17 is ported into the repo as the real app: `src/app/`, built to `/app/`
 - Engine wiring, slice 1 (same day): the workout now saves. `src/app/store.ts` mirrors the screen into engine records: the session, its lifts and planned sets on start; each logged set (with what was really done), Undo, a trimmed plan, and finish (unlogged sets marked skipped). An open workout comes back as the live pill after the app is killed (older than 12 h: put away as unfinished, never resumed). Food taps are saved and restored for today, and Undo removes the record. `?nosave` turns it off for tests. Checks: `tests/app/store.test.ts` (8) and the P5/P6 browser checks.
 - Still example numbers: the plan (Push and its targets), sleep and weight. Weight and sleep have no entry screen yet and need Health Connect or a manual log; the plan needs the routine editor. Today's "Push done" state after a reload is not restored from the saved session yet.
 - Codex review of PR #79 (5 findings) fixed: a trimmed plan keeps logged sets, an out-of-order lift is never logged twice, minimising inside the 300 ms hand-off, Today's calories after food, and the first-visit offline cache.
+
+**Figures for ~400 lifts: faster route (4 Nov 2026, recommendation, waiting on Omar's yes; supersedes only the "how we get 400 clips" part of the figures decision)**
+- Problem: re-posing the clay figure in Blender takes 1–2 days per lift. A live three.js mannequin looked like a cheap game model (rejected). Omar: "That takes too long."
+- **Recommendation: buy a licensed 3D exercise library (MoveKit, the Complete pack, $299 once, about 2,000 DKK) for the long tail. Keep the clay clips for the 5 finished lifts plus Omar's ~30 main lifts, done by the Blender route only as time allows.** Harsh score **7/10**. Biggest weakness: it is not the clay look, and Omar has not seen it on his phone yet.
+- What MoveKit is (vendor pages, not independently verified): 582 exercises, one loopable MP4 each, faceless grey anatomy figure with worked muscles tagged (red in its own comparison), poster images, JSON/CSV metadata. Commercial licence for paid/freemium apps, self-hosting, resize, crop and recolour inside the product allowed. Not allowed: reselling raw files, public raw links, AI training or AI-derived content. Terms effective 4 Aug 2026.
+- Free sample (no signup, no watermark, two clips: Pull Ups, Dumbbell Chest Fly) at movekit.com/free-sample. **Step 0, free: Omar judges the sample on his phone next to the clay curl before any money moves.**
+- Open licence questions to settle in writing before buying: shipping the MP4s inside a released PWA/app (page says "mobile and web applications" are fine but also bans "sharing raw files publicly"), and recolouring to match Aven. Also check that Omar's ~400 lifts are actually in the 582.
+
+| Option | Look vs clay curl | Coverage | Time | Cost | Verdict |
+|---|---|---|---|---|---|
+| MoveKit Complete (582 clips) | Cleaner grey anatomy figure, muscles marked; not clay, not glowing | Most common lifts; unchecked for Omar's list | Days (download, trim, recolour, wire in) | $299 once (about 2,000 DKK); $4.99 per single clip | **Pick (7/10)** |
+| Vital Animations / ExerciseDB Pro (400 / 800 / 1,500+ clips) | 3D, no muscle overlay, generic | Large | Days | $49 / $149 / $299 once | Backup; weaker on muscles |
+| WorkoutX hosted API | 720p, watermarked free tier | 1,900+ | Days | Monthly plan, dependency on their CDN | No: runs against offline PWA and monthly cost |
+| GymVisual / Exercise Animatic | Anatomy figure, red muscles | Huge | Days | About $6–10 per clip, bundle about $299–599 | No: per-clip price at 400 lifts, licence bans AI training and is vague on client apps |
+| AI video from clay stills (Kling, Veo, Runway) | Style drifts between clips; barbell paths and joint angles often wrong; loops need retries | Any lift | Hours per lift with retries | About $0.05–0.07 per second plus many retries | No: wrong form in a coaching app is worse than no clip. Could suit a hero loop, not 400 |
+| Clay, 2 key-pose stills per lift (start, end) | Best match to clay | Any lift | About 2–4 hours per lift by hand; faster only with a retarget rig | Time only | Good for the ~30 main lifts; too slow for 400 |
+| Batch auto-posing (text-to-motion, SMPL retarget) | Clay look kept | Any lift | Fast once built, but a big build | Free tools, but SMPL parts are non-commercial and equipment is not modelled | No: licence blocks release, and no equipment |
+
+- Why it wins: it is the only option that covers hundreds of lifts in days, at a fixed price, with a licence meant for apps that may be released. Everything else is either not fast, not safe on form, or not releasable.
+- Plan if Omar says yes: (1) judge the free sample; (2) read the licence text and email MoveKit the two questions above; (3) check his lift list against their library; (4) buy; (5) wire clips into the explainer, keep the clay clips for lifts where they exist; (6) static poster frame for the Train list; (7) credit lines in Settings (Z-Anatomy CC BY-SA 4.0 stays for clay clips).
+- Nothing was bought or signed up for.
 
 ## Next step
 Omar opens `/app/` on his phone (install it, time the cold start, log a real set, close the app mid-workout and reopen it: the Resume pill should be there). Then: (1) read the plan, Train history and "Last/Best" from saved sessions instead of the example Push day (the first finished workout is the first real history); (2) restore "Push done" after a reload; (3) weight and sleep: a manual weight log and Health Connect; (4) onboarding sets `a2:name`, units and the routine. Clay-figure clips go into the explainer's hero slot when Omar's two zips arrive.

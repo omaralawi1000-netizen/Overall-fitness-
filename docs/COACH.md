@@ -10,7 +10,7 @@ Starting point: old Aven's Coach brain, memory and living-coach steps 1–2 (rea
 
 ---
 
-**Every answer must pass the Answer Bar** (`docs/coach/ANSWER-BAR.md`, 13 rules with examples, Omar 3 Nov).
+**Every answer must pass the Answer Bar** (`docs/coach/ANSWER-BAR.md`, 14 rules with examples, Omar 4 Nov; the voice: `docs/coach/VOICE.md`).
 
 ## 1. What it knows: memory
 
@@ -165,6 +165,12 @@ weight, purging, or training through sharp pain. No memory or preference unlocks
 the safe way. Under 18: no supplement doses and no cutting or weight-loss targets; defer to a parent or doctor (Omar, 3 Nov,
 `docs/coach/ANSWER-BAR.md` rule 11). Age unknown when it matters: ask first. Red flags (concussion, chest pain, fainting, heat illness, rhabdomyolysis) always go to a doctor.
 
+**Rule vs taste (Omar, 3 Nov: "a better answer for the majority of people, not just me"):** facts, safety and what
+happens in the app are rules and hold for everyone. They are checked by code, and by judges calibrated on the Answer Bar.
+Tone, length and how chatty it is are taste. Omar's blind picks choose which judges to trust, but taste is not tuned to
+one person: before release, 3–5 more testers do the same blind page, and a taste change ships only where most of them
+agree. A person's own preference ("be shorter", "be harder on me") still goes in their memory.
+
 ## 6. Onboarding: how it gets to know someone
 
 **For the person:** the first open is a short talk, not a form. The Coach asks one thing at a time, each answerable in
@@ -200,6 +206,154 @@ Build notes: the old 6-step form (`Onboarding.tsx`) and `starter.ts` become the 
 ## 8. The exam
 
 The exam proves the Coach is good before Omar sees it, and that each change made it better, not just different.
+
+### Exam v3 plan (Omar's brief, 4 Nov 2026; replaces the pending E2 round-2 work)
+Omar: "make the Coach's answers the best in the world, and prove it with measurements, not opinions." His brief is the
+spec (Answer Bar 12 rules, ~60 cases with 4–8 checks each, 10 hold-out, kappa-calibrated judges, both orders, worst of 3
+runs, length correlation, round 3 on his phone, targets 9/10 blind wins, 95 % hold-out pass, zero false claims).
+- **Ship model:** the routed mix already in `src/coach/route.ts` (Flash for quick commands, Sonnet 5.5 for advice and
+  anything sensitive). Tuning runs on both, which also satisfies "a change is kept only if it helps on 2+ models". Opus
+  is never the in-app Coach; it builds and judges.
+- **Opponent:** Opus 5.5 with the same fact sheet and knowledge pack (strongest general model), plus the previous
+  Coach version (main at 1592bdb, PR #81).
+- **Blind picks for calibration:** round 1 saved 24 taps, all "A", most one second apart, so they're unusable.
+  Round 2 (26 pairs) was never answered. A new guarded page collects ~36 picks; until then judges may only triage.
+- **Runs:** Claude calls need Gunshot (the cloud has no Anthropic key; the cloud Gemini key returns 503). Saved answers
+  from before PR #81's merge are stale and are redone.
+- **Steps:** (1) ANSWER-BAR.md rewritten to the 12 rules; (2) exam v3 cases + per-case checklists + code checks;
+  (3) Coach gaps the cases need (move a session, log food, swap an exercise, More, source chips); (4) Omar's ~36 picks
+  and kappa per judge; (5) baseline; (6) tuning, logged with score and cost; (7) hold-out, outside-review pack;
+  (8) round 3 on his phone.
+- **Harsh score of this plan: 6/10.** Biggest weakness: kappa on ~36 picks from one person has an error bar of about
+  ±0.2, so the 0.75 gate can pass or fail by luck. Mitigations: read-time guards, two repeats to measure his own
+  consistency, and code checks for every rule that can be counted.
+
+### Second brief, 4 Nov 02:21 (replaces the brief above; everything built stays)
+Goal: a great coach who knows you, with an expert's depth one tap away; the coach wins a conflict. What changed and
+what was decided (Omar: "use only the good parts"):
+- **Answer Bar 14 rules** (adds expert on request, condition first, close the loop, one voice) and `VOICE.md`. Every
+  case is labelled text or expert (`mode`); a text is capped at 120 words, an expert answer at 250. "Why" alone stays
+  a text with More behind it, because his best-rated "why am I not gaining" reply was short.
+- **Stages, stop after each with cost and what to check:** (1) bar, VOICE.md, round 2 fixes; (2) round 3 on his phone;
+  (3) full exam, calibration, week tests, the Noticer.
+- **Calibration only on Omar's own picks.** The round 2 list in the brief is a Claude review: used as an extra review
+  only, never to calibrate (a Claude judge checked against a Claude review proves nothing). He has 0 usable picks, so
+  round 3 also carries the 26 round-2 pairs and re-tests the close ones (3, 13, 14, 19, 22).
+- **Speed (first words under ~2 s):** measured in the exam log now; streaming is built when the Coach goes into the
+  app, where it can be measured for real.
+- **Close the loop** needs the Coach's own recent changes in the fact sheet; that comes with the week tests (stage 3).
+- **Schema size (4 Nov):** 19 optional fields in the reply schema made every Sonnet call time out on Gunshot (Claude
+  compiles the schema into a grammar). Now 11, guarded by a test.
+- Harsh score: 7/10. Biggest weakness: ~40 picks from one person is a thin base, so judges may stay at "triage only".
+
+### Check run, 4 Nov (all 50 cases on Gunshot, out-v4; $0.71, total spent today $4.83)
+- **Length works.** The new Coach texts about 50 words (never over 70 outside expert answers); the previous Coach
+  about 100, Opus about 180 (Opus broke the 120-word text cap on almost every case).
+- **Food logging never worked on any model.** The flat reply item with shared fields ("value" meant ml, kg or an
+  amount) made Flash write `text` plus `value: 100.00000000000001` and nothing else, or run out of tokens (5 empty
+  answers), and Opus left out the amount and unit. Fixed: one exact shape per action (`anyOf`), every field it needs
+  required, under the names `readProposal` reads; one optional field and one union, so Claude still compiles it
+  fast. Checked on Gemini 3.6 Flash with the same request: the old shape lost the amounts, the new one logged
+  "pasta bolognese, 1 portion, 750 kcal, 35 g". Saving a note failed the same way on Flash.
+- **No validation text in front of the person.** "I couldn't make that change: amount and unit (g, ml, piece, portion)
+  are needed" (in English, even in a Danish reply) is now "I couldn't log that food, so nothing was changed." /
+  "Jeg kunne ikke logge maden, så intet er ændret."; a target out of range says the range. Reasons stay in the log.
+- **Flash is the slow one:** 7–34 s a quick answer with 4,096 thinking tokens, Sonnet 2–3 s. Next check: the 18 quick
+  cases on mix, `flashlow` (Flash, 512 thinking) and `sonnet` (Sonnet for both tiers); the faster setup that keeps
+  the quality wins the quick tier. The exam log now keeps what a model sent when code couldn't use it (`raw`).
+- Still open for stage 3: the low-intake notice was missed (n02, 863 kcal), "weigh-in" in a Danish reply (p04), and
+  m08's answer to "which days?" became a robot line after both moves were turned into one Apply button.
+- **Same 50 cases on the fixed code (mix, $0.71):** 50 of 50 answered, 0 failed calls, 5 failed checks (was 9 with 5
+  empty). Food logging works: "3 eggs and 200 g oats", then "no, 2 eggs" logs both and fixes the eggs; the misheard
+  "sky" is logged as skyr; notes are saved. The stalled-row notice now names the row. Flash still takes 5–17 s.
+  New finds, fixed: Sonnet called Saturday 31 October "mandag" (NOW now carries the weekday, and the exam checks every
+  weekday against its date); a "Want me to set it to 2,420?" with no Apply button (rule line added). r03 (pizza)
+  now accepts logging it as an estimate, the same rule as o06.
+- **Speed check, the 18 quick cases (out-v5, $0.61, total today about $6.15).** Sonnet for every answer: 3.2 s average,
+  6.8 s longest, 0 failed checks, $0.018 a turn. Flash with 4,096 thinking (mix): 11 s average, 33 s longest, $0.006,
+  answered Lisa in Danish. Flash with 512 thinking (`flashlow`): 4.3 s, 13.8 s longest, $0.004, but answered two
+  English speakers in Danish (p08, r01), missed the m01 command and claimed a change it had only offered. So the
+  quick tier goes to Sonnet unless Omar picks cost over quality.
+- **Claims with only an Apply button under them, fixed.** "Moved Pull to Sunday instead.", "Done: Full body A moves
+  to Tuesday" and "to æg og skyr er logget" were shown although nothing had changed yet. A claim at the start of a
+  sentence ("Moved…", "Set to 250 g", "Done:") or in the passive ("er logget", "er gemt") now needs a done action of
+  its kind; "Set a reminder…" and "Your logged days…" stay ordinary words.
+
+### Round 3 (4–8 Nov: today's Coach vs Opus with the same data, 20 cases, on Omar's phone)
+- Run in the cloud, $1.76. Rule, key, answers and page: /mnt/project-files/e2/round3/ (fixed before any answer).
+- The 22 picks Omar sent (8 Nov) are an AI review (Claude + ChatGPT combined), NOT his taps: he has no time to tap and
+  trusts the two reviews as the working direction. They are never used to calibrate the judges. Human calibration still
+  comes from 3–5 testers before release, plus a native Danish read.
+- His feedback and what changed:
+  - More was built from the state AFTER the answer's actions, so it "corrected" answers that had just removed a note or
+    raised a target, and it said "FACTS". Now More gets the answer's own snapshot plus "Done in the app"; code checks
+    fail any reply naming FACTS/MEMORY/KNOWLEDGE/PLAN and any More that takes the answer back.
+  - Rules added as principles, not per case: a weight class is a maximum; no blanket "wait to eat" before the weigh-in
+    time is known; urgent signs in the visible injury answer; no added load because an injury note ended; plans fit
+    time, equipment and level; food that really closes a gap; partial logs never build a worry; data must change the
+    decision; the question behind the question; habit before target (p06 now expects no target offer); depth fits the
+    moment. Still open: learning each person's depth from More taps (needs the app wiring).
+  - 9 more bad-Danish forms in the rule 14 check. A native read is still needed: the check knows only forms seen.
+  - Re-run of the Coach on the same 20 cases ($0.89, then 6 again $0.29): every content fix showed up; left: one
+    two-question reply (p10) and new Danish slips ("Ret søvn", a garbled sentence in m04).
+
+### Stage 3 exam (8 Nov: 50 cases, today's Coach vs Opus, two judges; report /mnt/project-files/e2/stage3/REPORT.md)
+- Rulebook pairwise judge (Answer Bar + checklists): Coach 36.5 of 50 (73 %); 7 wins on length/format only.
+- Neutral judge (EXAM_NEUTRAL=1, no bar or checklist): Coach 13.5 of 50 (27 %). Main reasons: holds advice back behind a
+  question or More, uses less of the person's data, slips in More (and More in Danish to an English user, m03), missed
+  the 863 kcal low intake (p03). The truth sits between the two; target 9 of 10 not met.
+- Cost: answers $4.28, judging $6.50 (+ $1.73 slice). Paid rounds paused by Omar (8 Nov) until a newer model can be
+  tested; `fable` setup ready (needs its price in exam/providers.ts).
+- Decided after stage 3 (free prompt fixes, not yet measured; no paid run until Omar says go): the useful advice comes
+  first in the text (a question only when the answer truly depends on it, and then still give what you can); use the
+  facts that change the decision instead of generic advice; asked-for depth comes in full, not behind More; More always
+  in the language the person writes, numbers checked against FACTS; a very low logged day or week is a gentle "is the
+  log complete?", never an alarm, unless complete logs show a pattern. New code check: More in the person's language.
+  The length (text ≤120 words) and safety rules are unchanged.
+
+### Fable only for the biggest tasks (decided 8 Nov, Omar: "Fable only on the biggest tasks in the app, because it costs a ton")
+- Router (`src/coach/route.ts`, `isBigTask`): a third tier, **big**, for building or rebuilding a training plan, the
+  weekly review, weight-class or cut planning, getting ready for a competition, and "why" questions across weeks of data.
+  A big conversation keeps the big model for its follow-ups, so the plan is finished by the model that began it.
+  Everything else stays on Sonnet: logging, lookups, everyday chat, single safety questions (an injury, a weigh-in meal).
+- Model (Omar, 9 Nov: "Fable 5.2 on High"): Fable 5.2 at high effort on big turns, $8 in / $40 out per million tokens,
+  4× Sonnet (`bigEffort` in the setup; every other turn stays at medium). A setup without a big model answers big turns
+  with its deep one.
+- The test: `EXAM_BIG=1 EXAM_MORE=1 EXAM_SETUPS=sonnet,sonnetfable` runs only the 11 big cases (14 replies), then
+  `EXAM_NEUTRAL=1 EXAM_PAIR=sonnetfable,sonnet` judges them. Ship rule: Fable must clearly win on substance (the neutral
+  judge) at a cost per reply Omar accepts.
+
+#### Result, 9 Nov 2026 (11 big cases, one run each; files in `/mnt/project-files/e2/fable-2026-11-09/`)
+- **Fable wins on substance: 10.5 of 11** against today's Coach (Sonnet 5.5, medium), neutral judge (Opus 5.5, passed
+  calibration 19 of 19), both orders. 10 clear wins, 1 split (n02), safety never lost, every kind of person 90–100 %.
+  No failed calls, no refusals.
+- Why it wins (the judge's reasons): it gives the concrete action up front, uses more of the person's data and offers
+  the change as an Apply button (d01, d02 and m07: spots the cut is faster than the goal needs and offers 2,900 kcal),
+  respects stored preferences (d01: no lighter training), and builds plans on the person's own schedule (p13, p14).
+- Cost per reply: $0.113 against $0.019 (6×); More $0.166 against $0.027. A big case with More: $0.31 against $0.05.
+- Speed per reply: 16.6 s against 4.7 s (slowest 27 s); More 27.5 s against 7.8 s (slowest 42 s).
+- Rules: Fable went over 120 words on 3 plan answers (o02 129, p13 163, p14 167; Sonnet on 1) and asked two questions
+  once (m06; Sonnet once, p06). One false line in More (n02: "the chart shows" with no chart shown). Numbers the
+  code check could not trace to the data: 1 case (p13; Sonnet: 4 cases).
+- Not measured: the rulebook judge (its calibration alone costs $1; the code checks above cover the rules); repeat
+  runs; real people.
+- Spent $5.05: Fable answers $3.42, Sonnet answers $0.56, judge calibration $0.42, judging $0.65.
+- **Decided (Omar, 9 Nov 21:57: "Yes, plus a $1.30 check"): Fable 5.2 at high effort is the brain for big tasks only.**
+  Scored 8/10. Biggest weakness: the wait, 17 s for the answer and 28 s for More, so the app must show the answer as it
+  is written (streaming) or a clear "thinking" state. No model is wired into `src/` yet: this is the setting to use
+  when the Coach goes into the app. The full 50-case exam stays a separate decision.
+
+#### The check: is it the model or the effort? (9 Nov, setup `sonnethigh`: the same big turns on Sonnet at high effort)
+- **It is the model. Fable wins 10 of 11** against Sonnet at high effort (neutral judge, both orders, no splits).
+  Sonnet at high makes the same kind of misses as at medium: it leans on protein that is already on target (p05, p06,
+  m02, d01), leaves the over-fast cut alone (m07, d02), and gives vaguer plans (o02, p14).
+- Fable's one loss is n02: its More says "the chart shows" when no chart was shown. A real defect, not a safety one
+  (the judge calls both answers safe; the report's "Safety: LOST" line only marks a loss on a safety-tagged case).
+- Sonnet at high: $0.023 a reply and 7.7 s (medium: $0.019 and 4.7 s); More $0.031 and 11.6 s. Sonnet at high against
+  Sonnet at medium was not judged, so no change to the everyday setting.
+- Spent $1.33 (answers $0.66, judging $0.67). Both rounds together: $6.38.
+- Before Fable ships in the app: a length line for plan answers (3 of 11 over 120 words) and a check that the Coach
+  never names a chart it did not show.
 
 ### What it is
 - **Conversations**: realistic ones built from Omar's real week (the interview), plus friends of every type. Each one

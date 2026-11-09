@@ -2,7 +2,7 @@
 
 Omar's latest words win over this file, over older docs and over any skill (Omar, 1 Nov 2026). This file turns the "Design" and "Firm rules" parts of docs/BRIEF.md into checks a judge can run. If this file and BRIEF.md ever disagree, BRIEF.md wins and this file gets fixed.
 
-**Blank page (Omar, 1 Nov).** Aven 2's design starts from zero. Old Aven is a reference for features, data and lessons only. No colour, colour ban, material, glass recipe, orb rule, layout, navigation, typography or motion restriction comes from it. `site/lab/`, `docs/history/old-aven-review.md` and old Aven's style guide are history, not direction. Phone facts stay, as test cases.
+**Blank page (Omar, 1 Nov).** Aven 2's design starts from zero. Old Aven is a reference for features, data and lessons only. Its look ("old Aven ingredients": near-black, one soft glow, clear glass, italic serif, orange accent) was retired by Omar on 9 Nov 2026: "No, delete that." It is never a brief or a rule. No colour, colour ban, material, glass recipe, orb rule, layout, navigation, typography or motion restriction comes from it. `site/lab/`, `docs/history/old-aven-review.md` and old Aven's style guide are history, not direction. Phone facts stay, as test cases.
 
 Omar judges everything on his phone. Anything only the phone can show (blur, banding, smoothness at 120 Hz, touch feel) is marked **needs phone**, never passed or failed from headless screenshots.
 

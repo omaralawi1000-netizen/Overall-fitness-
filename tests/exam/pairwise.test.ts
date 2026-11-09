@@ -24,7 +24,7 @@ describe('the pairwise judge', () => {
 
   it('reads only a complete, in-range verdict', () => {
     expect(readPair('{"brokenA":[3,3],"brokenB":[],"saferIs":"tie","winner":"B","reason":"x"}')).toEqual({ brokenA: [3], brokenB: [], saferIs: 'tie', winner: 'B', reason: 'x' });
-    expect(() => readPair('{"brokenA":[14],"brokenB":[],"saferIs":"tie","winner":"B","reason":"x"}')).toThrow();
+    expect(() => readPair('{"brokenA":[15],"brokenB":[],"saferIs":"tie","winner":"B","reason":"x"}')).toThrow();
     expect(() => readPair('{"brokenA":[],"brokenB":[],"saferIs":"tie","winner":"C","reason":"x"}')).toThrow();
     expect(() => readPair('not json')).toThrow();
   });
@@ -33,16 +33,25 @@ describe('the pairwise judge', () => {
     const body = pairBody({ id: 'x', facts: 'f', conversation: [{ role: 'user', text: 'hi' }], a: { reply: 'As Claude I think…', did: [] }, b: { reply: 'Gemini says', did: ['protein target 215 → 250 g'] } });
     const all = JSON.stringify(body);
     expect(all).not.toMatch(/Claude|Gemini/);
-    expect(body.systemInstruction!.parts[0].text).toContain('## 13. Tone');
+    expect(body.systemInstruction!.parts[0].text).toContain('## 14. One voice');
     expect(all).toContain('protein target 215 → 250 g');
+  });
+
+  it('the neutral judge sees no Answer Bar, checklist or writer\'s note, only facts, conversation and replies', () => {
+    const body = pairBody({ id: 'x', facts: 'kcal target 3,000', conversation: [{ role: 'user', text: 'hi' }], good: 'WRITER NOTE', checklist: ['MUST: CHECK ITEM'], a: { reply: 'A reply', did: [] }, b: { reply: 'B reply', did: ['logged 2 eggs'] }, neutral: true });
+    const all = JSON.stringify(body);
+    expect(all).not.toMatch(/## 14\. One voice|ANSWER BAR|WRITER NOTE|CHECK ITEM/);
+    expect(all).toContain('kcal target 3,000');
+    expect(all).toContain('logged 2 eggs');
+    expect(all).toContain('no house style');
   });
 });
 
 describe('calibration from the Answer Bar itself', () => {
   const pairs = barPairs();
   it('has a matched Good/Bad pair for every rule', () => {
-    expect(new Set(pairs.map((p) => p.rule))).toEqual(new Set(Array.from({ length: 13 }, (_, i) => i + 1)));
-    expect(pairs.length).toBeGreaterThanOrEqual(13);
+    expect(new Set(pairs.map((p) => p.rule))).toEqual(new Set(Array.from({ length: 14 }, (_, i) => i + 1)));
+    expect(pairs.length).toBeGreaterThanOrEqual(14);
   });
   it("never leaks the verdict: no trailing \"(why it fails)\" notes or quote marks around the reply", () => {
     for (const p of pairs) for (const s of [p.good, p.bad]) {
@@ -54,7 +63,7 @@ describe('calibration from the Answer Bar itself', () => {
   });
   it('the judge sees the rules but never the labelled examples it is calibrated on (Codex, PR #75)', () => {
     const rules = barRules();
-    expect(rules).toContain('## 13. Tone');
+    expect(rules).toContain('## 14. One voice');
     expect(rules).toContain('Checked by:');
     expect(rules).not.toMatch(/\*\*Good|\*\*Bad|^> |Facts:/m);
     for (const p of pairs) {
@@ -72,7 +81,7 @@ describe('calibration from the Answer Bar itself', () => {
   });
 
   it('an example that says it did something carries what the app did (Codex, PR #75)', () => {
-    const bench = pairs.find((p) => p.rule === 2)!;
+    const bench = pairs.find((p) => /bench 80/.test(p.said))!;
     expect(bench.good.did).toEqual(['logged bench press 80 kg × 8, 8, 6']);
     expect(bench.bad.did).toEqual(['logged bench press 80 kg × 8, 8, 6']);
     const protein = pairs.find((p) => /set my protein target to 250/.test(p.said))!;
@@ -115,5 +124,24 @@ describe('each paid order is kept (Codex, PR #75)', () => {
     const r = await judgePair('claude-opus-5-5', x, { ledger: ledger(), purpose: 't', dry: () => { rerunCalls++; return verdict('B'); } }, [saved[0], undefined]);
     expect(rerunCalls).toBe(1);
     expect(r.winner).toBe('A');
+  });
+});
+
+describe('the calibration print (Codex, PR #86)', () => {
+  it('changes with the judge, the effort and the neutral prompt, so an old pass never vouches for a new setup', async () => {
+    const { calibrationPrint } = await import('../../exam/judge/pairwise');
+    const base = calibrationPrint('claude-opus-5-5', 'medium', false);
+    expect(calibrationPrint('claude-opus-5-5', 'medium', false)).toBe(base);
+    expect(calibrationPrint('claude-opus-5-5', 'high', false)).not.toBe(base);
+    expect(calibrationPrint('claude-opus-5-5', 'medium', true)).not.toBe(base);
+  });
+
+  it('scores the worst of repeated runs, a safer-B run first (Codex, PR #86)', async () => {
+    const { worstRun } = await import('../../exam/judge/pairwise');
+    const r = (winner: 'A' | 'B' | 'tie', saferIs: 'A' | 'B' | 'tie' = 'tie') => ({ id: 'x', winner, saferIs, brokenA: [], brokenB: [], orders: [] }) as never;
+    expect(worstRun([r('A'), r('tie'), r('A')]).winner).toBe('tie');
+    expect(worstRun([r('A'), r('B'), r('tie')]).winner).toBe('B');
+    expect(worstRun([r('B'), r('A', 'B')]).saferIs).toBe('B');
+    expect(worstRun([r('A')]).winner).toBe('A');
   });
 });

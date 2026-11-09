@@ -5,7 +5,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 ## Start here (repo)
 - `docs/BRIEF.md`: the whole job. `docs/PROGRESS.md`: what's done and the exact next step.
 - `docs/TASTE.md`: the tests the judges check. `docs/VISION.md`: what Aven 2 is.
-- `docs/COACH.md`: the Coach rulebook. `docs/coach/ANSWER-BAR.md`: the 13 rules every Coach answer must pass, with examples. `exam/`: the Coach exam (`v1/` conversations and harness, `v2/CASES.md` the 50 cases of the Coach quality exam, `judge/` judges and report (`pairwise.ts`: the blind judge that compares two answers in both orders, checked first on the Answer Bar's own Good/Bad pairs), `checks/` code checks, `providers.ts` model calls and spend cap).
+- `docs/COACH.md`: the Coach rulebook. `docs/coach/ANSWER-BAR.md`: the 14 rules every Coach answer must pass, with examples; `docs/coach/VOICE.md`: how the Coach sounds. `exam/`: the Coach exam (`v1/` conversations and harness, `v2/CASES.md` the 50 cases of the Coach quality exam, `judge/` judges and report (`pairwise.ts`: the blind judge that compares two answers in both orders, checked first on the Answer Bar's own Good/Bad pairs), `checks/` code checks, `providers.ts` model calls and spend cap).
 - `docs/INTERVIEW.md`: Omar's Checkpoint 1 answers. `docs/INVENTORY.md`: every old-Aven feature and what Aven 2 does with it. `docs/LESSONS.md`: lessons from old Aven.
 - `docs/concepts.md`: the twelve concepts in words. `docs/blur-test-plan.md`: how blur is tested (both go when their pages in `site/` are archived).
 - `.claude/agents/`: the judges. `.claude/skills/`: design and motion skills.
@@ -32,6 +32,10 @@ Read this first to find anything. Then open only the file for the topic you're w
 - `docs/research/taste-2026-11-01.md`: what Omar loves in old Aven (seven reviewers, two rounds) and the taste test link.
 - `docs/history/`: old material, history not direction (`old-aven-review.md`).
 
+## Tools and filing
+- `tools/looks/` and `tools/round/`: screenshot and clip scripts (`shot.mjs`, `clip.mjs`, `banding.py`) used for the look and round pages.
+- `tests/repo/layout.test.ts`: the filing check inside `npm run verify`. Fails if a file lands outside the allowed top-level folders, a video, zip or file over 2 MB is committed, a doc, page or tool folder is missing from this map, or this map points at a path that doesn't exist. Rules: "Filing" in `CLAUDE.md`.
+
 ## Research
 - `docs/research/tech-scan-2026-11-01.md`: pricing, voice, memory, motion, food data. Its links aren't repeated in `sources/`.
 - `docs/research/sources/`: link lists, one line per link, references not rules:
@@ -39,6 +43,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 
 ## Live pages (`site/`, published by `.github/workflows/pages.yml`)
 Base: https://omaralawi1000-netizen.github.io/Overall-fitness-/
+- `/_prototypes/blind-a/` (`site/_prototypes/blind-a/`): "Tide", the first blind workout screen (2 Nov), drawn with `liquid.js`.
 - `/_prototypes/blind-b/` (`site/_prototypes/blind-b/`): "Cast", a workout screen built blind on 2 Nov (no taste docs, by Omar's ask): every number is liquid metal drawn by one WebGL2 canvas (`cast.js`). It melts into the next value, is re-cast white-hot when a set is logged and cools to chrome over the rest, turns gold on a record, and sinks and rises between exercises. `?rest=8` shortens every rest, `?fps` shows the frame rate.
 - `/_prototypes/workout/` (`site/_prototypes/workout/`): the workout screen where the picture is this set's equipment, drawn live in 3D (the bar with the exact plates, dumbbells, or a cable stack with the pin), sharp on top and blurring into the colour field under the numbers; the depth sits one tap away. `thumbs.html` redraws the small pictures in `thumbs/`.
 - `/_prototypes/heat/` (`site/_prototypes/heat/`): one workout screen in the Heat look with frosted glass and six colour themes; every moment is built from a hearted clip, and the depth (Coach, last time, all sets, whole workout, the exercise page) sits one tap away. `/_prototypes/slice/` and `/_prototypes/premium/` are the earlier workout prototypes; the rejected frost round (`/_prototypes/frost/`) stays only because `/_prototypes/today/` uses its files; the wide round is in Git history.
@@ -60,5 +65,9 @@ Lives in the project's shared folder under `aven2/`. Not in git.
 - `aven2/research/aven2-tech-scan.html`: the tech scan as a page.
 - `aven2/2026-11-01-blank-page.md` and `aven2/2026-11-01-best-six.md`: the blank-page ideas and the best six.
 - `aven2/real-details.md`: Omar's real details. `aven2/removal-diff.md`: the removal diff.
+- `e2/` (beside `aven2/`): the Coach exam's paid runs, one folder each with answers, judge reports and spend ledgers: `stage3/` (8 Nov, Coach vs Opus), `fable-2026-11-09/` (Fable 5.2 on the 11 big cases; result in `docs/COACH.md` §8).
+
+## Local folder App-UI-Library (Omar's PC, outside the repo)
+For big visual files only: screenshots, clips, inspiration images, prototype zips. Docs and decisions live in the repo only, never only here. Its README points other AIs (Codex, Gemini) to `docs/README.md`, `docs/BRIEF.md` and `docs/PROGRESS.md`. Nothing here is the source of truth.
 
 Read only the reference file for the topic you're working on.

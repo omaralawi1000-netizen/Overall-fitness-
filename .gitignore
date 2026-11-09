@@ -1,5 +1,6 @@
 reference/
-node_modules/
+node_modules
 dist/
 *.mp4
 
+exam/v2/cases-heldout.ts
