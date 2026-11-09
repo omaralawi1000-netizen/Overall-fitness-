@@ -63,3 +63,39 @@ Kept as background only. 35 (one tap ticks a set) and 36 (seamless settle) live 
 35. Swipe to tick a set: removed for good. Tapping is the only way.
 36. Seamless settle: the last moving frame and the first still frame are the same picture.
 37. Fewer knobs. Eight palettes and nine backgrounds were too many to make perfect.
+
+## Staying fast across many redesigns (research, 9 Nov 2026)
+Why: old Aven got laggy as the look was changed round after round. Code structure was not the main cause: layers and
+blur piled up, and old looks stayed in the code. Ranked, most important first. Sources are web posts and experience
+reports, not studies; the numbers are examples, not promises for Omar's phone.
+1. **Blur is a written budget, checked by a test.** Count `backdrop-filter` elements per screen (a number in
+   DESIGN.md, e.g. 4 at most), none inside a scrolling list, none on hidden or opacity-0 things, one radius cap.
+   A blurred element costs by the pixels behind it, so cost grows with scroll area, radius and count, none of which
+   show in the CSS. One real case: 16 blurred elements gave 20 fps, 4 gave 60 fps, and the worst one was a stray
+   background line. Sources: jaeyonging.com/en/blog/80, willchan.me/blog/css-for-systems-that-are-slow-to-paint,
+   developer.chrome.com/blog/animated-blur.
+2. **A script that runs on every PR and fails over budget.** Playwright plays the key moments (tab switch, open
+   sheet, tick a set, rest timer), reads Long Animation Frames and the composited layer count, takes the median of 3
+   runs, loose limits so it never flakes. Structure (layers, long frames) is the same headless as on the phone;
+   absolute fps is not, so fps stays a phone test. Sources: css-animation.com "Enforcing Animation Performance
+   Budgets in CI", github.com/css-scroll-driven/scroll-jank-profiler, MDN "Performance budgets".
+3. **A new look is accepted only with phone numbers.** Beta fps on the S26 before and after, written in the PR. If
+   the number drops, change the design, not the budget. Source: github.com/silverbucket/setlist-roller/issues/66.
+4. **A redesign deletes the old look in the same PR.** CSS and components only grow unless pruning is a rule; dead
+   styles cost parsing, conflicts and fear of touching anything. Sources: mdesignarad.com (weekly CSS delete),
+   MDN performance budgets ("budgets stop slow creep").
+5. **Taste lives in tokens plus rationale plus a "forbidden" list in DESIGN.md**, so a redesign changes tokens and
+   rules, not every component. Every visual value traces to a token. Sources: teamit.fi (what makes a good
+   Design.md), figma.com/resource-library/llm-context-design.
+6. **One responsibility per file; a soft rule, not a line count.** Agents append to the file already open (a
+   3,000-line component is typical; code volume predicted decay at rho 0.94 in one study). Split only with tests
+   that freeze current behaviour first, one extraction per PR. Sources: mikful.com/writing/coding-agents-love-god-components,
+   franciscopuga.es/blog/2026/04/23/managing-file-size-in-coding-agents, dev.to "Split a 3,200-line god class".
+7. **Keep CLAUDE.md short** (about 100 lines): long rule files make the agent follow fewer rules. Move detail to
+   docs read on demand. Sources: nizar.se/lean-claude-code-for-production, ksred.com Claude Code workflows.
+8. Product side, lower priority: get real people on it early and don't polish before they've used it. Sources:
+   indiehackers.com posts on shipping before polishing.
+
+**Adopt now:** item 1 and 2 together as one small job: a `perf-budget` Playwright script plus the budget numbers in
+a few lines of DESIGN.md, run on every PR. It's free (no paid APIs), works headless, and turns "keeps getting
+laggy" into a red check before Omar sees a round. Needs a first measured baseline on his phone to set the numbers.
