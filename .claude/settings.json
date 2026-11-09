@@ -3,7 +3,23 @@
     "PreToolUse": [
       {
         "matcher": "Edit|Write|MultiEdit",
-        "hooks": [{ "type": "command", "command": "node tools/hooks/protect-files.mjs" }]
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node tools/hooks/protect-files.mjs"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node tools/hooks/stop-check.mjs",
+            "timeout": 180
+          }
+        ]
       }
     ]
   }
