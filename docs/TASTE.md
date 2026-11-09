@@ -81,3 +81,10 @@ These get the most care, and each has its own motion spec in DESIGN.md:
 - Defects listed most serious first, each with: what is wrong, where (file:line or screenshot + timestamp), and the smallest fix.
 - "needs phone" for anything in sections 3, 4 or 7 that only the real phone can show.
 - Judges never edit files.
+
+## 4c. Performance budget (9 Nov 2026, provisional)
+Why: old Aven got laggy as the look changed round after round. A new look must not make the app slower than it is today.
+- **A free check runs in `npm run verify`** (`tests/e2e/perf.mjs`, numbers in `tests/e2e/perf-budget.json`). It only measures; it changes no screen or style. Per screen it counts blurred elements (and how many sit inside a scrolling area or are hidden), the biggest blur radius and the layers; for tab switch, start workout, tick a set and the rest timer it reads long frames.
+- **`limit` = what the app does today plus room.** A look that goes over it is changed, not the number. Nothing is cut to meet it.
+- **`goal` = the research target** (docs/LESSONS.md "Staying fast"): few visible blurred elements, none in a scroller, none hidden, radius at most 40 px. Screens above it are reported, not failed. Omar chose plain live blur and it measured fine on his phone (§4b), so the goal is moved only by phone numbers, never by the research alone.
+- **Headless frame times are not the phone's** (software GL, a few hundred ms per frame is normal), so the frame limits only catch a catastrophe. Real smoothness is judged on the phone: `docs/perf-baseline.md`. **needs phone**
