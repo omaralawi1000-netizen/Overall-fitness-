@@ -1173,16 +1173,16 @@ function resumeDraft() {
   if (!d) return;
   const ex = d.snap.lifts.map(l => { const base = PUSH.find(p => EXID[p.n] === l.exerciseId); return base && { ...base, sets: l.sets.map(s => [s.kg, s.reps]) }; });
   if (ex.some(x => !x)) { SAVER.id = null; return; } // a lift this screen does not know: leave it open in the engine, never guess
-  const done = d.snap.lifts.map(l => { const a = []; for (const s of l.sets) { if (!s.done) break; a.push([s.kg, s.reps]); } return a; });
+  const done = d.snap.lifts.map(l => { const a = []; l.sets.forEach((s, j) => { if (s.done) a[j] = [s.kg, s.reps]; }); return a; }); // every logged set keeps its own place, even with gaps
   const flags = []; done.forEach((dn, i) => dn.forEach((_, j) => { flags[ex.slice(0, i).reduce((a, x) => a + x.sets.length, 0) + j] = 'd'; }));
   const rec = []; done.forEach((dn, i) => dn.forEach((x, j) => { // the records already earned come back with the sets, so the summary and the medal still count them
     const E = ex[i], heavy = x[0] > E.best[0], repB = !heavy && x[0] >= E.best[0] && x[1] > E.best[1];
     if (heavy || repB) { flags[ex.slice(0, i).reduce((a, y) => a + y.sets.length, 0) + j] = 'g'; rec.push({ e: i, w: x[0], r: x[1], heavy }); }
   }));
-  const e = Math.max(0, done.findIndex((dn, i) => dn.length < ex[i].sets.length)), n = done.flat().length;
+  const n = done.flat().length, at = ex.flatMap((x, i) => x.sets.map((_, j) => [i, j])).find(q => !done[q[0]][q[1]]) || [0, 0], e = at[0], si = at[1];
   const total = ex.reduce((a, x) => a + x.sets.length, 0);
   if (n >= total) { SAVER.closeDraft(d.snap); return; } // everything was logged but the finish never came: close it in the engine, so the next workout starts a new one
-  W = { ex, e, s: done[e].length, idx: ex.slice(0, e).reduce((a, x) => a + x.sets.length, 0) + done[e].length, total, done, t0: d.session.startedAt || Date.now(), rest: null, coach: 0, rec, vol: done.flat().reduce((a, x) => a + x[0] * x[1], 0), flags };
+  W = { ex, e, s: si, idx: ex.slice(0, e).reduce((a, x) => a + x.sets.length, 0) + si, total, done, t0: d.session.startedAt || Date.now(), rest: null, coach: 0, rec, vol: done.flat().reduce((a, x) => a + x[0] * x[1], 0), flags };
   S.live = true; buildSess(); renderSet(true); $('#live').classList.add('on'); paintLive(); paintCta();
   try { const r = JSON.parse(store.get('rest') || 'null'); if (r && r.sid === d.session.id && r.end - Date.now() > 1500) { startRest(Math.round((r.end - Date.now()) / 1000), r.newEx, true); W.rest.end = r.end; W.rest.total = r.total; paintLive(); } } catch {} // the rest that was running keeps its remaining time
 }
@@ -1449,7 +1449,7 @@ function logSet() {
 }
 function undoLog(p, k) {
   if (!W || S.view !== 'rest') return;
-  clearRest(); W.e = p.e; W.s = p.s; W.idx = p.idx; W.coach = p.coach; W.vol = p.vol; W.flags[k] = undefined; W.done[p.e].length = p.s; persist('Set undone');
+  clearRest(); W.e = p.e; W.s = p.s; W.idx = p.idx; W.coach = p.coach; W.vol = p.vol; W.flags[k] = undefined; delete W.done[p.e][p.s]; persist('Set undone');
   setView('train'); restFades(false); renderSet(true); resetPearl(); flyInto($('#setB'), k, true); fades(true); moodStage(false);
 }
 let restTm = 0;
@@ -1527,7 +1527,7 @@ function trimLive() {
   W.total = nex.reduce((a, e) => a + e.sets.length, 0); W.idx = n[W.e] + W.s;
   const slots = []; W.ex.forEach((x, ei) => x.sets.forEach((_, si) => slots.push([ei, si])));
   const at = Math.max(0, slots.findIndex(q => q[0] === W.e && q[1] === W.s)), dest = slots.map((_, k) => slots[(at + k) % slots.length]).find(q => !W.done[q[0]][q[1]]);
-  if (dest) { W.e = dest[0]; W.s = dest[1]; W.idx = idxAt(dest[0], dest[1]); } else { W.end = true; W.e = W.ex.length - 1; W.s = W.ex[W.e].sets.length - 1; W.idx = W.total; $('#logL').textContent = t('finishP'); } // every kept set is already logged: Log now means Finish
+  if (dest) { W.e = dest[0]; W.s = dest[1]; W.idx = idxAt(dest[0], dest[1]); } else { if (W.rest) { clearRest(); if (S.view === 'rest') { setView('train'); restFades(false); } } W.end = true; W.e = W.ex.length - 1; W.s = W.ex[W.e].sets.length - 1; W.idx = W.total; $('#logL').textContent = t('finishP'); } // every kept set is already logged: Log now means Finish
   buildSess(); renderSet(true); if (W.rest) paintRestNext(); paintLive(); persist('Plan trimmed');
 }
 function paintRestNext() { const nx = cur(); $('#rNext').innerHTML = `${t('nextSet')} · <b class="tab">${kgFmt(nx[0])} × ${nx[1]}</b><small>${exN(W.ex[W.e])} · ${t('set', { a: W.s + 1, b: W.ex[W.e].sets.length })}</small>`; }

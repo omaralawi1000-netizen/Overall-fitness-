@@ -177,6 +177,19 @@ r = await ev(`({ injected: !!window.__injected, imgs: document.querySelectorAll(
 check('a saved food name is shown as text, never run as markup', !r.injected && r.imgs === 0 && r.text, r);
 await ev(`indexedDB.deleteDatabase('a2.data')`);
 
+// P5e. a set logged out of order keeps its place after a reload, and the first unfinished set is the one shown
+await p.goto(base + '?rest=8&nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(400);
+await ev(`__aven.startWorkout()`); await sleep(900);
+await ev(`(() => { const W = __aven.W; W.e = 0; W.s = 1; W.idx = 1; })()`);
+await ev(`__aven.logSet()`); await sleep(1200);
+await p.waitForFunction(() => !window.__saver.engine.busy(), null, { timeout: 8000 });
+await p.goto(base + '?rest=8&nosw'); await p.waitForFunction(() => window.__ready && window.__saver && document.getElementById('live').classList.contains('on'), null, { timeout: 90000 }); await sleep(500);
+r = await ev(`({ e: __aven.W.e, s: __aven.W.s, idx: __aven.W.idx, kept: !!__aven.W.done[0][1], first: !__aven.W.done[0][0] })`);
+await p.waitForFunction(() => !window.__saver.engine.busy(), null, { timeout: 8000 });
+const kept = await ev(`__saver.engine.all('set').filter(x => x.done).length`);
+check('a set logged out of order is kept after a reload (and stays saved)', r.e === 0 && r.s === 0 && r.idx === 0 && r.kept && r.first && kept === 1, { ...r, kept });
+await ev(`indexedDB.deleteDatabase('a2.data')`);
+
 // P5c. a rest in progress is still running after a reload; a finish tapped before the database opened is still saved
 await p.goto(base + '?rest=8&nosw'); await p.waitForFunction(() => window.__ready && window.__saver, null, { timeout: 90000 }); await sleep(400);
 await ev(`__aven.startWorkout()`); await sleep(900);
@@ -293,6 +306,8 @@ r = await ev(`__aven.canTrimLive()`);
 check('a plan that would drop a lift with logged sets is refused', r === false, { can: r });
 
 // --- the picture itself (3 Nov: an inline comment twice swallowed code that drew the playhead and the weather) ---
+// the sun's place changes by the day, so the reference picture is judged on the day it was taken (4 Nov 2026), whatever day the test runs
+await p.clock.setFixedTime(new Date('2026-11-04T12:00:00+01:00'));
 // 9. every uniform the shader declares is set on every frame
 await open();
 r = await ev(`__aven.uniformsUnset()`);
