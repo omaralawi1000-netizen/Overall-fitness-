@@ -5,11 +5,13 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "vite build",
+    "build": "vite build && vite build -c tools/vite.app.config.ts",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "verify": "tsc --noEmit && vitest run && knip --include files,dependencies && vite build",
-    "knip": "knip --include files,dependencies"
+    "knip": "knip --include files,dependencies",
+    "dev:app": "vite --host -c tools/vite.app.config.ts",
+    "test:app": "node tests/e2e/app.mjs"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "0.137.0",
@@ -17,6 +19,7 @@
     "fake-indexeddb": "^6.2.7",
     "fast-check": "^4.10.2",
     "knip": "^6.44.2",
+    "three": "^0.170.0",
     "typescript": "~5.9.3",
     "vite": "^8.3.5",
     "vitest": "^5.0.5"

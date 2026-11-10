@@ -308,6 +308,21 @@ Next: Omar times the cold start on his phone, then port Window v15 into the repo
 - Z-Anatomy is CC BY-SA 4.0, so Settings needs a credit line.
 - Push day still needs bench, incline, OHP and lateral raise rendered.
 
+## Session 18: Window is now the app (3 Nov 2026, Sonnet)
+Window v17 is ported into the repo as the real app: `src/app/`, built to `/app/` (live at https://omaralawi1000-netizen.github.io/Overall-fitness-/app/ once merged). Where everything is and what changed from the artifact: `docs/PORTING.md`.
+- Same screens, same motion, same picture. Moved from one HTML file to Vite: `index.html`, `app.css`, `main.js`; three.js comes from npm and loads as its own file after Today has settled (`stage.js`).
+- Type: Geist and Instrument Serif are self-hosted (Latin only, ~51 KB) and preloaded, so no fallback flash and no request to Google.
+- Cold start: the numbers (a still copy of Today's first screen) are painted before the other four screens, the photo, the GL and the warm-up are built. `window.__numbersAt` and `window.__readyAt` mark the two moments.
+- Installable and offline: manifest, icons, and a small service worker (`a2-app-*` cache, never reloads a page).
+- No person is built in: the greeting uses `a2:name` (to be set by onboarding) or no name.
+- Checks: `npm run build && npm run test:app` (`tests/e2e/app.mjs`): the 10 regression checks of the Window build plus type, cold-start, storage and offline checks. The 6-minute run is software GL, so it proves behaviour, not smoothness.
+- Not done yet, on purpose: the plan, food, sleep and weight are still example numbers, and a finished workout is not yet saved through the engine. Omar's seven fixes (record moment, earned finish, Coach line between sets, Push-vs-wrestling choice, cold start, own image, thin numbers at arm's length) were already in v17; nothing was redesigned here.
+- Needs his phone: cold-start time, frame rate, blur and banding, thin numbers at 20% brightness.
+
+- Engine wiring, slice 1 (same day): the workout now saves. `src/app/store.ts` mirrors the screen into engine records: the session, its lifts and planned sets on start; each logged set (with what was really done), Undo, a trimmed plan, and finish (unlogged sets marked skipped). An open workout comes back as the live pill after the app is killed (older than 12 h: put away as unfinished, never resumed). Food taps are saved and restored for today, and Undo removes the record. `?nosave` turns it off for tests. Checks: `tests/app/store.test.ts` (8) and the P5/P6 browser checks.
+- Still example numbers: the plan (Push and its targets), sleep and weight. Sleep has no source yet and needs Health Connect (weight now has a manual log, see below); the plan needs the routine editor. Today's "Push done" state after a reload is not restored from the saved session yet.
+- Codex review of PR #79 (5 findings) fixed: a trimmed plan keeps logged sets, an out-of-order lift is never logged twice, minimising inside the 300 ms hand-off, Today's calories after food, and the first-visit offline cache.
+
 **Figures for ~400 lifts: faster route (4 Nov 2026, recommendation, waiting on Omar's yes; supersedes only the "how we get 400 clips" part of the figures decision)**
 - Problem: re-posing the clay figure in Blender takes 1–2 days per lift. A live three.js mannequin looked like a cheap game model (rejected). Omar: "That takes too long."
 - **Recommendation: buy a licensed 3D exercise library (MoveKit, the Complete pack, $299 once, about 2,000 DKK) for the long tail. Keep the clay clips for the 5 finished lifts plus Omar's ~30 main lifts, done by the Blender route only as time allows.** Harsh score **7/10**. Biggest weakness: it is not the clay look, and Omar has not seen it on his phone yet.
@@ -328,3 +343,7 @@ Next: Omar times the cold start on his phone, then port Window v15 into the repo
 - Why it wins: it is the only option that covers hundreds of lifts in days, at a fixed price, with a licence meant for apps that may be released. Everything else is either not fast, not safe on form, or not releasable.
 - Plan if Omar says yes: (1) judge the free sample; (2) read the licence text and email MoveKit the two questions above; (3) check his lift list against their library; (4) buy; (5) wire clips into the explainer, keep the clay clips for lifts where they exist; (6) static poster frame for the Train list; (7) credit lines in Settings (Z-Anatomy CC BY-SA 4.0 stays for clay clips).
 - Nothing was bought or signed up for.
+- Weight log (9 Nov, Omar: "Okay, do it"): Health → Weight now has a real manual log. `src/app/weights.ts` (tested) keeps one weigh-in per day in `localStorage` key `a2:weights`, on the phone only, no network. "Log weight" opens a sheet (type the number or nudge 0.1 kg; no one's weight is built in, the first entry starts at 70); saving the same day replaces it and the toast has Undo. The card shows the latest weight, Down / Up / Steady from the last seven days, and a scrubbable chart of the last 14 weigh-ins; with nothing logged it says so instead of showing an example. The old "77 kg by December" example text is gone. Not done: weigh-ins are not in the engine database or the backup yet, so they are not part of export/import; sleep and recovery are still examples.
+
+## Next step
+Omar opens `/app/` on his phone (install it, time the cold start, log a real set, close the app mid-workout and reopen it: the Resume pill should be there). Then: (1) read the plan, Train history and "Last/Best" from saved sessions instead of the example Push day (the first finished workout is the first real history); (2) restore "Push done" after a reload; (3) weight and sleep: a manual weight log and Health Connect; (4) onboarding sets `a2:name`, units and the routine. Clay-figure clips go into the explainer's hero slot when Omar's two zips arrive.
