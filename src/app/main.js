@@ -1519,7 +1519,7 @@ function useCoach() {
 // the 30-minute plan on a running workout: drop the cut lifts and sets, keep every logged set and its place on the strip
 const canTrimLive = () => W.e < 3 && (W.s < 3 || W.e < 2) && !W.done.slice(plan().length).some(d => d.some(Boolean)); // never drop a lift that already has logged sets
 function trimLive() {
-  const P = plan(), keep = P.map((e, i) => Math.max(e.sets.length, W.done[i] ? W.done[i].filter(Boolean).length : 0)), start = ex => ex.map((_, i) => ex.slice(0, i).reduce((a, x) => a + x.sets.length, 0));
+  const P = plan(), keep = P.map((e, i) => Math.max(e.sets.length, W.done[i] ? W.done[i].length : 0)), start = ex => ex.map((_, i) => ex.slice(0, i).reduce((a, x) => a + x.sets.length, 0));
   const o = start(W.ex), nex = W.ex.slice(0, P.length).map((e, i) => ({ ...e, sets: e.sets.slice(0, keep[i]) })), n = start(nex), flags = [];
   nex.forEach((e, i) => e.sets.forEach((_, s) => { flags[n[i] + s] = W.flags[o[i] + s]; }));
   if (W.s >= keep[W.e]) { W.e++; W.s = 0; }
@@ -1587,7 +1587,7 @@ $('#sessT').addEventListener('click', e => {
   if (e.target.closest('[data-sclose]')) return closeSess();
   const j = e.target.closest('[data-j]'); if (!j || !W || W.rest || W.busy) return; // not inside the 300 ms hand-off after a set
   const ei = +j.dataset.j; if (ei === W.e) return closeSess();
-  const dn = W.done[ei].filter(Boolean).length; if (dn >= W.ex[ei].sets.length) return closeSess(); // a finished lift cannot be logged twice
+  const dn = W.ex[ei].sets.findIndex((_, j) => !W.done[ei][j]); if (dn < 0) return closeSess(); // a finished lift cannot be logged twice; the first set not yet logged is the one shown
   W.end = false; W.e = ei; W.s = dn; W.idx = idxAt(ei, W.s);
   closeSess(); renderSet(); go($('#exName'), [{ transform: 'translate3d(6rem,0,0)', opacity: 0 }, { transform: 'none', opacity: 1 }], { key: 'nm' });
 });
