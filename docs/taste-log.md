@@ -95,7 +95,8 @@ Asked: "If you would fit the today screen from the aura, let's just imagine that
 Built: Today beside the Fluted workout screen (swipe between them, same six themes). From the Oura still it keeps only a calm thin number in a ring of ticks, a serif sentence and detail one tap away; everything else is Heat (light from below, Unbounded numbers, frosted panes, cream pill). Tiles and the readiness number grow into pages. Three moments: Morning, Rest day, After lifting (the light turns gold on a record).
 Omar on v1: "That's not it. I want a background like with a blurred gradient blur, like aura for the today. I want it to seamless. Think of something out of the box. Make it make sense."
 v2: no boxes. The whole background is one seamless blurred gradient where each colour mass belongs to something he tracks (readiness top, sleep left, food right, training bottom; size and glow follow the numbers). Tapping a number swells its colour to fill the screen and the page fades in over it.
-Verdict: waiting.
+v3: a mountain painted in code at the top, sharp then blurring progressively into the field, peak rises with readiness. Live at /_prototypes/today/.
+Verdict (v3): "Doesn't look bad." Lukewarm, not a keeper. Wants the picture to blur gradually toward the bottom so everything feels seamless and fits (done in v3).
 
 ### 2 Nov 2026: frost round, six workout screens from Heat (/_prototypes/frost/)
 Ask (Omar): "I think maybe I want to have multiple themes, so it's going to be another color if I want anyways. And I also want more frosty glass blur. Can we have more variations of that on Opus, so it actually be creative and have maybe different layouts? … Give Opus the full creative control. Think of outside the box."
