@@ -1,6 +1,7 @@
 {
   "entry": [
     "src/debug/*.ts",
+    "src/app/stage.js",
     "tests/**/*.test.ts",
     "exam/**/*.test.ts"
   ],
