@@ -1,9 +1,10 @@
-"""Renders the hero pictures for the Reed stills (site/_prototypes/reed/) and the barbell of the cut Studio look.
+"""Renders the hero pictures for the from-scratch stills (site/_prototypes/): Studio, Reed and Silk.
 
 Needs Blender as a Python module: Python 3.11 and `pip install bpy==5.0.1`. CPU only, about 2 to 5 minutes per picture.
    python scene.py <scene> <out.png> <scale> <samples>
-   scenes: studio-today studio-workout reed-today reed-workout
-           (reed also takes todayb / workoutb: the cobalt and rose theme)
+   scenes: studio-today studio-workout reed-today reed-workout silk-today silk-workout
+           (reed also takes todayb / workoutb: the cobalt and rose theme;
+            studio-todaymask gives a white-on-black cut-out of the barbell, so type can sit behind it)
    scale 2.5 gives 960 x 2080 px. Then: python tojpg.py out.png out.jpg 90 [contrast] [saturation]
 The plate numerals use Inter Display Medium from /usr/share/fonts/opentype/inter/.
 """
@@ -94,12 +95,12 @@ def barbell(mats, plates, origin=(0, 0, 0.225), labels=None):
             p = lathe('plate', plate_profile(r, t), m)
             p.location.z = side * (x + t / 2)
             parts.append(p)
-            if side == 1 and labels and r > 0.1:
+            if side == 1 and labels and r > 0.09:
                 # painted weight numeral on the outer face, like a calibrated plate
-                lab, rad, size = labels.pop(0)
+                lab, rad, size, ink = labels.pop(0)
                 cu = bpy.data.curves.new('num', 'FONT'); cu.body = lab; cu.size = size; cu.align_x = 'CENTER'; cu.align_y = 'CENTER'
                 cu.extrude = 0.0004; cu.font = bpy.data.fonts.load('/usr/share/fonts/opentype/inter/InterDisplay-Medium.otf')
-                to = bpy.data.objects.new('num', cu); sc.collection.objects.link(to); to.data.materials.append(mats['paint'])
+                to = bpy.data.objects.new('num', cu); sc.collection.objects.link(to); to.data.materials.append(mats[ink])
                 on_rim = rad > r - 0.03
                 to.location = (-rad, 0, x + (t if on_rim else t / 2 + t * 0.225) + 0.0003)
                 to.rotation_euler = (0, 0, math.radians(90))
@@ -182,28 +183,30 @@ def cove(alpha, depth=2.6, radius=1.3, m=None):
 
 
 def studio(view):
-    sc.view_settings.exposure = 0.55
-    room = mat('room', **{'Base Color': (0.80, 0.755, 0.70, 1), 'Roughness': 0.7})
+    mask = view.endswith('mask'); view = view.replace('mask', '')
+    sc.view_settings.exposure = 0.78
+    room = mat('room', **{'Base Color': (0.83, 0.775, 0.70, 1), 'Roughness': 0.7})
     mats = {
         'steel': mat('steel', **{'Base Color': (0.62, 0.63, 0.64, 1), 'Metallic': 1.0, 'Roughness': 0.28}),
         'chrome': mat('chrome', **{'Base Color': (0.82, 0.82, 0.82, 1), 'Metallic': 1.0, 'Roughness': 0.1}),
     }
     graphite = mat('graphite', **{'Base Color': (0.022, 0.024, 0.027, 1), 'Roughness': 0.4})
     cobalt = mat('cobalt', **{'Base Color': (0.0015, 0.010, 0.165, 1), 'Roughness': 0.42, 'Coat Weight': 0.15, 'Coat Roughness': 0.3})
-    small = mat('small', **{'Base Color': (0.6, 0.61, 0.62, 1), 'Metallic': 1.0, 'Roughness': 0.34})
+    small = mat('small', **{'Base Color': (0.80, 0.79, 0.76, 1), 'Roughness': 0.45})   # the 2.5 kg change plate, painted white
+    mats['ink'] = mat('ink', **{'Base Color': (0.03, 0.03, 0.035, 1), 'Roughness': 0.5})
     mats['paint'] = mat('paint', **{'Base Color': (0.72, 0.72, 0.70, 1), 'Roughness': 0.5})
-    barbell(mats, [(0.225, 0.026, cobalt), (0.1625, 0.024, graphite), (0.08, 0.014, small)], origin=(0, 0, 0.225), labels=[('20', 0.186, 0.026), ('10', 0.112, 0.036)])
+    barbell(mats, [(0.225, 0.026, cobalt), (0.1625, 0.024, graphite), (0.096, 0.012, small)], origin=(0, 0, 0.225), labels=[('20', 0.186, 0.026, 'paint'), ('10', 0.112, 0.036, 'paint'), ('2.5', 0.070, 0.021, 'ink')])
     bg.inputs[0].default_value = (0.86, 0.90, 0.97, 1); bg.inputs[1].default_value = 0.5
     black = mat('black', **{'Base Color': (0, 0, 0, 1), 'Roughness': 1})
     up = Vector((0, 0, 1))
     if view == 'today':
-        phi = math.radians(62); R = 4.1
+        phi = math.radians(62); R = 3.8
         f = Vector((-math.sin(phi), math.cos(phi), 0)); r = f.cross(up)
         cove(phi, depth=2.4, radius=1.5, m=room)
         d = (r * 0.80 + f * 0.42 - up * 0.42)
         sun(d, 7.5, 0.9, (1, 0.93, 0.84))
         window_gobo(Vector((0, 0, 0)) + r * 0.55 + f * 0.5, d, dist=5, w=1.25, h=1.9, m=black)
-        camera(tuple(-f * R + up * 1.5 + r * 0.02), tuple(Vector((0, 0, 0.29)) + r * 0.02), lens=64, dof=(4.3, 8))
+        camera(tuple(-f * R + up * 1.5 + r * 0.02), tuple(Vector((0, 0, 0.06)) + r * 0.02), lens=64, dof=(4.0, 8))
     else:
         end = Vector((0.72, 0, 0.225))
         phi = math.radians(54); R = 1.5           # 0 = side-on, 90 = straight down the bar
@@ -212,7 +215,20 @@ def studio(view):
         d = (r * 0.72 + f * 0.5 - up * 0.48)
         sun(d, 7.5, 0.9, (1, 0.93, 0.84))
         window_gobo(end + r * 0.25 + f * 0.1 - up * 0.225, d, dist=5, w=1.25, h=1.9, m=black)
-        camera(tuple(end - f * R + up * 0.34), tuple(end + up * -0.072 - r * 0.02), lens=50, dof=(1.52, 8))
+        camera(tuple(end - f * R + up * 0.34), tuple(end + up * 0.077 - r * 0.02), lens=50, dof=(1.52, 8))
+    if mask:
+        # the barbell white, everything else black: an alpha for layering type behind the bar
+        def flat(name, v):
+            m = bpy.data.materials.new(name); m.use_nodes = True; nt = m.node_tree; nt.nodes.clear()
+            o_ = nt.nodes.new('ShaderNodeOutputMaterial'); e = nt.nodes.new('ShaderNodeEmission')
+            e.inputs['Color'].default_value = (v, v, v, 1); nt.links.new(e.outputs[0], o_.inputs['Surface']); return m
+        white, dark = flat('white', 1), flat('dark', 0)
+        for o in bpy.data.objects:
+            if o.type == 'LIGHT': o.data.energy = 0
+            elif o.type in ('MESH', 'FONT'):
+                o.data.materials.clear(); o.data.materials.append(white if o.parent and o.parent.name == 'barbell' else dark)
+        bg.inputs[1].default_value = 0.0
+        sc.view_settings.view_transform = 'Standard'; sc.view_settings.exposure = 0
 
 
 def glass(name, tint=(1, 1, 1, 1), rough=0.28):
@@ -280,7 +296,42 @@ def reed(view):
     sc.camera.data.sensor_fit = 'VERTICAL'
 
 
+# ---------------------------------------------------------------- SILK
+def silk(view):
+    # a wall of satin folds in a jewel colour, lit evenly from two sides: no black, no single glow
+    import numpy as np
+    nx, nz = 300, 640
+    X, Zc = np.meshgrid(np.linspace(-0.3, 0.3, nx), np.linspace(-0.62, 0.62, nz))
+    a = math.radians(33 if view == 'today' else 28)
+    U = X * math.cos(a) + Zc * math.sin(a); V = -X * math.sin(a) + Zc * math.cos(a)
+    k = 1.3 if view == 'today' else 1.25
+    D = (0.040 * np.sin(13 * k * U + 1.1 * np.sin(5 * V + (2.6 if view == 'today' else 0.4)))
+         + 0.010 * np.sin(27 * k * U + 1.4 * np.sin(8 * V + 1.7) + 0.9))
+    verts = np.stack([X, -D, Zc], axis=-1).reshape(-1, 3)
+    idx = np.arange(nx * nz).reshape(nz, nx)
+    faces = np.stack([idx[:-1, :-1], idx[:-1, 1:], idx[1:, 1:], idx[1:, :-1]], axis=-1).reshape(-1, 4)
+    me = bpy.data.meshes.new('silk'); me.from_pydata(verts.tolist(), [], faces.tolist())
+    o = bpy.data.objects.new('silk', me); sc.collection.objects.link(o)
+    for p in o.data.polygons: p.use_smooth = True
+    pal = {
+        'today': ((0.022, 0.030, 0.34, 1), (0.45, 0.55, 1.0, 1), (0.78, 0.82, 1.0), 36, (0.45, 0.60, 1.0), 9, (0.03, 0.04, 0.24, 1)),
+        'workout': ((0.19, 0.010, 0.20, 1), (1.0, 0.45, 0.85, 1), (1.0, 0.66, 0.86), 20, (0.60, 0.42, 1.0), 7, (0.09, 0.02, 0.18, 1)),
+    }[view]
+    o.data.materials.append(mat('satin', **{'Base Color': pal[0], 'Roughness': 0.44, 'Sheen Weight': 0.2, 'Sheen Roughness': 0.4, 'Sheen Tint': pal[1], 'Specular IOR Level': 0.6}))
+
+    def area(loc, col, watts, size):
+        ld = bpy.data.lights.new('a', 'AREA'); ld.energy = watts; ld.color = col; ld.shape = 'SQUARE'; ld.size = size
+        lo = bpy.data.objects.new('a', ld); sc.collection.objects.link(lo); lo.location = loc
+        lo.rotation_euler = (Vector((0, 0, 0)) - Vector(loc)).to_track_quat('-Z', 'Y').to_euler()
+
+    area((-0.75, -0.55, -0.9), pal[2], pal[3], 1.2)      # key, low and from the left
+    area((0.85, -0.7, 0.75), pal[4], pal[5], 1.4)         # fill, high and from the right
+    bg.inputs[0].default_value = pal[6]; bg.inputs[1].default_value = 0.35
+    camera((0, -2, 0), (0, 0, 0), ortho=1.0)
+    sc.camera.data.sensor_fit = 'VERTICAL'
+
+
 kind, view = scene_name.split('-')
-{'studio': studio, 'reed': reed}[kind](view)
+{'studio': studio, 'reed': reed, 'silk': silk}[kind](view)
 bpy.ops.render.render(write_still=True)
 print('done', out)
