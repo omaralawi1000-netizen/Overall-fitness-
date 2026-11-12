@@ -7,7 +7,7 @@
 //      CATCH_REPORT_ONLY=1  no calls: rebuild the report from the saved verdicts (an answer one checker never read counts that checker's verdicts only)
 //      CATCH_LABELS   optional "setup=label" pairs for the report, e.g. sonnetfable=Coach,opusformat=plain Opus
 // A verdict is saved as it arrives and reused for the exact same request, so a stopped run resumes for free.
-// Only the 20 tuning cases are scored; answers whose case or records changed since they were made are refused.
+// Only the 20 tuning cases are scored, the newest answer of each; answers whose case or records changed since are refused.
 import { it } from 'vitest';
 import { appendFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { Ledger, type GeminiReply } from '../providers';
@@ -36,7 +36,13 @@ it('scores the saved answers against the catch lists', async () => {
   const ledger = new Ledger(process.env.EXAM_LEDGER ?? `${OUT}/ledger-catch.jsonl`, CAP);
   const vfile = `${OUT}/catch-verdicts.jsonl`;
   const saved = new Map<string, Saved>((existsSync(vfile) ? readFileSync(vfile, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l) as Saved) : []).map((s) => [s.key, s]));
-  const rows = readFileSync(`${IN}/answers.jsonl`, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l) as CaseRun & { key: string; run: number });
+  // run-answers appends a new row when the Coach changes: score only the newest answer per case, setup and run
+  const newest = new Map<string, CaseRun & { key: string; run: number }>();
+  for (const l of readFileSync(`${IN}/answers.jsonl`, 'utf8').split('\n').filter(Boolean)) {
+    const r = JSON.parse(l) as CaseRun & { key: string; run: number };
+    newest.set(`${r.id}|${r.setup}|${r.run ?? 1}`, r);
+  }
+  const rows = [...newest.values()];
   const only = (process.env.CATCH_SETUPS ?? '').split(',').map((s) => s.trim()).filter(Boolean);
   const byId = new Map(CASES.map((c) => [c.id, c]));
   const todo = rows.filter((r) => TUNING.includes(r.id) && (!only.length || only.includes(r.setup)));
