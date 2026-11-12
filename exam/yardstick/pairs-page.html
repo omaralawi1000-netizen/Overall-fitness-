@@ -1,0 +1,268 @@
+<title>Coach Blind Pairs</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@500;600&family=Inter:wght@400;500;600&display=swap">
+<style>
+/* One pair per screen, read top to bottom on a phone: who, what they said, reply A, reply B, then a fixed choice bar. */
+:root {
+  --ground: #eef1f0; --card: #ffffff; --ink: #18201f; --muted: #5d6967; --line: #d6dcda;
+  --accent: #2c5f7c; --accent-ink: #ffffff; --chosen: #e3eef4; --ok: #2f7a4f; --warn: #9a5b12;
+  --display: "Instrument Sans", "Inter", system-ui, sans-serif;
+  --text: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --ground: #121716; --card: #1b2221; --ink: #e8eeec; --muted: #9aa8a5; --line: #2e3836;
+  --accent: #7fb6d3; --accent-ink: #0d1a20; --chosen: #1f3340; --ok: #6cc394; --warn: #e0a85a; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --ground: #121716; --card: #1b2221; --ink: #e8eeec; --muted: #9aa8a5; --line: #2e3836;
+  --accent: #7fb6d3; --accent-ink: #0d1a20; --chosen: #1f3340; --ok: #6cc394; --warn: #e0a85a; color-scheme: dark }
+html, body { height: 100%; }
+body { background: var(--ground); color: var(--ink); font: 400 16px/1.5 var(--text); -webkit-tap-highlight-color: transparent; }
+.wrap { max-width: 640px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 140px; display: flex; flex-direction: column; gap: 16px; }
+h1 { font: 600 1.6rem/1.2 var(--display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
+h2 { font: 600 1.05rem/1.3 var(--display); margin: 0; }
+p { margin: 0; }
+.muted { color: var(--muted); }
+.small { font-size: 0.875rem; }
+.eyebrow { font: 600 0.75rem/1 var(--text); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.progress { display: flex; gap: 6px; }
+.progress i { flex: 1; height: 4px; border-radius: 2px; background: var(--line); }
+.progress i.done { background: var(--accent); }
+.progress i.here { background: var(--muted); }
+.who { border-left: 3px solid var(--line); padding: 2px 0 2px 12px; color: var(--muted); font-size: 0.9rem; }
+.said { align-self: flex-end; max-width: 88%; background: var(--accent); color: var(--accent-ink); padding: 10px 14px; border-radius: 18px 18px 4px 18px; font-weight: 500; }
+.said.notice { align-self: stretch; max-width: none; background: transparent; color: var(--muted); border: 1px dashed var(--line); border-radius: 12px; font-weight: 400; }
+.reply { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.reply.picked { border-color: var(--accent); background: var(--chosen); }
+.reply header { display: flex; justify-content: space-between; align-items: baseline; }
+.body p + p, .body p + ul, .body ul + p { margin-top: 8px; }
+.body ul { margin: 6px 0 0; padding-left: 20px; }
+.body li + li { margin-top: 4px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 0.8rem; border: 1px solid var(--line); border-radius: 999px; padding: 3px 10px; color: var(--muted); }
+button { font: 600 0.95rem/1 var(--text); color: inherit; cursor: pointer; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.more-btn { align-self: flex-start; background: none; border: 0; padding: 6px 0; color: var(--accent); }
+.more { border-top: 1px solid var(--line); padding-top: 10px; font-size: 0.95rem; }
+.bar { position: fixed; left: 0; right: 0; bottom: 0; background: var(--card); border-top: 1px solid var(--line);
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-top: 12px; padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); }
+.bar .row { max-width: 640px; margin: 0 auto; display: grid; grid-template-columns: 1fr 0.8fr 1fr; gap: 8px; }
+.bar .meta { max-width: 640px; margin: 0 auto 8px; display: flex; justify-content: space-between; font-size: 0.8rem; color: var(--muted); }
+.pick { min-height: 48px; border-radius: 12px; border: 1px solid var(--line); background: var(--ground); padding: 0 8px; }
+.pick.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.pick:disabled { opacity: 0.45; cursor: default; }
+.pick.on { outline: 3px solid var(--accent); outline-offset: 1px; }
+.link { background: none; border: 0; padding: 0; color: var(--accent); font-weight: 500; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+input[type=text] { font: 400 16px var(--text); padding: 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--ink); }
+.start { min-height: 52px; border-radius: 12px; border: 0; background: var(--accent); color: var(--accent-ink); }
+.note { font-size: 0.875rem; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
+.note.warn { color: var(--warn); }
+.note.ok { color: var(--ok); }
+.code { font: 500 0.9rem/1.4 ui-monospace, "SF Mono", Menlo, monospace; word-break: break-all; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; user-select: all; }
+ol.how { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
+@media (prefers-reduced-motion: no-preference) { .fill { transition: width 0.2s linear; } }
+.timer { height: 3px; background: var(--line); border-radius: 2px; overflow: hidden; max-width: 640px; margin: 0 auto 8px; }
+.timer .fill { height: 100%; background: var(--accent); width: 0; }
+</style>
+
+<div class="wrap" id="app" aria-live="polite"></div>
+<div class="bar" id="bar" hidden></div>
+
+<script type="application/json" id="pairs">/*PAIRS*/</script>
+<script>
+const PAIRS = JSON.parse(document.getElementById('pairs').textContent);
+const PAGE = PAIRS.page;           // which build of the page (the key outside the page maps it)
+const LIST = PAIRS.pairs;
+const READ_MS = 6000;              // the pick buttons wake after 6 s: a quick tap without reading is not a pick
+const LS = 'coach-pairs:' + PAGE;
+const app = document.getElementById('app');
+const bar = document.getElementById('bar');
+
+let state = load() || { tester: '', order: {}, picks: {}, startedAt: null };
+let at = 0;                        // the pair on screen
+let shownAt = 0;
+let db = null, me = null, saveNote = 'local';
+
+function load() { try { return JSON.parse(localStorage.getItem(LS)); } catch (e) { return null; } }
+function keep() { try { localStorage.setItem(LS, JSON.stringify(state)); } catch (e) {} }
+const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+/** the little markdown the coaches write: paragraphs, "- " lists, **bold** */
+function md(text) {
+  const inline = (s) => esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+  return text.trim().split(/\n{2,}/).map((block) => {
+    const lines = block.split('\n');
+    if (lines.every((l) => /^\s*[-•]\s+/.test(l))) return '<ul>' + lines.map((l) => '<li>' + inline(l.replace(/^\s*[-•]\s+/, '')) + '</li>').join('') + '</ul>';
+    const head = lines.filter((l) => !/^\s*[-•]\s+/.test(l)), items = lines.filter((l) => /^\s*[-•]\s+/.test(l));
+    if (items.length && head.length === 1 && lines[0] === head[0]) return '<p>' + inline(head[0]) + '</p><ul>' + items.map((l) => '<li>' + inline(l.replace(/^\s*[-•]\s+/, '')) + '</li>').join('') + '</ul>';
+    return '<p>' + lines.map(inline).join('<br>') + '</p>';
+  }).join('');
+}
+
+function orderOf(p) {
+  if (!state.order[p.id]) { state.order[p.id] = Math.random() < 0.5 ? ['r1', 'r2'] : ['r2', 'r1']; keep(); }
+  return state.order[p.id];
+}
+
+function intro() {
+  bar.hidden = true;
+  const done = Object.keys(state.picks).length;
+  app.innerHTML = `
+    <p class="eyebrow">Coach test · ${LIST.length} pairs · about 3 minutes</p>
+    <h1>Which reply would you rather get?</h1>
+    <ol class="how">
+      <li>Each pair is one message someone sent to a fitness coach in an app, and two replies.</li>
+      <li>The replies come from two different AI coaches. You won't see which is which, and the order is mixed.</li>
+      <li>Read both, then pick the one you'd rather get. "About the same" is a fine answer.</li>
+      <li>"More" shows the extra text the person could tap to unfold. Use it if it helps you decide.</li>
+    </ol>
+    <div class="field"><label for="tester" class="small muted">Your first name or initials (so Omar knows whose picks these are)</label>
+      <input type="text" id="tester" autocomplete="given-name" maxlength="40" value="${esc(state.tester || '')}"></div>
+    <div id="save-note" class="note small muted">Connecting so your picks are saved…</div>
+    <button class="start" id="go">${done ? `Continue (${done} of ${LIST.length} done)` : 'Start'}</button>`;
+  noteSave();
+  document.getElementById('go').onclick = () => {
+    state.tester = document.getElementById('tester').value.trim();
+    state.startedAt = state.startedAt || new Date().toISOString();
+    keep();
+    const next = LIST.findIndex((p) => !state.picks[p.id]);
+    show(next < 0 ? 0 : next);
+  };
+}
+
+function noteSave() {
+  const n = document.getElementById('save-note');
+  if (!n) return;
+  if (saveNote === 'db') { n.className = 'note small ok'; n.textContent = 'Your picks are saved as you go.'; }
+  else if (saveNote === 'local') { n.className = 'note small muted'; n.textContent = 'Connecting so your picks are saved…'; }
+  else { n.className = 'note small warn'; n.textContent = 'This page can\'t save picks for you here, so at the end you get a short code to send to Omar instead.'; }
+}
+
+function show(i) {
+  at = i;
+  const p = LIST[i];
+  const [first, second] = orderOf(p);
+  const picked = state.picks[p.id];
+  const side = (rid, label) => {
+    const r = p.replies[rid];
+    const chips = r.chips.map((c) => `<span class="chip">${esc(c)}</span>`).join('');
+    const on = picked && picked.better === rid;
+    return `<article class="reply${on ? ' picked' : ''}" aria-label="Reply ${label}">
+      <header><h2>Reply ${label}</h2>${on ? '<span class="small muted">your pick</span>' : ''}</header>
+      <div class="body" lang="${p.lang}">${md(r.text)}</div>
+      ${chips ? `<div class="chips">${chips}</div>` : ''}
+      ${r.more ? `<button class="more-btn" data-more="${rid}" aria-expanded="false">More ▾</button><div class="more body" id="more-${rid}" lang="${p.lang}" hidden>${md(r.more)}</div>` : ''}
+    </article>`;
+  };
+  app.innerHTML = `
+    <div class="progress" aria-label="Pair ${i + 1} of ${LIST.length}">${LIST.map((q, k) => `<i class="${state.picks[q.id] ? 'done' : k === i ? 'here' : ''}"></i>`).join('')}</div>
+    <p class="eyebrow">Pair ${i + 1} of ${LIST.length}</p>
+    <p class="who">${esc(p.context)}</p>
+    ${p.notice ? `<p class="said notice">${esc(p.notice)}</p>` : `<p class="said" lang="${p.lang}">${esc(p.message)}</p>`}
+    ${side(first, 'A')}
+    ${side(second, 'B')}
+    <div class="small muted" style="display:flex;justify-content:space-between">
+      <button class="link" id="back" ${i === 0 ? 'hidden' : ''}>← Previous pair</button>
+      <button class="link" id="home">Start page</button>
+    </div>`;
+  app.querySelectorAll('[data-more]').forEach((b) => b.onclick = () => {
+    const box = document.getElementById('more-' + b.dataset.more);
+    box.hidden = !box.hidden; b.setAttribute('aria-expanded', String(!box.hidden)); b.textContent = box.hidden ? 'More ▾' : 'Less ▴';
+  });
+  document.getElementById('back').onclick = () => show(i - 1);
+  document.getElementById('home').onclick = intro;
+  bar.hidden = false;
+  bar.innerHTML = `<div class="timer" aria-hidden="true"><div class="fill" id="fill"></div></div>
+    <div class="meta"><span id="hint">Read both replies first</span><span id="status">${picked ? 'Saved' : ''}</span></div>
+    <div class="row">
+      <button class="pick primary" data-pick="${first}" disabled>A is better</button>
+      <button class="pick" data-pick="same" disabled>About the same</button>
+      <button class="pick primary" data-pick="${second}" disabled>B is better</button>
+    </div>`;
+  if (picked) bar.querySelector(`[data-pick="${picked.better}"]`)?.classList.add('on');
+  shownAt = performance.now();
+  window.scrollTo(0, 0);
+  const wait = picked ? 0 : READ_MS;
+  const fill = document.getElementById('fill');
+  requestAnimationFrame(() => { fill.style.width = '100%'; fill.style.transitionDuration = wait + 'ms'; });
+  setTimeout(() => {
+    if (at !== i) return;
+    bar.querySelectorAll('.pick').forEach((b) => b.disabled = false);
+    document.getElementById('hint').textContent = 'Which would you rather get?';
+  }, wait);
+  bar.querySelectorAll('.pick').forEach((b) => b.onclick = () => pick(p, b.dataset.pick, first));
+}
+
+async function pick(p, better, shownFirst) {
+  state.picks[p.id] = { better, shownFirst, ms: Math.round(performance.now() - shownAt), at: new Date().toISOString() };
+  keep();
+  const status = document.getElementById('status');
+  status.textContent = 'Saving…';
+  const ok = await save();
+  status.textContent = ok ? 'Saved' : 'Kept on this phone';
+  setTimeout(() => {
+    const next = LIST.findIndex((q, k) => k > at && !state.picks[q.id]);
+    const any = LIST.findIndex((q) => !state.picks[q.id]);
+    if (next >= 0) show(next); else if (any >= 0) show(any); else end();
+  }, 450);
+}
+
+function code() {
+  const m = { r1: '1', r2: '2', same: 's' };
+  return PAGE + ':' + LIST.map((p) => state.picks[p.id] ? p.id + m[state.picks[p.id].better] + (state.picks[p.id].shownFirst === 'r1' ? 'a' : 'b') : p.id + '-').join('.');
+}
+
+function end() {
+  bar.hidden = true;
+  app.innerHTML = `
+    <p class="eyebrow">Done</p>
+    <h1>Thanks${state.tester ? ', ' + esc(state.tester) : ''}. All ${LIST.length} picks are in.</h1>
+    ${saveNote === 'db' ? '<p class="note ok">Your picks are saved. Nothing else to do.</p>' : '<p class="note warn">Your picks could not be saved from here. Copy this code and send it to Omar:</p>'}
+    <p class="code" id="code">${esc(code())}</p>
+    <button class="start" id="copy">Copy the code</button>
+    <button class="link" id="again">Change a pick</button>`;
+  document.getElementById('copy').onclick = async (e) => {
+    try { await navigator.clipboard.writeText(code()); e.target.textContent = 'Copied'; }
+    catch (err) { const r = document.createRange(); r.selectNodeContents(document.getElementById('code')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); e.target.textContent = 'Selected: copy it'; }
+  };
+  document.getElementById('again').onclick = () => show(0);
+}
+
+let saving = Promise.resolve(true);
+function save() {
+  saving = saving.then(async () => {
+    if (!db || !me) return false;
+    try {
+      await db.doc('picks/' + me).set({ page: PAGE, tester: state.tester || '', order: state.order, picks: state.picks, startedAt: state.startedAt, updatedAt: new Date().toISOString() });
+      return true;
+    } catch (e) { saveNote = 'none'; return false; }
+  });
+  return saving;
+}
+
+async function connect() {
+  const timer = setTimeout(() => { if (saveNote === 'local') { saveNote = 'none'; noteSave(); } }, 10000);
+  try {
+    const [d, u] = await Promise.all([window.claude?.use?.('db') ?? null, window.claude?.use?.('user') ?? null]);
+    const id = u ? await u.id() : null;
+    if (d && id) {
+      db = d; me = id;
+      const snap = await db.doc('picks/' + me).get();
+      if (snap.exists) {
+        const s = snap.data();
+        if (s.page === PAGE) state = { ...state, ...s, picks: { ...s.picks, ...state.picks }, order: { ...s.order, ...state.order } };
+        keep();
+      }
+      saveNote = 'db';
+      if (Object.keys(state.picks).length) save();
+    } else saveNote = 'none';
+  } catch (e) { saveNote = 'none'; }
+  clearTimeout(timer);
+  noteSave();
+}
+
+intro();
+connect();
+</script>

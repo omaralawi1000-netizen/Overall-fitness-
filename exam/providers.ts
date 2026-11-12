@@ -33,6 +33,8 @@ export interface Price {
 export const PRICES: Record<string, Price> = {
   'gemini-3.8-flash': { in: 0.75, out: 3.75, cacheRead: 0.075, search: 0.035, until: '2026-12-31' },
   'gemini-4-argon': { in: 2, out: 10, cacheRead: 0.1, search: 0.035, until: '2026-11-30' },
+  // the yardstick's second checker (12 Nov 2026, ai.google.dev pricing page): the cloud key reaches it on the free tier
+  'gemini-3-flash-preview': { in: 0.5, out: 3, cacheRead: 0.05, search: 0.035, until: '2026-12-31' },
   'claude-sonnet-5-5': { in: 2, out: 10, cacheRead: 0.2, search: 0.01, until: '2026-12-31' },
   'claude-opus-5-5': { in: 4, out: 20, cacheRead: 0.2, search: 0.01, until: '2026-12-31' },
   // Fable 5.2 (9 Nov, the claude-api reference table dated 3 Nov): 4x Sonnet per token; check again before 31 Dec
