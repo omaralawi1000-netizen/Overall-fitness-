@@ -99,3 +99,29 @@ reports, not studies; the numbers are examples, not promises for Omar's phone.
 **Adopt now:** item 1 and 2 together as one small job: a `perf-budget` Playwright script plus the budget numbers in
 a few lines of DESIGN.md, run on every PR. It's free (no paid APIs), works headless, and turns "keeps getting
 laggy" into a red check before Omar sees a round. Needs a first measured baseline on his phone to set the numbers.
+
+## Working on the Coach: mistakes and the rule from each (12 Nov 2026)
+Omar, 12 Nov: "Every time you do things, learn from your mistakes." Read this before any Coach work; add to it when
+something goes wrong. The plan these belong to: `docs/COACH.md` §8 "Cheap models first".
+1. **Guessed the cause before reading the answers.** Two of the reset plan's three causes were wrong. Rule: read the
+   saved answers first, and label a guess as a guess.
+2. **Five rounds of rule patches, judged on 10 cases, gained nothing.** Rule: no prompt change without the yardstick,
+   and one change per test.
+3. **PR #100 changed a fact line and a rule's wording together,** so nobody knows which one worked, and it brought a
+   two-question side effect. Rule: one change per test; rerun the slip checks after every fix.
+4. **"Feels better" is not better.** WHOOP shipped a change that felt better and scored worse. Rule: never claim a
+   gain without a run that shows it.
+5. **Published a wrong total** ($4 where the steps added up to $5 to $6), and nearly blamed Opus for the Coach's own
+   sum because the judge's notes print the two answers in shuffled order. Rule: recompute every sum before it goes
+   out, and check in `answers.jsonl` who said what.
+6. **Wrote the plan before looking outside.** The research then changed seven things. Rule: for a plan, research
+   first.
+7. **An Opus judge scoring Opus, and AI picks once labelled as Omar's.** Rule: always say who judged, and use two
+   judge families or people at a gate.
+8. **Two decision cards crossed** on the same question. Rule: one card per decision; settle it with the other thread
+   first.
+9. **The fact sheet called a stalled lift "up".** Labels steer the model more than rules do. Rule: test sheet labels
+   and made-up case data like code, and remove a misleading row instead of telling the model to ignore it.
+10. **The first gate-A bar ("+15 points") was set before the baseline was known** (the Coach already stood at 83 %).
+    Rule: measure first, then set the bar.
+11. Kept from before: a cheap round before any full run, and stop when the gain is marginal.
