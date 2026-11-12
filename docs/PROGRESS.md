@@ -357,7 +357,7 @@ Plan only, nothing built or paid. Why the Coach keeps losing to Opus, and one st
 Stage 1 then ran the same day (Omar's yes, $2.43): two same-format setups in the exam (`sonnetbare`, `opusformat`), result in `docs/COACH.md` §8.
 
 ## Next step
-**Coach:** stage 1 of the reset plan ran on 12 Nov ($2.43; `docs/COACH.md` §8 "Stage 1 result"): our rules help (8 of 10 against bare Sonnet), the format is not the excuse (2 of 10 against Opus in the same format), so the gap is the model, the partial-logs rule and thin plans. Waiting for Omar: may Opus be tested as the Coach's model (about $1.50)? No prompt patches meanwhile.
+**Coach:** stage 1 of the reset plan ran on 12 Nov ($2.43; `docs/COACH.md` §8 "Stage 1 result"): our rules help (8 of 10 against bare Sonnet), the format is not the excuse (2 of 10 against Opus in the same format), so the gap is the model (or an Opus judge favouring Opus), the partial-logs rule and thin plans. Next: a verdict from a judge that is not Opus (Gemini needs Gunshot's paid key, the cloud key returns 503; or Omar's blind picks), then Omar's call on testing Opus as the Coach's model (about $1.50). No prompt patches meanwhile.
 
 **Design first:** Omar judges the Reed stills on his phone. Yes: build Reed's motion (drum pickers, light behind the glass) and its other key screens as a prototype, judged to 8 before he sees it, then re-skin `/app/`. No: write his words into `docs/taste-log.md` and start the next look from them. The engine steps below wait for that answer.
 

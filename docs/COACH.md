@@ -221,8 +221,10 @@ line about the format, `FORMAT_RULES`).
 - **The format is not the excuse.** Against Opus held to the same text with More, the Coach still scored 2 of 10 (no
   win, 4 ties, 6 losses), the same as against free-form Opus. The judge is less sure than before (it split on 4 of
   10; on free-form Opus it split on none).
-- **So what is left is the model, one harmful rule and thin plans.** Opus coaches better than Sonnet with the same
-  data. Its reasons: the low intake again (p03, n02; the partial-logs rule), fuller phased plans on the big questions
+- **What is left: the model or the judge, one harmful rule and thin plans.** Either Opus coaches better than Sonnet
+  with the same data, or the Opus judge favours Opus's answers (the 8 of 10 above has no Opus on either side, so it
+  stands either way). A judge that is not Opus has to settle which, before the Opus rule is reopened. The judge's
+  reasons: the low intake again (p03, n02; the partial-logs rule), fuller phased plans on the big questions
   where Fable answered in 60 to 117 words (m07, p14), clearer stop signs (c01, p10).
 - This read was wrong about causes 1 and 3 below: they were the first two guesses, and the test did not support
   them. By the rule set before the run (the Coach at 5 or over against the bare model), stage 3 (models) now comes
