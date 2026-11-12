@@ -477,7 +477,8 @@ Coach candidate in the tests, not the builder.
 - Low intake is now computed by code: `buildFacts` adds a trust line when partial logs average under 1,200 kcal or 60 % of the
   target (three days with calories at least); the partial-logs rule was reworded so it no longer cancels "ask gently" and says the
   concern goes in the text, not under More. PR #96's other two rule edits were dropped.
-- Next, needs Omar's yes (about $2): the same 10 cases against `/mnt/project-files/e2/stage1-2026-11-12/answers.jsonl`.
+- The check that was planned next (about $2, the same 10 cases against `/mnt/project-files/e2/stage1-2026-11-12/answers.jsonl`):
+  the plan under "Cheap models first" recommends skipping it ("What not to do"). Omar decides; a card asked him on 12 Nov.
 
 ### Exam v3 plan (Omar's brief, 4 Nov 2026; replaces the pending E2 round-2 work)
 Omar: "make the Coach's answers the best in the world, and prove it with measurements, not opinions." His brief is the
