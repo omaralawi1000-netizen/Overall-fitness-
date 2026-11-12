@@ -10,7 +10,7 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 ## RETIRED (9 Nov 2026, 21:58): the "old Aven ingredients" look
 Asked whether design threads should keep using it, Omar said: "No, delete that." The look (near-black room, one soft glow, clear glass, italic serif names, thin numbers, one orange thing to tap, the orb) is **not his taste anymore and not a rule**. Never feed it to a design thread, a judge or a prototype brief. Everything below that praises it is history only. Italic serif titles, which he picked in the taste test, are not part of this retirement; they stand or fall on his latest words.
 
-## What it suggests now (12 Nov 2026, before the Reed stills)
+## What it suggests now (12 Nov 2026, before the Reed and Silk stills)
 - **A build he called the best can still fail in daily use.** Window was "the spine" on 3 Nov. After using it as a real app he said "it works, but I don't really like that app". So a yes on stills is a start, not a verdict; the phone decides.
 - **His whole brief is now four words.** "Very premium, a little calm … blur, premium frosted blur." Everything else he handed over: "just try make it the best possible."
 - **What his liked apps share is one richly made thing with real depth, and a quiet UI around it** (Oura's mountain, Opal's gem, WHOOP's orb, Revolut's room). Every round drawn with flat CSS colour was called plain. So this round's pictures are real 3D renders, and they are ours, not a stock photo.
@@ -52,18 +52,19 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
-### 12 Nov 2026: Window rejected after use; from-scratch stills (/_prototypes/reed/)
+### 12 Nov 2026: Window rejected after use; from-scratch stills (/_prototypes/reed-silk/)
 Rejected: the real app as it stands (`/app/`, the Window v17 port), after trying it on his phone.
 His words: "Okay, it works, but I don't really like that app. Can you design a new app from scratch? Like from scratch… try to make the best fitness app like in the world, with the most beautiful things. It has to be very beautiful."
 Asked seven questions (what he dislikes, what to keep, references, light or dark, calm or bold, the tabs, frosted glass), he answered only: "Just try make it the best possible, use any skills you want. Yes, I want very premium, a little calm, want blur, premium frosted blur."
 Reading: Window is no longer the spine or a design reference. What he disliked about it is still unknown.
 While the stills were being judged he saw the judge scores (6.5, 6 and 7.5) and said: "At least 8." So nothing visual reaches him under 8 from a fresh judge; a look that cannot get there is cut, not shown.
-Built as stills only (Today and the live workout screen), no motion, so he can pick before usage is spent. Four looks were tried, one reached him:
+Built as stills only (Today and the live workout screen), no motion, so he can pick before usage is spent. Reed was shown alone first (07:25). Before reacting to it he said: "You know what? Make me three style approaches you think I would like." Five looks were tried in all, two reached him:
 - **Reed (shown)**: coloured light behind ribbed glass (our own 3D render, real refraction). Today is one giant number that matters right now ("85 kg") on a pale-to-green wall, with the day as three rows in one frosted pane. In the workout, weight and reps are drum pickers seen through frost, with one white "Log set 3" button. Judge: 7.5, then 8, then 8.
-- **Studio (cut, never shown)**: his own barbell with the exact plates for the set, rendered in a pale studio with window light, one white frosted sheet. Judge: 6.5, 7, 7. The render was the good part; the screens around it read as a template and the frost as a stain over the plate.
+- **Silk (shown)**: folds of satin in a jewel colour, sapphire on Today and plum in the workout (rendered). The Coach speaks first on Today in one big sentence with two answers to tap; the workout has a weight ruler and rep circles. Deep and saturated on purpose, never near-black, no glow, no orange, no serif, so it stays clear of the retired look. Judge: 8.
+- **Studio (not shown)**: his own barbell with the exact plates for the set, rendered in warm daylight, with the word "Push" and the number "85" on the wall behind the bar. Judge: 6.5, 7, 7, then 7.5 three times after two rebuilds. Every judge praised the render and the type behind the bar; every judge marked down the frost, which reads as a stain or an opaque pill over a pale picture. Lesson: frost needs colour or detail behind it; pale glass over a pale room cannot look premium.
 - **Night (cut, never shown)**: the same studio after dark. Judge: 6, 6.5.
 - **Lantern (cut, never shown)**: glowing frosted-glass sculptures. The renders looked like toys.
-Stills: https://claude.ai/artifact/9QTUDgXZJfRBHfMYXv47nJ. Needs his phone: how the frost looks, stripes (banding) in the green fade, white text on the green panes.
+Stills: https://claude.ai/artifact/9QTUDgXZJfRBHfMYXv47nJ. Needs his phone: how the frost looks, stripes (banding) in the green fade and the blue folds, white text on the coloured panes. Asked (decision card): judge these two first, see Studio at 7.5 anyway, or a different third look.
 Verdict: waiting for Omar.
 
 ### 3 Nov 2026, 08:18: Window is the spine; the Workout build is stopped
