@@ -355,6 +355,15 @@ what was decided (Omar: "use only the good parts"):
 - Before Fable ships in the app: a length line for plan answers (3 of 11 over 120 words) and a check that the Coach
   never names a chart it did not show.
 
+### Quick check, 12 Nov (10 of the 50 cases, today's Coach vs Opus; report /mnt/project-files/e2/check-2026-11-12/REPORT.md)
+- The 10 match the full exam's mix (3 of 10 on 8 Nov). Today's Coach (Sonnet + Fable 5.2 on big turns + the PR #86 fixes):
+  **2 of 10** on the blind neutral judge. No gain. Fable lost all 3 big cases to Opus (m07, p14, n02). $2.35.
+- Gemini as a second judge could not run in the cloud (free-tier key: overloaded, then quota). Gunshot's paid key can.
+- Free fixes after it (this PR): a trust line in FACTS when partial logs average under 1,200 kcal or 60 % of the target,
+  so the Coach asks once, gently, whether the log is everything (it skipped this in p03 and n02); "the advice itself
+  never goes behind More" and the "would they act differently after More?" test (p10); name the lift or target that
+  shows where they stand instead of a generic range (o09). Not measured yet: rerun the same 10 (about $2.50).
+
 ### What it is
 - **Conversations**: realistic ones built from Omar's real week (the interview), plus friends of every type. Each one
   runs against fake data built in old Aven's data format, so the old Coach and Aven 2's Coach face exactly the same

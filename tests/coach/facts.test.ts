@@ -40,10 +40,22 @@ describe('the fact sheet', () => {
     expect(s.food28.facts.find((f) => f.id === 'food28.kcalAvgComplete')).toBeUndefined();
     expect(s.food28.facts.find((f) => f.id === 'food28.kcalAvgLogged')).toMatchObject({ value: 850, confidence: 'partial' });
     expect(s.food28).toMatchObject({ daysLogged: 9, daysComplete: 0 });
+    // a very low partial average is flagged for one gentle question, never read as intake (12 Nov quick check)
+    expect(s.trust.join(' ')).toContain('Logged food averages 850 kcal a day, far under the 2500 kcal target');
 
     for (const d of days('2026-10-20', 3)) recs.push(complete(d));
     const s2 = buildFacts(recs, { now: NOW, tz: TZ });
     expect(s2.food28.facts.find((f) => f.id === 'food28.kcalAvgComplete')).toMatchObject({ value: 850, confidence: 'measured' });
+    expect(s2.trust.join(' ')).not.toContain('Logged food averages');
+  });
+
+  it('a normal partial average gets no low-intake line; no target means the 1,200 kcal floor', () => {
+    const ok: AnyRecord[] = [settings({ kcal: 2500 }), ...days('2026-10-20', 5).map((d) => food(d, 1800))];
+    expect(buildFacts(ok, { now: NOW, tz: TZ }).trust.join(' ')).not.toContain('Logged food averages');
+    const none: AnyRecord[] = [settings({}), ...days('2026-10-20', 5).map((d) => food(d, 900))];
+    expect(buildFacts(none, { now: NOW, tz: TZ }).trust.join(' ')).toContain('Logged food averages 900 kcal a day, very low for anyone who trains');
+    const two: AnyRecord[] = [settings({}), ...days('2026-10-20', 2).map((d) => food(d, 400))];
+    expect(buildFacts(two, { now: NOW, tz: TZ }).trust.join(' ')).not.toContain('Logged food averages');
   });
 
   it('a complete day where some food has no protein value: its protein is partial, kcal still measured (Codex, PR #73)', () => {
