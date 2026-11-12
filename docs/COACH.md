@@ -322,7 +322,7 @@ $0.021 (it is cached).
 8. **Proof (about $6, plus people).** Fresh and held-out cases, two judges, the 6 pairs with Omar and testers, the
    Danish reader.
 
-Paid in all: about $4 before the proof, about $10 with it (the reset plan: about $28).
+Paid in all: about $5 to $6 before the proof, about $12 with it (the reset plan: about $28).
 
 **What not to do** (each one saves money)
 - No training of a model (fine-tuning): it ties the Coach to one provider and needs thousands of rated answers.
