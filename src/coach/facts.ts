@@ -202,7 +202,9 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
   // (only from partial logs: a low average of complete days is a real pattern, which the safety rule covers)
   const kcalLogged = food28.some((f) => f.id === 'food28.kcalAvgComplete') ? undefined : food28.find((f) => f.id === 'food28.kcalAvgLogged');
   const kcalTarget = targets.kcal;
-  if (kcalLogged && logged.length >= 3 && (kcalLogged.value < 1200 || (typeof kcalTarget === 'number' && kcalLogged.value < kcalTarget * 0.6))) {
+  // (three days with calories, not three days with any food: a protein-only log adds nothing to the average: Codex, PR #96)
+  const kcalLoggedDays = logged.filter((d) => perDay.get(d)!.kcal !== undefined).length;
+  if (kcalLogged && kcalLoggedDays >= 3 && (kcalLogged.value < 1200 || (typeof kcalTarget === 'number' && kcalLogged.value < kcalTarget * 0.6))) {
     trust.push(`Logged food averages ${kcalLogged.value} kcal a day${typeof kcalTarget === 'number' ? `, far under the ${kcalTarget} kcal target` : ', very low for anyone who trains'}. It may only be incomplete logging: say so in the answer itself and ask once, gently, whether that is everything they eat, without quoting the number. Never an alarm, a lower target or a meal plan.`);
   }
   if (logged.length < 28) trust.push(`Food was logged on ${logged.length} of the last 28 days${done.length ? `, ${done.length} marked complete` : ', none marked complete'}.`);

@@ -56,6 +56,9 @@ describe('the fact sheet', () => {
     expect(buildFacts(none, { now: NOW, tz: TZ }).trust.join(' ')).toContain('Logged food averages 900 kcal a day, very low for anyone who trains');
     const two: AnyRecord[] = [settings({}), ...days('2026-10-20', 2).map((d) => food(d, 400))];
     expect(buildFacts(two, { now: NOW, tz: TZ }).trust.join(' ')).not.toContain('Logged food averages');
+    // one day with calories and two with protein only is one day of evidence, not three (Codex, PR #96)
+    const oneKcal: AnyRecord[] = [settings({}), food('2026-10-20', 400), env('food', '2026-10-21', { name: 'x', meal: 'lunch', dataSource: 'reference', portion: { amount: 1, unit: 'portion' }, estimated: false, nutrients: { protein: 30 } }), env('food', '2026-10-22', { name: 'x', meal: 'lunch', dataSource: 'reference', portion: { amount: 1, unit: 'portion' }, estimated: false, nutrients: { protein: 30 } })];
+    expect(buildFacts(oneKcal, { now: NOW, tz: TZ }).trust.join(' ')).not.toContain('Logged food averages');
   });
 
   it('a complete day where some food has no protein value: its protein is partial, kcal still measured (Codex, PR #73)', () => {
