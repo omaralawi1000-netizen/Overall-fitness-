@@ -190,6 +190,8 @@ Picks from https://claude.ai/artifact/3F55dCusNya4BDpNacPhZA; the noes and reaso
 - **Later, for hydration: water you can feel, moving when you tilt the phone** (clip 16). "Not my main focus right now, but we can always add this."
 
 ### Window is the spine (3 Nov 2026)
+**Overruled 12 Nov 2026.** After using the real app Omar said "it works, but I don't really like that app" and asked for a new design from scratch (`docs/taste-log.md`, 12 Nov). The lists below are history: they come back only if he asks for a part by name.
+
 "Window is the spine. It's the best build so far." (Window artifact: https://claude.ai/artifact/2mGPer97P43dNo4Y5Ugjhp.)
 
 His condition, in his words: "Can you please only use this if it's generally improving the UI, because I want to make this exceptional, world-class?" So every item below is used only where it improves the UI. If it doesn't, leave it out.
