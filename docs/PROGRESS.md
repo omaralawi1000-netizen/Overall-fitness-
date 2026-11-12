@@ -353,7 +353,13 @@ Omar tried `/app/` on his phone: "it works, but I don't really like that app. Ca
 - Nothing in `src/` or `/app/` changed. The engine, saving and the weight log stay; only the look is open.
 - Needs his phone: the frost, stripes in the green fade and the blue folds, white text on the coloured panes.
 
+## Session 20: the Coach reset plan (12 Nov 2026, Fable)
+Plan only, nothing built or paid. Why the Coach keeps losing to Opus, and one staged plan, are in `docs/COACH.md` §8 "The reset plan". Short version: the exam compares a 50-word text with a 150-word answer and an Opus judge grades Opus; the rules prompt (1,300 words, 30 bullets) holds the model back (Fable lost all three big cases under it); the app does not yet hand the Coach what stands out in the data; More is a separate call. PR #96 and its $2.50 rerun are not recommended.
+Stage 1 then ran the same day (Omar's yes, $2.43): two same-format setups in the exam (`sonnetbare`, `opusformat`), result in `docs/COACH.md` §8.
+
 ## Next step
+**Coach:** stages 1 and 1b of the reset plan ran on 12 Nov ($6.86; `docs/COACH.md` §8): our rules help Sonnet (8 of 10 against bare Sonnet) but hurt a strong model (Opus with our rules 3.5 of 10 against plain Opus), and plain Fable is the first setup that does not lose to plain Opus (6 of 10). Proposed, waiting for Omar: the Coach becomes Fable with a light prompt (format, safety, acting, code checks, the low-intake finding), then 20 unseen cases against Opus (about $8), a judge that is not Opus, and his blind picks. No prompt patches meanwhile.
+
 **Design first:** Omar reacts to the Summit workout still on his phone (is the wallpaper feel right?) and answers whether he wants to see Today at a judge score of 7 (see `docs/taste-log.md`, 12 Nov 08:16). A yes to the look: add Today, then build its motion and other key screens as a prototype, then re-skin `/app/`; the wallpapers need pictures the app may ship (licensed photos or our own). A no: write his words into `docs/taste-log.md` and start from them. The engine steps below wait for that answer.
 
 Omar opens `/app/` on his phone (install it, time the cold start, log a real set, close the app mid-workout and reopen it: the Resume pill should be there). Then: (1) read the plan, Train history and "Last/Best" from saved sessions instead of the example Push day (the first finished workout is the first real history); (2) restore "Push done" after a reload; (3) weight and sleep: a manual weight log and Health Connect; (4) onboarding sets `a2:name`, units and the routine. Clay-figure clips go into the explainer's hero slot when Omar's two zips arrive.

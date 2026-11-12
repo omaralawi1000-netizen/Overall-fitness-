@@ -21,10 +21,13 @@ import type { AnyRecord, FoodLog, Plan, Routine } from '../../src/engine/model';
 import type { CallOpts } from '../providers';
 import type { Proposal } from '../../src/coach/actions';
 
-export interface Setup { name: string; quick: string; deep: string; /** the biggest tasks (route.ts); unset = the deep model */ big?: string; /** thinking effort on big turns (default medium, as every other turn) */ bigEffort?: 'low' | 'medium' | 'high'; rules?: string; /** Gemini's thinking budget, when not the default */ thinking?: number }
+export interface Setup { name: string; quick: string; deep: string; /** the biggest tasks (route.ts); unset = the deep model */ big?: string; /** thinking effort on big turns (default medium, as every other turn) */ bigEffort?: 'low' | 'medium' | 'high'; rules?: string; /** a plain-prompt setup that still gets More, so both sides of a pair play the same format */ more?: boolean; /** Gemini's thinking budget, when not the default */ thinking?: number }
 
 /** the benchmark opponent's instructions: a capable general coach, no tuning, same facts and knowledge, same JSON format */
 export const OPPONENT_RULES = `You are an expert fitness and nutrition coach inside a training and food app. Help the person as well as you can. FACTS hold their data; KNOWLEDGE holds general guidelines. Reply in their language. You may change things in the app with the actions in the JSON schema: "do" for what they asked, "offer" for a suggestion.`;
+
+/** the same plain coach told only the format (reset plan, stage 1): a text on a phone with More one tap away, none of the Coach's rules */
+export const FORMAT_RULES = `${OPPONENT_RULES} This is a chat on a phone, so reply as a text: the answer first, usually 20–60 words and never over 120 (up to 250 when they ask for a plan or the full explanation). Under your reply the person can tap "More" for the details and the reasoning.`;
 
 export interface TurnLog {
   tier: Tier; model: string; say?: string; shown?: Shown; error?: string; callFailed?: boolean; dropped: string[]; usd: number; ms: number;
@@ -100,10 +103,10 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
     // the person saw the Apply button, so the next turn's model sees it too
     convo.push({ role: 'coach', text: shown.offers.length ? `${shown.text}\n\n(Apply button shown: ${shown.offers.map((x) => x.label).join('; ')})` : shown.text });
   }
-  // "More" belongs to the Coach (its own rules), so the plain-prompt opponent never gets one
+  // "More" belongs to the Coach (its own rules), so the plain-prompt opponent gets one only when its setup plays the same format
   const last = turns.at(-1);
-  if (o.more && !setup.rules && last?.shown) {
-    const req = moreRequest(lastSheet!, convo.slice(0, -1), last.shown.text, { voice: c.turns.at(-1)?.voice, did: last.shown.did.map((d) => d.label) });
+  if (o.more && (!setup.rules || setup.more) && last?.shown) {
+    const req = moreRequest(lastSheet!, convo.slice(0, -1), last.shown.text, { voice: c.turns.at(-1)?.voice, did: last.shown.did.map((d) => d.label), ...(setup.rules ? { rules: setup.rules } : {}) });
     const asked = await askCoach(last.model, req, { ...o, purpose: `${c.id} ${setup.name} more`, ...bigEffort(last.tier), ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
     last.usd += asked.usd;
     // kept apart too, so cost and seconds per reply compare the same work (Codex, PR #87)
