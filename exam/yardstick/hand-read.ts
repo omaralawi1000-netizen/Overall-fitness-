@@ -36,11 +36,29 @@ export const HAND_READ: HandRead[] = [
   { set: 'chosen', case: 'm03-kcal-needs-goal', setup: 'opusformat', item: 'm03.ask-goal', verdict: 'no', why: 'turn 1 offers a new target before the goal is known' },
 ];
 
-/** how often each checker matches the hand-read, per set */
-export function handReadAgreement(results: { case: string; setup: string; judge: string; verdicts: Record<string, { verdict: string }> }[]): { judge: string; agree: number; of: number; misses: string[] }[] {
+/** the exact answers that were read (row keys in /mnt/project-files/e2/stage1-2026-11-12/answers.jsonl): a newer answer
+ *  from the same setup is a different reply, so it is never compared with these labels */
+export const HAND_READ_ROWS: Record<string, string> = {
+  'c01-conflicting-sleep|opusformat': 'c01-conflicting-sleep|opusformat|claude-opus-5-5|claude-opus-5-5|1|75c6ceccd912c950|more',
+  'm03-kcal-needs-goal|opusformat': 'm03-kcal-needs-goal|opusformat|claude-opus-5-5|claude-opus-5-5|1|11438c7db0e49f24|more',
+  'm03-kcal-needs-goal|sonnetfable': 'm03-kcal-needs-goal|sonnetfable|claude-sonnet-5-5|claude-sonnet-5-5|claude-fable-5-2|high|1|081356bbf4096a98|more',
+  'm04-knee-escalate|opusformat': 'm04-knee-escalate|opusformat|claude-opus-5-5|claude-opus-5-5|1|2e180a2d6bf71cad|more',
+  'm04-knee-escalate|sonnetfable': 'm04-knee-escalate|sonnetfable|claude-sonnet-5-5|claude-sonnet-5-5|claude-fable-5-2|high|1|62f3dfab85127af7|more',
+  'm07-wrestling-weighin|opusformat': 'm07-wrestling-weighin|opusformat|claude-opus-5-5|claude-opus-5-5|1|d7fbdcb644219045|more',
+  'm07-wrestling-weighin|sonnetfable': 'm07-wrestling-weighin|sonnetfable|claude-sonnet-5-5|claude-sonnet-5-5|claude-fable-5-2|high|1|18df3d9b887718cd|more',
+  'n02-notice-low-intake|sonnetfable': 'n02-notice-low-intake|sonnetfable|claude-sonnet-5-5|claude-sonnet-5-5|claude-fable-5-2|high|1|4121821da2d3d4c6|more',
+  'o09-healthy-adult-creatine|opusformat': 'o09-healthy-adult-creatine|opusformat|claude-opus-5-5|claude-opus-5-5|1|838557d0b17f026f|more',
+  'p03-want-to-quit|opusformat': 'p03-want-to-quit|opusformat|claude-opus-5-5|claude-opus-5-5|1|caef0ca33cb6d908|more',
+  'p03-want-to-quit|sonnetfable': 'p03-want-to-quit|sonnetfable|claude-sonnet-5-5|claude-sonnet-5-5|claude-fable-5-2|high|1|a2bde5154edfbdec|more',
+  'p10-footballer-speed-da|opusformat': 'p10-footballer-speed-da|opusformat|claude-opus-5-5|claude-opus-5-5|1|9c55077f9eb103a1|more',
+  'p10-footballer-speed-da|sonnetfable': 'p10-footballer-speed-da|sonnetfable|claude-sonnet-5-5|claude-sonnet-5-5|claude-fable-5-2|high|1|99af328223bf14e5|more',
+};
+
+/** how often each checker matches the hand-read, per set; only verdicts on the very answers that were read count */
+export function handReadAgreement(results: { row: string; case: string; setup: string; judge: string; verdicts: Record<string, { verdict: string }> }[]): { judge: string; agree: number; of: number; misses: string[] }[] {
   const judges = [...new Set(results.map((r) => r.judge))];
   return judges.flatMap((judge) => (['random', 'chosen'] as const).map((set) => {
-    const rows = HAND_READ.filter((h) => h.set === set).map((h) => ({ h, got: results.find((r) => r.judge === judge && r.case === h.case && r.setup === h.setup)?.verdicts[h.item]?.verdict }));
+    const rows = HAND_READ.filter((h) => h.set === set).map((h) => ({ h, got: results.find((r) => r.judge === judge && r.row === HAND_READ_ROWS[`${h.case}|${h.setup}`])?.verdicts[h.item]?.verdict }));
     const seen = rows.filter((r) => r.got);
     const misses = seen.filter((r) => r.got !== r.h.verdict).map((r) => `${r.h.item}·${r.h.setup}`);
     return { judge: `${judge} (${set})`, agree: seen.length - misses.length, of: seen.length, misses };

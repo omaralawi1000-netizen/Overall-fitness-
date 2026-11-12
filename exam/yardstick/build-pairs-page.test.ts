@@ -10,7 +10,7 @@
 import { it } from 'vitest';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { randomBytes, randomInt } from 'node:crypto';
-import type { CaseRun } from '../v2/run-case';
+import { caseHash, type CaseRun } from '../v2/run-case';
 import { CASES } from '../v2/cases';
 
 /** what a person needs to judge each reply, written from the case's fact sheet: never from the replies */
@@ -37,10 +37,11 @@ function split(text: string): { text: string; chips: string[] } {
 it('builds the blind pairs page and its key', () => {
   const IN = process.env.EXAM_OUT!;
   const [A, B] = (process.env.PAIRS_SETUPS ?? 'sonnetfable,opusformat').split(',').map((s) => s.trim());
-  const rows = readFileSync(`${IN}/answers.jsonl`, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l) as CaseRun & { run?: number });
-  const get = (id: string, setup: string) => rows.find((r) => r.id === id && r.setup === setup && (r.run ?? 1) === 1);
+  const rows = readFileSync(`${IN}/answers.jsonl`, 'utf8').split('\n').filter(Boolean).map((l) => JSON.parse(l) as CaseRun & { run?: number; key: string });
+  // the newest run-1 answer whose case is unchanged: run-answers appends a new row when the Coach changes
+  const get = (id: string, setup: string) => rows.filter((r) => r.id === id && r.setup === setup && (r.run ?? 1) === 1 && r.caseHash === caseHash(CASES.find((c) => c.id === id)!)).at(-1);
   const page = randomBytes(3).toString('hex');
-  const key: Record<string, { case: string; r1: string; r2: string }> = {};
+  const key: Record<string, { case: string; r1: string; r2: string; rows: [string, string] }> = {};
   const pairs = Object.entries(CONTEXT).map(([id, ctx], k) => {
     const a = get(id, A), b = get(id, B);
     if (!a?.turns.at(-1)?.shown || !b?.turns.at(-1)?.shown) throw new Error(`${id}: no answer from ${a ? B : A}`);
@@ -52,7 +53,7 @@ it('builds the blind pairs page and its key', () => {
     };
     const flip = randomInt(2) === 1;
     const qid = `q${k + 1}`;
-    key[qid] = { case: id, r1: flip ? B : A, r2: flip ? A : B };
+    key[qid] = { case: id, r1: flip ? B : A, r2: flip ? A : B, rows: flip ? [b.key, a.key] : [a.key, b.key] };
     const lang = /-da$/.test(id) ? 'da' : 'en';
     return { id: qid, lang, context: ctx.context, ...(ctx.notice ? { notice: ctx.notice } : { message: CASES.find((c) => c.id === id)!.turns[0].text }), replies: { r1: side(flip ? b : a), r2: side(flip ? a : b) } };
   });

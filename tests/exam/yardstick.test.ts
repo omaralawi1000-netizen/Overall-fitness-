@@ -1,9 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { CATCH, FRESH, TUNING } from '../../exam/yardstick/catch-lists';
-import { catchRate, checkBody, codeVerdicts, readChecks, replyOf } from '../../exam/yardstick/checker';
-import { HAND_READ } from '../../exam/yardstick/hand-read';
+import { catchRate, checkBody, checkOne, codeVerdicts, readChecks, replyOf } from '../../exam/yardstick/checker';
+import { HAND_READ, HAND_READ_ROWS, handReadAgreement } from '../../exam/yardstick/hand-read';
 import { CASES } from '../../exam/v2/cases';
-import { CallError } from '../../exam/providers';
+import { CallError, Ledger, type GeminiReply } from '../../exam/providers';
+import { mkdtempSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import type { CaseRun } from '../../exam/v2/run-case';
 
 const caseOf = (id: string) => CASES.find((c) => c.id === id)!;
@@ -35,6 +38,15 @@ describe('the catch lists', () => {
   it('every safety item is in a case that has one, and the hand-read only names real items', () => {
     expect(TUNING.flatMap((id) => CATCH[id]).filter((x) => x.safety).length).toBeGreaterThanOrEqual(8);
     for (const h of HAND_READ) expect(CATCH[h.case].some((x) => x.id === h.item && !x.code), h.item).toBe(true);
+    for (const h of HAND_READ) expect(HAND_READ_ROWS[`${h.case}|${h.setup}`], `${h.case}|${h.setup}`).toBeTruthy();
+  });
+
+  it('compares the hand-read only with verdicts on the very answer that was read', () => {
+    const h = HAND_READ.find((x) => x.set === 'chosen')!;
+    const v = { [h.item]: { verdict: h.verdict === 'yes' ? 'no' : 'yes' } };
+    const same = { row: HAND_READ_ROWS[`${h.case}|${h.setup}`], case: h.case, setup: h.setup, judge: 'j', verdicts: v };
+    expect(handReadAgreement([same]).find((x) => x.judge === 'j (chosen)')?.misses).toContain(`${h.item}·${h.setup}`);
+    expect(handReadAgreement([{ ...same, row: 'a newer answer' }])).toEqual([]);
   });
 });
 
@@ -73,6 +85,20 @@ describe('the yes/no checker', () => {
     expect(all).not.toContain('opusformat');
     for (const x of items) expect(all).toContain(x.id);
     expect(replyOf(run(c.id, ['a', 'b'])).texts).toEqual(['a', 'b']);
+  });
+
+  it('counts the cost of an unreadable reply once, then the retry', async () => {
+    const ledger = new Ledger(join(mkdtempSync(join(tmpdir(), 'yard-')), 'ledger.jsonl'), 1);
+    const c = caseOf('o09-healthy-adult-creatine');
+    const ids = CATCH[c.id].filter((x) => !x.code).map((x) => x.id);
+    const texts = ['not json', JSON.stringify({ items: ids.map((id) => ({ id, quote: '', verdict: 'yes' })) })];
+    let n = 0;
+    const dry = (): GeminiReply => {
+      ledger.record({ at: '', model: 'm', purpose: 'p', usd: 0.006, usage: { inTokens: 0, cachedTokens: 0, outTokens: 0, searches: 0 }, ok: true } as never);
+      return { candidates: [{ content: { parts: [{ text: texts[n++] }] } }], usage: { inTokens: 0, cachedTokens: 0, outTokens: 0, searches: 0 }, usd: 0.006 };
+    };
+    const got = await checkOne('claude-sonnet-5-5', c, run(c.id, ['Yes. Take 3–5 g a day.']), CATCH[c.id], { ledger, purpose: 'catch', dry });
+    expect(got.usd).toBeCloseTo(0.012, 6);
   });
 
   it('scores a split item half and any safety item a checker failed as a miss', () => {

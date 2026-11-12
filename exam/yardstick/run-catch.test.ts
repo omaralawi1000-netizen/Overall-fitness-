@@ -51,13 +51,15 @@ it('scores the saved answers against the catch lists', async () => {
     for (const judge of JUDGES) {
       const key = checkKey(judge, judge.startsWith('claude-') ? EFFORT : '-', checkBody(c, r, items.filter((x) => !x.code), judge));
       const hit = saved.get(key);
-      if (hit) { results.push(hit); continue; }
+      // the same request from another answer (an identical reply) reuses the verdicts, bound to this answer and free
+      if (hit) { results.push(hit.row === r.key ? hit : { ...hit, row: r.key, case: r.id, setup: r.setup, usd: 0 }); continue; }
       if (process.env.CATCH_REPORT_ONLY) continue;
       try {
         const ids = items.filter((x) => !x.code).map((x) => x.id);
         const got = await checkOne(judge, c, r, items, { ledger, purpose: 'catch', effort: EFFORT, ...(DRY ? { dry: () => dryReply(ids) } : {}) });
         const s: Saved = { key, row: r.key, case: r.id, setup: r.setup, judge, verdicts: got.verdicts, usd: got.usd, at: new Date().toISOString() };
         appendFileSync(vfile, `${JSON.stringify(s)}\n`);
+        saved.set(key, s);
         results.push(s);
         console.log(`${r.id} · ${r.setup} · ${judge}: ${Object.values(got.verdicts).filter((v) => v.verdict === 'yes').length}/${items.length} · $${got.usd.toFixed(4)}`);
       } catch (e) {

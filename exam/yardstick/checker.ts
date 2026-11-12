@@ -111,10 +111,10 @@ export async function checkOne(model: string, c: ExamCase, run: CaseRun, items: 
     const before = o.ledger.spent;
     try {
       const r = await call(model, body, { ...o, purpose: `catch ${c.id}`, effort: o.effort ?? 'low' });
-      usd += r.usd;
       const text = r.candidates[0]?.content?.parts?.filter((p) => !p.thought).map((p) => p.text ?? '').join('') ?? '';
-      return { verdicts: { ...readChecks(text, asked.map((x) => x.id)), ...codeVerdicts(run, items) }, usd };
+      return { verdicts: { ...readChecks(text, asked.map((x) => x.id)), ...codeVerdicts(run, items) }, usd: usd + r.usd };
     } catch (e) {
+      // a reply that could not be read was still paid for: the ledger has it, and it is counted here once
       usd += o.ledger.spent - before;
       last = e;
       if (!(e instanceof CallError) || e.status !== -2) throw e;
