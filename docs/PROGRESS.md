@@ -354,9 +354,10 @@ Omar tried `/app/` on his phone: "it works, but I don't really like that app. Ca
 
 ## Session 20: the Coach reset plan (12 Nov 2026, Fable)
 Plan only, nothing built or paid. Why the Coach keeps losing to Opus, and one staged plan, are in `docs/COACH.md` §8 "The reset plan". Short version: the exam compares a 50-word text with a 150-word answer and an Opus judge grades Opus; the rules prompt (1,300 words, 30 bullets) holds the model back (Fable lost all three big cases under it); the app does not yet hand the Coach what stands out in the data; More is a separate call. PR #96 and its $2.50 rerun are not recommended.
+Stage 1 then ran the same day (Omar's yes, $2.43): two same-format setups in the exam (`sonnetbare`, `opusformat`), result in `docs/COACH.md` §8.
 
 ## Next step
-**Coach:** Omar's yes to stages 0 and 1 of the reset plan (`docs/COACH.md` §8): fix the yardstick for free, then a test of about $3 that shows how much of the gap is rules, format and model. No prompt patches and no paid reruns before that.
+**Coach:** stage 1 of the reset plan ran on 12 Nov ($2.43; `docs/COACH.md` §8 "Stage 1 result"): our rules help (8 of 10 against bare Sonnet), the format is not the excuse (2 of 10 against Opus in the same format), so the gap is the model, the partial-logs rule and thin plans. Waiting for Omar: may Opus be tested as the Coach's model (about $1.50)? No prompt patches meanwhile.
 
 **Design first:** Omar judges the Reed stills on his phone. Yes: build Reed's motion (drum pickers, light behind the glass) and its other key screens as a prototype, judged to 8 before he sees it, then re-skin `/app/`. No: write his words into `docs/taste-log.md` and start the next look from them. The engine steps below wait for that answer.
 

@@ -211,12 +211,39 @@ The exam proves the Coach is good before Omar sees it, and that each change made
 A plan only: nothing built, nothing paid. It comes from reading the saved answers of 8 and 12 Nov side by side. It
 replaces "patch the prompt, rerun" as the way forward. Stages 0 and 1 wait for Omar's yes.
 
+**Stage 1 result (12 Nov, Omar's yes at 08:17; $2.43 of the $3; files in `/mnt/project-files/e2/stage1-2026-11-12/`)**
+The same 10 cases, every side as a text with More, same blind neutral judge (Opus 5.5 medium, both orders) as on 8 and
+12 Nov. Two new setups in `exam/v2/run-answers.test.ts`: `sonnetbare` and `opusformat` (the plain coach prompt plus one
+line about the format, `FORMAT_RULES`).
+- **Our rules help; they are not the handicap.** Today's Coach beat bare Sonnet 8 of 10 (7 wins, 2 ties, 1 loss). On
+  the 7 cases where both sides are Sonnet: 5 of 7. The one loss is p03: bare Sonnet asked about the very low food
+  log and the Coach, following the partial-logs rule, ignored it.
+- **The format is not the excuse.** Against Opus held to the same text with More, the Coach still scored 2 of 10 (no
+  win, 4 ties, 6 losses), the same as against free-form Opus. The judge is less sure than before (it split on 4 of
+  10; on free-form Opus it split on none).
+- **So what is left is the model, one harmful rule and thin plans.** Opus coaches better than Sonnet with the same
+  data. Its reasons: the low intake again (p03, n02; the partial-logs rule), fuller phased plans on the big questions
+  where Fable answered in 60 to 117 words (m07, p14), clearer stop signs (c01, p10).
+- This read was wrong about causes 1 and 3 below: they were the first two guesses, and the test did not support
+  them. By the rule set before the run (the Coach at 5 or over against the bare model), stage 3 (models) now comes
+  before stage 2, and stage 2 loses its "cut the rules to 500 words" part. The partial-logs bullet is the one rule
+  to fix; PR #96's low-intake fact line does that and is worth keeping.
+- **Still open:** Opus judged Opus's answers. Gemini as a second judge failed in the cloud again (503); it needs
+  Gunshot's paid key (about $0.15) or people. Not run to hold the $3: bare Fable against Opus on the 3 big cases
+  (about $1.10).
+- **Cost and wait per answer, measured:** Sonnet $0.013 to $0.02 and 3 s; Opus $0.03 to $0.04 and 6 to 11 s; Fable
+  $0.115 and 15 s. Opus costs twice Sonnet and a third of Fable.
+- **Proposed next step (Omar's call):** the rule "Opus is never the in-app Coach" was set on 3 Nov for cost, before
+  Fable was accepted for big questions at three times Opus's price per answer. The measured best coach today is Opus.
+  Test Opus with our rules against plain Opus in the same format (about $1.50): if the rules help Opus as they help
+  Sonnet, that Coach beats the opponent it has been losing to. It then needs a judge that is not Opus.
+
 **What the Coach is (Omar asked, 12 Nov: "what is the actual coach? What are you training?")** Nothing is trained.
 The Coach is a stock model (Sonnet 5.5 for everyday turns, Fable 5.2 for big questions) plus our instruction text
 (`COACH_RULES`), the fact sheet the app computes from the person's data, and the actions it may take. So there are
 only five things to change: what we tell it, what we hand it, how an answer is built, which model, and how we score.
 
-**Why the Coach loses, ranked**
+**Why the Coach loses, ranked (the first read, before stage 1; see the result above for what held)**
 1. **The Coach and the exam play different games.** The Coach is told to text 20–60 words. The Opus opponent has no
    length rule and shows about three times as much (8 Nov, 50 cases: 149 words in view against the Coach's 51), and the
    neutral judge is never told this is a text on a phone with More one tap away. Where Opus wrote over 200 words the

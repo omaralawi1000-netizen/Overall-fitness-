@@ -7,7 +7,7 @@
 //      EXAM_CAP_USD  required unless EXAM_DRY · EXAM_LEDGER (this provider's ledger) · EXAM_OUT (default reference/e2v2)
 //      EXAM_DRY=1    no calls: a made-up reply, files under <EXAM_OUT>/dry
 //      EXAM_BIG=1    only the cases with a big task (a plan, the weekly review, a cut or weight-class plan, a why across weeks)
-//      EXAM_MORE=1   also ask for "More" under the Coach's last answer (round 3 shows it; the opponent gets none)
+//      EXAM_MORE=1   also ask for "More" under the Coach's last answer (round 3 shows it; the opponent gets none, the same-format setups do)
 // Behind an HTTPS proxy (the cloud), add NODE_USE_ENV_PROXY=1 so fetch goes through it.
 // A (case, setup, run) already saved with the same prompt is never paid for again.
 import { it } from 'vitest';
@@ -20,7 +20,7 @@ import { Ledger, type GeminiReply } from '../providers';
 import { CASES } from './cases';
 import { records } from './people';
 import { isBigTask } from '../../src/coach/route';
-import { caseHash, OPPONENT_RULES, runCase, type Setup } from './run-case';
+import { caseHash, FORMAT_RULES, OPPONENT_RULES, runCase, type Setup } from './run-case';
 import { PREV_RULES } from './prev-rules';
 
 export const SETUPS: Record<string, Setup> = {
@@ -37,6 +37,10 @@ export const SETUPS: Record<string, Setup> = {
   // the control for sonnetfable (Omar, 9 Nov): the same big turns on Sonnet at high effort, a quarter of Fable's price
   sonnethigh: { name: 'sonnethigh', quick: 'claude-sonnet-5-5', deep: 'claude-sonnet-5-5', big: 'claude-sonnet-5-5', bigEffort: 'high' },
   opponent: { name: 'opponent', quick: 'claude-opus-5-5', deep: 'claude-opus-5-5', rules: OPPONENT_RULES },
+  // reset plan, stage 1 (12 Nov): the same format on both sides. sonnetbare against the Coach shows what the Coach's rules
+  // do to the same model; opusformat is the opponent held to a text with More, so length no longer decides a pair
+  sonnetbare: { name: 'sonnetbare', quick: 'claude-sonnet-5-5', deep: 'claude-sonnet-5-5', rules: FORMAT_RULES, more: true },
+  opusformat: { name: 'opusformat', quick: 'claude-opus-5-5', deep: 'claude-opus-5-5', rules: FORMAT_RULES, more: true },
   // the previous Coach (PR #81's instructions) on the ship setup
   prev: { name: 'prev', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5', rules: PREV_RULES },
 };
