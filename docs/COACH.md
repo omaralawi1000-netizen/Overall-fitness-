@@ -329,6 +329,18 @@ round five. The $2.50 goes to stage 1, which answers a question the rerun cannot
 **Who works on it:** build stages on Opus 5.5 high (the rule for the Coach brain), one stage per session. Fable is a
 Coach candidate in the tests, not the builder.
 
+### Two prompt tiers and the low-intake fix (13 Nov; stage 2 steps 1 and 2, free work, nothing measured yet)
+- Omar (12 Nov): the app runs mainly on cheap models (Sonnet, GPT mini, Gemini Flash); a big model only for rare huge questions.
+  So the prompt follows the route tier (`rulesFor` in `src/coach/coach.ts`): quick and deep keep the full `COACH_RULES` (they
+  helped Sonnet 8 of 10); big gets `LIGHT_RULES` (how to text, a numbers line, the low-food note, Acting, Showing, Safety, the
+  untrusted rule, voice; about half the length) because the full rules hurt strong models (Opus with rules 3.5 of 10, plain Fable 6 of 10).
+  Wording is provider-agnostic. In the exam a big turn gets the light prompt only when the setup's big model differs from its
+  deep model (`sonnetfable`); `sonnethigh` keeps the full rules.
+- Low intake is now computed by code: `buildFacts` adds a trust line when partial logs average under 1,200 kcal or 60 % of the
+  target (three days with calories at least); the partial-logs rule was reworded so it no longer cancels "ask gently" and says the
+  concern goes in the text, not under More. PR #96's other two rule edits were dropped.
+- Next, needs Omar's yes (about $2): the same 10 cases against `/mnt/project-files/e2/stage1-2026-11-12/answers.jsonl`.
+
 ### Exam v3 plan (Omar's brief, 4 Nov 2026; replaces the pending E2 round-2 work)
 Omar: "make the Coach's answers the best in the world, and prove it with measurements, not opinions." His brief is the
 spec (Answer Bar 12 rules, ~60 cases with 4–8 checks each, 10 hold-out, kappa-calibrated judges, both orders, worst of 3
