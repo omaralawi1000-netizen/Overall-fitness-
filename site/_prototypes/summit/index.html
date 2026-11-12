@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aven Summit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Mona+Sans:wdth,wght@75..125,300..800&family=Hanken+Grotesk:wght@300..700&family=Bricolage+Grotesque:opsz,wght@12..96,400..700&display=swap">
+<style>
+/* Layout: one phone screen at true size per row, Today above the live workout. */
+:root {
+  color-scheme: dark;
+  --page: #17181b;
+  --page-fg: #f1f1ef;
+  --page-dim: #9a9c9f;
+  --page-line: #2b2d31;
+  --mona: "Mona Sans", "Helvetica Neue", Arial, sans-serif;
+  --hk: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --z: 1;
+}
+html, body { background: var(--page); color: var(--page-fg); }
+body { font-family: var(--mona); -webkit-font-smoothing: antialiased; }
+.wrap { max-width: 460px; margin: 0 auto; padding-block: 40px 56px; }
+.intro, .cap, .note { padding-left: max(20px, env(safe-area-inset-left, 0px)); padding-right: max(20px, env(safe-area-inset-right, 0px)); }
+.intro h1 { font-size: 26px; line-height: 1.15; font-weight: 600; letter-spacing: -0.02em; margin: 0 0 8px; text-wrap: balance; }
+.intro p, .note { font-size: 15px; line-height: 1.5; color: var(--page-dim); margin: 0; }
+.cap { font-size: 13px; font-weight: 600; color: var(--page-dim); margin: 34px 0 12px; }
+.note { margin-top: 26px; }
+.note b { color: var(--page-fg); font-weight: 600; }
+.holder { display: flex; justify-content: center; }
+.frame { width: 384px; height: 832px; zoom: var(--z); flex: none; }
+
+/* ---------- the phone screen ---------- */
+.screen { position: relative; width: 384px; height: 832px; overflow: hidden; border-radius: 40px; isolation: isolate;
+  font-variant-numeric: tabular-nums; -webkit-user-select: none; user-select: none; }
+.screen > img.bg { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: -1; max-width: none; }
+.screen * { box-sizing: border-box; }
+.abs { position: absolute; }
+.row { display: flex; align-items: center; }
+.sb { position: absolute; top: 14px; left: 26px; right: 24px; height: 18px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; letter-spacing: 0.01em; }
+.sb svg { height: 12px; width: auto; display: block; }
+.ico { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; display: block; }
+.frost { -webkit-backdrop-filter: blur(var(--blur, 26px)) saturate(var(--sat, 1.6)); backdrop-filter: blur(var(--blur, 26px)) saturate(var(--sat, 1.6)); background: var(--glass); box-shadow: var(--glass-edge); }
+.dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); margin-right: 9px; transform: translateY(-2px); box-shadow: 0 0 0 4px var(--accent-halo); }
+.seg { position: absolute; top: 44px; left: 20px; right: 20px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.seg i { height: 3px; border-radius: 2px; background: var(--seg-off); }
+.seg i.on { background: var(--ink); }
+.seg i.now { background: linear-gradient(90deg, var(--ink) 55%, var(--seg-off) 55%); }
+.dock { position: absolute; left: 20px; bottom: 24px; height: 64px; border-radius: 32px; display: grid; align-items: center; justify-items: center; padding: 0 8px; }
+.dock .tab { display: grid; justify-items: center; gap: 3px; font-size: 10.5px; font-weight: 600; color: var(--ink-3); letter-spacing: 0.01em; }
+.dock .tab.on { color: var(--ink); }
+
+/* ---------- Summit ---------- */
+.summit { font-family: var(--hk); color: #fff; font-variant-numeric: lining-nums tabular-nums;
+  --ink: #fff; --ink-2: rgba(255,255,255,.94); --ink-3: rgba(255,255,255,.88); --hair: rgba(255,255,255,.18);
+  --seg-off: rgba(255,255,255,.32); --tint: 8,38,62; --deep: #0b2a40; --a: .32; --dim: .9; --disp: "Bricolage Grotesque", var(--hk);
+  --glass: linear-gradient(180deg, rgba(255,255,255,.07), rgba(255,255,255,.07)), rgba(var(--tint), var(--a));
+  --glass-edge: inset 0 1px 0 rgba(255,255,255,.3), inset 0 0 0 1px rgba(255,255,255,.08), 0 24px 44px -24px rgba(8,6,20,.7);
+  --blur: 40px; --sat: 1.4; --ts: 0 1px 10px rgba(10,8,24,.38); }
+.summit.dawn { --tint: 56,36,92; --deep: #2a1c4c; --a: .28; }
+.summit .frost { -webkit-backdrop-filter: blur(var(--blur)) saturate(var(--sat)) brightness(var(--dim)); backdrop-filter: blur(var(--blur)) saturate(var(--sat)) brightness(var(--dim)); }
+.summit .shade { inset: 0; }
+.summit .date { top: 58px; left: 24px; font-size: 14px; font-weight: 600; color: var(--ink-2); text-shadow: var(--ts); }
+.summit .me { top: 46px; right: 20px; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; }
+.summit .me .ico { width: 20px; height: 20px; }
+.summit .sheet { left: 12px; right: 12px; top: 446px; height: 278px; border-radius: 40px; }
+.summit .sheet small { position: absolute; top: 22px; left: 26px; font-size: 14px; font-weight: 600; color: var(--ink-2); }
+.summit .sheet small + small { left: auto; right: 26px; color: var(--ink-3); }
+.summit .sheet .num { position: absolute; top: 42px; left: 24px; font-family: var(--disp); font-size: 88px; line-height: 92px; font-weight: 500; letter-spacing: -0.045em; white-space: nowrap; }
+.summit .sheet .num u { text-decoration: none; font-family: var(--hk); font-size: 24px; font-weight: 600; letter-spacing: 0; color: var(--ink-2); margin-left: 8px; }
+.summit .start { position: absolute; right: 16px; top: 56px; width: 114px; height: 62px; border-radius: 31px; background: #fff; color: var(--deep); display: grid; place-items: center; font-size: 17px; font-weight: 700; box-shadow: 0 14px 24px -14px rgba(8,6,20,.9); }
+.summit .sheet p { position: absolute; top: 140px; left: 26px; right: 26px; margin: 0; font-size: 16.5px; line-height: 24px; font-weight: 500; color: var(--ink-2); text-wrap: balance; }
+.summit .stats { left: 26px; right: 26px; bottom: 20px; padding-top: 14px; box-shadow: inset 0 1px 0 var(--hair); display: grid; grid-template-columns: 1fr 1.3fr .9fr; }
+.summit .stats span { display: flex; flex-direction: column; gap: 2px; font-size: 13px; font-weight: 600; color: var(--ink-3); white-space: nowrap; }
+.summit .stats b { font-size: 16px; line-height: 21px; font-weight: 700; color: #fff; letter-spacing: -0.01em; }
+.summit .dock { right: 20px; bottom: 20px; grid-template-columns: repeat(5, 1fr); --a: .5; --blur: 30px; }
+.summit .dock .tab { color: rgba(255,255,255,.9); text-shadow: 0 1px 8px rgba(10,10,30,.4); font-size: 12px; font-weight: 600; gap: 2px; padding: 6px 0; width: 100%; border-radius: 24px; } .summit .dock .tab.on { color: #fff; }
+.summit .dock .tab.on { background: rgba(255,255,255,.2); }
+/* workout */
+.summit .name { top: 64px; left: 24px; text-shadow: var(--ts); }
+.summit .name b { display: block; font-family: var(--disp); font-size: 33px; line-height: 38px; font-weight: 600; letter-spacing: -0.035em; }
+.summit .name span { display: block; margin-top: 3px; font-size: 15px; font-weight: 600; color: var(--ink-2); }
+.summit .rb { top: 66px; right: 20px; width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; }
+.summit .pane { top: 150px; left: 12px; right: 12px; height: 284px; border-radius: 40px; --sat: 1.5; }
+.summit .pane small { position: absolute; top: 20px; left: 26px; font-size: 14px; font-weight: 700; }
+.summit .pane em { position: absolute; top: 20px; right: 26px; font-style: normal; font-size: 14px; font-weight: 600; color: var(--ink-2); text-shadow: var(--ts); }
+.summit .big { position: absolute; left: 0; right: 0; text-align: center; font-family: var(--disp); font-weight: 500; white-space: nowrap; }
+.summit .big u { text-decoration: none; font-family: var(--hk); font-weight: 600; letter-spacing: 0; color: var(--ink-2); margin-left: 6px; }
+.summit .big.kg { top: 40px; font-size: 94px; line-height: 102px; letter-spacing: -0.05em; }
+.summit .big.kg u { font-size: 21px; }
+.summit .big.reps { top: 152px; font-size: 50px; line-height: 56px; letter-spacing: -0.04em; }
+.summit .big.reps u { font-size: 17px; }
+.summit .pm { position: absolute; width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.16); box-shadow: inset 0 0 0 1px rgba(255,255,255,.38); }
+.summit .pm .ico { width: 20px; height: 20px; stroke-width: 2.2; }
+.summit .line { position: absolute; left: 26px; right: 26px; bottom: 20px; margin: 0; padding-top: 13px; box-shadow: inset 0 1px 0 var(--hair); font-size: 15px; line-height: 22px; font-weight: 500; color: var(--ink-2); }
+.summit .line b { font-weight: 700; color: #fff; margin-right: 6px; }
+.summit .strip { top: 454px; left: 12px; right: 12px; height: 66px; border-radius: 33px; display: grid; grid-template-columns: repeat(4, 1fr); padding: 0 8px; overflow: hidden; --blur: 24px; }
+.summit .strip span { padding: 12px 0 12px 14px; display: flex; flex-direction: column; justify-content: space-between; font-size: 13px; font-weight: 600; color: var(--ink-3); }
+.summit .strip span + span { box-shadow: inset 1px 0 0 rgba(255,255,255,.1); }
+.summit .strip b { font-size: 15px; font-weight: 700; color: #fff; letter-spacing: -0.01em; white-space: nowrap; }
+.summit .strip span.now { background: linear-gradient(180deg, rgba(255,255,255,.32), rgba(255,255,255,.18)); box-shadow: inset 0 1px 0 rgba(255,255,255,.35); color: #fff; font-weight: 700; }
+.summit .log { left: 20px; right: 20px; top: 644px; height: 72px; border-radius: 36px; background: rgba(255,255,255,.95); color: var(--deep); display: grid; place-items: center; font-size: 20px; font-weight: 700; letter-spacing: -0.015em; box-shadow: 0 22px 40px -20px rgba(2,14,22,.7); }
+.summit .after { top: 734px; left: 0; right: 0; text-align: center; font-size: 14.5px; font-weight: 600; color: rgba(255,255,255,.92); text-shadow: var(--ts); }
+</style>
+<style>body{margin:0}</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="intro">
+    <h1>Summit</h1>
+    <p>One beautiful photograph fills the whole screen like a wallpaper. Everything else is quiet and sits on frosted glass.</p>
+  </header>
+  <div id="stage"></div>
+  <p class="note"><b>What moves later:</b> the picture follows the clock: peach light in the morning, blue after sunset, stars at night. It drifts a little when you tilt the phone, the glass slides up over it when you scroll, and starting a workout pushes into the picture. Photo: Connor Scott McManus on Pexels (free licence).</p>
+</div>
+
+<script>
+const I = {
+  today: '<svg class="ico" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="4.5"/><path d="M8.5 3v3.5M15.5 3v3.5"/><circle cx="12" cy="13" r="1.7" fill="currentColor" stroke="none"/></svg>',
+  train: '<svg class="ico" viewBox="0 0 24 24"><path d="M7 12h10M7 7.5v9M17 7.5v9M3.8 9.8v4.4M20.2 9.8v4.4"/></svg>',
+  food: '<svg class="ico" viewBox="0 0 24 24"><path d="M4 11.5h16a8 8 0 0 1-16 0z"/><path d="M9.5 8c0-1.5 1.2-1.5 1.2-3M14 8c0-1.5 1.2-1.5 1.2-3"/></svg>',
+  health: '<svg class="ico" viewBox="0 0 24 24"><path d="M12 19.5s-7-4.3-7-9.4A3.9 3.9 0 0 1 12 7.9a3.9 3.9 0 0 1 7 2.2c0 5.1-7 9.4-7 9.4z"/></svg>',
+  down: '<svg class="ico" viewBox="0 0 24 24"><path d="M6.5 9.5l5.5 5.5 5.5-5.5"/></svg>',
+  go: '<svg class="ico" viewBox="0 0 24 24"><path d="M5 12h13M12.5 6.5L18 12l-5.5 5.5"/></svg>',
+  check: '<svg class="ico" viewBox="0 0 24 24"><path d="M5.5 12.5l4.5 4.5 8.5-9.5"/></svg>',
+  minus: '<svg class="ico" viewBox="0 0 24 24"><path d="M6 12h12"/></svg>',
+  plus: '<svg class="ico" viewBox="0 0 24 24"><path d="M6 12h12M12 6v12"/></svg>',
+  mic: '<svg class="ico" viewBox="0 0 24 24"><rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/></svg>',
+  sb: '<span class="row" style="gap:6px"><svg viewBox="0 0 18 12"><path d="M1 9.5h2.4V12H1zM5.3 7h2.4v5H5.3zM9.6 4.2H12V12H9.6zM13.9 1h2.4v11h-2.4z" fill="currentColor"/></svg><svg viewBox="0 0 26 12"><rect x=".7" y=".7" width="21.6" height="10.6" rx="3.2" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".5"/><rect x="2.4" y="2.4" width="14.5" height="7.2" rx="1.8" fill="currentColor"/><rect x="23.6" y="4" width="1.8" height="4" rx=".9" fill="currentColor" opacity=".5"/></svg></span>',
+};
+const dock = (cls = '') => `<div class="dock frost ${cls}">
+  <span class="tab on">${I.today}Today</span><span class="tab">${I.train}Train</span><span class="tab">${I.food}Food</span><span class="tab">${I.health}Health</span></div>`;
+const seg = '<div class="seg"><i class="on"></i><i class="now"></i><i></i><i></i><i></i></div>';
+const cap = (t) => `<p class="cap">${t}</p>`;
+const frame = (inner) => `<div class="holder"><div class="frame">${inner}</div></div>`;
+
+function summit() {
+  const me = '<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="8.5" r="3.6"/><path d="M5 19.5c1-3.6 3.8-5.2 7-5.2s6 1.6 7 5.2"/></svg>';
+  return cap('Live workout') + frame(`
+  <div class="screen summit">
+    <img class="bg" src="img/summit-workout.jpg" alt="Misty blue mountain ridges after sunset">
+    <div class="abs shade" style="background:linear-gradient(180deg, rgba(5,24,34,.22), rgba(5,24,34,0) 30%)"></div>
+    <div class="sb"><span>17:04</span>${I.sb}</div>
+    ${seg}
+    <div class="abs name"><b>Bench press</b><span>Set 3 of 4, 22 min in</span></div>
+    <div class="abs rb frost">${I.down}</div>
+    <div class="abs pane frost">
+      <small>Set 3</small><em>Last week 82.5 × 6</em>
+      <div class="big kg">85<u>kg</u></div>
+      <i class="pm" style="left:18px;top:66px">${I.minus}</i><i class="pm" style="right:18px;top:66px">${I.plus}</i>
+      <div class="big reps">6<u>reps</u></div>
+      <i class="pm" style="left:18px;top:154px">${I.minus}</i><i class="pm" style="right:18px;top:154px">${I.plus}</i>
+      <p class="line"><b>Coach</b>82.5 moved fast last week. Try 85.</p>
+    </div>
+    <div class="abs strip frost"><span>Set 1<b>60 × 8</b></span><span>Set 2<b>80 × 6</b></span><span class="now">Now<b>85 × 6</b></span><span>Set 4<b>85 × 6</b></span></div>
+    <div class="abs log">Log set 3</div>
+    <div class="abs after">Rest starts by itself: 2 min 30</div>
+  </div>`);
+}
+
+function fit() {
+  const w = document.documentElement.clientWidth;
+  document.documentElement.style.setProperty('--z', Math.min(1.1, Math.min(w, 460) / 384).toFixed(4));
+}
+window.addEventListener('resize', fit);
+fit();
+document.getElementById('stage').innerHTML = summit();
+</script>
+</body>
+</html>
