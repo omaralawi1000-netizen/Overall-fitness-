@@ -41,6 +41,12 @@ export const SETUPS: Record<string, Setup> = {
   // do to the same model; opusformat is the opponent held to a text with More, so length no longer decides a pair
   sonnetbare: { name: 'sonnetbare', quick: 'claude-sonnet-5-5', deep: 'claude-sonnet-5-5', rules: FORMAT_RULES, more: true },
   opusformat: { name: 'opusformat', quick: 'claude-opus-5-5', deep: 'claude-opus-5-5', rules: FORMAT_RULES, more: true },
+  // Fable with the same light prompt, at the effort Omar chose for it (high on big turns): which strong model coaches best when
+  // the rules are out of its way (Omar, 12 Nov: "I don't care the cost")
+  fablebare: { name: 'fablebare', quick: 'claude-fable-5-2', deep: 'claude-fable-5-2', big: 'claude-fable-5-2', bigEffort: 'high', rules: FORMAT_RULES, more: true },
+  // a measurement only (Omar, 12 Nov: "I want best"): Opus under the Coach's own rules, to see what the rules add on top of the
+  // strongest opponent. Opus in the app stays barred until Omar changes that rule himself
+  opuscoach: { name: 'opuscoach', quick: 'claude-opus-5-5', deep: 'claude-opus-5-5' },
   // the previous Coach (PR #81's instructions) on the ship setup
   prev: { name: 'prev', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5', rules: PREV_RULES },
 };

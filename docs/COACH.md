@@ -235,10 +235,30 @@ line about the format, `FORMAT_RULES`).
   (about $1.10).
 - **Cost and wait per answer, measured:** Sonnet $0.013 to $0.02 and 3 s; Opus $0.03 to $0.04 and 6 to 11 s; Fable
   $0.115 and 15 s. Opus costs twice Sonnet and a third of Fable.
-- **Proposed next step (Omar's call):** the rule "Opus is never the in-app Coach" was set on 3 Nov for cost, before
-  Fable was accepted for big questions at three times Opus's price per answer. The measured best coach today is Opus.
-  Test Opus with our rules against plain Opus in the same format (about $1.50): if the rules help Opus as they help
-  Sonnet, that Coach beats the opponent it has been losing to. It then needs a judge that is not Opus.
+**Stage 1b result (12 Nov, Omar: "Please I want best", "I don't care the cost"; $4.43 more, $6.86 in all)**
+Same 10 cases, same format, same judge. Setups `opuscoach` (Opus under `COACH_RULES`, a measurement only) and
+`fablebare` (Fable with `FORMAT_RULES`, high effort on big turns).
+| Pair | Score of the first | What it shows |
+|---|---|---|
+| Today's Coach against bare Sonnet | 8 of 10 | Our rules help Sonnet |
+| Today's Coach against plain Opus | 2 of 10 | The Coach we have is behind |
+| Opus with our rules against plain Opus | 3.5 of 10 (3 wins, 1 tie, 6 losses) | Same model on both sides: our rules make a strong model worse |
+| Plain Fable against plain Opus | 6 of 10 (5 wins, 2 ties, 3 losses) | The first setup that does not lose to Opus, with an Opus judge |
+- **A weaker model needs the rules; a strong model is held back by them.** That is why Fable lost every big case
+  under `COACH_RULES` and wins with one line about the format.
+- **The partial-logs rule fails on every model** (Sonnet, Fable and Opus all skipped the very low intake under it; the
+  plain prompts raised it). Plain Fable raised it too, but under More (p03): it belongs in the text.
+- **What the plain prompts cost:** plain Opus used 6 numbers that code could not trace to the fact sheet (our Coach: 1)
+  and went over 120 words twice. Plain Fable: 1 untraceable number, 71 words on average, one text of 129. No safety
+  check failed in any setup. So a light prompt keeps the safety block, the acting block and every code check.
+- **Per answer, measured:** Sonnet $0.013 to $0.02, 3 s. Opus $0.03 to $0.05, 6 to 11 s. Plain Fable $0.06 (8 s),
+  $0.09 on big turns (15 s), More $0.11 (16 s). The wait needs the answer shown as it is written.
+- **Limits:** 10 cases, one run each, so 6 of 10 means "at least level with Opus", not "better". The judge is still
+  Opus (which would favour Opus, if anything). Gemini did not answer from the cloud all morning (503, then a timeout).
+- **Proposed (Omar's call):** the Coach becomes a strong model with a light prompt: Fable 5.2, `FORMAT_RULES` plus the
+  safety and acting blocks of `COACH_RULES`, the low-intake finding from PR #96 in the fact sheet, all code checks
+  kept. Sonnet with the full rules stays as the fallback. Then the proof: 20 cases it has not seen against plain
+  Opus (about $8), a judge that is not Opus, and Omar's blind picks. The Opus rule does not need to change.
 
 **What the Coach is (Omar asked, 12 Nov: "what is the actual coach? What are you training?")** Nothing is trained.
 The Coach is a stock model (Sonnet 5.5 for everyday turns, Fable 5.2 for big questions) plus our instruction text
