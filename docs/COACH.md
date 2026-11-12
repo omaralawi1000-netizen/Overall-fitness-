@@ -193,6 +193,8 @@ Build notes: the old 6-step form (`Onboarding.tsx`) and `starter.ts` become the 
 - **Gemini first**, OpenAI optional. Groq optional for the best Danish
   speech-to-text.
 - **A small model routes**, a bigger one thinks only when it helps (old router kept), so a friend's free tier lasts.
+- **Cheap models first** (Omar, 12 Nov): the app runs mainly on a cheap model with the provider switchable; a big
+  model (Opus or Fable) only for rare, huge questions. Details and steps: §8 "Cheap models first".
 - **Spend** is tracked per month with a limit in the person's currency.
 - On rate limits or errors it retries once and then says so plainly, with the logging fallback still working.
 - **Real limits, not assumed ones** (checked 27 Oct): Google publishes per-model request limits only inside AI Studio
@@ -206,6 +208,47 @@ Build notes: the old 6-step form (`Onboarding.tsx`) and `starter.ts` become the 
 ## 8. The exam
 
 The exam proves the Coach is good before Omar sees it, and that each change made it better, not just different.
+
+### Cheap models first (Omar, 12 Nov 2026 10:48; replaces "Fable for everything" and reorders the reset plan below)
+Omar: "the coach in the app, I'm going to maybe switch it in the actual app. I'm not going to have a coach like Opus,
+maybe for just some huge, important questions. So I can just switch the provider... I can have a cheap option like
+Gemini and Opus for some huge things, but it's going to be mainly on the cheaper models like Sonnet, the GPT ones or
+Gemini. So make sure this is worth it." And: "make sure I don't waste money on this."
+- **What it decides:** the main path is a cheap model (Sonnet, a GPT mini-tier model or Gemini Flash), with the
+  provider switchable. A big model (Opus or Fable) answers only rare, huge questions. This softens the 3 Nov rule
+  "Opus is never the in-app Coach": in his words Opus may now take "some huge things".
+- **Dropped:** the $8 proof of Fable on every answer. It would tune the rare path. Its decision card was withdrawn.
+- **Already in place** (§7 said "Gemini first, OpenAI optional, a small model routes" on 27 Oct): the Coach request is
+  provider-neutral (`coachRequest` gives `{system, turns, schema}`), `src/coach/route.ts` has the tiers quick, deep and
+  big, the exam runs any setup, and a prompt change is kept only if it helps on 2+ models. Missing: a prompt tier per
+  model class, an OpenAI adapter and key (the cloud has neither; its Gemini key is free tier and did not answer on
+  12 Nov), and the app itself has no model wired in yet.
+- **Harsh score of this plan: 7/10.** Biggest weakness: on the main path the Coach stays behind a top model on
+  substance (today's Sonnet cases: 2 of 7 against plain Opus) and no prompt closes that. The bet that the app's own
+  computed findings lift a cheap model is unproven until step 3. Second: still no judge outside Opus and no human picks.
+
+**Steps, in order**
+1. **A prompt tier per model class (free).** Cheap models keep the full `COACH_RULES` (they helped Sonnet: 8 of 10
+   against bare Sonnet). The big tier gets a light prompt: `FORMAT_RULES` plus the Safety and Acting blocks of
+   `COACH_RULES`, because the full rules made Opus worse (3.5 of 10) and Fable lose every big case, while plain Fable
+   scored 6 of 10 against plain Opus. The tier follows the route (`big`), not a model name, so any provider fits.
+2. **Fix the partial-logs rule (free).** It made every model skip very low intake. Take PR #96's fact line
+   (`buildFacts` flags a very low logged average) and reword the bullet so "never build a worry on partial logs" no
+   longer cancels "ask gently". The concern goes in the text, not under More. Drop #96's other two rule edits.
+3. **One cheap check (about $2, needs Omar's yes).** The same 10 cases: the tiered Coach (Sonnet with the rules on
+   everyday turns, Fable with the light prompt on the 3 big ones) against the saved plain-Opus answers. Success: p03
+   and n02 raise the low intake in the text; the big cases reach at least 1.5 of 3 (0 of 3 today); the everyday cases
+   are no worse than 2 of 7. Then stop and report cost and what changed.
+4. **Where a cheap model can really gain: the app does the thinking.** A cheap model will not out-think Opus. It can
+   close the gap through what code computes for it (§9's engine: what stands out, with the next step as a number),
+   memory over weeks, and actions. The low-intake finding in step 2 is the first test of that idea; if step 3 shows it
+   works, the next findings follow (too-fast cut, stalled lift with the next weight, sessions dropping off).
+5. **Other providers only when a switch is really wanted.** Gemini Flash was measured on 4 Nov (8.02 against Sonnet's
+   8.65 on the old exam, 11 s an answer against 3 s). A GPT mini-tier model needs a key and an adapter in
+   `exam/providers.ts` (about an hour to build, about $1 to test). No decision waits on either today, so no money goes
+   there yet. When one is added, the rule stands: it must pass the same cases with the same rules.
+6. **Still owed from the reset plan:** a judge that is not Opus (Gemini on Gunshot's paid key, about $0.15) and
+   Omar's blind picks with 3 to 5 testers, before any "best" claim.
 
 ### The reset plan (12 Nov 2026; Omar: "We need to make a plan on how to do this properly")
 A plan only: nothing built, nothing paid. It comes from reading the saved answers of 8 and 12 Nov side by side. It
