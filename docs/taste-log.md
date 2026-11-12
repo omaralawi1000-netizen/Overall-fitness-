@@ -10,7 +10,12 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 ## RETIRED (9 Nov 2026, 21:58): the "old Aven ingredients" look
 Asked whether design threads should keep using it, Omar said: "No, delete that." The look (near-black room, one soft glow, clear glass, italic serif names, thin numbers, one orange thing to tap, the orb) is **not his taste anymore and not a rule**. Never feed it to a design thread, a judge or a prototype brief. Everything below that praises it is history only. Italic serif titles, which he picked in the taste test, are not part of this retirement; they stand or fall on his latest words.
 
-## What it suggests now (12 Nov 2026, before the Reed and Silk stills)
+## What it suggests now (12 Nov 2026, after Reed and Silk were rejected)
+- **He wants a picture of a real place, not an abstract material.** Glass ribs and satin folds scored 8 with the judges and got "this is not how I would like it". What he asked for instead: "the Aura app as inspiration, like a wallpaper that's very beautiful". Oura again, for the third time since 2 Nov.
+- **The judge's 8 does not predict his yes.** Both looks that passed were rejected, and five fresh judges scored the same kind of screen anywhere from 6.5 to 8. The bar stays his rule for what he is shown, but his own eyes on a still are the real test, so show little and early.
+- **The wallpaper is the product.** In every judge round the screen with the most beautiful, softest photo won, and every fix that made the glass lighter and the picture more visible helped.
+
+## What it suggested before that (12 Nov 2026, before the Reed and Silk stills)
 - **A build he called the best can still fail in daily use.** Window was "the spine" on 3 Nov. After using it as a real app he said "it works, but I don't really like that app". So a yes on stills is a start, not a verdict; the phone decides.
 - **His whole brief is now four words.** "Very premium, a little calm … blur, premium frosted blur." Everything else he handed over: "just try make it the best possible."
 - **What his liked apps share is one richly made thing with real depth, and a quiet UI around it** (Oura's mountain, Opal's gem, WHOOP's orb, Revolut's room). Every round drawn with flat CSS colour was called plain. So this round's pictures are real 3D renders, and they are ours, not a stock photo.
@@ -52,7 +57,16 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
-### 12 Nov 2026: Window rejected after use; from-scratch stills (/_prototypes/reed-silk/)
+### 12 Nov 2026, 08:16: Reed and Silk rejected; Oura as the inspiration (/_prototypes/summit/)
+Rejected: Reed and Silk, both of them, about 40 minutes after Silk was published.
+His words: "This is not how I would like it. I wanted to take a look at, make the Aura app as inspiration, like a wallpaper that's very beautiful, like it." ("Aura" is Oura, as on 2 Nov.)
+Reading: take Oura's approach, not its look. One very beautiful picture of a real place fills the screen like a wallpaper; the content is calm and sits on frosted glass.
+Built as stills, called Summit: a real photograph of misty mountain ridges (Pexels, free licence), toned for the time of day, so the wallpaper follows the clock: peach light on Today at 07:42, blue after sunset in the live workout at 17:04. Same glass on both; numbers in Bricolage Grotesque.
+Judges (five fresh ones, the look changed between rounds): 7, 7.5, 7, 7.5, 7. The live workout screen got 8 twice and 7.5 once, so it was shown alone (https://claude.ai/artifact/XuTdC6U1NGJEWr32PXDmgR). Today got 6.5 to 7.5 and was not shown. Tried and dropped for Today: a snow peak under a deep blue sky (sharp, but dark, and the glass over snow looked smeared or grey), the same kind of peak in pink evening light (soft photo, heavy pink glass). What the judges agreed on: the picture must be the star, the glass light and the same on every screen, one sheet instead of several.
+Asked (decision card): see Today at 7 anyway, or keep it hidden until 8.
+Verdict: waiting for Omar.
+
+### 12 Nov 2026: Window rejected after use; from-scratch stills (Reed and Silk, since deleted)
 Rejected: the real app as it stands (`/app/`, the Window v17 port), after trying it on his phone.
 His words: "Okay, it works, but I don't really like that app. Can you design a new app from scratch? Like from scratch… try to make the best fitness app like in the world, with the most beautiful things. It has to be very beautiful."
 Asked seven questions (what he dislikes, what to keep, references, light or dark, calm or bold, the tabs, frosted glass), he answered only: "Just try make it the best possible, use any skills you want. Yes, I want very premium, a little calm, want blur, premium frosted blur."
@@ -65,8 +79,8 @@ Built as stills only (Today and the live workout screen), no motion, so he can p
 - **Tide (not shown)**: built after he asked for three, as the light and calm one: sheets of paper stacked from cream down to violet (rendered), dark ink text, each band holding one thing about the day, and the set being logged in a frosted pane lying across two paper edges. Judge: 7, then 7 again from a new judge after one fix round. Both judges: Today has no hero, and pink to lavender to violet is the stock pastel palette. Both liked the workout screen more (7.5) and the paper edge showing through the glass. Lesson: a calm light look still needs one bold thing on Today and one decisive colour; soft pastels alone read as a wallpaper.
 - **Night (cut, never shown)**: the same studio after dark. Judge: 6, 6.5.
 - **Lantern (cut, never shown)**: glowing frosted-glass sculptures. The renders looked like toys.
-Stills: https://claude.ai/artifact/9QTUDgXZJfRBHfMYXv47nJ. Needs his phone: how the frost looks, stripes (banding) in the green fade and the blue folds, white text on the coloured panes. Asked (decision card): judge these two first, see Studio at 7.5 anyway, or a different third look. He did not tap it; his words asked for three, so a different third (Tide) was built. After Tide missed he was told plainly that two of three made the bar, and asked: judge Reed and Silk first, or one more try at a third.
-Verdict: waiting for Omar.
+Stills: https://claude.ai/artifact/9QTUDgXZJfRBHfMYXv47nJ (the prototype folder was deleted after the rejection). Needs his phone: how the frost looks, stripes (banding) in the green fade and the blue folds, white text on the coloured panes. Asked (decision card): judge these two first, see Studio at 7.5 anyway, or a different third look. He did not tap it; his words asked for three, so a different third (Tide) was built. After Tide missed he was told plainly that two of three made the bar, and asked: judge Reed and Silk first, or one more try at a third.
+Verdict: no to both, see the entry above.
 
 ### 3 Nov 2026, 08:18: Window is the spine; the Workout build is stopped
 Picked: the Window build (artifact https://claude.ai/artifact/2mGPer97P43dNo4Y5Ugjhp).
