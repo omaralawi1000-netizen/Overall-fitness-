@@ -124,4 +124,6 @@ something goes wrong. The plan these belong to: `docs/COACH.md` §8 "Cheap model
    and made-up case data like code, and remove a misleading row instead of telling the model to ignore it.
 10. **The first gate-A bar ("+15 points") was set before the baseline was known** (the Coach already stood at 83 %).
     Rule: measure first, then set the bar.
-11. Kept from before: a cheap round before any full run, and stop when the gain is marginal.
+11. **Two threads edit `docs/COACH.md` §8 at the same time** (the plan and the yardstick). Rule: look at the open PRs
+    first and keep edits off their lines.
+12. Kept from before: a cheap round before any full run, and stop when the gain is marginal.
