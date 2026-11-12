@@ -223,32 +223,127 @@ Gemini. So make sure this is worth it." And: "make sure I don't waste money on t
   big, the exam runs any setup, and a prompt change is kept only if it helps on 2+ models. Missing: a prompt tier per
   model class, an OpenAI adapter and key (the cloud has neither; its Gemini key is free tier and did not answer on
   12 Nov), and the app itself has no model wired in yet.
-- **Harsh score of this plan: 7/10.** Biggest weakness: on the main path the Coach stays behind a top model on
-  substance (today's Sonnet cases: 2 of 7 against plain Opus) and no prompt closes that. The bet that the app's own
-  computed findings lift a cheap model is unproven until step 3. Second: still no judge outside Opus and no human picks.
 
-**Steps, in order**
-1. **A prompt tier per model class (free).** Cheap models keep the full `COACH_RULES` (they helped Sonnet: 8 of 10
-   against bare Sonnet). The big tier gets a light prompt: `FORMAT_RULES` plus the Safety and Acting blocks of
-   `COACH_RULES`, because the full rules made Opus worse (3.5 of 10) and Fable lose every big case, while plain Fable
-   scored 6 of 10 against plain Opus. The tier follows the route (`big`), not a model name, so any provider fits.
-2. **Fix the partial-logs rule (free).** It made every model skip very low intake. Take PR #96's fact line
-   (`buildFacts` flags a very low logged average) and reword the bullet so "never build a worry on partial logs" no
-   longer cancels "ask gently". The concern goes in the text, not under More. Drop #96's other two rule edits.
-3. **One cheap check (about $2, needs Omar's yes).** The same 10 cases: the tiered Coach (Sonnet with the rules on
-   everyday turns, Fable with the light prompt on the 3 big ones) against the saved plain-Opus answers. Success: p03
-   and n02 raise the low intake in the text; the big cases reach at least 1.5 of 3 (0 of 3 today); the everyday cases
-   are no worse than 2 of 7. Then stop and report cost and what changed.
-4. **Where a cheap model can really gain: the app does the thinking.** A cheap model will not out-think Opus. It can
-   close the gap through what code computes for it (§9's engine: what stands out, with the next step as a number),
-   memory over weeks, and actions. The low-intake finding in step 2 is the first test of that idea; if step 3 shows it
-   works, the next findings follow (too-fast cut, stalled lift with the next weight, sessions dropping off).
-5. **Other providers only when a switch is really wanted.** Gemini Flash was measured on 4 Nov (8.02 against Sonnet's
-   8.65 on the old exam, 11 s an answer against 3 s). A GPT mini-tier model needs a key and an adapter in
-   `exam/providers.ts` (about an hour to build, about $1 to test). No decision waits on either today, so no money goes
-   there yet. When one is added, the rule stands: it must pass the same cases with the same rules.
-6. **Still owed from the reset plan:** a judge that is not Opus (Gemini on Gunshot's paid key, about $0.15) and
-   Omar's blind picks with 3 to 5 testers, before any "best" claim.
+**The plan (12 Nov 2026 11:00, Omar: "think very hard and plan this to find out how to do this properly"; replaces the
+six steps that stood here and the order of the reset plan's stages 2 to 5)**
+Planning only, plus one 5-cent test (below).
+
+**The idea in one line:** a cheap model will not out-think a top model, so the app does the thinking and the cheap
+model does the talking.
+
+**Why: the six cases today's Coach lost to plain Opus** (read from the saved answers of stage 1, free). What Opus had
+that the Coach lacked:
+- p03 and n02: "11 reps for 5 sessions, add 2.5 kg on Thursday", and a gentle check of the 863 kcal food log. Both
+  facts were on the fact sheet. Opus joined them up. The Coach did not, its rule "never compute a number" forbids
+  "32.5 kg", and the sheet labelled those lifts "up".
+- m07: the row stuck at 70×8 for 6 sessions, the week's total load (4 to 5 lifts plus 2 practices), "83 kg in 3 to 4
+  weeks at this pace", a buffer weight. All of it is arithmetic on data the app holds.
+- c01: the Coach's own tip (move the session to Thursday) put it the day before Friday's session. Code can check that.
+- m03 (a tie): the Coach did the sum itself and got it wrong (2,300 kcal "near 0.25 kg a week"; the judge put it at
+  about 0.375). A number from code would have been right.
+- p10 and p14: sport know-how (short sprints, not the day before a match; a race-week taper). That is expertise, not
+  the person's data.
+So four of the six losses are things code can compute or check, and two are expertise that can be written down once.
+None of them needs a smarter everyday model.
+
+**First evidence (12 Nov, $0.05; `/mnt/project-files/e2/smoke-2026-11-12/REPORT.md`).** PR #100's low-food finding,
+Sonnet with the full rules, p03 and n02, two runs each: 4 of 4 answers now ask about the low food log in the text
+(before: 0 of 2, and no model did under the old rule). Limits: 4 answers read by hand, and #100 changed the fact line
+and the rule wording together. Side effect: both p03 answers ask two questions (the rule says one). None says "add
+2.5 kg": that finding is not built yet. Also measured: the same prompt sent again within 5 minutes cost $0.003, not
+$0.021 (it is cached).
+
+**What makes a cheap-model Coach great, biggest lift first**
+1. **Findings in code.** The app works out what stands out, ranked, each with the next step as a number: a stalled
+   lift and its next weight; goal pace (the date at this pace, the pace needed, the kcal for it, a buffer weight);
+   sessions dropping off; the whole week's load; the very low food log (#100). They go at the top of the fact sheet.
+   It is §9's engine, built once for chat and notices. It works with every provider, because it is not a prompt.
+2. **Playbooks (the expertise, fetched by the app).** About 12 short cards, one per situation: wants to quit,
+   stalled lift, speed for a field sport, race week, weight class, sore joint, bad sleep and shifts, beginner start,
+   bulk not moving, cut too fast, missed weeks, a plan request. Each holds what a great coach makes sure to cover,
+   the stop signs and one model reply. A big model writes them once from the sources in `knowledge.ts`, a person
+   checks them, and code picks at most two per message. The cheap model gets the expertise without a big model on
+   every answer. The app fetches; the cheap model never searches (search loops cost money, seconds and mistakes).
+3. **Code checks on every live answer.** The exam already checks numbers that are not on the sheet, claimed changes
+   that did not happen, safety lines and length; add a suggested day that clashes with the plan. Run them in the app:
+   one retry with the reason, else a plain fallback. Cheap models slip more often and code catches it.
+4. **The big model where one call pays off many times.** (a) Big questions keep the big tier with the light prompt
+   (#100). (b) A "Think deeper" button under any answer, so the person chooses when to spend about $0.10. (c) Once a
+   week the big model reads the weeks and writes the Coach's notes (what is working, the one focus, what to watch),
+   shown and editable in Memory. The cheap model reads them all week: about $0.10 a week for its long view.
+5. **One core, thin provider notes.** Facts, findings, playbooks, the reply shape and the checks are the same for
+   every provider. A provider gets at most ten lines of its own, each for a measured failure. Tune on Sonnet first
+   (the only working key in the cloud; 3 s), then put Gemini Flash and a GPT mini model through the same scorecard:
+   catch rate, slips, cost, seconds, broken replies, Danish. A model that misses the bar is not offered in the switch.
+6. **A yardstick that can see a small gain** (next).
+
+**The yardstick: how we know it is working**
+- **Catch rate (new; the everyday number).** Per case, a fixed list of what a great coach must catch and must not do:
+  the exam's checklists plus expert points, written before any new answer. Yes or no per item, by code where it can
+  be counted and by a cheap model otherwise. 20 cases with about 5 items each give 100 yes/no points in place of 10
+  win/lose calls, so one fix shows up. About $0.50 a run on Sonnet. A yes/no check leans far less on the judge's
+  taste than "which answer is better".
+- **Slips (code, free):** numbers not on the sheet, unbacked claims, over length, wrong language, more than one
+  question. Safety misses must be zero.
+- **Blind pairs against a top chatbot (only at gates).** The opponent is plain Opus with the same fact sheet but
+  without our findings and playbooks: what someone gets by pasting their log into the best chatbot. Two judges from
+  different companies (Opus, and Gemini on Gunshot's paid key, about $0.15); when they disagree the case is a tie.
+- **People:** from step 6, thumbs up and down in the real app, and every thumbs-down becomes a new case. Once, at the
+  end: Omar and 3 to 5 testers tap 6 blind pairs (3 minutes), and a native Danish reader.
+- **Cases:** the 10 used so far plus 10 more are for tuning. 10 fresh ones and the 10 held out are touched only at
+  gates, so the Coach is not trained for the test.
+- **Cost and wait per answer,** on every run.
+
+**The bar for a cheap-model Coach (proposed; Omar decides at gate A)**
+- Catch rate 85 % or more on the tuning cases and 75 % or more on fresh ones, with zero safety misses.
+- At least as good as the top chatbot on 7 of 10 blind pairs, by both judges and by people.
+- An everyday answer costs 2 cents or less and arrives in about 3 seconds.
+- Honest limit: handed the same findings, a top model still writes the better answer. The claim is "the best coach
+  you can run for a few øre", plus what no chatbot does: it notices over weeks, acts with Undo and remembers.
+
+**Order of work** (one step per session; build on Opus 5.5 high, the Coach-brain rule)
+1. **The yardstick.** Catch-rate lists for 20 cases, the yes/no checker, a baseline for today's Coach and for plain
+   Opus from the answers already saved, the second judge wired, the 6-pair page. Free to build; about $0.30 to score
+   the saved answers. Done when the checker agrees with a hand-read on 18 of 20 items. (Omar approved this as the
+   reset plan's stage 0 on 12 Nov 08:17.)
+2. **Findings v1.** Stalled lift with the next step, goal pace, sessions dropping, week load, the plan-clash check;
+   the "up" label fixed; the two-question side effect fixed. Unit tests. Free.
+3. **Gate A (about $1; needs Omar's yes).** The 20 tuning cases on Sonnet, before and after: catch rate and slips.
+   Plus the 10 known cases as blind pairs against the saved Opus answers, two judges. Go on if the catch rate rises
+   15 points or more with no new slips and the pairs reach 4 of 10 (2 today). Under 5 points: the bet failed; stop
+   and say so. The fallback is then a stronger everyday model (Opus, about twice Sonnet's price), which is Omar's call.
+4. **Playbooks, then live checks,** each tested on its own. Free to build; about $0.50 a test. Each is kept only if
+   the catch rate rises on Sonnet and on a second cheap model, with no new slips.
+5. **More providers (about $1 to $2).** Gemini Flash on Gunshot's paid key; a GPT mini model when there is an OpenAI
+   key (the adapter is about an hour). The scorecard and the provider notes.
+6. **Into the real app (free).** The provider switch, the spend meter, the answer shown as it is written, thumbs,
+   "Think deeper". Omar uses it for a week.
+7. **The big tier (about $1.50).** The light prompt on the 3 big cases; the weekly notes on 5 cases, with and without.
+8. **Proof (about $6, plus people).** Fresh and held-out cases, two judges, the 6 pairs with Omar and testers, the
+   Danish reader.
+
+Paid in all: about $5 to $6 before the proof, about $12 with it (the reset plan: about $28).
+
+**What not to do** (each one saves money)
+- No training of a model (fine-tuning): it ties the Coach to one provider and needs thousands of rated answers.
+- No more rule patches scored on 10 cases. No 50-case run before a gate. No Fable on every answer.
+- Not three providers tuned at once. No search loops on the cheap path.
+- The pending $2 rerun of the 10 cases: skip it. Its first question (does the low-food finding work?) is answered
+  above for 5 cents, its second (the light prompt on big cases) is step 7, and the rest is measured better at gate A.
+
+**Cost per answer**
+- Measured: Sonnet $0.013 to $0.02 and 3 s; a follow-up within 5 minutes $0.003. Opus $0.035. Fable $0.06 to $0.115.
+- Not measured (third-party price lists read on 12 Nov; check the official pages before a run): Flash-class and GPT
+  mini-class models cost about a third to an eighth of Sonnet per token, so about $0.002 to $0.006 an answer.
+- At 10 answers a day: Sonnet about $4 a month, a Flash- or mini-class model about $1.
+
+**Harsh score: 7.5/10.** Biggest weakness: the main bet (findings lift a cheap model) rests on six lost cases read
+by hand and four test answers; gate A settles it for about $1. Second: every score so far is an AI judging an AI,
+people come only at the end, and on 8 Nov Omar had no time to tap. Third: the app has no model wired in yet, so
+nothing here has met real use before step 6.
+
+**The single next action:** step 1, the yardstick. It is free, already approved, and makes every later test cheaper
+and sharper.
 
 ### The reset plan (12 Nov 2026; Omar: "We need to make a plan on how to do this properly")
 A plan only: nothing built, nothing paid. It comes from reading the saved answers of 8 and 12 Nov side by side. It
@@ -382,7 +477,8 @@ Coach candidate in the tests, not the builder.
 - Low intake is now computed by code: `buildFacts` adds a trust line when partial logs average under 1,200 kcal or 60 % of the
   target (three days with calories at least); the partial-logs rule was reworded so it no longer cancels "ask gently" and says the
   concern goes in the text, not under More. PR #96's other two rule edits were dropped.
-- Next, needs Omar's yes (about $2): the same 10 cases against `/mnt/project-files/e2/stage1-2026-11-12/answers.jsonl`.
+- The check that was planned next (about $2, the same 10 cases against `/mnt/project-files/e2/stage1-2026-11-12/answers.jsonl`):
+  the plan under "Cheap models first" recommends skipping it ("What not to do"). Omar decides; a card asked him on 12 Nov.
 
 ### Exam v3 plan (Omar's brief, 4 Nov 2026; replaces the pending E2 round-2 work)
 Omar: "make the Coach's answers the best in the world, and prove it with measurements, not opinions." His brief is the

@@ -68,7 +68,7 @@ Lives in the project's shared folder under `aven2/`. Not in git.
 - `aven2/research/aven2-tech-scan.html`: the tech scan as a page.
 - `aven2/2026-11-01-blank-page.md` and `aven2/2026-11-01-best-six.md`: the blank-page ideas and the best six.
 - `aven2/real-details.md`: Omar's real details. `aven2/removal-diff.md`: the removal diff.
-- `e2/` (beside `aven2/`): the Coach exam's paid runs, one folder each with answers, judge reports and spend ledgers: `stage3/` (8 Nov, Coach vs Opus), `fable-2026-11-09/` (Fable 5.2 on the 11 big cases; result in `docs/COACH.md` §8), `check-2026-11-12/` (10 cases against Opus), `stage1-2026-11-12/` (the reset plan's stage 1: the Coach against bare Sonnet and against Opus in the same format).
+- `e2/` (beside `aven2/`): the Coach exam's paid runs, one folder each with answers, judge reports and spend ledgers: `stage3/` (8 Nov, Coach vs Opus), `fable-2026-11-09/` (Fable 5.2 on the 11 big cases; result in `docs/COACH.md` §8), `check-2026-11-12/` (10 cases against Opus), `stage1-2026-11-12/` (the reset plan's stage 1: the Coach against bare Sonnet and against Opus in the same format), `smoke-2026-11-12/` (a 5-cent test of PR #100's low-food finding on Sonnet).
 
 ## Local folder App-UI-Library (Omar's PC, outside the repo)
 For big visual files only: screenshots, clips, inspiration images, prototype zips. Docs and decisions live in the repo only, never only here. Its README points other AIs (Codex, Gemini) to `docs/README.md`, `docs/BRIEF.md` and `docs/PROGRESS.md`. Nothing here is the source of truth.
