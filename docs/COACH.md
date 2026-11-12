@@ -207,6 +207,75 @@ Build notes: the old 6-step form (`Onboarding.tsx`) and `starter.ts` become the 
 
 The exam proves the Coach is good before Omar sees it, and that each change made it better, not just different.
 
+### The reset plan (12 Nov 2026; Omar: "We need to make a plan on how to do this properly")
+A plan only: nothing built, nothing paid. It comes from reading the saved answers of 8 and 12 Nov side by side. It
+replaces "patch the prompt, rerun" as the way forward. Stages 0 and 1 wait for Omar's yes.
+
+**What the Coach is (Omar asked, 12 Nov: "what is the actual coach? What are you training?")** Nothing is trained.
+The Coach is a stock model (Sonnet 5.5 for everyday turns, Fable 5.2 for big questions) plus our instruction text
+(`COACH_RULES`), the fact sheet the app computes from the person's data, and the actions it may take. So there are
+only five things to change: what we tell it, what we hand it, how an answer is built, which model, and how we score.
+
+**Why the Coach loses, ranked**
+1. **The Coach and the exam play different games.** The Coach is told to text 20–60 words. The Opus opponent has no
+   length rule and shows about three times as much (8 Nov, 50 cases: 149 words in view against the Coach's 51), and the
+   neutral judge is never told this is a text on a phone with More one tap away. Where Opus wrote over 200 words the
+   Coach scored 1.5 of 12; where Opus stayed at text length (120 words or under) it scored 6.5 of 18. So a large part
+   of the gap is format, not coaching. The rest is real: even at equal length the Coach wins only about 1 in 3.
+2. **The yardstick was never checked against a person, and it breaks our own rule.** The judge is Opus 5.5 grading
+   Opus 5.5's answers. Omar has 0 usable blind picks (round 3 was AI picks). And 10 cases cannot show a one-case
+   change: 2 of 10 and 3 of 10 are the same result.
+3. **The rules stop the model from coaching.** Fable 5.2 sits in the tier above Opus and still lost all three big
+   cases while playing by our rules, so on those the model is not the problem. `COACH_RULES` is about 1,300 words in
+   some 30 bullets, grown one patch per round, and bullets pull against each other: "never build a worry on partial
+   logs" beside "ask gently about a very low log" (n02: Fable wrote "I won't read anything into it"); "answer only
+   what was asked" beside "answer the real question". "Never compute a number" means the Coach cannot say "try
+   32.5 kg" or "aim for 82.5 as a buffer", and Opus can.
+4. **The Coach gets raw facts, not what an expert sees in them.** The app does not yet compute what stands out (§9 is
+   not built), so the low intake, the too-fast cut, the stalled lift and the next weight must be found by the model
+   on every turn, under a word limit.
+5. **One call does everything:** read the data, decide, obey the rules, write short, in Danish, as JSON. More is a
+   second call made later, which is why More has mistakes the text does not (m03, p08, m01, n02 "the chart shows").
+6. **The everyday model.** Part of the 1-in-3 at equal length is Sonnet against Opus. How much is unknown until
+   stage 1 separates rules from model.
+
+Not the cause: too few rules. The prompt fixes of PR #86 and Fable on big questions left the same 10 cases at 2 of
+10 (3 of 10 before). PR #96 would be one more round of the same.
+
+**The bar (proposed; Omar decides after stage 1)**
+- Against Opus 5.5 with the same data **and the same format** (a text with More): the Coach is at least as good on 9
+  of 10 (wins plus ties), with no safety loss and no missed real concern.
+- Judges: never the opponent's own model alone. Opus and Gemini (paid key on Gunshot) both judge, blind, both orders,
+  told only that it is a phone chat with More; a case counts when they agree.
+- People: Omar and 3–5 testers pick blind on their phones (10 pairs, about 5 minutes) and choose the Coach at least
+  as often as Opus. A native Danish reader before release.
+- Why not "beat Opus 9 of 10": the exam hands Opus everything the app knows, so it only measures model against model,
+  and Opus is barred from the app. A coach is world-class through what a chat model cannot do: knowing the person
+  over weeks, noticing, acting, following up. Stage 5 measures that.
+
+**Stages (stop after each with the cost and what to check)**
+| Stage | What | Cost | Success |
+|---|---|---|---|
+| 0. Fix the yardstick | Opponent told the format (text + More, none of our rules). Judge told the format. Gemini as second judge on Gunshot. A miss list per case, fixed before any run: the expert points a great answer must hold, mined from the saved Opus answers. A 10-pair blind page for people. | Free | Both judges pass calibration; the page works on Omar's phone |
+| 1. Find the split | Same 10 cases, every side in the same format (a text with More), so the judge's taste for length cancels out. (a) Sonnet with only the format line and no other rules against today's Coach (Sonnet with all the rules): same model on both sides, so it shows directly whether our rules make the model worse. (b) Fable with only the format line against Opus in the same format, on the 3 big cases Fable lost. (c) Today's Coach against Opus in the same format: the real baseline. | About $3 | We know how much is rules, format and model. Rule set beforehand: in (a), the bare model at 7 of 10 or over means the rules hurt and stage 2 is right; the Coach at 5 or over means the rules are not the problem and stage 3 (models) moves ahead of stage 2 |
+| 2. Rebuild how an answer is made | No new rules. (i) Findings in the fact sheet: the app computes what stands out, ranked, with the next step as a number (next weight, kcal for the goal pace, buffer weight, very low logged intake). This is §9's engine, built once for chat and notices. (ii) Think, then text: the model first writes the full expert answer as notes, then the text from the notes; More is the notes tidied, not a new call. (iii) `COACH_RULES` cut to voice, safety and acting, under about 500 words; every rule code can check moves to code. | Free to build, about $5 to test on 20 cases | At least 10 of 20 at least as good as Opus in format, the miss list fully covered on safety items (p03, n02), no More mistakes, and it helps on both Sonnet and Fable. If it gains under 2 cases over the baseline: stop and say so, no patching |
+| 3. Choose the models | On the new build: Sonnet everywhere, Fable on big turns, Fable on more turns. Cost and wait per answer beside the score. | About $6 | Omar picks from score, kr. per month and seconds of wait |
+| 4. Full proof | 50 cases and the 10 held out, both judges, then people and the Danish reader. | About $14 | The bar above |
+| 5. Weeks, not replies | The planned tests further down (§8): the Noticer exam, close the loop, "four weeks later". | Priced then | Set then |
+About $28 in all before stage 5.
+
+**Harsh score: 7/10.** Biggest weakness: every number so far is an AI judging an AI. The plan becomes solid only when
+Omar and 3–5 testers tap the 10 blind pairs, and on 8 Nov he had no time to tap; without people it is a 6. Second
+risk: stage 1 may show the everyday gap is mostly the model, and then the fix costs money and waiting on every answer
+(Fable: about $0.11 and 15 s a reply against Sonnet's $0.02 and 3 s), not a free rebuild.
+
+**PR #96 and the $2.50 rerun: neither.** Do not merge #96 and do not pay for the rerun. Its low-intake fact line
+(`buildFacts`, with tests) is reused in stage 2's findings; its two rule edits are dropped, because they are patch
+round five. The $2.50 goes to stage 1, which answers a question the rerun cannot.
+
+**Who works on it:** build stages on Opus 5.5 high (the rule for the Coach brain), one stage per session. Fable is a
+Coach candidate in the tests, not the builder.
+
 ### Exam v3 plan (Omar's brief, 4 Nov 2026; replaces the pending E2 round-2 work)
 Omar: "make the Coach's answers the best in the world, and prove it with measurements, not opinions." His brief is the
 spec (Answer Bar 12 rules, ~60 cases with 4–8 checks each, 10 hold-out, kappa-calibrated judges, both orders, worst of 3

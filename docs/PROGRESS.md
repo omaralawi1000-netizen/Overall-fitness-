@@ -352,7 +352,12 @@ Omar tried `/app/` on his phone: "it works, but I don't really like that app. Ca
 - Nothing in `src/` or `/app/` changed. The engine, saving and the weight log stay; only the look is open.
 - Needs his phone: the frost, stripes in the green fade, white text on the green panes.
 
+## Session 20: the Coach reset plan (12 Nov 2026, Fable)
+Plan only, nothing built or paid. Why the Coach keeps losing to Opus, and one staged plan, are in `docs/COACH.md` §8 "The reset plan". Short version: the exam compares a 50-word text with a 150-word answer and an Opus judge grades Opus; the rules prompt (1,300 words, 30 bullets) holds the model back (Fable lost all three big cases under it); the app does not yet hand the Coach what stands out in the data; More is a separate call. PR #96 and its $2.50 rerun are not recommended.
+
 ## Next step
+**Coach:** Omar's yes to stages 0 and 1 of the reset plan (`docs/COACH.md` §8): fix the yardstick for free, then a test of about $3 that shows how much of the gap is rules, format and model. No prompt patches and no paid reruns before that.
+
 **Design first:** Omar judges the Reed stills on his phone. Yes: build Reed's motion (drum pickers, light behind the glass) and its other key screens as a prototype, judged to 8 before he sees it, then re-skin `/app/`. No: write his words into `docs/taste-log.md` and start the next look from them. The engine steps below wait for that answer.
 
 Omar opens `/app/` on his phone (install it, time the cold start, log a real set, close the app mid-workout and reopen it: the Resume pill should be there). Then: (1) read the plan, Train history and "Last/Best" from saved sessions instead of the example Push day (the first finished workout is the first real history); (2) restore "Push done" after a reload; (3) weight and sleep: a manual weight log and Health Connect; (4) onboarding sets `a2:name`, units and the routine. Clay-figure clips go into the explainer's hero slot when Omar's two zips arrive.
