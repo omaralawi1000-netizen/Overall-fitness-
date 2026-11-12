@@ -14,7 +14,7 @@ import { it } from 'vitest';
 import { appendFileSync, existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
-import { COACH_RULES } from '../../src/coach/coach';
+import { COACH_RULES, LIGHT_RULES } from '../../src/coach/coach';
 import { renderKnowledge } from '../../src/coach/knowledge';
 import { Ledger, type GeminiReply } from '../providers';
 import { CASES } from './cases';
@@ -97,7 +97,7 @@ it('runs the cases through the setups', async () => {
   for (const c of cases) {
     for (const s of setups) {
       for (let run = 1; run <= RUNS; run++) {
-        const key = `${c.id}|${s.name}|${s.quick}|${s.deep}${s.big ? `|${s.big}` : ''}${s.bigEffort ? `|${s.bigEffort}` : ''}|${run}|${version(s.rules ?? COACH_RULES, JSON.stringify([c, records(c.person)]))}${process.env.EXAM_MORE ? '|more' : ''}`;
+        const key = `${c.id}|${s.name}|${s.quick}|${s.deep}${s.big ? `|${s.big}` : ''}${s.bigEffort ? `|${s.bigEffort}` : ''}|${run}|${version(s.rules ?? (s.big ? `${COACH_RULES}|${LIGHT_RULES}` : COACH_RULES), JSON.stringify([c, records(c.person)]))}${process.env.EXAM_MORE ? '|more' : ''}`;
         const saved = done.get(key);
         if (saved) { count(s.name, saved); continue; }
         const r = await runCase(c, s, { ledger, purpose: 'answers', more: !!process.env.EXAM_MORE, ...(DRY ? { dry } : {}) });
