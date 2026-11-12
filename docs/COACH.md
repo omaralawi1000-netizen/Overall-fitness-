@@ -264,6 +264,10 @@ Not the cause: too few rules. The prompt fixes of PR #86 and Fable on big questi
 | 5. Weeks, not replies | The planned tests further down (§8): the Noticer exam, close the loop, "four weeks later". | Priced then | Set then |
 About $28 in all before stage 5.
 
+Cost per answer (measured 9 and 12 Nov): Sonnet about $0.02 and 3 s, Fable about $0.11 and 15 s. Omar, 12 Nov: "Sonnet
+is like so much cheaper than Fable." If stage 1 shows the rules are the problem, a well-set-up Sonnet may be enough;
+Fable then has to earn its price in stage 3 on score. The cheaper model is never picked only for being cheaper.
+
 **Harsh score: 7/10.** Biggest weakness: every number so far is an AI judging an AI. The plan becomes solid only when
 Omar and 3–5 testers tap the 10 blind pairs, and on 8 Nov he had no time to tap; without people it is a 6. Second
 risk: stage 1 may show the everyday gap is mostly the model, and then the fix costs money and waiting on every answer
