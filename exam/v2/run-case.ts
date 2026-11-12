@@ -76,6 +76,8 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
   const turns: TurnLog[] = [];
   const history: Tier[] = [];
   const bigEffort = (tier: Tier) => (tier === 'big' && setup.big && setup.bigEffort ? { effort: setup.bigEffort } : {});
+  // the light prompt is for a strong model only: a big turn on the same model as every other turn keeps the full rulebook
+  const promptTier = (tier: Tier): Tier => (tier === 'big' && setup.big && setup.big !== setup.deep ? 'big' : 'deep');
   let pending: Shown['offers'] = [];
   let lastDid: Proposal['name'][] = [];
   // untrusted text stays in what the model reads on later turns, so the gate stays on from then (Codex, PR #81)
@@ -92,7 +94,7 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
     history.push(tier);
     const model = tier === 'quick' ? setup.quick : tier === 'big' ? (setup.big ?? setup.deep) : setup.deep;
     convo.push({ role: 'person', text: t.text, ...(t.untrusted ? { untrusted: t.untrusted } : {}), ...(t.notice ? { notice: t.notice } : {}) });
-    const req = coachRequest(sheet, convo, { voice: t.voice, ...(setup.rules ? { rules: setup.rules } : {}) });
+    const req = coachRequest(sheet, convo, { voice: t.voice, tier: promptTier(tier), ...(setup.rules ? { rules: setup.rules } : {}) });
     const asked = await askCoach(model, req, { ...o, purpose: `${c.id} ${setup.name}`, ...bigEffort(tier), ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
     if (!asked.reply) { turns.push({ tier, model, error: asked.error, ...(asked.callFailed ? { callFailed: true } : {}), ...(asked.raw ? { raw: asked.raw } : {}), dropped: asked.dropped, usd: asked.usd, ms: asked.ms }); break; }
     const shown = await finishTurn(e, asked.reply, { personText: t.text, untrusted, sheet, now, tz: TZ, lang: c.person.lang, pending, lastDid });
@@ -106,7 +108,7 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
   // "More" belongs to the Coach (its own rules), so the plain-prompt opponent gets one only when its setup plays the same format
   const last = turns.at(-1);
   if (o.more && (!setup.rules || setup.more) && last?.shown) {
-    const req = moreRequest(lastSheet!, convo.slice(0, -1), last.shown.text, { voice: c.turns.at(-1)?.voice, did: last.shown.did.map((d) => d.label), ...(setup.rules ? { rules: setup.rules } : {}) });
+    const req = moreRequest(lastSheet!, convo.slice(0, -1), last.shown.text, { voice: c.turns.at(-1)?.voice, tier: promptTier(last.tier), did: last.shown.did.map((d) => d.label), ...(setup.rules ? { rules: setup.rules } : {}) });
     const asked = await askCoach(last.model, req, { ...o, purpose: `${c.id} ${setup.name} more`, ...bigEffort(last.tier), ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
     last.usd += asked.usd;
     // kept apart too, so cost and seconds per reply compare the same work (Codex, PR #87)
