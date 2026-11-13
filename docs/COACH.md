@@ -260,7 +260,7 @@ studies, experts' ratings of AI-written training and food plans, two guides on t
 coaches, builders' write-ups, and what users write about the AI coaches in Strava, Oura, WHOOP and Garmin. X/Twitter
 cannot be searched from here; nothing below rests on it. Read together with the yardstick's first baseline of the
 same day (`/mnt/project-files/e2/yardstick-2026-11-12/REPORT.md`): the Coach catches 83 % of the must-have points and
-plain Opus 86 %, yet the pair judge picked Opus 8 times in 10. So most of the gap is in how the answer reads, not in
+plain Opus 83 % to 86 % (13 Nov rescore below), yet the pair judge picked Opus 8 times in 10. So most of the gap is in how the answer reads, not in
 what it notices.
 
 Confirmed (kept as planned):
@@ -445,7 +445,7 @@ app has no model wired in yet, so nothing here has met real use before step 6.
 **The single next action:** step 1, the yardstick. It is free, already approved, and makes every later test cheaper
 and sharper. (Done 12 Nov: see below. Next is step 2, findings v1.)
 
-### Step 1 done: the yardstick (12 Nov 2026; $0.32 spent; files in `/mnt/project-files/e2/yardstick-2026-11-12/`)
+### Step 1 done: the yardstick (12 Nov 2026; $0.40 spent with the 13 Nov rescore; files in `/mnt/project-files/e2/yardstick-2026-11-12/`)
 **What was built** (`exam/yardstick/`, tests in `tests/exam/yardstick.test.ts`)
 - `catch-lists.ts`: 20 tuning cases (the 10 known ones plus d01, d02, p06, p08, p09, m06, m08, o03, o08, p13), 119 yes/no
   items, about 6 a case, each phrased so yes is good. 15 are decided by code for free (length, Danish, the creatine dose,
@@ -467,18 +467,24 @@ and sharper. (Done 12 Nov: see below. Next is step 2, findings v1.)
   two misses are wording faults in the items (o09.expect asks for "about 1 kg", too exact; m04.old-note can be read two ways).
 - Gemini agreed on 10 of 10 random items but passed the Coach's wrong calorie maths (m03.math). It is the more lenient
   checker, so Sonnet stays the main one and Gemini the second opinion.
-- The two checkers agree on 84 of 92 items (91 %).
+- The two checkers agree on 84 of 92 items (91 %; 75 of 81 after the rescore).
 - It sees a real fix: the food-log items (p03, n02) were "no" for every setup on 12 Nov and "yes" in both runs after #100.
 
 **Baseline** (the 10 known cases, 60 items; saved answers of 12 Nov; Sonnet checker on all, Gemini where it had quota)
 
-| Setup | Catch rate | Safety misses |
-|---|---|---|
-| plain Opus (same format) | 86 % | 0 |
-| Coach (Sonnet + rules) | 83 % | 0 |
-| Opus with our rules | 83 % | 0 |
-| bare Sonnet | 73 % | 0 |
-| plain Fable | 73 % | 0 |
+| Setup | 12 Nov | 13 Nov rescore | Safety misses |
+|---|---|---|---|
+| Coach (Sonnet + rules) | 83 % | 83 % | 0 |
+| plain Opus (same format) | 86 % | 83 % | 0 |
+| Opus with our rules | 83 % | 82 % | 0 |
+| bare Sonnet | 73 % | 72 % | 0 |
+| plain Fable | 73 % | 72 % | 0 |
+
+- 13 Nov rescore: review found the checker saw what the app did without the turn it happened in, so an item like
+  m03.ask-goal ("no new target in turn 1") could not be judged. Actions now carry their turn; the 10 two-turn answers
+  with actions were checked again by Sonnet ($0.08; Gemini's free key gave 502s). Plain Opus fell 3 points, mostly
+  because Gemini (the soft checker) no longer counts on those answers. **Read the Coach and plain Opus as level on catch
+  rate; a 3-point move from rescoring 10 answers is the noise to beat.** The 12 Nov column stays as it was scored.
 
 - Every model fails r04 ("what's today?"): each adds advice nobody asked for and runs long. Both runs after #100 lost
   p03's "next weight to try" (every setup of 12 Nov had it); findings v1 puts it on the sheet so it cannot drop.
@@ -488,7 +494,7 @@ and sharper. (Done 12 Nov: see below. Next is step 2, findings v1.)
 - **Gate A's "+15 points" cannot work on the known cases:** the Coach starts at 83 %, so 15 points is close to perfect.
   Proposal for gate A: judge on all 20 tuning cases and ask that the **misses be cut by at least a third** (about 17 % missed
   today), with no new slips and zero safety misses. Omar decides at gate A.
-- **The catch rate and the pair judge disagree.** By catch rate the Coach is 3 points behind plain Opus; the Opus pair judge
+- **The catch rate and the pair judge disagree.** By catch rate the Coach is level with plain Opus (83 % each after the rescore); the Opus pair judge
   picked the Coach in only 2 of 10. So the gap to Opus is mostly in how the answer reads, not in what it catches. Both
   numbers stay: catch rate for "did it notice", pairs for "is it the better answer". People settle which one to trust:
   the 6-pair page is ready for Omar and testers.

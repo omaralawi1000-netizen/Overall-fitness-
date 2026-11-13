@@ -61,7 +61,9 @@ export function checkBody(c: ExamCase, run: CaseRun, items: Item[], model = 'cla
     const coach = `Coach reply${c.turns.length > 1 ? ` (turn ${i + 1})` : ''}: ${blind(r.texts[i] ?? '') || '(no reply)'}`;
     return `${person}\n${coach}`;
   }).join('\n\n');
-  const did = run.turns.flatMap((t) => [...(t.shown?.did ?? []).map((d) => `did: ${d.label}`), ...(t.shown?.offers ?? []).map((o) => `offered an Apply button (not tapped): ${o.label}`)]);
+  // with more than one turn, each action names its turn: an item can be about one turn only (a target offered in turn 1)
+  const at = (i: number) => (run.turns.length > 1 ? ` (turn ${i + 1})` : '');
+  const did = run.turns.flatMap((t, i) => [...(t.shown?.did ?? []).map((d) => `did${at(i)}: ${d.label}`), ...(t.shown?.offers ?? []).map((o) => `offered an Apply button${at(i)} (not tapped): ${o.label}`)]);
   const list = items.map((x) => `- ${x.id} [${x.where === 'text' ? 'visible reply' : 'reply or More'}]: ${x.text}`).join('\n');
   const text = [
     `CONVERSATION:\n${conv}`,

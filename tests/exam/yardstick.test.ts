@@ -80,7 +80,8 @@ describe('the yes/no checker', () => {
     const all = JSON.stringify(body);
     expect(all).toContain('turn 1');
     expect(all).toContain('More text');
-    expect(all).toContain('did: remember');
+    expect(all).toContain('did (turn 2): remember');
+    expect(JSON.stringify(checkBody(c, run(c.id, ['One turn'], { did: ['remember'] }), items))).toContain('did: remember');
     expect(all).toContain('NOW: Tuesday');
     expect(all).not.toContain('opusformat');
     for (const x of items) expect(all).toContain(x.id);
