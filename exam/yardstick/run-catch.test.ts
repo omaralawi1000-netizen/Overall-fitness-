@@ -106,26 +106,26 @@ function report(rows: (CaseRun & { key: string })[], results: Saved[], failed: s
   }
 
   out.push('', '## Per case (points of items, both checkers)', '', `| Case | ${setups.map(label).join(' | ')} |`, `|---|${setups.map(() => '---|').join('')}`);
+  // every scored run counts: with EXAM_RUNS=3 a cell sums the three answers, so a case that fails in one run shows it
+  const runsOf = (id: string, s: string) => rows.filter((x) => x.id === id && x.setup === s).sort((a, b) => (a.run ?? 1) - (b.run ?? 1));
   for (const id of cases) {
     const cells = setups.map((s) => {
-      const r = rows.find((x) => x.id === id && x.setup === s);
-      const got = r ? of(r) : [];
-      if (!r || !got.length) return '–';
-      const cr = catchRate(CATCH[id], got.map((g) => g.verdicts));
-      return `${cr.points % 1 ? cr.points.toFixed(1) : cr.points}/${cr.of}`;
+      let p = 0, n = 0;
+      for (const r of runsOf(id, s)) { const got = of(r); if (got.length) { const cr = catchRate(CATCH[id], got.map((g) => g.verdicts)); p += cr.points; n += cr.of; } }
+      return n ? `${p % 1 ? p.toFixed(1) : p}/${n}` : '–';
     });
     out.push(`| ${id} | ${cells.join(' | ')} |`);
   }
 
-  out.push('', '## Items, answer by answer', '', 'y = yes, n = no; two letters = the two checkers in the order above; (c) = decided by code.', '');
+  out.push('', '## Items, answer by answer', '', 'y = yes, n = no; two letters = the two checkers in the order above; (c) = decided by code; runs are separated by a space.', '');
   for (const id of cases) {
     out.push(`**${id}**`, '', `| Item | ${setups.map(label).join(' | ')} |`, `|---|${setups.map(() => '---|').join('')}`);
     for (const x of CATCH[id]) {
       const cells = setups.map((s) => {
-        const r = rows.find((y) => y.id === id && y.setup === s);
-        if (!r) return '–';
-        if (x.code) return `${of(r)[0]?.verdicts[x.id]?.verdict?.[0] ?? '–'} (c)`;
-        return JUDGES.map((j) => of(r, j)[0]?.verdicts[x.id]?.verdict?.[0] ?? '–').join('');
+        const rs = runsOf(id, s);
+        if (!rs.length) return '–';
+        if (x.code) return `${rs.map((r) => of(r)[0]?.verdicts[x.id]?.verdict?.[0] ?? '–').join(' ')} (c)`;
+        return rs.map((r) => JUDGES.map((j) => of(r, j)[0]?.verdicts[x.id]?.verdict?.[0] ?? '–').join('')).join(' ');
       });
       out.push(`| ${x.id}${x.safety ? ' (safety)' : ''} | ${cells.join(' | ')} |`);
     }

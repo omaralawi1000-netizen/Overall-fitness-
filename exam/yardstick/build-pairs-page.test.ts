@@ -4,8 +4,8 @@
 //      PAIRS_SETUPS the two setups, e.g. sonnetfable,opusformat
 //      PAIRS_HTML   where to write the page (publish it as an Artifact with the db and user capabilities)
 //      PAIRS_KEY    where to write the key (which reply is which setup). Keep it OUT of the repo and out of the page.
-// Free: no model is called. The page stores picks per viewer in its db (`picks/<viewer id>`, readable only by the owner
-// and editors); a viewer who can't write gets a short code to send instead. Each viewer sees the two replies in their
+// Free: no model is called. The page stores picks per viewer in its db (`picks/<viewer id>`, field `builds.<page id>`, so a
+// rebuilt page keeps earlier builds' picks; readable only by the owner and editors); a viewer who can't write gets a short code to send instead. Each viewer sees the two replies in their
 // own random order, and the pick buttons wake after 6 seconds, so a tap without reading is not a pick.
 import { it } from 'vitest';
 import { readFileSync, writeFileSync } from 'node:fs';

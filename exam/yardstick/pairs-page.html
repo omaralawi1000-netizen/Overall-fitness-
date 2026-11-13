@@ -231,11 +231,14 @@ function end() {
 }
 
 let saving = Promise.resolve(true);
+let others = {}; // this viewer's picks on other builds of the page, kept as they are
 function save() {
   saving = saving.then(async () => {
     if (!db || !me) return false;
     try {
-      await db.doc('picks/' + me).set({ page: PAGE, tester: state.tester || '', order: state.order, picks: state.picks, startedAt: state.startedAt, updatedAt: new Date().toISOString() });
+      // one doc per viewer holds every build they answered, so a rebuilt page never overwrites an earlier test's picks
+      const mine = { tester: state.tester || '', order: state.order, picks: state.picks, startedAt: state.startedAt, updatedAt: new Date().toISOString() };
+      await db.doc('picks/' + me).set({ builds: { ...others, [PAGE]: mine } });
       return true;
     } catch (e) { saveNote = 'none'; return false; }
   });
@@ -252,7 +255,13 @@ async function connect() {
       const snap = await db.doc('picks/' + me).get();
       if (snap.exists) {
         const s = snap.data();
-        if (s.page === PAGE) state = { ...state, ...s, picks: { ...s.picks, ...state.picks }, order: { ...s.order, ...state.order } };
+        const builds = { ...(s.builds || {}) };
+        // the first page (build d34340) saved one build at the top level: keep it as a build of its own
+        if (s.page && s.picks && !builds[s.page]) builds[s.page] = { tester: s.tester, order: s.order, picks: s.picks, startedAt: s.startedAt, updatedAt: s.updatedAt };
+        const b = builds[PAGE];
+        delete builds[PAGE];
+        others = builds;
+        if (b) state = { ...state, ...b, picks: { ...b.picks, ...state.picks }, order: { ...b.order, ...state.order } };
         keep();
       }
       saveNote = 'db';
