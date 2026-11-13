@@ -492,6 +492,8 @@ and sharper. (Done 12 Nov: see below. Next is step 2, findings v1.)
   picked the Coach in only 2 of 10. So the gap to Opus is mostly in how the answer reads, not in what it catches. Both
   numbers stay: catch rate for "did it notice", pairs for "is it the better answer". People settle which one to trust:
   the 6-pair page is ready for Omar and testers.
+  (13 Nov: simulated readers pick the side of the model that plays them, see "Simulated readers in place of people", so the
+  Opus judge's 2 of 10 carries the same warning until people have picked.)
 - **Gemini on the free tier is too small:** about 20 calls a day on 3 Flash (then 429); only 17 of 54 answers got a Gemini
   verdict. Paid, it is about half a cent an answer (Sonnet about 0.6 cents), so a full gate-A run is about $0.45 for both
   checkers. The Gemini pair judge (about 60 calls with calibration) was not run; it needs Gunshot's paid key, or three days
