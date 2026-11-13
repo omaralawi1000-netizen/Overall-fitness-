@@ -126,4 +126,10 @@ something goes wrong. The plan these belong to: `docs/COACH.md` §8 "Cheap model
     Rule: measure first, then set the bar.
 11. **Two threads edit `docs/COACH.md` §8 at the same time** (the plan and the yardstick). Rule: look at the open PRs
     first and keep edits off their lines.
-12. Kept from before: a cheap round before any full run, and stop when the gain is marginal.
+12. **A spend cap checked only after the calls were queued** (13 Nov): 5 calls went out past the $1 cap and were
+    billed without a ledger line. Rule: check the cap before each call is sent, and size the run from a measured
+    call, not a guess.
+13. **An AI reader prefers its own model's writing** (13 Nov: the same five simulated readers picked the Coach 15 to 6
+    when played by Sonnet and 6 to 17 when played by Opus). Rule: an AI judge's pick between two models is not a human
+    number; say which model judged, and settle it with people.
+14. Kept from before: a cheap round before any full run, and stop when the gain is marginal.

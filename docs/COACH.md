@@ -314,6 +314,28 @@ langchain.com/blog/how-numan-built-an-eval-first-ai-health-coach-with-langgraph-
 rochakshrestha.com/work/ai-health-coach; sparsethought.com/2026/01/29/evaluating-agents-in-health. Third-party
 write-ups, not checked against the products themselves: WHOOP's data fetching, the "20 lines" post (LinkedIn).
 
+**Simulated readers in place of people: tested and not adopted (13 Nov 2026; Omar: "On the 6 blind picks, can you
+try the repository MiroFish?"; about $1.07; `/mnt/project-files/e2/panel-2026-11-13/REPORT.md`)**
+- MiroFish (github.com/666ghj/MiroFish) builds a made-up crowd that posts and replies about a document on a simulated
+  social network and then writes a report. It has no step where a reader chooses between two texts, it needs a Zep
+  Cloud account and many model calls, and its readers are an AI's guess at people. For the blind picks: 2/10. It was
+  not installed.
+- The idea behind it was tested in its smallest form: five made-up readers (the person who asked, a beginner, an
+  experienced lifter, a sceptic, a human coach) picked between the same 6 pairs, blind, in both orders. Played by
+  Sonnet they chose the Coach's reply 15 times and plain Opus's 6 times (9 torn). Played by Opus, the same readers
+  chose the Coach's 6 times and Opus's 17 times (4 torn; 27 of 30 picks, the cap stopped the run). The Coach's
+  replies are written by Sonnet. So the picks follow the model that plays the readers; on 2 of the 6 pairs the winner
+  flips with it.
+- Published tests agree: simulated picks matched real people's first choice 53 % of the time across 29 real preference
+  tests, and detailed personas did no better than plain ones (arxiv.org/html/2605.18311). Personas built from real
+  users' behaviour do better (75 to 90 % on the direction of 40 A/B tests; aclanthology.org/2026.emnlp-industry.79),
+  which needs real use first.
+- **Decisions.** People stay the judge at every gate; no simulated panel replaces Omar's picks or the testers. The
+  Opus pair judge gets the same warning: it is an Opus reader choosing an Opus reply, so its "2 of 10" is not a human
+  number. A simulated panel may come back only as a cheap first look, and only if it earns it: once Omar and the
+  testers have tapped, the panel whose model matches them on 5 or 6 of the 6 pairs is kept; if neither does, the idea
+  is dropped. A third model family (Gemini) was not run: the cloud's free key answered 503 and 429.
+
 **What makes a cheap-model Coach great, biggest lift first**
 1. **Findings in code.** The app works out what stands out, ranked, each with the next step as a number: a stalled
    lift and its next weight; goal pace (the date at this pace, the pace needed, the kcal for it, a buffer weight);
