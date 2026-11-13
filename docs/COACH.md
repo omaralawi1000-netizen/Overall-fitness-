@@ -253,24 +253,112 @@ and the rule wording together. Side effect: both p03 answers ask two questions (
 2.5 kg": that finding is not built yet. Also measured: the same prompt sent again within 5 minutes cost $0.003, not
 $0.021 (it is cached).
 
+**What the outside research confirmed and changed (12 Nov 2026 13:00; Omar: "Research if you need to ... repositories
+anything, internet, Reddit, anything. Twitter")**
+Free: reading only. Read: Google's papers on its health agents, WHOOP's engineering posts, two Stanford field
+studies, experts' ratings of AI-written training and food plans, two guides on testing AI answers, seven open-source
+coaches, builders' write-ups, and what users write about the AI coaches in Strava, Oura, WHOOP and Garmin. X/Twitter
+cannot be searched from here; nothing below rests on it. Read together with the yardstick's first baseline of the
+same day (`/mnt/project-files/e2/yardstick-2026-11-12/REPORT.md`): the Coach catches 83 % of the must-have points and
+plain Opus 86 %, yet the pair judge picked Opus 8 times in 10. So most of the gap is in how the answer reads, not in
+what it notices.
+
+Confirmed (kept as planned):
+- **Code computes, the model words it.** Google found models weak at sums on a person's own data; its agent that runs
+  code got 84 % of number questions right. WHOOP is described as fetching the data before the model writes. Every
+  open-source coach read splits the work the same way, and one fails its build when a number in a reply did not come
+  from code.
+- **Yes/no checks, one per kind of mistake, held to hand labels; never a 1-to-5 score.** WHOOP shipped a memory change
+  that "felt" better and scored worse. A builder's blind test stopped a switch to a cheaper model that looked fine in
+  a demo.
+- **Routing by simple rules plus a button.** Learned routers need thousands of rated pairs. Later, from thumbs.
+- **No fine-tuning, no tool that rewrites the prompt by itself.** With few cases such tools overfit: one report's tuned
+  prompt became "a collection of edge cases". Perhaps later for the provider notes, with 50 or more tuning cases.
+
+Changed (each is folded into the levers, the yardstick and the order of work below):
+1. **How the answer reads is a lever of its own.** Users' top complaint about every shipped AI coach is that it
+   repeats what the screen already shows; the second is that it misses what the person just said (an injury, the
+   heat, a note). What they praise is the one thing they could not have seen themselves. A 2026 study of small models
+   found worked examples the strongest prompt-only lever, and our own stage 1 showed long rules help Sonnet
+   and hurt Opus. So a reply leads with the one thing that matters and its next step, each playbook's model reply is
+   its core, and gate A gets one more arm: a short prompt with two or three model replies in place of the long
+   rulebook.
+2. **Read the misses before building fixes.** Step 2 starts with a free read of the Coach's missed items and lost
+   pairs: the first thing wrong in each, counted by kind. Fixes go to the kinds that occur most, and the yardstick
+   reports per kind, because one average hides where a coach fails (Numan's coach team found the same).
+3. **Three new checks, from what users hate:** an answer that only repeats the screen, one that ignores what the
+   person said in this message, and one that sends the person away without answering when no stop sign applies. And
+   one number to watch: the share of answers whose advice uses the person's own data (WHOOP's "data driven" share
+   went from 43 % to 57 % with one model change).
+4. **Take a misleading row off the fact sheet; do not tell the model to ignore it.** One builder wrote twenty lines of
+   "ignore this field" and the model still got it wrong half the time; deleting the field fixed it. His made-up test
+   data also held 46 impossible heart rates and every test passed. So sheet labels and case data are checked like code.
+5. **Plans are where models are weakest.** Experts rate AI-written plans as middling: progress too fast, too little
+   fit to the person, no questions asked first. A plan request therefore asks what a coach would ask, goes to the big
+   tier, and is checked by code before it is shown (the weekly jump in load, the days and minutes it must fit, rest
+   days, the calorie floor).
+6. **What the person tells it counts as much as the data.** In Stanford's field study, goals, hurdles and daily life
+   mattered more to people than data-driven tips, and the model was uneven at using data unasked. So Memory and the
+   first-run questions feed the sheet, and "asks the one question a coach would ask" stays on the catch lists.
+7. **The true outcome is what the person does.** In a four-week trial an AI coach and a plain rule-based one both
+   doubled the share of people reaching 150 active minutes a week (36 % to 72 %); the AI coach won on mindset and
+   time in the app, not on minutes. So from step 6 the app also counts sessions kept and days logged, and the notices
+   (§9) and weekly notes carry as much of the job as the chat.
+
+Sources: nature.com/articles/s41467-025-67922-y and research.google/blog (the health agent papers);
+engineering.prod.whoop.com/tags/evaluation; dl.acm.org/doi/full/10.1145/3706598.3713819 and
+stanfordhci.github.io/Bloom (field studies); PMC10915606, PMC12492345, PMC11963122, PMC12165421 (experts on AI plans);
+hamel.dev/blog/posts/evals-faq and eugeneyan.com/writing/product-evals (testing); arxiv.org/html/2607.24801 (small
+models and examples); arxiv.org/html/2406.18665v4 (routing); theverge.com/fitness-trackers/694140 (users);
+langchain.com/blog/how-numan-built-an-eval-first-ai-health-coach-with-langgraph-and-langsmith;
+rochakshrestha.com/work/ai-health-coach; sparsethought.com/2026/01/29/evaluating-agents-in-health. Third-party
+write-ups, not checked against the products themselves: WHOOP's data fetching, the "20 lines" post (LinkedIn).
+
+**Simulated readers in place of people: tested and not adopted (13 Nov 2026; Omar: "On the 6 blind picks, can you
+try the repository MiroFish?"; about $1.07; `/mnt/project-files/e2/panel-2026-11-13/REPORT.md`)**
+- MiroFish (github.com/666ghj/MiroFish) builds a made-up crowd that posts and replies about a document on a simulated
+  social network and then writes a report. It has no step where a reader chooses between two texts, it needs a Zep
+  Cloud account and many model calls, and its readers are an AI's guess at people. For the blind picks: 2/10. It was
+  not installed.
+- The idea behind it was tested in its smallest form: five made-up readers (the person who asked, a beginner, an
+  experienced lifter, a sceptic, a human coach) picked between the same 6 pairs, blind, in both orders. Played by
+  Sonnet they chose the Coach's reply 15 times and plain Opus's 6 times (9 torn). Played by Opus, the same readers
+  chose the Coach's 6 times and Opus's 17 times (4 torn; 27 of 30 picks, the cap stopped the run). The Coach's
+  replies are written by Sonnet. So the picks follow the model that plays the readers; on 2 of the 6 pairs the winner
+  flips with it.
+- Published tests agree: simulated picks matched real people's first choice 53 % of the time across 29 real preference
+  tests, and detailed personas did no better than plain ones (arxiv.org/html/2605.18311). Personas built from real
+  users' behaviour do better (75 to 90 % on the direction of 40 A/B tests; aclanthology.org/2026.emnlp-industry.79),
+  which needs real use first.
+- **Decisions.** People stay the judge at every gate; no simulated panel replaces Omar's picks or the testers. The
+  Opus pair judge gets the same warning: it is an Opus reader choosing an Opus reply, so its "2 of 10" is not a human
+  number. A simulated panel may come back only as a cheap first look, and only if it earns it: once Omar and the
+  testers have tapped, the panel whose model matches them on 5 or 6 of the 6 pairs is kept; if neither does, the idea
+  is dropped. A third model family (Gemini) was not run: the cloud's free key answered 503 and 429.
+
 **What makes a cheap-model Coach great, biggest lift first**
 1. **Findings in code.** The app works out what stands out, ranked, each with the next step as a number: a stalled
    lift and its next weight; goal pace (the date at this pace, the pace needed, the kcal for it, a buffer weight);
    sessions dropping off; the whole week's load; the very low food log (#100). They go at the top of the fact sheet.
    It is §9's engine, built once for chat and notices. It works with every provider, because it is not a prompt.
+   A row that misleads the model is removed or relabelled on the sheet, never argued with in the rules.
 2. **Playbooks (the expertise, fetched by the app).** About 12 short cards, one per situation: wants to quit,
    stalled lift, speed for a field sport, race week, weight class, sore joint, bad sleep and shifts, beginner start,
    bulk not moving, cut too fast, missed weeks, a plan request. Each holds what a great coach makes sure to cover,
-   the stop signs and one model reply. A big model writes them once from the sources in `knowledge.ts`, a person
+   the stop signs and one model reply. The model reply is the heart of the card: a small model follows a worked
+   example better than one more rule. A big model writes them once from the sources in `knowledge.ts`, a person
    checks them, and code picks at most two per message. The cheap model gets the expertise without a big model on
    every answer. The app fetches; the cheap model never searches (search loops cost money, seconds and mistakes).
 3. **Code checks on every live answer.** The exam already checks numbers that are not on the sheet, claimed changes
-   that did not happen, safety lines and length; add a suggested day that clashes with the plan. Run them in the app:
-   one retry with the reason, else a plain fallback. Cheap models slip more often and code catches it.
+   that did not happen, safety lines and length. Add: a suggested day that clashes with the plan, an answer that only
+   repeats the screen, one that ignores what the person just said, and one that sends the person away without
+   answering when no stop sign applies. Run them in the app: one retry with the reason, else a plain fallback with
+   the "Think deeper" offer (never an automatic big-model call). Cheap models slip more often and code catches it.
 4. **The big model where one call pays off many times.** (a) Big questions keep the big tier with the light prompt
    (#100). (b) A "Think deeper" button under any answer, so the person chooses when to spend about $0.10. (c) Once a
    week the big model reads the weeks and writes the Coach's notes (what is working, the one focus, what to watch),
-   shown and editable in Memory. The cheap model reads them all week: about $0.10 a week for its long view.
+   shown and editable in Memory. The cheap model reads them all week: about $0.10 a week for its long view. (d) Plans: the
+   big tier writes them and code checks them before they are shown.
 5. **One core, thin provider notes.** Facts, findings, playbooks, the reply shape and the checks are the same for
    every provider. A provider gets at most ten lines of its own, each for a measured failure. Tune on Sonnet first
    (the only working key in the cloud; 3 s), then put Gemini Flash and a GPT mini model through the same scorecard:
@@ -284,7 +372,12 @@ $0.021 (it is cached).
   win/lose calls, so one fix shows up. About $0.50 a run on Sonnet. A yes/no check leans far less on the judge's
   taste than "which answer is better".
 - **Slips (code, free):** numbers not on the sheet, unbacked claims, over length, wrong language, more than one
-  question. Safety misses must be zero.
+  question. Safety misses must be zero. From the research (yes/no by the checker): only repeats the screen, ignores
+  what the person just said, sends the person away without answering.
+- **Uses the person's data:** the share of answers whose advice rests on at least one of the person's own facts.
+- **By kind, not only one average:** every missed item is filed under a kind of mistake, and a run reports each kind.
+  The checker's agreement with the hand-read is counted apart for real misses and real passes, because "18 of 20"
+  says little when most items pass.
 - **Blind pairs against a top chatbot (only at gates).** The opponent is plain Opus with the same fact sheet but
   without our findings and playbooks: what someone gets by pasting their log into the best chatbot. Two judges from
   different companies (Opus, and Gemini on Gunshot's paid key, about $0.15); when they disagree the case is a tie.
@@ -306,23 +399,28 @@ $0.021 (it is cached).
    Opus from the answers already saved, the second judge wired, the 6-pair page. Free to build; about $0.30 to score
    the saved answers. Done when the checker agrees with a hand-read on 18 of 20 items. (Omar approved this as the
    reset plan's stage 0 on 12 Nov 08:17.)
-2. **Findings v1.** Stalled lift with the next step, goal pace, sessions dropping, week load, the plan-clash check;
-   the "up" label fixed; the two-question side effect fixed. Unit tests. Free.
-3. **Gate A (about $1; needs Omar's yes).** The 20 tuning cases on Sonnet, before and after: catch rate and slips.
-   Plus the 10 known cases as blind pairs against the saved Opus answers, two judges. Go on if the catch rate rises
+2. **Findings v1.** First a free read of the misses (the Coach's missed items in the yardstick report and the lost
+   pairs): the first thing wrong in each, counted by kind; the list that follows is cut or extended to match.
+   Stalled lift with the next step, goal pace, sessions dropping, week load, the plan-clash check; the "up" label
+   fixed; the two-question side effect fixed. Unit tests. Free.
+3. **Gate A (about $1.50 to $2; needs Omar's yes).** The 20 tuning cases on Sonnet, before and after: catch rate and
+   slips. Plus the 10 known cases as blind pairs against the saved Opus answers, two judges. One more arm on the 10
+   known cases: the same findings with a short prompt and two or three model replies in place of the long rulebook
+   (the replies written for situations outside the test cases); kept only if it wins more pairs with no new slips. Go on if the catch rate rises
    15 points or more with no new slips and the pairs reach 4 of 10 (2 today). Under 5 points: the bet failed; stop
    and say so. The fallback is then a stronger everyday model (Opus, about twice Sonnet's price), which is Omar's call.
-4. **Playbooks, then live checks,** each tested on its own. Free to build; about $0.50 a test. Each is kept only if
+4. **Playbooks, then live checks, then the plan check,** each tested on its own. Free to build; about $0.50 a test. Each is kept only if
    the catch rate rises on Sonnet and on a second cheap model, with no new slips.
 5. **More providers (about $1 to $2).** Gemini Flash on Gunshot's paid key; a GPT mini model when there is an OpenAI
    key (the adapter is about an hour). The scorecard and the provider notes.
 6. **Into the real app (free).** The provider switch, the spend meter, the answer shown as it is written, thumbs,
-   "Think deeper". Omar uses it for a week.
+   "Think deeper", the first-run questions,
+   and counts of sessions kept and days logged. Omar uses it for a week.
 7. **The big tier (about $1.50).** The light prompt on the 3 big cases; the weekly notes on 5 cases, with and without.
 8. **Proof (about $6, plus people).** Fresh and held-out cases, two judges, the 6 pairs with Omar and testers, the
    Danish reader.
 
-Paid in all: about $5 to $6 before the proof, about $12 with it (the reset plan: about $28).
+Paid in all: about $6 to $7 before the proof, about $12 to $13 with it (the reset plan: about $28).
 
 **What not to do** (each one saves money)
 - No training of a model (fine-tuning): it ties the Coach to one provider and needs thousands of rated answers.
@@ -337,10 +435,12 @@ Paid in all: about $5 to $6 before the proof, about $12 with it (the reset plan:
   mini-class models cost about a third to an eighth of Sonnet per token, so about $0.002 to $0.006 an answer.
 - At 10 answers a day: Sonnet about $4 a month, a Flash- or mini-class model about $1.
 
-**Harsh score: 7.5/10.** Biggest weakness: the main bet (findings lift a cheap model) rests on six lost cases read
-by hand and four test answers; gate A settles it for about $1. Second: every score so far is an AI judging an AI,
-people come only at the end, and on 8 Nov Omar had no time to tap. Third: the app has no model wired in yet, so
-nothing here has met real use before step 6.
+**Harsh score: 7.5/10 (unchanged after the research and the first baseline).** The research raised trust in the
+build: Google, WHOOP and every open-source coach read split the work the way this plan does. The baseline lowered
+trust in the size of the win: the Coach already notices almost as much as Opus, so the gap is in how the answer
+reads, and the levers for that (model replies, a shorter prompt) are the least tested part. Gate A settles both.
+Second: every score so far is an AI judging an AI; Omar's 6 blind picks will be the first human number. Third: the
+app has no model wired in yet, so nothing here has met real use before step 6.
 
 **The single next action:** step 1, the yardstick. It is free, already approved, and makes every later test cheaper
 and sharper.
