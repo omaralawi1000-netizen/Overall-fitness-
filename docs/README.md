@@ -40,6 +40,7 @@ Read this first to find anything. Then open only the file for the topic you're w
 
 ## Research
 - `docs/research/tech-scan-2026-11-01.md`: pricing, voice, memory, motion, food data. Its links aren't repeated in `sources/`.
+- `docs/research/matraix-2026-11-12.md`: MatrAIx (simulated-user evaluation toolkit) checked for the Coach exam: not worth installing, one idea kept.
 - `docs/research/sources/`: link lists, one line per link, references not rules:
   `claude-code.md`, `coach-ai.md`, `health-data.md`, `food.md`, `competitors.md`, `privacy.md`.
 
