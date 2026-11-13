@@ -260,7 +260,7 @@ studies, experts' ratings of AI-written training and food plans, two guides on t
 coaches, builders' write-ups, and what users write about the AI coaches in Strava, Oura, WHOOP and Garmin. X/Twitter
 cannot be searched from here; nothing below rests on it. Read together with the yardstick's first baseline of the
 same day (`/mnt/project-files/e2/yardstick-2026-11-12/REPORT.md`): the Coach catches 83 % of the must-have points and
-plain Opus 86 %, yet the pair judge picked Opus 8 times in 10. So most of the gap is in how the answer reads, not in
+plain Opus 83 % to 86 % (13 Nov rescore below), yet the pair judge picked Opus 8 times in 10. So most of the gap is in how the answer reads, not in
 what it notices.
 
 Confirmed (kept as planned):
@@ -363,7 +363,7 @@ try the repository MiroFish?"; about $1.07; `/mnt/project-files/e2/panel-2026-11
    every provider. A provider gets at most ten lines of its own, each for a measured failure. Tune on Sonnet first
    (the only working key in the cloud; 3 s), then put Gemini Flash and a GPT mini model through the same scorecard:
    catch rate, slips, cost, seconds, broken replies, Danish. A model that misses the bar is not offered in the switch.
-6. **A yardstick that can see a small gain** (next).
+6. **A yardstick that can see a small gain** (built 12 Nov; "Step 1 done" below).
 
 **The yardstick: how we know it is working**
 - **Catch rate (new; the everyday number).** Per case, a fixed list of what a great coach must catch and must not do:
@@ -443,7 +443,68 @@ Second: every score so far is an AI judging an AI; Omar's 6 blind picks will be 
 app has no model wired in yet, so nothing here has met real use before step 6.
 
 **The single next action:** step 1, the yardstick. It is free, already approved, and makes every later test cheaper
-and sharper.
+and sharper. (Done 12 Nov: see below. Next is step 2, findings v1.)
+
+### Step 1 done: the yardstick (12 Nov 2026; $0.40 spent with the 13 Nov rescore; files in `/mnt/project-files/e2/yardstick-2026-11-12/`)
+**What was built** (`exam/yardstick/`, tests in `tests/exam/yardstick.test.ts`)
+- `catch-lists.ts`: 20 tuning cases (the 10 known ones plus d01, d02, p06, p08, p09, m06, m08, o03, o08, p13), 119 yes/no
+  items, about 6 a case, each phrased so yes is good. 15 are decided by code for free (length, Danish, the creatine dose,
+  "nothing changed", "no new target"); 9 are safety items, which must never miss. `FRESH` names the 10 fresh cases
+  (n01, p05, p04, m09, p07, h02, o02, o04, o05, p12), kept for gates only. **Rule: never edit a scored item; add a new id.**
+- `checker.ts`: the yes/no checker. It sees the fact sheet, every turn, More and what the app did; never the setup name.
+  It quotes the deciding words first, then says yes or no. Two checkers from two companies: Sonnet 5.5 (effort low) and
+  Gemini 3 Flash. When they split, the item counts half; a safety item counts as missed if either says no.
+- `run-catch.test.ts`: scores an `answers.jsonl` and writes `catch-report.md`. Verdicts are saved as they arrive and reused
+  for the same request, so a stopped run resumes for free. Answers made before their case changed are refused.
+  `EXAM_OUT=<folder> EXAM_CAP_USD=0.5 NODE_USE_ENV_PROXY=1 npx vitest run --config exam/vitest.config.ts exam/yardstick/run-catch.test.ts`
+- `hand-read.ts`: 24 verdicts written by hand before any checker ran (20 drawn at random, 4 chosen hard ones).
+- `pairs-page.html` + `build-pairs-page.test.ts`: the blind page for people (6 single-turn pairs, the Coach of 12 Nov
+  against plain Opus; sides shuffled per viewer, pick buttons wake after 6 s, picks saved per viewer). Published at
+  https://claude.ai/artifact/W9td4SnPhreKDbABbwtvBG. The key (which side is which) is only in the shared folder.
+
+**Is it trustworthy?**
+- The done-bar is met: the Sonnet checker agrees with the hand-read on **18 of 20** random items and 4 of 4 hard ones. The
+  two misses are wording faults in the items (o09.expect asks for "about 1 kg", too exact; m04.old-note can be read two ways).
+- Gemini agreed on 10 of 10 random items but passed the Coach's wrong calorie maths (m03.math). It is the more lenient
+  checker, so Sonnet stays the main one and Gemini the second opinion.
+- The two checkers agree on 84 of 92 items (91 %; 75 of 81 after the rescore).
+- It sees a real fix: the food-log items (p03, n02) were "no" for every setup on 12 Nov and "yes" in both runs after #100.
+
+**Baseline** (the 10 known cases, 60 items; saved answers of 12 Nov; Sonnet checker on all, Gemini where it had quota)
+
+| Setup | 12 Nov | 13 Nov rescore | Safety misses |
+|---|---|---|---|
+| Coach (Sonnet + rules) | 83 % | 83 % | 0 |
+| plain Opus (same format) | 86 % | 83 % | 0 |
+| Opus with our rules | 83 % | 82 % | 0 |
+| bare Sonnet | 73 % | 72 % | 0 |
+| plain Fable | 73 % | 72 % | 0 |
+
+- 13 Nov rescore: review found the checker saw what the app did without the turn it happened in, so an item like
+  m03.ask-goal ("no new target in turn 1") could not be judged. Actions now carry their turn; the 10 two-turn answers
+  with actions were checked again by Sonnet ($0.08; Gemini's free key gave 502s). Plain Opus fell 3 points, mostly
+  because Gemini (the soft checker) no longer counts on those answers. **Read the Coach and plain Opus as level on catch
+  rate; a 3-point move from rescoring 10 answers is the noise to beat.** The 12 Nov column stays as it was scored.
+
+- Every model fails r04 ("what's today?"): each adds advice nobody asked for and runs long. Both runs after #100 lost
+  p03's "next weight to try" (every setup of 12 Nov had it); findings v1 puts it on the sheet so it cannot drop.
+- The 10 new tuning cases have no answers yet; gate A's "before" run scores them.
+
+**What it changes in the plan**
+- **Gate A's "+15 points" cannot work on the known cases:** the Coach starts at 83 %, so 15 points is close to perfect.
+  Proposal for gate A: judge on all 20 tuning cases and ask that the **misses be cut by at least a third** (about 17 % missed
+  today), with no new slips and zero safety misses. Omar decides at gate A.
+- **The catch rate and the pair judge disagree.** By catch rate the Coach is level with plain Opus (83 % each after the rescore); the Opus pair judge
+  picked the Coach in only 2 of 10. So the gap to Opus is mostly in how the answer reads, not in what it catches. Both
+  numbers stay: catch rate for "did it notice", pairs for "is it the better answer". People settle which one to trust:
+  the 6-pair page is ready for Omar and testers.
+  (13 Nov: simulated readers pick the side of the model that plays them, see "Simulated readers in place of people", so the
+  Opus judge's 2 of 10 carries the same warning until people have picked.)
+- **Gemini on the free tier is too small:** about 20 calls a day on 3 Flash (then 429); only 17 of 54 answers got a Gemini
+  verdict. Paid, it is about half a cent an answer (Sonnet about 0.6 cents), so a full gate-A run is about $0.45 for both
+  checkers. The Gemini pair judge (about 60 calls with calibration) was not run; it needs Gunshot's paid key, or three days
+  of free quota.
+- **Item-writing lessons:** no exact numbers the fact sheet does not force ("about 1 kg"); one idea per item; say which turn.
 
 ### The reset plan (12 Nov 2026; Omar: "We need to make a plan on how to do this properly")
 A plan only: nothing built, nothing paid. It comes from reading the saved answers of 8 and 12 Nov side by side. It
