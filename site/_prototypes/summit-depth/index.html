@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101418">
+<title>Aven Depth</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400..700&family=Bricolage+Grotesque:opsz,wght@12..96,400..700&display=swap">
+<style>
+/* Depth: Summit's wallpaper look, with the photo cut into layers so the place has depth.
+   Every picture is two layers (the far scene, and the near mountain cut out of it); the big number lives between them. */
+:root {
+  color-scheme: dark;
+  --page: #101418; --page-fg: #eef0f2; --page-dim: #98a0a8;
+  --hk: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --disp: "Bricolage Grotesque", var(--hk);
+  --z: 1;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; background: var(--page); color: var(--page-fg); }
+body { font-family: var(--hk); -webkit-font-smoothing: antialiased; overscroll-behavior: none; }
+.wrap { max-width: 460px; margin: 0 auto; padding: 28px 0 40px; }
+.intro, .note { padding: 0 max(20px, env(safe-area-inset-left, 0px)); }
+.intro h1 { font: 600 24px/1.15 var(--hk); letter-spacing: -.02em; margin: 0 0 6px; }
+.intro p, .note { font-size: 14.5px; line-height: 1.5; color: var(--page-dim); margin: 0 0 18px; }
+.note { margin-top: 18px; }
+.note b { color: var(--page-fg); font-weight: 600; }
+.holder { display: flex; justify-content: center; }
+.frame { width: 384px; height: 832px; zoom: var(--z); flex: none; }
+/* On a phone the screen is the whole page. */
+body.full .wrap { padding: 0; max-width: none; }
+body.full .intro, body.full .note { display: none; }
+body.full .screen { border-radius: 0; }
+
+/* ---------- the phone screen ---------- */
+.screen { position: relative; width: 384px; height: 832px; overflow: hidden; border-radius: 40px; isolation: isolate;
+  background: #1a1f26; color: #fff; font-variant-numeric: lining-nums tabular-nums; -webkit-user-select: none; user-select: none;
+  timeline-scope: --today;
+  --tint: 60, 46, 74; --a: .2; --ts: 0 1px 12px rgba(8, 10, 24, .42);
+  --ink-2: rgba(255,255,255,.92); --ink-3: rgba(255,255,255,.78); --hair: rgba(255,255,255,.16); }
+:where(.screen button) { all: unset; cursor: pointer; touch-action: manipulation; box-sizing: border-box; }
+:where(.screen button):focus-visible { outline: 2px solid #fff; outline-offset: 3px; }
+.ico { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; display: block; }
+
+/* glass: plain live blur (Omar's blur decision A), tint taken from the photo */
+.frost { -webkit-backdrop-filter: blur(36px) saturate(1.5); backdrop-filter: blur(36px) saturate(1.5);
+  background: linear-gradient(180deg, rgba(255,255,255,.15), rgba(255,255,255,.07)), rgba(var(--tint), var(--a));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.32), inset 0 0 0 1px rgba(255,255,255,.08), 0 24px 44px -26px rgba(6,8,20,.75); }
+/* the bent rim (Chrome): the edge of the glass bends what is behind it, like thick glass. JS adds .rim where it works. */
+.frost.rim { -webkit-backdrop-filter: var(--rimf) blur(30px) saturate(1.5); backdrop-filter: var(--rimf) blur(30px) saturate(1.5); }
+
+/* ---------- scenes: back layer, number, front layer ---------- */
+.scene { position: absolute; inset: 0; display: none; contain: strict; }
+.scene.on { display: block; }
+.scene .pb, .scene .pf, .scene .ph { position: absolute; inset: 0; transition: transform .45s cubic-bezier(.2,.8,.2,1); }
+.scene img { position: absolute; left: -16px; top: -16px; width: 416px; height: 864px; max-width: none; display: block; }
+.scene .pf img, .scene .warm { animation: drift-f 14s ease-in-out infinite alternate; }
+.scene .pb img { animation: drift-b 14s ease-in-out infinite alternate; }
+/* the camera sways slowly, so the near mountain slides against the sky even when the phone is still */
+@keyframes drift-b { from { transform: translateX(-2px) scale(1.0) } to { transform: translateX(2px) scale(1.025) translateY(-3px) } }
+@keyframes drift-f { from { transform: translateX(-8px) scale(1.0) } to { transform: translateX(8px) scale(1.05) translateY(2px) } }
+.paused .scene img, .paused .scene .warm { animation-play-state: paused; }
+.scene .warm { position: absolute; left: -16px; top: -16px; width: 416px; height: 864px; opacity: 0;
+  background: radial-gradient(60% 34% at var(--wx, 50%) var(--wy, 34%), rgba(255,178,92,.95), rgba(255,120,70,.35) 55%, transparent 80%);
+  mix-blend-mode: soft-light; -webkit-mask: var(--front) 0 0 / 100% 100% no-repeat; mask: var(--front) 0 0 / 100% 100% no-repeat; }
+.scene .shade { position: absolute; inset: 0; background: linear-gradient(180deg, rgba(6,10,22,.30), rgba(6,10,22,0) 22%); }
+.hero { position: absolute; left: 0; right: 0; top: var(--ht, 150px); height: 200px; text-align: center; pointer-events: none; }
+.hero .roll { position: absolute; left: 0; right: 0; top: 0; font-family: var(--disp); font-weight: 500; white-space: nowrap;
+  font-size: var(--hs, 186px); line-height: 200px; letter-spacing: -.055em; color: rgba(255,255,255,.96); text-shadow: 0 4px 30px rgba(8,12,30,.18); }
+.hero .roll u { text-decoration: none; font-family: var(--hk); font-size: 26px; font-weight: 600; letter-spacing: 0; margin-left: 8px; color: var(--ink-2); vertical-align: 0; }
+
+/* ---------- status bar and shared bits ---------- */
+.sb { position: absolute; z-index: 30; top: 14px; left: 28px; right: 24px; height: 18px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; text-shadow: var(--ts); pointer-events: none; }
+.sb svg { height: 12px; width: auto; display: block; }
+.ui { position: absolute; inset: 0; z-index: 10; display: none; }
+.ui.on { display: block; }
+.press { transition: transform .16s cubic-bezier(.2,.8,.2,1), opacity .16s; }
+.press.down { transform: scale(.955); transition-duration: .06s; }
+
+/* ---------- Today ---------- */
+#today .tscroll { position: absolute; inset: 0; overflow-y: auto; overflow-x: hidden; scroll-timeline: --today block; scrollbar-width: none; overscroll-behavior: contain; }
+#today .tscroll::-webkit-scrollbar { display: none; }
+.hello { position: absolute; top: 52px; left: 24px; right: 24px; text-shadow: var(--ts); }
+.hello b { display: block; font: 600 27px/32px var(--disp); letter-spacing: -.03em; }
+.hello span { display: block; margin-top: 4px; font-size: 14.5px; font-weight: 600; color: var(--ink-2); }
+.ready { position: absolute; left: 0; right: 0; top: 398px; text-align: center; text-shadow: var(--ts); z-index: 2; }
+.ready button { display: inline-flex; align-items: center; gap: 8px; padding: 9px 16px; border-radius: 22px; font-size: 15px; font-weight: 600; color: #fff; }
+.ready button i { font-style: normal; font-size: 11.5px; font-weight: 700; letter-spacing: .14em; color: var(--ink-2); }
+.ready button .ico { width: 16px; height: 16px; opacity: .85; }
+.bubble { position: absolute; left: 16px; right: 16px; top: 452px; border-radius: 28px; padding: 16px 18px 16px; opacity: 0; visibility: hidden; }
+.bubble p { margin: 0; font-size: 16px; line-height: 23px; font-weight: 500; color: var(--ink-2); text-wrap: pretty; }
+.bubble p b { color: #fff; font-weight: 700; }
+.who { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #fff; margin-bottom: 7px; }
+.who i { width: 8px; height: 8px; border-radius: 50%; background: #9ff0d0; box-shadow: 0 0 0 4px rgba(159,240,208,.22); }
+.answers { display: flex; gap: 8px; margin-top: 13px; }
+.answers button { height: 44px; padding: 0 18px; border-radius: 22px; display: grid; place-items: center; font-size: 15px; font-weight: 700; }
+.answers .yes { background: #fff; color: #1b2230; }
+.answers .no { background: rgba(255,255,255,.16); box-shadow: inset 0 0 0 1px rgba(255,255,255,.3); color: #fff; }
+.spacer { height: 642px; }
+.sheet { position: relative; margin: 0 10px 0; border-radius: 36px 36px 0 0; padding: 22px 20px 120px; min-height: 560px; }
+.sheet .grab { position: absolute; top: 9px; left: 50%; width: 38px; height: 4px; margin-left: -19px; border-radius: 2px; background: rgba(255,255,255,.34); }
+.plan { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.plan b { display: block; font: 600 25px/30px var(--disp); letter-spacing: -.03em; }
+.plan span { display: block; margin-top: 2px; font-size: 14px; font-weight: 600; color: var(--ink-3); }
+.go { height: 56px; padding: 0 24px; border-radius: 28px; background: #fff; color: #1b2230; display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 700; flex: none; box-shadow: 0 14px 26px -14px rgba(6,8,20,.9); }
+.go .ico { width: 18px; height: 18px; stroke-width: 2.3; }
+.exs { margin: 18px 0 0; padding: 0; list-style: none; }
+.exs li { display: flex; align-items: center; gap: 14px; padding: 9px 0; }
+.exs li + li { box-shadow: inset 0 1px 0 var(--hair); }
+.thumb { width: 44px; height: 44px; border-radius: 50%; flex: none; background-size: 150% auto; background-position: 50% 30%; box-shadow: inset 0 0 0 1px rgba(255,255,255,.35), 0 6px 14px -8px rgba(0,0,0,.6); }
+.exs b { display: block; font-size: 16px; font-weight: 700; }
+.exs span { display: block; font-size: 13.5px; font-weight: 600; color: var(--ink-3); margin-top: 1px; }
+.exs em { margin-left: auto; font-style: normal; font-size: 15px; font-weight: 700; white-space: nowrap; }
+.so { margin-top: 22px; padding-top: 16px; box-shadow: inset 0 1px 0 var(--hair); }
+.so h3 { margin: 0 0 12px; font-size: 13px; font-weight: 700; letter-spacing: .12em; color: var(--ink-3); }
+.tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.tiles div { border-radius: 20px; padding: 12px 12px 13px; background: rgba(255,255,255,.08); box-shadow: inset 0 0 0 1px rgba(255,255,255,.08); }
+.tiles small { display: block; font-size: 12.5px; font-weight: 600; color: var(--ink-3); }
+.tiles b { display: block; margin-top: 5px; font: 600 22px/26px var(--disp); letter-spacing: -.02em; }
+.tiles b u { text-decoration: none; font: 600 13px var(--hk); color: var(--ink-3); margin-left: 3px; letter-spacing: 0; }
+.dock { position: absolute; z-index: 12; left: 20px; right: 20px; bottom: 20px; height: 64px; border-radius: 32px; display: grid; grid-template-columns: repeat(4, 1fr); padding: 0 8px; align-items: center; --a: .42; }
+.dock button { display: grid; justify-items: center; gap: 2px; padding: 6px 0; border-radius: 24px; font-size: 11.5px; font-weight: 600; color: rgba(255,255,255,.86); }
+.dock button.on { color: #fff; background: rgba(255,255,255,.18); }
+
+/* ---------- Workout ---------- */
+.wtop { position: absolute; top: 48px; left: 14px; right: 14px; height: 48px; display: flex; align-items: center; justify-content: space-between; }
+.round { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; }
+.next { height: 48px; border-radius: 24px; display: flex; align-items: center; gap: 9px; padding: 0 16px 0 6px; font-size: 14px; font-weight: 700; }
+.next .thumb { width: 36px; height: 36px; }
+.next small { display: block; font-size: 11.5px; font-weight: 600; color: var(--ink-3); }
+.clock { font-size: 14px; font-weight: 600; text-shadow: var(--ts); color: var(--ink-2); }
+.name { position: absolute; top: 108px; left: 24px; right: 24px; text-shadow: var(--ts); }
+.name b { display: block; font: 600 30px/34px var(--disp); letter-spacing: -.035em; }
+.name span { display: block; margin-top: 3px; font-size: 15px; font-weight: 600; color: var(--ink-2); }
+.reps { position: absolute; left: 0; right: 0; top: 412px; text-align: center; font-size: 17px; font-weight: 600; color: var(--ink-2); text-shadow: 0 1px 3px rgba(6,10,24,.45), 0 1px 14px rgba(6,10,24,.5); }
+.reps b { font: 600 22px var(--disp); color: #fff; letter-spacing: -.02em; margin-right: 4px; }
+.card { position: absolute; left: 12px; right: 12px; top: 456px; height: 236px; border-radius: 36px; padding: 16px 16px 0; }
+.sets { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.sets div { height: 50px; border-radius: 18px; padding: 7px 0 0 11px; font-size: 12px; font-weight: 600; color: var(--ink-3); background: rgba(255,255,255,.06); position: relative; }
+.sets div b { display: block; font-size: 14.5px; font-weight: 700; color: #fff; margin-top: 1px; white-space: nowrap; }
+.sets div.now { background: rgba(255,255,255,.24); box-shadow: inset 0 1px 0 rgba(255,255,255,.35); color: #fff; }
+.sets div.done::after { content: ""; position: absolute; top: 8px; right: 9px; width: 16px; height: 16px; border-radius: 50%; background: #fff url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4.5 8.3l2.3 2.3 4.7-5' fill='none' stroke='%231b2230' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/100%; }
+.steps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.step { height: 64px; border-radius: 22px; display: flex; align-items: center; justify-content: space-between; padding: 0 6px; background: rgba(255,255,255,.06); }
+.step button { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.14); box-shadow: inset 0 0 0 1px rgba(255,255,255,.28); }
+.step button .ico { width: 18px; height: 18px; stroke-width: 2.3; }
+.step span { text-align: center; font-size: 11.5px; font-weight: 600; color: var(--ink-3); line-height: 14px; }
+.step span b { display: block; font: 600 21px/24px var(--disp); color: #fff; letter-spacing: -.02em; }
+.restrow { display: none; grid-template-columns: 1fr auto auto; gap: 8px; align-items: center; margin-top: 10px; height: 64px; border-radius: 22px; padding: 0 6px 0 16px; background: rgba(255,255,255,.06); }
+.resting .restrow { display: grid; }
+.resting .steps { display: none; }
+.restrow span { font-size: 13px; font-weight: 600; color: var(--ink-3); }
+.restrow span b { display: block; font: 600 24px/28px var(--disp); color: #fff; letter-spacing: -.02em; }
+.restrow button { height: 52px; padding: 0 16px; border-radius: 26px; display: grid; place-items: center; font-size: 15px; font-weight: 700; background: rgba(255,255,255,.14); box-shadow: inset 0 0 0 1px rgba(255,255,255,.28); }
+.coach { position: absolute; left: 20px; right: 20px; bottom: 16px; margin: 0; padding-top: 12px; box-shadow: inset 0 1px 0 var(--hair); font-size: 14.5px; line-height: 20px; font-weight: 500; color: var(--ink-2); min-height: 52px; }
+.coach b { color: #fff; font-weight: 700; margin-right: 5px; }
+.log { position: absolute; left: 16px; right: 16px; top: 706px; height: 72px; border-radius: 36px; background: rgba(255,255,255,.96); color: #1b2230; display: grid; place-items: center; font-size: 20px; font-weight: 700; letter-spacing: -.015em; box-shadow: 0 22px 40px -20px rgba(2,8,22,.75); }
+.hint { position: absolute; top: 790px; left: 0; right: 0; text-align: center; font-size: 13.5px; font-weight: 600; color: var(--ink-2); text-shadow: var(--ts); }
+
+/* ---------- pop-ups ---------- */
+.toast { position: absolute; z-index: 40; top: 46px; left: 50%; min-width: 220px; max-width: 360px; transform: translateX(-50%); height: 54px; border-radius: 27px; display: flex; align-items: center; gap: 10px; padding: 0 8px 0 14px; font-size: 14.5px; font-weight: 600; white-space: nowrap; opacity: 0; visibility: hidden; --a: .72; }
+.toast b { font-weight: 700; }
+.hello, .wtop { transition: opacity .22s ease, transform .22s ease; }
+.toasting .wtop { opacity: 0; transform: translateY(-6px); }
+.toasting .hello { visibility: hidden; } /* its opacity belongs to the scroll */
+.toast .ok { width: 26px; height: 26px; border-radius: 50%; background: #fff; color: #1b2230; display: grid; place-items: center; flex: none; }
+.toast .ok .ico { width: 15px; height: 15px; stroke-width: 2.6; }
+.toast .undo { margin-left: 6px; height: 40px; padding: 0 14px; border-radius: 20px; display: grid; place-items: center; background: rgba(255,255,255,.16); font-weight: 700; }
+.toast .sp { padding-right: 10px; }
+.medal { position: absolute; z-index: 35; left: 36px; right: 36px; top: 300px; box-shadow: inset 0 1px 0 rgba(255,255,255,.4), 0 0 0 1px rgba(255,214,150,.25), 0 0 70px rgba(255,170,90,.42), 0 24px 44px -24px rgba(6,8,20,.7); border-radius: 32px; padding: 20px 22px 18px; text-align: center; opacity: 0; visibility: hidden; --a: .34; }
+.medal .star { width: 52px; height: 52px; margin: 0 auto 8px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(160deg, #ffe3a8, #f2a65e); color: #4a2a10; box-shadow: 0 10px 24px -10px rgba(240,150,70,.9); }
+.medal .star .ico { width: 26px; height: 26px; fill: currentColor; stroke: none; }
+.medal small { display: block; font-size: 12px; font-weight: 700; letter-spacing: .16em; color: #ffd9a0; }
+.medal b { display: block; margin-top: 4px; font: 600 34px/40px var(--disp); letter-spacing: -.035em; }
+.medal span { display: block; margin-top: 3px; font-size: 14.5px; font-weight: 600; color: var(--ink-2); }
+.scrim { position: absolute; inset: 0; z-index: 50; background: rgba(6,8,16,.38); opacity: 0; visibility: hidden; }
+.psheet { position: absolute; z-index: 51; left: 8px; right: 8px; bottom: 8px; border-radius: 38px; padding: 26px 22px 22px; visibility: hidden; --a: .4; touch-action: none; }
+.psheet .grab { position: absolute; top: 9px; left: 50%; width: 38px; height: 4px; margin-left: -19px; border-radius: 2px; background: rgba(255,255,255,.34); }
+.psheet h2 { margin: 0; font: 600 28px/33px var(--disp); letter-spacing: -.03em; }
+.psheet > p { margin: 6px 0 0; font-size: 15px; line-height: 22px; color: var(--ink-2); font-weight: 500; }
+.rows { margin: 16px 0 0; padding: 0; list-style: none; }
+.rows li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 0; font-size: 15.5px; font-weight: 600; }
+.rows li + li { box-shadow: inset 0 1px 0 var(--hair); }
+.rows li span { color: var(--ink-3); font-size: 13.5px; font-weight: 600; display: block; margin-top: 1px; }
+.rows li em { font-style: normal; font: 600 20px var(--disp); letter-spacing: -.02em; white-space: nowrap; }
+.rows .thumb { width: 40px; height: 40px; margin-right: 12px; }
+.rows li > div { display: flex; align-items: center; }
+.wide { width: 100%; margin-top: 18px; height: 60px; border-radius: 30px; background: #fff; color: #1b2230; display: grid !important; place-items: center; font-size: 18px; font-weight: 700; }
+.small-note { margin: 12px 2px 0; font-size: 13px; line-height: 18px; color: var(--ink-3); font-weight: 500; }
+
+@media (prefers-reduced-motion: reduce) {
+  .scene img, .scene .warm { animation: none !important; }
+  .scene .pb, .scene .pf, .scene .ph { transition: none; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="intro">
+    <h1>Depth</h1>
+    <p>Summit's wallpaper, with depth. Each photo is cut into layers, so the mountain steps in front of the big number, the picture moves when you tilt the phone, and every muscle group trains in its own place. Tap through it: Start, change the weight, log sets, wait out a rest.</p>
+  </header>
+  <div class="holder"><div class="frame">
+    <div class="screen" id="screen">
+      <div id="scenes"></div>
+      <div class="sb"><span id="sbt">07:42</span><span style="display:flex;gap:6px"><svg viewBox="0 0 18 12"><path d="M1 9.5h2.4V12H1zM5.3 7h2.4v5H5.3zM9.6 4.2H12V12H9.6zM13.9 1h2.4v11h-2.4z" fill="currentColor"/></svg><svg viewBox="0 0 26 12"><rect x=".7" y=".7" width="21.6" height="10.6" rx="3.2" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".5"/><rect x="2.4" y="2.4" width="14.5" height="7.2" rx="1.8" fill="currentColor"/><rect x="23.6" y="4" width="1.8" height="4" rx=".9" fill="currentColor" opacity=".5"/></svg></span></div>
+
+      <!-- Today -->
+      <section class="ui on" id="today">
+        <div class="tscroll" id="tscroll">
+          <div class="spacer"></div>
+          <div class="sheet frost">
+            <span class="grab"></span>
+            <div class="plan"><div><b id="planName">Upper A</b><span id="planMeta"></span></div><button class="go press" id="start"></button></div>
+            <ul class="exs" id="exs"></ul>
+            <div class="so"><h3 id="soH"></h3>
+              <div class="tiles" id="tiles"></div>
+            </div>
+          </div>
+        </div>
+        <div class="hello"><b id="hi"></b><span id="date"></span></div>
+        <div class="ready" id="readyWrap"><button class="press" id="ready"></button></div>
+        <div class="bubble frost" id="bubble">
+          <div class="who"><i></i><span id="coachName">Coach</span></div>
+          <p id="bubbleText"></p>
+          <div class="answers"><button class="yes press" id="yes"></button><button class="no press" id="no"></button></div>
+        </div>
+        <nav class="dock frost" id="dock"></nav>
+      </section>
+
+      <!-- Workout -->
+      <section class="ui" id="work">
+        <div class="wtop">
+          <button class="round frost press" id="down" aria-label="Back to Today"></button>
+          <span class="clock" id="clock">22:14</span>
+          <button class="next frost press" id="next"><span class="thumb" id="nextThumb"></span><span><small id="nextL"></small><span id="nextN"></span></span></button>
+        </div>
+        <div class="name"><b id="exName"></b><span id="exSub"></span></div>
+        <div class="reps" id="reps"></div>
+        <div class="card frost" id="card">
+          <div class="sets" id="sets"></div>
+          <div class="steps">
+            <div class="step"><button class="press" data-d="-2.5" aria-label="Less weight"></button><span id="kgL"></span><button class="press" data-d="2.5" aria-label="More weight"></button></div>
+            <div class="step"><button class="press" data-r="-1" aria-label="Fewer reps"></button><span id="repL"></span><button class="press" data-r="1" aria-label="More reps"></button></div>
+          </div>
+          <div class="restrow"><span id="restL"></span><button class="press" id="plus30">+30 s</button><button class="press" id="skip"></button></div>
+          <p class="coach" id="coach"></p>
+        </div>
+        <button class="log press" id="log"></button>
+        <div class="hint" id="hint"></div>
+      </section>
+
+      <div class="toast frost" id="toast"></div>
+      <div class="medal frost" id="medal"><div class="star"><svg class="ico" viewBox="0 0 24 24"><path d="M12 3.2l2.6 5.6 6.1.7-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6-4.5-4.2 6.1-.7z"/></svg></div><small id="medalK"></small><b id="medalB"></b><span id="medalS"></span></div>
+      <div class="scrim" id="scrim"></div>
+      <div class="psheet frost" id="psheet"></div>
+    </div>
+  </div></div>
+  <p class="note"><b>Needs your phone:</b> the tilt (move the phone and the mountain moves more than the sky; the Claude app's viewer blocks motion sensors, so there the picture sways slowly by itself), the frost, the bent glass edge and whether anything stutters. <b>Photos</b> (Pexels, free licence): Viacheslav Kan (Today), Christian Buergi (chest), Lena Khrupina (back), Connor Scott McManus (shoulders), Marek Piwnicki (arms). <b>Try:</b> add <code>?lang=da</code> for Danish, <code>?rest=8</code> for 8-second rests, <code>?norim</code> for plain glass without the bent edge.</p>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs id="rimdefs"></defs></svg>
+
+<script>
+'use strict';
+const Q = new URLSearchParams(location.search);
+const DA = Q.get('lang') === 'da';
+const T = (en, da) => DA ? da : en;
+const REST = Math.max(3, Math.min(600, +Q.get('rest') || 150));
+const $ = (id) => document.getElementById(id);
+const screen = $('screen');
+if (DA) document.documentElement.lang = 'da';
+
+/* ---------- one shared set of springs (sampled into CSS linear()) ---------- */
+function spring(k, c, m = 1) {
+  let x = 0, v = 0, t = 0; const dt = 1 / 600, pts = [0];
+  while (t < 4) { for (let i = 0; i < 10; i++) { v += (-k * (x - 1) - c * v) / m * dt; x += v * dt; t += dt; }
+    pts.push(+x.toFixed(4)); if (t > .15 && Math.abs(x - 1) < .0015 && Math.abs(v) < .02) break; }
+  pts[pts.length - 1] = 1;
+  const step = Math.max(1, Math.floor(pts.length / 48)); const s = pts.filter((_, i) => i % step === 0); if (s[s.length - 1] !== 1) s.push(1);
+  return { e: `linear(${s.join(',')})`, d: Math.round(t * 1000) };
+}
+const S = { pop: spring(420, 24), sheet: spring(260, 30), snap: spring(700, 46), cam: spring(90, 19), soft: spring(170, 26) };
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function play(el, kf, sp, o = {}) { return el.animate(kf, { duration: reduce ? 1 : sp.d, easing: sp.e, ...o }); }
+
+/* ---------- icons ---------- */
+const I = {
+  today: '<svg class="ico" viewBox="0 0 24 24"><rect x="4" y="5" width="16" height="15" rx="4.5"/><path d="M8.5 3v3.5M15.5 3v3.5"/><circle cx="12" cy="13" r="1.7" fill="currentColor" stroke="none"/></svg>',
+  train: '<svg class="ico" viewBox="0 0 24 24"><path d="M7 12h10M7 7.5v9M17 7.5v9M3.8 9.8v4.4M20.2 9.8v4.4"/></svg>',
+  food: '<svg class="ico" viewBox="0 0 24 24"><path d="M4 11.5h16a8 8 0 0 1-16 0z"/><path d="M9.5 8c0-1.5 1.2-1.5 1.2-3M14 8c0-1.5 1.2-1.5 1.2-3"/></svg>',
+  health: '<svg class="ico" viewBox="0 0 24 24"><path d="M12 19.5s-7-4.3-7-9.4A3.9 3.9 0 0 1 12 7.9a3.9 3.9 0 0 1 7 2.2c0 5.1-7 9.4-7 9.4z"/></svg>',
+  down: '<svg class="ico" viewBox="0 0 24 24"><path d="M6.5 9.5l5.5 5.5 5.5-5.5"/></svg>',
+  go: '<svg class="ico" viewBox="0 0 24 24"><path d="M5 12h13M12.5 6.5L18 12l-5.5 5.5"/></svg>',
+  check: '<svg class="ico" viewBox="0 0 24 24"><path d="M5.5 12.5l4.5 4.5 8.5-9.5"/></svg>',
+  minus: '<svg class="ico" viewBox="0 0 24 24"><path d="M6 12h12"/></svg>',
+  plus: '<svg class="ico" viewBox="0 0 24 24"><path d="M6 12h12M12 6v12"/></svg>',
+  info: '<svg class="ico" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5M12 7.8v.1"/></svg>',
+};
+
+/* ---------- the places ---------- */
+// ht/hs: where the big number sits and how big, so the near mountain covers its lower part. wx/wy: where record light lands.
+const SCENES = {
+  today:     { tint: '70,52,82',  ht: 150, hs: 224, wx: '50%', wy: '36%' },
+  chest:     { tint: '34,50,74',  ht: 146, hs: 190, wx: '52%', wy: '30%' },
+  back:      { tint: '44,54,66',  ht: 150, hs: 190, wx: '30%', wy: '24%' },
+  shoulders: { tint: '22,58,86',  ht: 150, hs: 190, wx: '70%', wy: '32%' },
+  arms:      { tint: '96,56,76',  ht: 132, hs: 190, wx: '30%', wy: '36%' },
+};
+const img = (s, l) => `img/${s}-${l}.${l === 'front' ? 'webp' : 'jpg'}`;
+const scenesEl = $('scenes');
+for (const [id, s] of Object.entries(SCENES)) {
+  const d = document.createElement('div');
+  d.className = 'scene'; d.id = 'sc-' + id;
+  d.style.cssText = `--ht:${s.ht}px;--hs:${s.hs}px;--wx:${s.wx};--wy:${s.wy};--front:url(${img(id, 'front')})`;
+  d.innerHTML = `<div class="pb"><img src="${img(id, 'back')}" alt="" decoding="async"></div><div class="shade"></div>
+    <div class="ph"><div class="hero"></div></div>
+    <div class="pf"><img src="${img(id, 'front')}" alt="" decoding="async"><div class="warm"></div></div>`;
+  scenesEl.appendChild(d);
+}
+const thumb = (s) => `background-image:url(${img(s, 'back')})`;
+
+/* ---------- data (made up, in Omar's shape) ---------- */
+const EX = [
+  { id: 'bench', scene: 'chest', short: T('Bench', 'Bænkpres'), name: T('Bench press', 'Bænkpres'), group: T('Chest', 'Bryst'), sets: [[60, 8, 1], [80, 6, 1], [85, 6, 0], [85, 6, 0]], last: [82.5, 6], best: [87.5, 5] },
+  { id: 'row', scene: 'back', short: T('Row', 'Roning'), name: T('Barbell row', 'Roning med stang'), group: T('Back', 'Ryg'), sets: [[72.5, 8, 0], [72.5, 8, 0], [72.5, 8, 0]], last: [70, 8], best: [70, 8] },
+  { id: 'ohp', scene: 'shoulders', short: T('Press', 'Skulderpres'), name: T('Overhead press', 'Skulderpres'), group: T('Shoulders', 'Skuldre'), sets: [[50, 6, 0], [50, 6, 0], [50, 6, 0]], last: [50, 6], best: [52.5, 6] },
+  { id: 'curl', scene: 'arms', short: T('Curl', 'Curl'), name: T('EZ-bar curl', 'Curl med EZ-stang'), group: T('Arms', 'Arme'), sets: [[30, 10, 0], [30, 10, 0], [30, 10, 0]], last: [27.5, 10], best: [30, 10] },
+];
+const e1 = (w, r) => w * (1 + r / 30);
+const fmt = (n) => (Math.round(n * 10) / 10).toLocaleString(DA ? 'da-DK' : 'en-GB');
+let clockStart = 0;
+let ex = 0, cur = 2, bests = 0, resting = false, finished = false, inWorkout = false, started = false;
+
+/* ---------- time ---------- */
+const now = new Date();
+const hh = now.getHours();
+const pad = (n) => String(n).padStart(2, '0');
+$('sbt').textContent = `${pad(hh)}:${pad(now.getMinutes())}`;
+$('hi').textContent = hh < 11 ? T('Good morning, Omar', 'Godmorgen, Omar') : hh < 18 ? T('Good afternoon, Omar', 'God eftermiddag, Omar') : T('Good evening, Omar', 'Godaften, Omar');
+$('date').textContent = now.toLocaleDateString(DA ? 'da-DK' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).replace(/^./, (c) => c.toUpperCase());
+
+/* ---------- the big number (lives between the layers) ---------- */
+function setHero(sceneId, html, dir = 0) {
+  const h = document.querySelector(`#sc-${sceneId} .hero`);
+  const len = html.replace(/<u>.*<\/u>/, '').replace(/[^0-9]/g, '').length + (/[.,:]/.test(html.replace(/<u>.*<\/u>/, '')) ? .4 : 0);
+  if (sceneId !== 'today') h.style.setProperty('--hs', (len <= 2 ? 190 : len <= 3 ? 168 : len <= 3.4 ? 150 : 140) + 'px');
+  const old = h.querySelector('.roll');
+  if (old && old.innerHTML === html) return;
+  const n = document.createElement('div'); n.className = 'roll'; n.innerHTML = html; h.appendChild(n);
+  if (old && dir && !reduce) {
+    const a = play(old, [{ transform: 'none', opacity: 1 }, { transform: `translateY(${-dir * 34}px)`, opacity: 0 }], S.snap);
+    a.onfinish = () => old.remove();
+    play(n, [{ transform: `translateY(${dir * 46}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], S.pop);
+  } else if (old) old.remove();
+}
+const kgHTML = (w) => `${fmt(w)}<u>kg</u>`;
+
+/* ---------- pop-ups ---------- */
+let toastT;
+function toast(html, ms = 2600) {
+  const t = $('toast'); clearTimeout(toastT);
+  t.innerHTML = html; t.style.visibility = 'visible'; t.style.opacity = 1; screen.classList.add('toasting');
+  play(t, [{ transform: 'translate(-50%, -26px) scale(.86)', opacity: 0 }, { transform: 'translate(-50%, 0) scale(1)', opacity: 1 }], S.pop);
+  toastT = setTimeout(hideToast, ms);
+}
+function hideToast() {
+  const t = $('toast'); screen.classList.remove('toasting'); if (t.style.visibility !== 'visible') return;
+  const a = play(t, [{ transform: 'translate(-50%,0) scale(1)', opacity: 1 }, { transform: 'translate(-50%,-18px) scale(.9)', opacity: 0 }], S.snap);
+  t.style.opacity = 0; a.onfinish = () => { if (t.style.opacity === '0') t.style.visibility = 'hidden'; };
+}
+function popIn(el, from = 'translateY(18px) scale(.9)') {
+  el.style.visibility = 'visible'; el.style.opacity = 1;
+  return play(el, [{ transform: from, opacity: 0 }, { transform: 'none', opacity: 1 }], S.pop);
+}
+function popOut(el, to = 'translateY(10px) scale(.94)') {
+  el.style.opacity = 0;
+  const a = play(el, [{ transform: 'none', opacity: 1 }, { transform: to, opacity: 0 }], S.snap);
+  a.onfinish = () => { if (el.style.opacity === '0') el.style.visibility = 'hidden'; };
+  return a;
+}
+const buzz = (ms = 8) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+
+/* press feel: shows on the very next frame */
+screen.addEventListener('pointerdown', (e) => { const b = e.target.closest('.press'); if (b) { b.classList.add('down'); const up = () => { b.classList.remove('down'); removeEventListener('pointerup', up); removeEventListener('pointercancel', up); }; addEventListener('pointerup', up); addEventListener('pointercancel', up); } });
+
+/* ---------- sheets (drag down, Back or the scrim closes them) ---------- */
+let sheetOpen = false;
+function openSheet(html) {
+  const p = $('psheet'), s = $('scrim');
+  p.innerHTML = '<span class="grab"></span>' + html; sheetOpen = true;
+  p.style.visibility = 'visible'; s.style.visibility = 'visible'; s.style.opacity = 1; p.style.transform = 'none';
+  play(s, [{ opacity: 0 }, { opacity: 1 }], S.soft);
+  play(p, [{ transform: 'translateY(105%)' }, { transform: 'none' }], S.sheet);
+  try { history.pushState({ sheet: 1 }, ''); } catch (e) {}
+}
+function closeSheet(fromPop, v = 0) {
+  if (!sheetOpen) return; sheetOpen = false;
+  const p = $('psheet'), s = $('scrim');
+  const y = p.getBoundingClientRect().top - p.offsetParent.getBoundingClientRect().top - p.offsetTop;
+  p.style.transform = 'translateY(105%)'; s.style.opacity = 0;
+  const a = play(p, [{ transform: `translateY(${Math.max(0, y)}px)` }, { transform: 'translateY(105%)' }], S.soft);
+  play(s, [{ opacity: 1 }, { opacity: 0 }], S.snap);
+  a.onfinish = () => { if (!sheetOpen) { p.style.visibility = 'hidden'; s.style.visibility = 'hidden'; } };
+  try { if (!fromPop && history.state && history.state.sheet) history.back(); } catch (e) {}
+}
+addEventListener('popstate', () => { if (sheetOpen) closeSheet(true); });
+$('scrim').addEventListener('click', () => closeSheet());
+(() => { // a finger drags the sheet; letting go hands its speed to the spring
+  const p = $('psheet'); let y0 = null, dy = 0, lastY = 0, lastT = 0, vel = 0;
+  p.addEventListener('pointerdown', (e) => { if (e.target.closest('button')) return; y0 = e.clientY; dy = 0; lastY = e.clientY; lastT = e.timeStamp; p.setPointerCapture(e.pointerId); p.getAnimations().forEach((a) => a.cancel()); });
+  p.addEventListener('pointermove', (e) => { if (y0 === null) return; const z = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--z')) || 1; dy = Math.max(-12, (e.clientY - y0) / z); vel = (e.clientY - lastY) / Math.max(1, e.timeStamp - lastT); lastY = e.clientY; lastT = e.timeStamp; p.style.transform = `translateY(${dy < 0 ? dy / 3 : dy}px)`; });
+  const end = () => { if (y0 === null) return; y0 = null; if (dy > 110 || vel > .55) closeSheet(); else { const from = p.style.transform; p.style.transform = 'none'; play(p, [{ transform: from }, { transform: 'none' }], S.sheet); } };
+  p.addEventListener('pointerup', end); p.addEventListener('pointercancel', end);
+})();
+document.addEventListener('click', (e) => { if (e.target.closest('[data-close]')) closeSheet(); });
+
+/* ---------- parallax: tilt on the phone, pointer on a computer ---------- */
+let tilt = { x: 0, y: 0 };
+function applyTilt() {
+  const s = document.querySelector('.scene.on.lead'); if (!s || reduce) return;
+  const { x, y } = tilt;
+  s.querySelector('.pb').style.transform = `translate(${x * 4}px, ${y * 3}px)`;
+  s.querySelector('.ph').style.transform = `translate(${x * 7}px, ${y * 5}px)`;
+  s.querySelector('.pf').style.transform = `translate(${x * 12}px, ${y * 9}px)`;
+}
+let base = null;
+addEventListener('deviceorientation', (e) => {
+  if (e.beta == null) return;
+  if (!base) base = { b: e.beta, g: e.gamma };
+  const cl = (v) => Math.max(-1, Math.min(1, v));
+  tilt = { x: cl((e.gamma - base.g) / 18), y: cl((e.beta - base.b) / 18) };
+  base.b += (e.beta - base.b) * .01; base.g += (e.gamma - base.g) * .01; // slowly re-centre on how the phone is held
+  applyTilt();
+});
+// iPhone asks once, from a tap, before it shares tilt
+if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') addEventListener('click', () => DeviceOrientationEvent.requestPermission().catch(() => {}), { once: true });
+screen.addEventListener('pointermove', (e) => {
+  if (e.pointerType !== 'mouse') return;
+  const r = screen.getBoundingClientRect();
+  tilt = { x: ((e.clientX - r.left) / r.width - .5) * 2, y: ((e.clientY - r.top) / r.height - .5) * 2 }; applyTilt();
+});
+document.addEventListener('visibilitychange', () => screen.classList.toggle('paused', document.hidden));
+
+/* ---------- the bent rim: built per glass size, only in Chrome ---------- */
+const chrome = Q.has("norim") ? false : /Chrome\//.test(navigator.userAgent) && !/Edg\/|OPR\//.test(navigator.userAgent) || /Edg\//.test(navigator.userAgent);
+let rimN = 0;
+function rimMap(w, h, r, band) {
+  const c = document.createElement('canvas'); c.width = w; c.height = h; const x = c.getContext('2d'); const d = x.createImageData(w, h);
+  d.data.fill(128); for (let o = 3; o < d.data.length; o += 4) d.data[o] = 255;
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    if (i > band + r && i < w - band - r && j > band && j < h - band) { i = w - band - r - 1; continue; } // the middle bends nothing
+    const px = i + .5 - w / 2, py = j + .5 - h / 2;
+    const qx = Math.max(Math.abs(px) - (w / 2 - r), 0), qy = Math.max(Math.abs(py) - (h / 2 - r), 0);
+    let dist, nx, ny;
+    if (qx > 0 && qy > 0) { const l = Math.hypot(qx, qy); dist = r - l; nx = Math.sign(px) * qx / l; ny = Math.sign(py) * qy / l; }
+    else { const ax = w / 2 - Math.abs(px), ay = h / 2 - Math.abs(py); if (ax < ay) { dist = ax; nx = Math.sign(px); ny = 0; } else { dist = ay; nx = 0; ny = Math.sign(py); } }
+    let k = dist < band ? 1 - Math.max(dist, 0) / band : 0; k = k * k * (3 - 2 * k);
+    const o = (j * w + i) * 4; d.data[o] = 128 - nx * k * 127; d.data[o + 1] = 128 - ny * k * 127; d.data[o + 2] = 128; d.data[o + 3] = 255;
+  }
+  x.putImageData(d, 0, 0); return c.toDataURL();
+}
+// The map is drawn while nothing moves (on Today, when the browser is idle); the glass only switches it on later.
+function prepRim(el, w, h, r, scale = 26, band = 16) {
+  if (!chrome || reduce || el.dataset.rim) return;
+  const id = 'rim' + (++rimN); el.dataset.rim = id;
+  $('rimdefs').insertAdjacentHTML('beforeend', `<filter id="${id}" x="0" y="0" width="${w}" height="${h}" filterUnits="userSpaceOnUse" primitiveUnits="userSpaceOnUse" color-interpolation-filters="sRGB"><feImage href="${rimMap(w, h, r, band)}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="none" result="m"/><feDisplacementMap in="SourceGraphic" in2="m" scale="${scale}" xChannelSelector="R" yChannelSelector="G"/></filter>`);
+  el.style.setProperty('--rimf', `url(#${id})`);
+}
+function addRim(el) { if (el.dataset.rim) el.classList.add('rim'); }
+
+/* ---------- scene switching (the camera pushes through the picture) ---------- */
+let lead = null, gen = 0;
+async function showScene(id, how = 'cut') {
+  const g = ++gen, next = $('sc-' + id), prev = lead && $('sc-' + lead);
+  // a newer switch wins: settle any fly-past still running and hide every place that is not part of this one
+  document.querySelectorAll('.scene').forEach((sc) => {
+    sc.style.zIndex = '';
+    if (sc !== next && sc !== prev) sc.classList.remove('on', 'lead');
+    sc.querySelectorAll('.pb, .pf, .ph').forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
+  });
+  if (prev === next) return;
+  screen.style.setProperty('--tint', SCENES[id].tint);
+  next.classList.add('on'); // the layers exist before anything moves
+  await Promise.all([...next.querySelectorAll('img')].map((i) => i.decode().catch(() => {})));
+  if (g !== gen) return;
+  next.classList.add('lead'); lead = id; applyTilt();
+  if (!prev) return;
+  prev.classList.remove('lead');
+  if (how === 'cut' || reduce) { prev.classList.remove('on'); return; }
+  // fly past the near mountain of the old place; the new place settles in from a little further back
+  next.style.zIndex = 0; prev.style.zIndex = 1;
+  const pf = prev.querySelector('.pf'), pb = prev.querySelector('.pb'), ph = prev.querySelector('.ph');
+  const o = { fill: 'forwards' };
+  play(pf, [{ transform: pf.style.transform || 'none', opacity: 1 }, { transform: 'scale(1.7) translateY(60px)', opacity: 0 }], S.soft, o);
+  play(ph, [{ transform: ph.style.transform || 'none', opacity: 1 }, { transform: 'scale(1.25)', opacity: 0 }], S.soft, o);
+  const out = play(pb, [{ transform: 'none', opacity: 1 }, { transform: 'scale(1.3)', opacity: 0 }], S.cam, o);
+  play(next.querySelector('.pb'), [{ transform: 'scale(.92)' }, { transform: next.querySelector('.pb').style.transform || 'none' }], S.cam);
+  play(next.querySelector('.pf'), [{ transform: 'scale(.86) translateY(40px)' }, { transform: next.querySelector('.pf').style.transform || 'none' }], S.cam);
+  await out.finished.catch(() => {});
+  if (g !== gen) return;
+  prev.classList.remove('on'); prev.style.zIndex = ''; next.style.zIndex = '';
+  [pf, pb, ph].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
+}
+
+/* =================== TODAY =================== */
+const PROT = 64, PROT_T = 160;
+$('ready').innerHTML = `<i>${T('READINESS', 'PARATHED')}</i>${T('Ready to push', 'Klar til at presse på')}${I.info}`;
+$('coachName').textContent = 'Coach';
+let benchKg = 85;
+function bubbleText() {
+  $('bubbleText').innerHTML = T(`Last week you got <b>82.5 × 6</b> on every set of bench. Try <b>85</b> today?`, `I sidste uge tog du <b>82,5 × 6</b> i alle sæt bænkpres. Prøv <b>85</b> i dag?`);
+  $('yes').textContent = T('Yes, 85', 'Ja, 85'); $('no').textContent = T('Keep 82.5', 'Behold 82,5');
+}
+function renderPlan() {
+  const left = EX.reduce((a, e) => a + e.sets.filter((s) => !s[2]).length, 0);
+  $('planMeta').textContent = finished ? T('Done today · 54 min', 'Klaret i dag · 54 min') : started ? T(`${left} sets left`, `${left} sæt tilbage`) : T('4 exercises · about 52 min', '4 øvelser · cirka 52 min');
+  $('start').innerHTML = finished ? T('Done', 'Klaret') + I.check : (started ? T('Resume', 'Fortsæt') : T('Start', 'Start')) + I.go;
+  $('exs').innerHTML = EX.map((e) => {
+    const top = e.sets[e.sets.length - 1];
+    const done = e.sets.filter((s) => s[2]).length;
+    return `<li><span class="thumb" style="${thumb(e.scene)}"></span><div><b>${e.name}</b><span>${e.group} · ${done ? T(`${done} of ${e.sets.length} sets`, `${done} af ${e.sets.length} sæt`) : T(`${e.sets.length} sets`, `${e.sets.length} sæt`)}</span></div><em>${fmt(top[0])} × ${top[1]}</em></li>`;
+  }).join('');
+}
+$('soH').textContent = T('TODAY SO FAR', 'I DAG INDTIL NU');
+$('tiles').innerHTML = `<div><small>${T('Sleep', 'Søvn')}</small><b>7<u>h</u> 42</b></div><div><small>Protein</small><b>${PROT}<u>/ ${PROT_T} g</u></b></div><div><small>${T('Weight', 'Vægt')}</small><b>${fmt(78.4)}<u>kg</u></b></div>`;
+$('dock').innerHTML = [['today', T('Today', 'I dag')], ['train', T('Train', 'Træn')], ['food', T('Food', 'Mad')], ['health', T('Health', 'Sundhed')]]
+  .map(([k, l], i) => `<button class="press${i ? '' : ' on'}" data-tab="${k}">${I[k]}${l}</button>`).join('');
+$('dock').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b || b.dataset.tab === 'today') return;
+  toast(`<span class="sp">${T(`${b.textContent} is the next round. This one is Today and the workout.`, `${b.textContent} kommer i næste runde. Her er det I dag og træningen.`)}</span>`);
+});
+bubbleText(); renderPlan();
+setHero('today', '86');
+
+$('yes').onclick = () => answer(85);
+$('no').onclick = () => answer(82.5);
+function answer(kg) {
+  const prev = benchKg; benchKg = kg; EX[0].sets[2][0] = kg; EX[0].sets[3][0] = kg; renderPlan(); buzz();
+  popOut($('bubble'), 'translateY(-8px) scale(.94)');
+  toast(`<span class="ok">${I.check}</span><span>${T('Bench set to', 'Bænkpres sat til')} <b>${fmt(kg)} kg</b></span><button class="undo" id="undo">${T('Undo', 'Fortryd')}</button>`, 4200);
+  const u = $('undo'); u.style.pointerEvents = 'none'; setTimeout(() => (u.style.pointerEvents = ''), 400); // no double-tap undo
+  u.onclick = () => { benchKg = prev; EX[0].sets[2][0] = prev; EX[0].sets[3][0] = prev; renderPlan(); hideToast(); setTimeout(() => popIn($('bubble')), 220); };
+}
+$('ready').onclick = () => openSheet(`<h2>${T('Readiness 86', 'Parathed 86')}</h2><p>${T('A good day for the top set.', 'En god dag til det tunge sæt.')}</p>
+  <ul class="rows">
+    <li><div><div>${T('Sleep', 'Søvn')}<span>${T('Your usual: 7 h 10', 'Plejer: 7 t 10')}</span></div></div><em>7 h 42</em></li>
+    <li><div><div>${T('Resting heart rate', 'Hvilepuls')}<span>${T('Your usual: 55', 'Plejer: 55')}</span></div></div><em>52</em></li>
+    <li><div><div>${T('Training, last 7 days', 'Træning, sidste 7 dage')}<span>${T('Two rest days in between', 'To hviledage imellem')}</span></div></div><em>${T('3 sessions', '3 pas')}</em></li>
+  </ul>
+  <p class="small-note">${T('Worked out from your sleep, resting heart rate and recent training. A guide, not a rule.', 'Regnet ud fra din søvn, hvilepuls og træning. En rettesnor, ikke en regel.')}</p>
+  <button class="wide press" data-close>${T('Got it', 'Forstået')}</button>`);
+
+/* morning: the peak rises in front of the number, then the Coach speaks */
+function morning() {
+  const s = $('sc-today');
+  if (!reduce) {
+    play(s.querySelector('.pf img'), [{ transform: 'translateY(70px) scale(1.04)' }, { transform: 'none' }], S.cam, { composite: 'add' });
+    play(s.querySelector('.pb img'), [{ transform: 'scale(1.08)' }, { transform: 'none' }], S.cam, { composite: 'add' });
+    play(s.querySelector('.hero'), [{ transform: 'translateY(-26px)', opacity: 0 }, { transform: 'none', opacity: 1 }], S.cam);
+    play(document.querySelector('.hello'), [{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 1, transform: 'none' }], S.soft, { delay: 150, fill: 'backwards' });
+    play($('readyWrap'), [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], S.soft, { delay: 380, fill: 'backwards' });
+    play(document.querySelector('.sheet'), [{ transform: 'translateY(140px)' }, { transform: 'none' }], S.sheet, { delay: 260, fill: 'backwards' });
+    play($('dock'), [{ transform: 'translateY(100px)' }, { transform: 'none' }], S.sheet, { delay: 340, fill: 'backwards' });
+  }
+  setTimeout(() => { popIn($('bubble'), 'translateY(24px) scale(.86)'); buzz(6); }, reduce ? 0 : 1300);
+}
+/* scroll: the number sets behind the mountain as the sheet comes up (driven by the browser where it can) */
+(() => {
+  const h = document.querySelector('#sc-today .hero'), r = $('readyWrap'), hi = document.querySelector('.hello'), b = $('bubble');
+  const sc = $('tscroll');
+  if (CSS.supports('animation-timeline: --a')) {
+    const opt = { fill: 'both', timeline: new ScrollTimeline({ source: sc, axis: 'block' }), rangeStart: '0px', rangeEnd: '280px' };
+    try {
+      h.animate([{ transform: 'none' }, { transform: 'translateY(170px)' }], opt);
+      r.animate([{ transform: 'none', opacity: 1 }, { transform: 'translateY(-60px)', opacity: 0 }], { ...opt, rangeEnd: '160px' });
+      hi.animate([{ transform: 'none', opacity: 1 }, { transform: 'translateY(-30px)', opacity: 0 }], { ...opt, rangeEnd: '200px' });
+      b.animate([{ translate: '0 0' }, { translate: '0 -280px' }], opt);
+      return;
+    } catch (e) {}
+  }
+  sc.addEventListener('scroll', () => { const y = Math.min(280, sc.scrollTop); h.style.transform = `translateY(${y * 170 / 280}px)`; b.style.translate = `0 ${-y}px`; r.style.opacity = 1 - y / 160; hi.style.opacity = 1 - y / 200; }, { passive: true });
+})();
+
+/* =================== WORKOUT =================== */
+const E = () => EX[ex];
+function nextEx() { for (let i = ex + 1; i < EX.length; i++) if (EX[i].sets.some((s) => !s[2])) return i; for (let i = 0; i < ex; i++) if (EX[i].sets.some((s) => !s[2])) return i; return -1; }
+function renderWork(dir = 0) {
+  const e = E(), s = e.sets[cur];
+  $('exName').textContent = e.name;
+  $('exSub').textContent = T(`Set ${cur + 1} of ${e.sets.length} · ${e.group}`, `Sæt ${cur + 1} af ${e.sets.length} · ${e.group}`);
+  $('sets').innerHTML = e.sets.map((x, i) => `<div class="${x[2] ? 'done' : ''}${i === cur && !resting ? ' now' : ''}">${i === cur && !resting ? T('Now', 'Nu') : T('Set', 'Sæt') + ' ' + (i + 1)}<b>${fmt(x[0])} × ${x[1]}</b></div>`).join('');
+  $('kgL').innerHTML = `<b>${fmt(s[0])}</b>kg`; $('repL').innerHTML = `<b>${s[1]}</b>${T('reps', 'reps')}`;
+  $('reps').innerHTML = resting ? '' : `<b>× ${s[1]}</b>${T('reps', 'reps')} · ${T('last time', 'sidst')} ${fmt(e.last[0])} × ${e.last[1]}`;
+  if (!resting) setHero(e.scene, kgHTML(s[0]), dir);
+  $('log').textContent = resting ? T(`Start set ${cur + 1} now`, `Start sæt ${cur + 1} nu`) : T(`Log set ${cur + 1}`, `Log sæt ${cur + 1}`);
+  $('hint').textContent = resting ? '' : T(`Rest starts by itself: ${Math.floor(REST / 60)} min ${pad(REST % 60)}`, `Pausen starter af sig selv: ${Math.floor(REST / 60)} min ${pad(REST % 60)}`);
+  const n = nextEx();
+  if (n < 0) { $('nextL').textContent = T('All done', 'Alt klaret'); $('nextN').textContent = T('Finish', 'Afslut'); $('nextThumb').style.cssText = thumb('today'); }
+  else { $('nextL').textContent = T('Next', 'Næste'); $('nextN').textContent = EX[n].short; $('nextThumb').style.cssText = thumb(EX[n].scene); }
+  coachLine();
+}
+function coachLine() {
+  const e = E(), s = e.sets[cur]; let t;
+  const isBest = e1(s[0], s[1]) > e1(e.best[0], e.best[1]) + .05;
+  if (resting) {
+    const left = e.sets.filter((x) => !x[2]).length;
+    t = left ? T(`Next: ${fmt(s[0])} × ${s[1]}. ${left === 1 ? `Last set of ${e.name.toLowerCase()}.` : `${left} sets to go.`}`, `Næste: ${fmt(s[0])} × ${s[1]}. ${left === 1 ? 'Sidste sæt.' : `${left} sæt tilbage.`}`)
+             : T(`${e.name} done. Next up: ${EX[nextEx()]?.name || 'finish'}.`, `${e.name} klaret. Næste: ${EX[nextEx()]?.name || 'afslut'}.`);
+  } else if (isBest) t = T(`Your best is ${fmt(e.best[0])} × ${e.best[1]}. This would beat it.`, `Din bedste er ${fmt(e.best[0])} × ${e.best[1]}. Det her slår den.`);
+  else if (s[0] > e.last[0]) t = T(`Last time ${fmt(e.last[0])} × ${e.last[1]} on every set. ${fmt(s[0])} is your next step, +${fmt(s[0] - e.last[0])} kg.`, `Sidst ${fmt(e.last[0])} × ${e.last[1]} i alle sæt. ${fmt(s[0])} er næste skridt, +${fmt(s[0] - e.last[0])} kg.`);
+  else if (s[0] < e.last[0]) t = T(`Lighter than last time (${fmt(e.last[0])} × ${e.last[1]}). Fine if today needs it.`, `Lettere end sidst (${fmt(e.last[0])} × ${e.last[1]}). Helt fint, hvis dagen kræver det.`);
+  else t = T(`Matching last time, ${fmt(e.last[0])} × ${e.last[1]}. One more rep next week moves you on.`, `Samme som sidst, ${fmt(e.last[0])} × ${e.last[1]}. Én rep mere i næste uge flytter dig videre.`);
+  $('coach').innerHTML = `<b>Coach</b>${t}`;
+}
+document.querySelectorAll('.step button').forEach((b) => {
+  b.innerHTML = b.dataset.d ? (+b.dataset.d < 0 ? I.minus : I.plus) : (+b.dataset.r < 0 ? I.minus : I.plus);
+  b.onclick = () => {
+    const s = E().sets[cur];
+    if (b.dataset.d) { const v = Math.max(0, Math.min(300, s[0] + +b.dataset.d)); if (v === s[0]) return; s[0] = v; renderWork(+b.dataset.d > 0 ? 1 : -1); }
+    else { const v = Math.max(1, Math.min(50, s[1] + +b.dataset.r)); if (v === s[1]) return; s[1] = v; renderWork(0); }
+    for (let i = cur + 1; i < E().sets.length; i++) if (!E().sets[i][2]) { E().sets[i][0] = s[0]; E().sets[i][1] = s[1]; }
+    renderWork(0); buzz(4);
+  };
+});
+$('down').innerHTML = I.down;
+$('down').onclick = () => leaveWorkout();
+$('next').onclick = () => { const n = nextEx(); if (n < 0) return finish(); stopRest(true); goEx(n); };
+
+async function goEx(n) {
+  ex = n; cur = EX[n].sets.findIndex((s) => !s[2]); if (cur < 0) cur = 0;
+  setHero(EX[n].scene, kgHTML(EX[n].sets[cur][0]));
+  renderWork();
+  if (!inWorkout) return; // rest ran out on Today: move on quietly, Today keeps its own place
+  const sc = $('sc-' + EX[n].scene); sc.querySelector('.ph').getAnimations().forEach((a) => a.cancel());
+  const shown = showScene(EX[n].scene, 'push');
+  if (!reduce) play(sc.querySelector('.hero'), [{ transform: 'translateY(150px)' }, { transform: 'none' }], S.cam, { delay: 260, fill: 'backwards' });
+  await shown;
+}
+
+/* ---- logging a set: one tap ---- */
+$('log').onclick = () => {
+  if (resting) { stopRest(); return; }
+  const e = E(), s = e.sets[cur]; s[2] = 1; buzz(12);
+  const best = e1(s[0], s[1]) > e1(e.best[0], e.best[1]) + .05;
+  const diff = s[0] - e.last[0];
+  renderWork();
+  const chip = $('sets').children[cur]; play(chip, [{ transform: 'scale(.82)' }, { transform: 'none' }], S.pop);
+  if (best) { e.best = [s[0], s[1]]; bests++; record(e, s); }
+  else toast(`<span class="ok">${I.check}</span><span>${T('Set', 'Sæt')} ${cur + 1} · <b>${fmt(s[0])} × ${s[1]}</b>${diff > 0 ? ` · +${fmt(diff)} kg ${T('on last time', 'mod sidst')}` : ''}</span>`);
+  const left = e.sets.findIndex((x) => !x[2]);
+  if (left < 0 && nextEx() < 0) { setTimeout(finish, best ? 2600 : 900); return; }
+  startRest(left < 0 ? null : left);
+};
+
+function record(e, s) {
+  $('medalK').textContent = T('NEW BEST', 'NY REKORD');
+  $('medalB').textContent = `${fmt(s[0])} × ${s[1]}`;
+  $('medalS').textContent = T(`${e.name} · estimated max ${Math.round(e1(s[0], s[1]))} kg`, `${e.name} · anslået max ${Math.round(e1(s[0], s[1]))} kg`);
+  const m = $('medal'); popIn(m, 'translateY(40px) scale(.7)'); buzz(30);
+  const w = document.querySelector(`#sc-${e.scene} .warm`); // warm light lands on the peak
+  w.style.opacity = 1; play(w, [{ opacity: 0 }, { opacity: 1, offset: .25 }, { opacity: .8 }], { d: 5200, e: 'ease-out' });
+  setTimeout(() => { popOut(m, 'translateY(-14px) scale(.94)'); }, 2600);
+  setTimeout(() => { w.style.opacity = 0; play(w, [{ opacity: .8 }, { opacity: 0 }], { d: 1600, e: 'ease-in-out' }); }, 5200);
+}
+
+/* ---- rest: the countdown sinks behind the mountain as it runs ---- */
+const SINK = 120; // how far the countdown sets behind the mountain by the end of the rest
+let restEnd = 0, restTick, sinkAnim, nextSet = null, restTotal = REST;
+function startRest(n) {
+  resting = true; nextSet = n; restTotal = REST; restEnd = performance.now() + REST * 1000;
+  if (n !== null) cur = n;
+  $('card').classList.add('resting'); $('skip').textContent = T('Skip', 'Spring over');
+  renderWork(); $('reps').innerHTML = `${T('Rest', 'Pause')}`;
+  const e = E(); setHero(e.scene, clockTxt(REST), 1);
+  sink(0);
+  tick(); restTick = setInterval(tick, 250);
+}
+function sink(fromProgress) {
+  const h = document.querySelector(`#sc-${E().scene} .hero`);
+  if (sinkAnim) { sinkAnim.cancel(); sinkAnim = null; }
+  if (reduce) return; // reduced motion: the countdown stays put and readable
+  const rem = Math.max(0, restEnd - performance.now());
+  sinkAnim = h.animate([{ transform: `translateY(${fromProgress * SINK}px)`, opacity: 1 }, { transform: `translateY(${Math.max(fromProgress, .85) * SINK}px)`, opacity: 1, offset: Math.max(0, (.85 - fromProgress) / (1 - fromProgress)) }, { transform: `translateY(${SINK}px)`, opacity: 0 }], { duration: reduce ? 1 : rem, easing: 'linear', fill: 'forwards' });
+}
+const clockTxt = (sec) => `${Math.floor(sec / 60)}:${pad(sec % 60)}`;
+function tick() {
+  const left = Math.max(0, Math.ceil((restEnd - performance.now()) / 1000));
+  const txt = clockTxt(left);
+  $('restL').innerHTML = `${T('Rest', 'Pause')}<b>${txt}</b>`;
+  const r = document.querySelector(`#sc-${E().scene} .hero .roll:last-child`); if (r && r.textContent !== txt) r.textContent = txt;
+  if (left <= 0) stopRest();
+}
+function stopRest(silent) {
+  if (!resting) return;
+  resting = false; clearInterval(restTick); $('card').classList.remove('resting');
+  const h = document.querySelector(`#sc-${E().scene} .hero`);
+  const y = sinkAnim ? (new DOMMatrix(getComputedStyle(h).transform).m42 || 0) : 0;
+  if (sinkAnim) { sinkAnim.cancel(); sinkAnim = null; }
+  if (nextSet === null) { const n = nextEx(); renderWork(); if (n >= 0 && !silent) goEx(n); return; }
+  renderWork();
+  setHero(E().scene, kgHTML(E().sets[cur][0]));
+  if (!reduce) play(h, [{ transform: `translateY(${Math.max(y, 100)}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }], S.cam); // the next weight rises from behind the peak
+  if (!silent) { toast(`<span class="sp">${T('Ready', 'Klar')} · ${T('set', 'sæt')} ${cur + 1}: <b>${fmt(E().sets[cur][0])} × ${E().sets[cur][1]}</b></span>`, 2200); buzz(20); }
+}
+$('plus30').onclick = () => {
+  const h = document.querySelector(`#sc-${E().scene} .hero`);
+  const y = new DOMMatrix(getComputedStyle(h).transform).m42 || 0;
+  restEnd += 30000; restTotal += 30;
+  const rem = (restEnd - performance.now()) / 1000;
+  const p = Math.max(0, 1 - rem / restTotal);
+  if (sinkAnim) { sinkAnim.cancel(); sinkAnim = null; }
+  if (reduce) { tick(); buzz(4); return; }
+  // rise back to where the remaining time belongs, then keep sinking
+  sinkAnim = h.animate([{ transform: `translateY(${y}px)`, opacity: 1 }, { transform: `translateY(${p * SINK}px)`, opacity: 1, offset: .06 }, { transform: `translateY(${Math.max(p, .85) * SINK}px)`, opacity: 1, offset: Math.max(.07, .06 + .94 * (.85 - p) / Math.max(.01, 1 - p)) }, { transform: `translateY(${SINK}px)`, opacity: 0 }], { duration: rem * 1000 / .94, easing: 'linear', fill: 'forwards' });
+  tick(); buzz(4);
+};
+$('skip').onclick = () => stopRest();
+
+function finish() {
+  finished = true; stopRest(true); renderPlan();
+  const total = EX.reduce((a, e) => a + e.sets.filter((s) => s[2]).reduce((b, s) => b + s[0] * s[1], 0), 0);
+  const sets = EX.reduce((a, e) => a + e.sets.filter((s) => s[2]).length, 0);
+  openSheet(`<h2>${T('Upper A, done', 'Upper A, klaret')}</h2><p>${T(`${sets} sets · ${fmt(total / 1000)} t lifted${bests ? ` · ${bests} new best${bests > 1 ? 's' : ''}` : ''}`, `${sets} sæt · ${fmt(total / 1000)} t løftet${bests ? ` · ${bests} ${bests > 1 ? 'nye rekorder' : 'ny rekord'}` : ''}`)}</p>
+    <ul class="rows">${EX.map((e) => { const d = e.sets.filter((s) => s[2]); const top = d.reduce((a, s) => (!a || e1(s[0], s[1]) > e1(a[0], a[1]) ? s : a), null);
+      return `<li><div><span class="thumb" style="${thumb(e.scene)}"></span><div>${e.name}<span>${e.group} · ${d.length ? (d.length === 1 ? T('1 set', '1 sæt') : T(`${d.length} sets`, `${d.length} sæt`)) : T('Skipped', 'Sprunget over')}</span></div></div><em>${top ? `${fmt(top[0])} × ${top[1]}` : ''}</em></li>`; }).join('')}</ul>
+    <button class="wide press" id="toToday">${T('Back to Today', 'Tilbage til I dag')}</button>`);
+  $('toToday').onclick = () => { closeSheet(); leaveWorkout(); };
+}
+
+/* ---- between Today and the workout ---- */
+async function enterWorkout() {
+  if (finished) return toast(`<span class="ok">${I.check}</span><span>${T('Upper A is done for today', 'Upper A er klaret i dag')}</span>`);
+  if (!started) { clockStart = Date.now() - (22 * 60 + 14) * 1000; setInterval(() => { const s = Math.floor((Date.now() - clockStart) / 1000); $('clock').textContent = `${Math.floor(s / 60)}:${pad(s % 60)}`; }, 1000); }
+  started = true; inWorkout = true;
+  hideToast(); if ($('bubble').style.visibility === 'visible') popOut($('bubble'));
+  const today = $('today'), work = $('work');
+  [today, work].forEach((el) => el.getAnimations().forEach((a) => a.cancel())); // a newer move wins over one still running
+  setHero(E().scene, kgHTML(E().sets[cur][0]));
+  renderWork();
+  play(today, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(1.06)' }], S.snap, { fill: 'forwards' }).onfinish = (ev) => { today.classList.remove('on'); ev.target.cancel(); };
+  work.classList.add('on');
+  play(work, [{ opacity: 0, transform: 'scale(.96)' }, { opacity: 1, transform: 'none' }], S.soft);
+  play(work.querySelector('.log'), [{ transform: 'translateY(90px)' }, { transform: 'none' }], S.sheet, { delay: 120, fill: 'backwards' });
+  play($('card'), [{ transform: 'translateY(60px)', opacity: 0 }, { transform: 'none', opacity: 1 }], S.sheet, { delay: 60, fill: 'backwards' });
+  const shown = showScene(E().scene, 'push');
+  if (!reduce) play(document.querySelector(`#sc-${E().scene} .hero`), [{ transform: 'translateY(150px)' }, { transform: 'none' }], S.cam, { delay: 260, fill: 'backwards' });
+  await shown; setTimeout(() => { prepRim($('card'), 360, 236, 36); addRim($('card')); }, reduce ? 0 : 2200); // built once everything has settled: the filter's first paint is the costly part
+}
+async function leaveWorkout() {
+  inWorkout = false; renderPlan();
+  const today = $('today'), work = $('work');
+  [today, work].forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
+  play(work, [{ opacity: 1 }, { opacity: 0 }], S.snap, { fill: 'forwards' }).onfinish = (ev) => { work.classList.remove('on'); ev.target.cancel(); };
+  today.classList.add('on');
+  play(today, [{ opacity: 0, transform: 'scale(1.04)' }, { opacity: 1, transform: 'none' }], S.soft);
+  await showScene('today', 'push');
+  if (resting) toast(`<span class="sp">${T('Resting', 'Pause')} · ${E().name}</span>`);
+}
+$('start').onclick = enterWorkout;
+
+/* ---------- fit the 384×832 screen ---------- */
+function fit() {
+  const w = document.documentElement.clientWidth, h = innerHeight;
+  const full = w <= 460 && matchMedia('(pointer: coarse)').matches;
+  document.body.classList.toggle('full', full);
+  const z = full ? Math.min(w / 384, h / 832) : Math.min(1.1, Math.min(w, 460) / 384, (h - 20) / 832);
+  document.documentElement.style.setProperty('--z', z.toFixed(4));
+}
+addEventListener('resize', fit); fit();
+
+/* ---------- open ---------- */
+(async () => {
+  await document.fonts.ready.catch(() => {});
+  await showScene('today');
+  if (Q.get('screen') === 'workout') { prepRim($('card'), 360, 236, 36); await enterWorkout(); return; }
+  morning();
+  setTimeout(() => (window.requestIdleCallback || ((f) => f()))(() => { if (!inWorkout) prepRim($('card'), 360, 236, 36); }, { timeout: 2000 }), 3400); // after the morning moment has settled
+})();
+</script>
+</body>
+</html>

@@ -57,6 +57,21 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: Summit take B "Depth", cinematic depth (/_prototypes/summit-depth/)
+Asked (Omar, 04:56 and 05:00): "Try to make four different versions of my taste… Like the ones with the wallpaper. It has to be different, but you know, the same style… Make it actually beautiful. Think, be creative, unique." Then: "I wanted to have pop-ups, more pop-ups, alive feelings. I wanted to feel alive, genuine." Restarted on Opus high at his ask (05:05). This thread was given take B: cinematic depth.
+Reading of the log before building: the wallpaper is the product, the glass must stay light, Today needs one bold thing, and a judge's 8 has not predicted his yes, so show it early.
+Built (clickable Today, workout, rest, new best and finish, English and Danish): every photo is cut into two layers with a depth model (Depth Anything V2 small, run locally), the far scene and the near mountain, and the big number lives between them, so the peak steps in front of it like a phone lock screen. The layers sway slowly and follow tilt. Each muscle group trains in its own place: chest on the Matterhorn, back by a sea stack, shoulders in the blue ridges, arms in pink Alps. Changing exercise flies past the old mountain into the new place.
+- **Today (fixed first):** "Good morning, Omar", readiness 86 with the peak in front of it, the Coach popping up with a real suggestion from last week's sets ("Try 85 today?", Yes or Keep, with Undo), the plan as a frosted sheet with a round picture of each exercise's place. Scrolling the sheet up makes the 86 set behind the mountain. Tapping readiness opens why it is 86.
+- **Workout:** the weight in the sky behind the peak, steppers, set chips, a Coach line computed from the sets. One tap logs a set: the chip pops, a toast says what changed against last time, and the rest begins.
+- **Rest:** the countdown takes the number's place and slowly sets behind the mountain; the next weight rises back up when it ends, with a "Ready" pop-up.
+- **New best:** worked out from the sets (estimated max), a medal pop-up and warm light on the peak.
+- **Glass:** plain live blur (decision A), at most three blurred layers per screen; the workout card also has a bent rim that refracts the photo at its edge (Chrome only; `?norim` turns it off).
+Judge (one fresh design-judge, Sonnet): 7.5 (Today 7.5, workout 7.5). Praised the 85 behind the Matterhorn and the place per muscle group. Its defects (crowded Today, toasts over the header, finish sheet wording, glass too dark, the curl number cut, a flat record moment, generic Coach lines) were fixed, not re-judged.
+My own score: 7.5. Biggest weakness: the depth effect depends on each photo's mountain sitting in exactly the right place, so every new place needs hand-tuning, and the rest countdown is harder to read once it sinks.
+Needs his phone: the tilt (the Claude viewer blocks motion sensors, so there the picture sways by itself), the frost, the bent rim's cost (headless shows one long frame when it first draws; it now draws only when nothing moves), edge halos round the cut-outs.
+Artifact: https://claude.ai/artifact/3yMKjQ5mLEoG8XFrReqkZu
+Verdict: waiting for Omar.
+
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.
