@@ -130,7 +130,8 @@ button.frame:active { transform: scale(.985); }
 .cell { background: #F6F4EF; transition: opacity 1.4s cubic-bezier(.3, .1, .2, 1); }
 .cell.next, .cell.dev { background: #E2E5FA; }
 .cell.dev { opacity: 0; }
-.cut { position: absolute; top: 0; bottom: 0; width: 1px; margin-left: -.5px; background: rgba(140, 138, 132, .5); }
+.cut { position: absolute; top: 0; bottom: 0; width: 1px; margin-left: -.5px; background: rgba(140, 138, 132, .5); transition: opacity 1.2s; }
+.finished .cut { opacity: 0; }
 .ruler { position: relative; height: 14px; margin: 7px 10px 0; }
 .tk { position: absolute; top: 0; width: 1px; height: 6px; margin-left: -.5px; background: var(--ink-3); }
 .tk.done { width: 2px; height: 9px; margin-left: -1px; background: var(--ink); }
@@ -176,7 +177,7 @@ button.frame:active { transform: scale(.985); }
 .rest-top .lbl { display: flex; align-items: center; gap: 9px; white-space: nowrap; }
 .rest-top .lbl.rec { color: var(--paper); }
 .rest-top .lbl i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--blue-on-ink); animation: pop .5s .25s var(--ease) both; }
-.rest-top .txtbtn { text-decoration: underline; text-underline-offset: 4px; white-space: nowrap; color: #C9C9CC; }
+.rest-top .txtbtn { min-height: 48px; display: inline-flex; align-items: center; text-decoration: underline; text-underline-offset: 4px; white-space: nowrap; color: #C9C9CC; }
 .rest-main { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
 .rest-time { font-size: 76px; font-weight: 400; line-height: .8; letter-spacing: -.03em; white-space: nowrap; }
 .rest-btns { display: flex; gap: 8px; }
