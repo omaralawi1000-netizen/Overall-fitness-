@@ -299,11 +299,11 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
   const mine = (text) => { const el = document.createElement('div'); el.className = 'me'; el.textContent = text; return el; };
   const box = (cls, html) => { const el = document.createElement('div'); el.className = cls; el.innerHTML = html; return el; };
   const setChip = (n, kg, reps) => box('me set', `<span class="n">${n}</span><span>${num(kg)} kg × ${reps}</span>${CHECK}`);
-  const options = (list) => { // answers to tap under a Coach question
-    const el = box('opts', '');
+  const options = (list, forSet) => { // answers to tap under a Coach question; a question about a set expires once another set is logged or undone
+    const el = box('opts', ''), at = S.log.length;
     list.forEach(([label, fn, ink]) => {
       const b = document.createElement('button'); b.className = `pillbtn${ink ? ' ink' : ''}`; b.textContent = label;
-      b.onclick = () => { el.remove(); fn(); };
+      b.onclick = () => { el.remove(); if (!forSet || (S.on && S.log.length === at)) fn(); else post([coach('That question was for an earlier set. Say the set again.', 'soft', 0)]); };
       el.append(b);
     });
     return el;
@@ -568,15 +568,16 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
     const bubble = mine(text);
     if (!cmd) return post([bubble, coach('I didn’t catch a set in that. Say it like “80 for 8”, or “same again”, “skip”, “undo”.', 'soft')], [bubble, from]);
     if (cmd.kind === 'undo') return undo();
+    const aSet = ['set', 'same', 'done'].includes(cmd.kind) || (cmd.kind === 'ask' && (cmd.options ?? []).some((o) => o.kind === 'set'));
+    if (aSet && S.rest && S.si >= lift().sets) endRest(); // said in the rest after a lift's last set, it belongs to the next lift
     if (cmd.kind === 'ask') {
       const picks = (cmd.options ?? []).filter((o) => o.kind === 'set').map((o) => [`${num(o.kg ?? S.kg)} kg × ${o.reps ?? S.reps}`, () => logOrRest(o.kg ?? S.kg, o.reps ?? S.reps)]);
       const q = cmd.why === 'bareNo' ? 'No to what? Say “undo” to take the last set back, or say the set again.' : cmd.why === 'correction' ? 'Not sure what to change. Say the whole set again.' : 'Which one did you mean?';
-      return post([bubble, coach(q), ...(picks.length ? [options(picks)] : [])], [bubble, from]);
+      return post([bubble, coach(q), ...(picks.length ? [options(picks, true)] : [])], [bubble, from]);
     }
     if (cmd.kind === 'rest') { if (S.rest) { rest(S.rest.end - Date.now() + cmd.sec * 1000); return post([bubble, coach(`${cmd.sec} seconds added.`, 'soft', 0)], [bubble, from]); } return post([bubble, coach('You’re not resting right now.', 'soft', 0)], [bubble, from]); }
     if (cmd.kind === 'skip') { if (S.rest) { endRest(); return post([bubble, coach('Rest skipped.', 'soft', 0)], [bubble, from]); } return post([bubble, coach('To drop a set, tap End or just log what you did.', 'soft', 0)], [bubble, from]); }
-    // a set, "same again" or "done". Said in the rest after a lift's last set, it belongs to the next lift.
-    if (S.rest && S.si >= lift().sets) endRest();
+    // a set, "same again" or "done"
     // anything not said is taken from the card; "same again" repeats the last set of this lift
     const prev = S.log.at(-1), base = cmd.kind === 'same' && prev && prev.li === S.li ? prev : S;
     const said = cmd.kind === 'set' ? { kg: cmd.kg, reps: cmd.reps } : {};
@@ -586,7 +587,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
     const odd = A2.guardSet({ kg: said.kg === undefined ? undefined : kg, reps: said.reps === undefined ? undefined : reps }, { kg: S.kg, reps: S.reps });
     if (odd) {
       const picks = (odd.kg ?? [kg]).flatMap((k) => (odd.reps ?? [reps]).map((r) => [`${num(k)} kg × ${r}`, () => logOrRest(k, r)]));
-      return post([bubble, coach(`${odd.kg ? `${num(kg)} kg` : `${reps} reps`} is far from your ${odd.kg ? `${num(S.kg)} kg` : `${S.reps} reps`}. Which one?`), options(picks)], [bubble, from]);
+      return post([bubble, coach(`${odd.kg ? `${num(kg)} kg` : `${reps} reps`} is far from your ${odd.kg ? `${num(S.kg)} kg` : `${S.reps} reps`}. Which one?`), options(picks, true)], [bubble, from]);
     }
     const note = fixed.heard ? `I heard ${fixed.heard.kg !== undefined ? num(fixed.heard.kg) : fixed.heard.reps} and took it as ${fixed.heard.kg !== undefined ? `${num(kg)} kg` : `${reps} reps`}. Say “undo” if that’s wrong.` : '';
     logOrRest(kg, reps, from, note);
@@ -647,7 +648,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
   function stopListening() {
     clearTimeout(settle);
     if (dict) dict.stop().catch(() => {});
-    else if (rec) { rec.stop(); setTimeout(() => ended(''), 700); } // some browsers never answer a stop
+    else if (rec) { const r = rec; r.stop(); setTimeout(() => { if (rec === r) ended(''); }, 700); } // some browsers never answer a stop
   }
 
   $('#startBtn').onclick = start;
@@ -656,16 +657,17 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
     heardText = ''; showHeard('');
     if (dict) { dict.start().catch((err) => ended(err?.code === 'not_granted' ? 'blocked' : err?.code === 'stopped' || err?.code === 'dismissed' ? '' : 'down')); return; }
     if (!SR) { tell('This browser can’t listen', 'Type it instead.'); say.focus(); return; }
-    rec = new SR(); rec.lang = navigator.language?.startsWith('da') ? 'da-DK' : 'en-US'; rec.interimResults = true; // the parser reads Danish sets too
+    const r = rec = new SR(); rec.lang = navigator.language?.startsWith('da') ? 'da-DK' : 'en-US'; rec.interimResults = true; // the parser reads Danish sets too
     let fail = '';
     rec.onresult = (e) => {
+      if (rec !== r) return;
       let text = '', final = true;
       for (const r of e.results) { text += r[0].transcript; if (!r.isFinal) final = false; }
       showHeard(text.trim());
       if (final) heardText = text.trim();
     };
     rec.onerror = (e) => { fail = e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'blocked' : e.error === 'no-speech' ? 'quiet' : e.error === 'aborted' ? '' : 'down'; };
-    rec.onend = () => ended(fail || (heardText ? '' : 'quiet'));
+    rec.onend = () => { if (rec === r) ended(fail || (heardText ? '' : 'quiet')); }; // a late end from an earlier recording must not close this one
     listening(true); // shown on the tap itself, not when the browser gets round to it
     try { rec.start(); } catch { ended('down'); }
   };
