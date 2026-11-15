@@ -710,7 +710,7 @@ function enterWork(fromToday = true) {
   go($('wp'), { transform: 'scale(1.06)' }, S.slow);
   paintChips(); coachLine(); paintSetCtl(true); race(false);
   V.work.style.visibility = 'visible';
-  if (st.resting) { setS($('setCtl'), { opacity: '0', visibility: 'hidden' }); } else { setS($('setCtl'), { opacity: '1', visibility: 'visible', transform: 'none' }); setS($('restClock'), { opacity: '0', visibility: 'hidden' }); }
+  if (st.resting) { setS($('setCtl'), { opacity: '0', visibility: 'hidden' }); setS($('restClock'), { visibility: 'visible' }); go($('restClock'), { opacity: '1', transform: 'none' }, S.calm, fromToday ? 120 : 0); } else { setS($('setCtl'), { opacity: '1', visibility: 'visible', transform: 'none' }); setS($('restClock'), { opacity: '0', visibility: 'hidden' }); }
   viewIn('work', fromToday ? 120 : 0);
   if (!st.resting) { nums.kg.v = ''; $('kgNum').textContent = ''; later(() => nums.kg.set(fmt(st.kg[st.set - 1]), { stagger: 70 }), 260); }
 }
@@ -779,6 +779,7 @@ function record(i) {
   later(() => buzz([8, 40, 8]), 520);
 }
 function keepGoing() {
+  if (!st.inPR) return;   // a second tap during the exit does nothing
   const coin = $('coin'), i = st.bestSet, tick = $('sets').children[i].querySelector('.tick');
   const a = coin.getBoundingClientRect(), b = tick.getBoundingClientRect();
   const dx = (b.left + b.width / 2 - (a.left + a.width / 2)) / Z, dy = (b.top + b.height / 2 - (a.top + a.height / 2)) / Z;
@@ -854,11 +855,15 @@ function endRest() {
   if (fillAnim) { const f = $('restFill'), cur = getComputedStyle(f).transform; fillAnim.cancel(); fillAnim = null; f.animate([{ transform: cur }, { transform: 'scaleX(0)' }], { duration: 200, easing: 'ease-out', fill: 'forwards' }); }
   const ctl = $('setCtl'), rc = $('restClock');
   go(rc, { opacity: '0', transform: 'translateY(-18px)' }, OUT).then(() => { if (!st.resting) rc.style.visibility = 'hidden'; });
+  if (st.view !== 'work') { setS(rc, { visibility: 'hidden' }); nextPop(); return; }   // ended on Today: the pop-up says so, the controls wait for resume
   ctl.style.visibility = 'visible'; ctl.querySelectorAll('[data-in]').forEach((el) => setS(el, { opacity: '1', transform: 'none' }));
   setS(ctl, { opacity: '0', transform: 'translateY(24px)' }); go(ctl, { opacity: '1', transform: 'none' }, S.calm, 100);
   nums.kg.v = ''; nums.rp.v = ''; $('kgNum').textContent = ''; $('rpNum').textContent = '';
   coachLine(); paintChips();
   later(() => { paintSetCtl(); nums.kg.v = ''; $('kgNum').textContent = ''; nums.kg.set(fmt(st.kg[st.set - 1]), { stagger: 70 }); nums.rp.v = ''; $('rpNum').textContent = ''; nums.rp.set(String(st.reps[st.set - 1]), { stagger: 0 }); }, 120);
+  nextPop();
+}
+function nextPop() {
   const i = st.set - 1;
   buzz([10, 50, 10]);
   later(() => pop(isBest(i) ? t('p.next', { n: st.set, kg: fmt(st.kg[i]), r: st.reps[i] }) : t('p.nextPlain', { n: st.set, kg: fmt(st.kg[i]), r: st.reps[i] }), { kind: isBest(i) ? 'gold' : '' }), 300);
@@ -962,7 +967,7 @@ function cleanSlate() {
   setS($('restFill'), { transform: 'scaleX(0)' }); setS($('holdFill'), { transform: 'scaleX(0)' });
   setS($('imFirst'), { opacity: '0' }); setS($('imSun'), { opacity: '0' }); setS($('wp'), { transform: 'none' }); setS($('night'), { opacity: '0' });
   $('setCtl').classList.remove('locked'); $('plates').textContent = ''; shown = []; bestOn = false; lit(false); $('logBtn').classList.remove('resting'); driftA = null;
-  st = fresh();
+  st = fresh(); setProtein(0, true);
 }
 function jump(where) {
   cleanSlate();
@@ -993,7 +998,7 @@ $('startBtn').onclick = async () => {
   go($('wp'), { transform: 'scale(1.06)' }, S.slow);
   await viewOut('today'); enterWork(true);
 };
-$('minBtn').onclick = async () => { closeAsk(); await viewOut('work'); st.view = 'today'; paintToday(); go($('wp'), { transform: 'none' }, S.slow); viewIn('today'); drift(true); };
+$('minBtn').onclick = async () => { closeAsk(); go($('restClock'), { opacity: '0', transform: 'translateY(-14px)' }, { ...OUT, duration: 200 }); await viewOut('work'); ['restClock', 'setCtl'].forEach((id) => { $(id).style.visibility = 'hidden'; }); st.view = 'today'; paintToday(); go($('wp'), { transform: 'none' }, S.slow); viewIn('today'); drift(true); };
 $('doneBtn').onclick = async () => { await viewOut('fin'); st.view = 'today'; paintToday(); setClock(); go($('imSun'), { opacity: '.25' }, S.light); viewIn('today'); drift(true); };
 $('logBtn').addEventListener('click', (e) => { if (st.finishing) { if (e.detail === 0) finish(); return; } logSet(); });
 $('logBtn').addEventListener('pointerdown', holdStart);
