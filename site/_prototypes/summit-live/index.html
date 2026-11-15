@@ -439,7 +439,7 @@ addEventListener('deviceorientation',e=>{if(e.gamma==null)return;parallax(Math.m
 const PLAN=[{kg:82.5,r:8},{kg:82.5,r:8},{kg:85,r:6},{kg:85,r:6}];
 const LAST=[{kg:80,r:8},{kg:82.5,r:8},{kg:82.5,r:6},{kg:82.5,r:6}];
 const BEST_KG=82.5;
-const S={tab:'today',set:0,logged:[],kg:PLAN[0].kg,reps:PLAN[0].r,started:null,done:false,pr:false,food:{kcal:1420,p:96,c:130,f:41},water:1,meals:[]};
+const S={tab:'today',set:0,logged:[],kg:PLAN[0].kg,reps:PLAN[0].r,started:null,done:false,pr:false,food:{kcal:1420,p:96,c:130,f:41},water:.5,meals:[],secs:0};
 const KCAL=2400,PROT=160,CARB=280,FAT=75;
 const tonLast=i=>LAST.slice(0,i+1).reduce((s,x)=>s+x.kg*x.r,0);
 const tonYou=()=>S.logged.reduce((s,x)=>s+x.kg*x.r,0);
@@ -506,8 +506,8 @@ function renderToday(){
   const el=$('#s-today');el.innerHTML=todayHTML();
   rollReady=new Roll($('#rnum'),0,x=>String(Math.round(x)));
   protRoll=new Roll($('#tprot'),0,x=>String(Math.round(x)));
-  watRoll=new Roll($('#twat'),0,x=>x.toFixed(1));
-  $('#start').addEventListener('click',()=>{vib(10);openWork()});
+  watRoll=new Roll($('#twat'),0,x=>x.toFixed(2));
+  $('#start').addEventListener('click',()=>{vib(10);S.done?(hideWorld(),finishWork()):openWork()});
   $$('[data-go]',el).forEach(b=>b.addEventListener('click',()=>{vib(8);showTab(b.dataset.go)}));
   $('#sunchip').addEventListener('click',()=>{sky.t=null;paintSky()});
   initDial(); todayEnter();
@@ -519,15 +519,17 @@ async function todayEnter(){
   arcv.style.strokeDashoffset=100-R;dg.style.transform=`rotate(${R*1.8}deg)`;
   arcv.animate([{strokeDashoffset:100},{strokeDashoffset:100-R}],{duration:dur,easing:SP.big.easing});
   dg.animate([{transform:'rotate(0deg)'},{transform:`rotate(${R*1.8}deg)`}],{duration:dur,easing:SP.big.easing});
-  rollReady.set(R); setTimeout(()=>{protRoll.set(S.food.p);watRoll.set(S.water*.5);},120);
-  setFill($('#tpbar'),S.food.p/PROT);setFill($('#twbar'),S.water*.5/2.5);
+  rollReady.set(R); setTimeout(()=>{protRoll.set(S.food.p);watRoll.set(S.water);},120);
+  setFill($('#tpbar'),S.food.p/PROT);setFill($('#twbar'),S.water/2.5);
   $$('#tsheet,.minis .mini,.hero .lbl,.hero .word',$('#s-today')).forEach((e,i)=>e.animate([{transform:'translateY(22px)',opacity:0},{transform:'none',opacity:1}],{duration:SP.soft.duration,easing:SP.soft.easing,delay:120+i*55,fill:'backwards'}));
 }
 function setFill(el,f){f=Math.max(0,Math.min(1,f));const from=getComputedStyle(el).transform;el.style.setProperty('--f',f);const a=el.animate([{transform:from},{transform:`scaleX(${f})`}],{duration:SP.soft.duration,easing:SP.soft.easing});}
+const bestSet=()=>S.logged.reduce((b,x)=>x.kg>b.kg||(x.kg===b.kg&&x.r>b.r)?x:b,{kg:0,r:0});
 function todayDone(){
-  $('#tt').textContent='Push done';$('#tsub').textContent='Bench 85 kg · a new best';$('#start').textContent='Review';
-  $('#tp').innerHTML='Nice work. <b>One personal best</b> today. Eat within two hours and keep tomorrow light.';
-  $('.stats',$('#tsheet')).innerHTML='<span>Volume<b>'+fmtN(tonYou())+' kg</b></span><span>Best set<b>85 × 6</b></span><span>Next<b>Thu · Pull</b></span>';
+  const bs=bestSet();
+  $('#tt').textContent='Push done';$('#tsub').textContent=S.pr?`Bench ${fmtKg(bs.kg)} kg · a new best`:`Bench top set ${fmtKg(bs.kg)} × ${bs.r}`;$('#start').textContent='Review';
+  $('#tp').innerHTML=S.pr?'Nice work. <b>One personal best</b> today. Eat within two hours and keep tomorrow light.':'Session logged. Eat within two hours and keep tomorrow light.';
+  $('.stats',$('#tsheet')).innerHTML='<span>Volume<b>'+fmtN(tonYou())+' kg</b></span><span>Best set<b>'+fmtKg(bs.kg)+' × '+bs.r+'</b></span><span>Next<b>Thu · Pull</b></span>';
   $('#rword').textContent='Earned it';
 }
 
@@ -693,10 +695,12 @@ function tickRest(){
   restRoll.set(left);
   const f=left/restTotal; // colour follows the value: cool mint -> warm amber
   $('#rring').style.stroke=f>.5?'#8ff0cf':f>.2?'#d6f0a0':'#ffd27d';
-  if(left<=0){clearInterval(restT);vib([20,60,20]);$('#rtip').textContent='Ready when you are.';setTimeout(()=>restRes&&endRest(),1600)}
+  if(left<=0){clearInterval(restT);vib([20,60,20]);$('#rtip').textContent='Ready when you are.';clearTimeout(restDone);restDone=setTimeout(()=>restRes&&endRest(),1600)}
 }
 function setTip(msg){const t=$('#rtip');if(!t)return;t.animate([{opacity:1},{opacity:0}],{duration:160,fill:'forwards'}).onfinish=()=>{t.textContent=msg;t.getAnimations().forEach(a=>a.cancel());t.animate([{opacity:0,transform:'translateY(8px)'},{opacity:1,transform:'none'}],{duration:SP.soft.duration,easing:SP.soft.easing})}}
+let restDone=0;
 function shiftRest(d){
+  clearTimeout(restDone);if(restEnd<=Date.now()){restEnd=Date.now()}clearInterval(restT);restT=setInterval(tickRest,250);
   restEnd+=d*1000;restTotal=Math.max(15,restTotal+d);
   const f=Math.max(0,(restEnd-Date.now())/1000/restTotal);
   restAnim.cancel();restAnim=$('#rring').animate([{strokeDashoffset:100*(1-f)},{strokeDashoffset:100}],{duration:Math.max(0,restEnd-Date.now()),easing:'linear',fill:'forwards'});
@@ -758,17 +762,17 @@ async function prMoment(rec){
 /* ======================= FINISH ======================= */
 async function finishWork(){
   clearInterval(timerId);go($('#work'),{opacity:0},{duration:260,easing:'ease-out'});
-  const f=$('#fin'),i=$('#fin-in'),secs=Math.floor((Date.now()-S.started)/1000);
+  const f=$('#fin'),i=$('#fin-in'),secs=S.started?Math.floor((Date.now()-S.started)/1000):S.secs;S.secs=secs;const dg=Math.round(tonYou()-tonLast(3));
   const mins=Math.max(1,Math.round(secs/60));
-  i.innerHTML=`<div class="lbl" style="margin-top:14px">Workout complete</div><div class="coin" id="fcoin"><b>PR</b></div>
-   <div class="box frost"><h2>Push, done.</h2><div style="font-size:16px;line-height:23px;font-weight:500;color:var(--ink2);text-wrap:balance">Bench went up for the first time in three weeks. The ghost lost by <b style="color:#fff">${fmtN(Math.round(tonYou()-tonLast(3)))} kg</b>.</div>
+  i.innerHTML=`<div class="lbl" style="margin-top:14px">Workout complete</div>${S.pr?'<div class="coin" id="fcoin"><b>PR</b></div>':'<div class="coin" id="fcoin" style="visibility:hidden"></div>'}
+   <div class="box frost"><h2>Push, done.</h2><div style="font-size:16px;line-height:23px;font-weight:500;color:var(--ink2);text-wrap:balance">${S.pr?'Bench went up for the first time in three weeks. ':'Session logged. '}The ghost ${dg>=0?'lost':'won'} by <b style="color:#fff">${fmtN(Math.abs(dg))} kg</b>.</div>
    <div class="bigstat"><div>VOLUME<span id="fv"></span></div><div>TIME<span id="ft"></span></div><div>RECORDS<span id="fr"></span></div></div>
    <button class="go press" id="fdone" style="width:100%;margin-top:22px">Back to Today</button></div>`;
   f.classList.add('on');
   i.style.opacity=1;i.animate([{opacity:0,transform:'translateY(40px)'},{opacity:1,transform:'none'}],{duration:SP.soft.duration,easing:SP.soft.easing});
   const v=new Roll($('#fv'),0,x=>fmtN(Math.round(x))),t=new Roll($('#ft'),0,x=>String(x)+'\u00a0min'),r=new Roll($('#fr'),0,x=>String(x));
   $('#fcoin').animate([{transform:'scale(.5) rotateY(180deg)',opacity:0},{transform:'none',opacity:1}],{duration:SP.big.duration+200,easing:SP.big.easing});
-  await wait(260);v.set(tonYou());await wait(150);t.set(mins);await wait(150);r.set(1);
+  await wait(260);v.set(tonYou());await wait(150);t.set(mins);await wait(150);r.set(S.pr?1:0);
   $('#fdone').addEventListener('click',()=>{
     f.animate([{opacity:1},{opacity:0}],{duration:240,fill:'forwards'}).onfinish=()=>{f.classList.remove('on');f.getAnimations().forEach(a=>a.cancel())};
     $('#work').classList.remove('on');S.done=true;S.started=null;showWorld();
@@ -847,7 +851,7 @@ function healthHTML(){return `
     <div style="flex:1"><div class="lbl">Water</div><div class="v"><span id="hwat"></span><small>L</small></div><div style="font-size:13.5px;font-weight:600;color:var(--ink2);margin:2px 0 12px" id="hwc"></div><button class="add press" id="addw">+ 250 ml</button></div></div>`}
 let hwRoll,hwatRoll,chartP;
 function renderHealth(){
-  $('#s-health').innerHTML=healthHTML();hwRoll=new Roll($('#hw'),0,x=>x.toFixed(1));hwatRoll=new Roll($('#hwat'),0,x=>x.toFixed(1));
+  $('#s-health').innerHTML=healthHTML();hwRoll=new Roll($('#hw'),0,x=>x.toFixed(1));hwatRoll=new Roll($('#hwat'),0,x=>x.toFixed(2));
   $$('.w1,.w2',$('#liq')).forEach(w=>w.style.backgroundImage=`url("data:image/svg+xml,${encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 24" preserveAspectRatio="none"><path d="M0 12 Q12.5 2 25 12 T50 12 T75 12 T100 12 V24 H0Z" fill="rgba(150,225,255,.8)"/></svg>')}")`);
   const mn=Math.min(...WEIGHTS)-.3,mx=Math.max(...WEIGHTS)+.3;
   chartP=WEIGHTS.map((w,i)=>[i/(WEIGHTS.length-1)*300,8+(1-(w-mn)/(mx-mn))*108]);
@@ -861,17 +865,17 @@ function renderHealth(){
   c.addEventListener('pointerdown',e=>{down=true;c.setPointerCapture(e.pointerId);scrub(e)});
   c.addEventListener('pointermove',e=>{if(down)scrub(e)});
   c.addEventListener('pointerup',()=>{down=false;$('#ccur').style.opacity=0;hwRoll.set(WEIGHTS[WEIGHTS.length-1]);$('#hwd').textContent='Down 0.6 kg this week';placePt()});
-  $('#addw').addEventListener('click',()=>{S.water=Math.min(5,S.water+1);vib(8);waterPaint(true);watRoll&&watRoll.set(S.water*.5);const tb=$('#twbar');tb&&setFill(tb,S.water*.5/2.5);toast('250 ml logged','Undo',()=>{S.water=Math.max(0,S.water-1);waterPaint(true);watRoll&&watRoll.set(S.water*.5)})});
+  $('#addw').addEventListener('click',()=>{S.water=Math.min(2.5,S.water+.25);vib(8);waterPaint(true);watRoll&&watRoll.set(S.water);const tb=$('#twbar');tb&&setFill(tb,S.water/2.5);toast('250 ml logged','Undo',()=>{S.water=Math.max(0,S.water-.25);waterPaint(true);watRoll&&watRoll.set(S.water);tb&&setFill(tb,S.water/2.5)})});
   addEventListener('deviceorientation',e=>{if(e.gamma!=null)$('#liq')&&$('#liq').style.setProperty('--tilt',Math.max(-25,Math.min(25,-e.gamma/2))+'deg')});
   $('#gl').addEventListener('pointermove',e=>{const r=e.currentTarget.getBoundingClientRect();$('#liq').style.setProperty('--tilt',(-((e.clientX-r.left)/r.width-.5)*30)+'deg')});
   $('#gl').addEventListener('pointerleave',()=>$('#liq').style.setProperty('--tilt','0deg'));
 }
 function placePt(){const c=$('#chart'),r=c.getBoundingClientRect(),p=chartP[chartP.length-1];$('#cpt').style.transform=`translate(${r.width}px,${p[1]/130*r.height}px)`}
 function waterPaint(anim){
-  const l=$('#liq'),pct=Math.min(1,S.water*.25/2.5*2)  ;const lvl=100-pct*88;
+  const l=$('#liq'),pct=Math.min(1,S.water/2.5);const lvl=100-pct*88;
   const to={transform:`translateY(${lvl}%) rotate(var(--tilt,0deg))`};
   if(anim){const from=getComputedStyle(l).transform;l.style.transform=to.transform;l.animate([{transform:from},{transform:to.transform}],{duration:SP.big.duration*1.3,easing:SP.big.easing})}else l.style.transform=to.transform;
-  hwatRoll.set(S.water*.5);$('#hwc').textContent=`${Math.round(S.water*.5/2.5*100)}% of 2.5 L`;
+  hwatRoll.set(S.water);$('#hwc').textContent=`${Math.round(S.water/2.5*100)}% of 2.5 L`;
 }
 function healthEnter(){
   if(!S.he){S.he=1;hwRoll.set(0,{anim:false});hwatRoll.set(0,{anim:false});
