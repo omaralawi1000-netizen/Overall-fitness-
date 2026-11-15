@@ -1,0 +1,688 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#EDEFF3">
+<title>Aven Aloud</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Schibsted+Grotesk:ital,wght@0,400..900;1,400..900&display=swap">
+<style>
+/* Layout: one conversation fills the phone. The Coach's words sit straight on the page, your side is right-aligned pills,
+   and whatever you can act on is a card in the thread or docked above the ask bar. One light at the bottom is the Coach. */
+:root {
+  color-scheme: light;
+  --paper: #EDEFF3;
+  --paper-veil: rgba(237, 239, 243, .74);
+  --ink: #14162B;
+  --ink-2: rgba(20, 22, 43, .74);
+  --ink-3: rgba(20, 22, 43, .58);
+  --line: rgba(20, 22, 43, .09);
+  --card: rgba(255, 255, 255, .44);
+  --frost: rgba(255, 255, 255, .46);
+  --edge: inset 0 0 0 1px rgba(255, 255, 255, .72), 0 10px 30px -18px rgba(20, 22, 43, .35);
+  --voice: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --gut: 22px;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+  --spring: linear(0, .006, .025 2.8%, .101 6.1%, .539 18.9%, .721 25.3%, .849 31.5%, .937 38.1%, .968 41.8%, .991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001);
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+*, *::before, *::after { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { height: 100%; margin: 0; background: var(--paper); color: var(--ink); overflow: hidden; overscroll-behavior: none; }
+body { font-family: var(--voice); font-size: 16px; -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+.stage { height: 100%; display: grid; place-items: center; }
+.app { position: relative; width: 100%; height: 100%; isolation: isolate; }
+@media (min-width: 520px) and (min-height: 640px) {
+  html, body { background: #D9DCE3; }
+  .app { width: 384px; height: min(832px, 100% - 40px); border-radius: 44px; overflow: hidden; background: var(--paper); box-shadow: 0 0 0 10px #fff, 0 40px 80px -40px rgba(20, 22, 43, .5); }
+}
+
+/* ---------- the light ---------- */
+.light { position: absolute; inset: 0 0 calc(-1 * env(safe-area-inset-bottom, 0px)) 0; overflow: hidden; z-index: -1; }
+.glow { position: absolute; inset: 0; transform: translate3d(0, 100%, 0); will-change: transform; }
+/* moods are stacked: the workout's blue fades in over the morning, and a record's gold rises through the blue from
+   below instead of fading, because blue and gold mixed on the way would pass through grey */
+.glow canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.glow canvas[data-m="work"] { opacity: 0; transition: opacity .6s linear; }
+.app:not([data-mood="morning"]) .glow canvas[data-m="work"] { opacity: 1; }
+.glow canvas[data-m="gold"] { transform: translate3d(0, 104%, 0); transition: transform .6s var(--ease); will-change: transform; }
+.app[data-mood="gold"] .glow canvas[data-m="gold"] { transform: none; transition: transform .8s var(--spring); }
+
+/* ---------- top ---------- */
+.top { position: absolute; inset: 0 0 auto 0; z-index: 3; height: 60px; display: flex; align-items: center; gap: 12px;
+  padding-left: max(var(--gut), env(safe-area-inset-left, 0px)); padding-right: max(14px, env(safe-area-inset-right, 0px)); }
+.top::before { content: ""; position: absolute; inset: calc(-1 * env(safe-area-inset-top, 0px)) 0 -22px 0; z-index: -1;
+  background: linear-gradient(var(--paper-veil) 45%, transparent);
+  -webkit-backdrop-filter: blur(16px) saturate(1.5); backdrop-filter: blur(16px) saturate(1.5);
+  -webkit-mask-image: linear-gradient(#000 58%, transparent); mask-image: linear-gradient(#000 58%, transparent); }
+.top h1 { font-size: 17px; font-weight: 700; letter-spacing: -.01em; margin: 0; }
+.top .sub { font-size: 14px; font-weight: 500; color: var(--ink-2); }
+.top #clock { min-width: 38px; }
+.top .segs { display: flex; gap: 4px; margin-left: 4px; }
+.top .segs i { width: 18px; height: 5px; border-radius: 3px; background: rgba(20, 22, 43, .16); }
+.top .segs i.on { background: var(--ink); }
+.top .segs i.now { background: linear-gradient(90deg, var(--ink) var(--p, 50%), rgba(20, 22, 43, .16) 0); }
+.top .sp { flex: 1; }
+.pillbtn { height: 44px; padding: 0 16px; border-radius: 22px; font-size: 14px; font-weight: 650; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
+  background: var(--card); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .8); transition: transform .12s var(--ease); }
+.pillbtn:active, .go:active, .num:active, .row:active, .mic:active, .send:active { transform: scale(.96); }
+.pillbtn.ink { background: var(--ink); color: #fff; box-shadow: none; }
+.pillbtn[disabled] { opacity: .45; pointer-events: none; }
+
+/* ---------- the thread ---------- */
+.feed { position: absolute; inset: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none;
+  padding: 72px max(var(--gut), env(safe-area-inset-right, 0px)) calc(var(--dock, 150px) + 18px) max(var(--gut), env(safe-area-inset-left, 0px)); transition: opacity .25s linear; }
+.feed::-webkit-scrollbar { display: none; }
+.app.hush .feed { opacity: 0; }
+.thread { display: flex; flex-direction: column; gap: 14px; }
+.c { margin: 0; max-width: 31ch; font-size: 19px; line-height: 26px; font-weight: 500; letter-spacing: -.008em; text-wrap: pretty; }
+.c.big { max-width: none; font-size: 31px; line-height: 35px; font-weight: 650; letter-spacing: -.028em; text-wrap: balance; margin-top: 6px; }
+.c.hero:first-child { margin-top: 2px; }
+.c.hero { font-size: 37px; line-height: 40px; letter-spacing: -.032em; }
+.c.mid { max-width: none; font-size: 25px; line-height: 30px; font-weight: 600; letter-spacing: -.02em; text-wrap: balance; }
+.c.soft { font-size: 16px; line-height: 23px; color: var(--ink-2); }
+.c .w { display: inline-block; animation: word .44s var(--ease) both; animation-delay: calc(var(--d, 0ms) + var(--i) * 26ms); }
+@keyframes word { from { opacity: 0; transform: translate3d(0, 7px, 0); } }
+.stamp { font-size: 13px; font-weight: 500; color: var(--ink-3); margin: 10px 0 -6px; }
+.stamp.more { align-self: flex-start; min-height: 44px; margin: -6px 0 -16px; text-decoration: underline; text-underline-offset: 3px; }
+.fold { display: flex; flex-direction: column; gap: 14px; }
+.me { align-self: flex-end; max-width: 80%; padding: 9px 15px; border-radius: 20px; font-size: 15px; line-height: 20px; font-weight: 600;
+  box-shadow: inset 0 0 0 1.5px rgba(20, 22, 43, .16); transform-origin: 100% 50%; }
+.me.set { background: var(--ink); color: #fff; box-shadow: none; padding: 10px 16px 10px 12px; font-size: 17px; font-weight: 650; display: flex; align-items: center; gap: 10px; transform-origin: 0 0; }
+.me.set .n { font-size: 12px; font-weight: 700; width: 22px; height: 22px; border-radius: 50%; background: rgba(255, 255, 255, .16); display: grid; place-items: center; }
+.me.set svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; opacity: .8; }
+.card { border-radius: 22px; background: var(--card); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .8); overflow: hidden; }
+.row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 16px 8px 18px; text-align: left; transition: transform .12s var(--ease); }
+.row + .row { box-shadow: 0 -1px 0 var(--line); }
+.row .k { display: block; font-size: 13px; font-weight: 550; color: var(--ink-3); }
+.row .v { display: block; font-size: 16px; font-weight: 600; letter-spacing: -.01em; margin-top: 1px; }
+.row .txt { flex: 1; min-width: 0; }
+.viz { flex: none; width: 52px; height: 26px; display: flex; align-items: flex-end; justify-content: flex-end; gap: 4px; }
+.viz i { display: block; border-radius: 3px; background: rgba(20, 22, 43, .16); }
+.viz i.on { background: var(--ink); }
+.viz.marks i { width: 6px; height: 20px; }
+.viz.week i { width: 4px; }
+.viz.bar { position: relative; height: 6px; border-radius: 3px; background: rgba(20, 22, 43, .16); overflow: hidden; justify-content: flex-start; align-self: center; }
+.viz.bar i { height: 100%; border-radius: 3px; background: var(--ink); }
+.offer { padding: 16px 18px 18px; }
+.offer .k { font-size: 13px; font-weight: 550; color: var(--ink-3); }
+.offer .swap { display: flex; align-items: baseline; gap: 10px; margin: 4px 0 14px; font-size: 26px; font-weight: 700; letter-spacing: -.025em; }
+.offer .swap s { text-decoration: none; color: var(--ink-3); font-weight: 550; }
+.offer .swap svg { width: 20px; height: 20px; stroke: var(--ink-3); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; align-self: center; flex: none; }
+.offer .acts, .opts { display: flex; gap: 8px; flex-wrap: wrap; }
+.card .pillbtn, .opts .pillbtn:not(.ink) { background: rgba(255, 255, 255, .92); box-shadow: 0 1px 2px rgba(20, 22, 43, .1); }
+.offer .done { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 16px; font-weight: 600; }
+.sum { padding: 6px 18px; }
+.sum div { padding: 11px 0; font-size: 15px; line-height: 21px; }
+.sum div + div { box-shadow: 0 -1px 0 var(--line); }
+.sum b { display: block; font-weight: 600; }
+.sum span { color: var(--ink-2); }
+
+/* ---------- the dock ---------- */
+.dock { position: absolute; inset: auto 0 0 0; z-index: 4; display: flex; flex-direction: column; gap: 8px;
+  padding: 0 max(12px, env(safe-area-inset-right, 0px)) 12px max(12px, env(safe-area-inset-left, 0px)); }
+.frost { background: var(--frost); -webkit-backdrop-filter: blur(22px) saturate(1.6); backdrop-filter: blur(22px) saturate(1.6); box-shadow: var(--edge); }
+.chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 0 2px; }
+.chips::-webkit-scrollbar { display: none; }
+.ask { background: rgba(255, 255, 255, .62); height: 60px; border-radius: 30px; display: flex; align-items: center; gap: 4px; padding: 0 8px; }
+.ask input { flex: 1; min-width: 0; height: 44px; border: 0; background: none; font: inherit; font-size: 16px; font-weight: 500; color: var(--ink); padding: 0 6px; }
+.ask input::placeholder { color: var(--ink-3); }
+.ask input:focus { outline: none; }
+.mic, .send { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; flex: none; transition: transform .12s var(--ease), background-color .15s linear, color .15s linear; }
+.mic svg, .send svg { width: 22px; height: 22px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.mic { position: relative; background: var(--ink); color: #fff; }
+.mic::after { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 0 0 2px var(--ink); opacity: 0; }
+.app.listening .mic::after { animation: ring 1.4s var(--ease) infinite; }
+@keyframes ring { from { opacity: .5; transform: scale(1); } to { opacity: 0; transform: scale(1.7); } }
+.send { color: var(--ink-3); }
+.send.ready { background: rgba(20, 22, 43, .08); color: var(--ink); }
+
+.live { border-radius: 30px; padding: 16px 18px 18px; height: 236px; display: flex; flex-direction: column; }
+.live .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.live .name { font-size: 17px; font-weight: 700; letter-spacing: -.012em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.live .where { font-size: 13px; font-weight: 550; color: var(--ink-2); white-space: nowrap; }
+.nums { display: flex; align-items: baseline; gap: 8px; margin: 4px -4px 0; height: 72px; }
+.nums .pillbtn { align-self: center; margin-right: 6px; }
+.num { display: inline-flex; align-items: baseline; gap: 5px; padding: 0 10px; border-radius: 16px; height: 68px; transition: transform .12s var(--ease), background-color .15s linear; }
+.num b { font-size: 56px; line-height: 68px; font-weight: 700; letter-spacing: -.04em; }
+.num i { font-style: normal; font-size: 17px; font-weight: 600; color: var(--ink-2); }
+.num { background: rgba(255, 255, 255, .34); }
+.num.on { background: rgba(255, 255, 255, .85); box-shadow: inset 0 0 0 1.5px var(--ink); }
+.nums .x { font-size: 24px; font-weight: 500; color: var(--ink-3); }
+.clock { font-size: 58px; line-height: 68px; font-weight: 700; letter-spacing: -.04em; padding-left: 6px; }
+.under { height: 44px; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 550; color: var(--ink-2); }
+.under .sp, .nums .sp { flex: 1; }
+.under .lab { flex: 1; text-align: center; color: var(--ink); font-weight: 600; }
+.under .pillbtn { min-width: 76px; justify-content: center; }
+.go { margin-top: auto; flex: none; height: 56px; border-radius: 28px; background: var(--ink); color: #fff; font-size: 17px; font-weight: 650; letter-spacing: -.01em; transition: transform .12s var(--ease); }
+.go.quiet { background: rgba(255, 255, 255, .7); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .8); }
+.live .in { display: contents; }
+.swapin > * { animation: swapin .22s var(--ease) both; }
+@keyframes swapin { from { opacity: 0; transform: translate3d(0, 6px, 0); } }
+
+/* ---------- what the Coach heard ---------- */
+.heard { position: absolute; z-index: 2; left: max(var(--gut), env(safe-area-inset-left, 0px)); right: max(var(--gut), env(safe-area-inset-right, 0px)); bottom: calc(var(--dock, 150px) + 26px);
+  pointer-events: none; opacity: 0; transition: opacity .2s linear; }
+.app.listening .heard, .heard.show { opacity: 1; }
+.heard .k { font-size: 13px; font-weight: 600; color: var(--ink-2); margin-bottom: 6px; }
+.heard p { margin: 0; font-size: 40px; line-height: 43px; font-weight: 650; letter-spacing: -.03em; text-wrap: balance; }
+.heard p.dim { color: var(--ink-3); }
+
+@media (prefers-reduced-motion: reduce) {
+  .c .w, .swapin > *, .app.listening .mic::after { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="app" id="app" data-mood="morning">
+    <div class="light" aria-hidden="true"><div class="glow" id="glow">
+      <canvas data-m="morning"></canvas><canvas data-m="work"></canvas><canvas data-m="gold"></canvas>
+    </div></div>
+
+    <header class="top" id="top"></header>
+
+    <main class="feed" id="feed"><div class="thread" id="thread" aria-live="polite"></div></main>
+
+    <div class="heard" id="heard" aria-live="polite"><div class="k" id="heardK"></div><p id="heardP"></p></div>
+
+    <div class="dock" id="dock">
+      <div class="chips" id="chips"></div>
+      <button class="go" id="startBtn">Start Push</button>
+      <section class="live frost" id="live" hidden aria-label="This set"></section>
+      <form class="ask frost" id="ask" autocomplete="off">
+        <button type="button" class="mic" id="mic" aria-label="Talk to your coach">
+          <svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v3"/></svg>
+        </button>
+        <input id="say" type="text" inputmode="text" enterkeyhint="send" aria-label="Message your coach" placeholder="Message your coach">
+        <button type="submit" class="send" id="send" aria-label="Send">
+          <svg viewBox="0 0 24 24"><path d="M12 19V5M6 11l6-6 6 6"/></svg>
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="set-parser.js"></script>
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const app = $('#app'), feed = $('#feed'), thread = $('#thread'), dock = $('#dock'), top = $('#top');
+  const chips = $('#chips'), live = $('#live'), say = $('#say'), send = $('#send'), mic = $('#mic'), glow = $('#glow');
+  const heard = $('#heard'), heardK = $('#heardK'), heardP = $('#heardP');
+  const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const css = getComputedStyle(document.documentElement);
+  const SPRING = css.getPropertyValue('--spring').trim(), EASE = css.getPropertyValue('--ease').trim();
+  const FAST = location.hash === '#fast'; // short rests, for trying the whole workout quickly
+  const num = (n) => String(Math.round(n * 100) / 100);
+  const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
+  const ARROW = '<svg viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></svg>';
+
+  /* ---------- the day's facts (a made-up person; the Coach's lines are written, not generated) ---------- */
+  const PUSH = [
+    { name: 'Bench press', sets: 4, kg: 80, reps: 8, rest: 120, step: 2.5, lastKg: 80, last: [8, 8, 7, 6], best: { kg: 80, reps: 8 } },
+    { name: 'Incline press', sets: 3, kg: 28, reps: 10, rest: 90, step: 2, lastKg: 28, last: [10, 9, 8], best: { kg: 28, reps: 10 } },
+    { name: 'Cable fly', sets: 3, kg: 18, reps: 12, rest: 60, step: 1, lastKg: 18, last: [12, 12, 11], best: { kg: 18, reps: 12 } },
+    { name: 'Shoulder press', sets: 3, kg: 50, reps: 8, rest: 90, step: 2.5, lastKg: 50, last: [8, 7, 6], best: { kg: 50, reps: 8 } },
+    { name: 'Triceps pushdown', sets: 3, kg: 32.5, reps: 12, rest: 60, step: 2.5, lastKg: 32.5, last: [12, 11, 10], best: { kg: 32.5, reps: 12 } },
+  ];
+  const S = { on: false, short: false, heavy: false, li: 0, si: 0, kg: 0, reps: 0, edit: null, rest: null, log: [], t0: 0, done: false };
+  const plan = () => (S.short ? PUSH.slice(0, 3) : PUSH);
+  const lift = () => plan()[S.li];
+  const mins = () => (S.short ? 30 : 55);
+  const sets = () => plan().reduce((a, l) => a + l.sets, 0);
+
+  /* ---------- the light: one dithered field per mood, moved only with transforms ---------- */
+  // each mood is a handful of soft colour pools: [x, y, colour], x and y as parts of the canvas
+  const MOODS = {
+    morning: [[.1, .3, [255, 240, 168]], [.9, .26, [170, 238, 208]], [.5, .62, [104, 216, 190]], [1.05, .8, [146, 198, 255]], [-.05, .9, [208, 188, 255]]],
+    work: [[.1, .3, [176, 244, 236]], [.9, .26, [190, 228, 255]], [.5, .6, [104, 184, 255]], [1.05, .82, [150, 128, 255]], [-.05, .9, [70, 126, 255]]],
+    gold: [[.1, .3, [255, 247, 196]], [.9, .26, [255, 236, 150]], [.5, .6, [255, 222, 116]], [1.05, .82, [255, 232, 170]], [-.05, .9, [250, 208, 96]]],
+  };
+  function paint(name) {
+    const cv = $(`canvas[data-m="${name}"]`), W = 300, H = 650, pools = MOODS[name];
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d'), img = ctx.createImageData(W, H), d = img.data;
+    for (let y = 0; y < H; y++) {
+      for (let x = 0; x < W; x++) {
+        const u = x / W, v = y / H;
+        let r = 0, g = 0, b = 0, sum = 0;
+        for (const [px, py, c] of pools) {
+          const dx = u - px, dy = (v - py) * 1.7, w = Math.exp(-(dx * dx + dy * dy) / .11);
+          r += c[0] * w; g += c[1] * w; b += c[2] * w; sum += w;
+        }
+        // the top edge of the light is a slow wave, not a ruler line
+        const edge = .03 + .045 * Math.sin(u * 3.1 + .6) + .025 * Math.sin(u * 7.3 + 2);
+        let t = (v - edge) / .4;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        const i = (y * W + x) * 4, n = () => Math.random() - .5; // noise before rounding, so the slow fades show no rings
+        d[i] = r / sum + n(); d[i + 1] = g / sum + n(); d[i + 2] = b / sum + n();
+        d[i + 3] = t * t * (3 - 2 * t) * 255 + n(); // clear at the top, so the page (or the mood below) shows through
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  paint('morning');
+  setTimeout(() => { paint('work'); paint('gold'); }, 60);
+
+  const low = () => (S.on ? 34 : 14); // where the light rests: it fills the morning, and sits low while the set card is up
+  const LEVEL = { high: 12, hear: () => low() - 14 };
+  let glowAnim;
+  const glowNow = () => { const m = new DOMMatrixReadOnly(getComputedStyle(glow).transform); return (m.m42 / glow.offsetHeight) * 100; };
+  function glowTo(pct, ms, easing = SPRING) {
+    const from = glowNow();
+    if (glowAnim) glowAnim.cancel();
+    glow.style.transform = `translate3d(0, ${pct}%, 0)`;
+    if (calm || ms <= 0) return Promise.resolve();
+    glowAnim = glow.animate([{ transform: `translate3d(0, ${from}%, 0)` }, { transform: `translate3d(0, ${pct}%, 0)` }], { duration: ms, easing });
+    return glowAnim.finished.catch(() => new Promise(() => {}));
+  }
+  const mood = (m) => { app.dataset.mood = m; };
+
+  /* ---------- the thread ---------- */
+  function words(text, delay) {
+    const el = document.createElement('p');
+    el.style.setProperty('--d', `${delay}ms`);
+    text.split(' ').forEach((w, i) => {
+      const s = document.createElement('span');
+      s.className = 'w'; s.style.setProperty('--i', Math.min(i, 26)); s.textContent = w;
+      el.append(s, ' ');
+    });
+    return el;
+  }
+  const coach = (text, cls = '', delay = 220) => { const el = words(text, delay); el.className = `c ${cls}`; return el; };
+  const mine = (text) => { const el = document.createElement('div'); el.className = 'me'; el.textContent = text; return el; };
+  const box = (cls, html) => { const el = document.createElement('div'); el.className = cls; el.innerHTML = html; return el; };
+  const setChip = (n, kg, reps) => box('me set', `<span class="n">${n}</span><span>${num(kg)} kg × ${reps}</span>${CHECK}`);
+  const options = (list, forSet) => { // answers to tap under a Coach question; a question about a set expires once another set is logged or undone
+    const el = box('opts', ''), at = S.log.length;
+    list.forEach(([label, fn, ink]) => {
+      const b = document.createElement('button'); b.className = `pillbtn${ink ? ' ink' : ''}`; b.textContent = label;
+      b.onclick = () => { el.remove(); if (!forSet || (S.on && S.log.length === at)) fn(); else post([coach('That question was for an earlier set. Say the set again.', 'soft', 0)]); };
+      el.append(b);
+    });
+    return el;
+  };
+
+  /** Add to the thread and bring the newest line into view. `fly` is [element, the rectangle it comes from]. */
+  function post(els, fly) {
+    const before = feed.scrollTop;
+    thread.append(...els);
+    feed.scrollTop = feed.scrollHeight;
+    const moved = feed.scrollTop - before;
+    if (calm) return;
+    const timing = { duration: 460, easing: EASE };
+    if (moved > 0) thread.animate([{ transform: `translate3d(0, ${moved}px, 0)` }, { transform: 'none' }], timing);
+    if (fly) {
+      const [el, from] = fly, to = el.getBoundingClientRect();
+      const k = Math.min(2.2, Math.max(1, from.height / to.height));
+      el.animate([{ transform: `translate3d(${from.left - to.left}px, ${from.top - to.top - moved}px, 0) scale(${k})` }, { transform: 'none' }], timing);
+    }
+  }
+
+  /* ---------- top bar ---------- */
+  let tick;
+  function drawTop() {
+    if (!S.on) {
+      top.innerHTML = `<h1>Today</h1><span class="sub">Sunday 15 November</span>`;
+      return;
+    }
+    const segs = plan().map((l, i) => `<i class="${i < S.li ? 'on' : i === S.li ? 'now' : ''}" style="--p:${(S.si / l.sets) * 100}%"></i>`).join('');
+    top.innerHTML = `<h1>Push</h1><span class="sub" id="clock"></span><span class="segs" aria-hidden="true">${segs}</span><span class="sp"></span><button class="pillbtn" id="end">End</button>`;
+    $('#end').onclick = askEnd;
+    drawClock();
+  }
+  const mmss = (ms) => { const s = Math.max(0, Math.round(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+  function drawClock() { const c = $('#clock'); if (c) c.textContent = mmss(Date.now() - S.t0); }
+
+  /* ---------- Today ---------- */
+  const WEEK = [6.3, 6.9, 6.5, 7.1, 6.4, 6.8, 7.67]; // hours slept, last night last
+  const liftMarks = () => PUSH.map((_, i) => `<i class="${i < plan().length ? 'on' : ''}"></i>`).join('');
+  const dayRows = () => `
+    <button class="row" data-ask="train"><span class="txt"><span class="k">Training</span><span class="v" id="trainV">Push, ${plan().length} lifts, about ${mins()} min</span></span><span class="viz marks" id="trainM" aria-hidden="true">${liftMarks()}</span></button>
+    <button class="row" data-ask="food"><span class="txt"><span class="k">Food so far</span><span class="v">620 of 2,700 kcal, 41 g protein</span></span><span class="viz bar" aria-hidden="true"><i style="width:${(620 / 2700) * 100}%"></i></span></button>
+    <button class="row" data-ask="sleep"><span class="txt"><span class="k">Sleep</span><span class="v">7 h 40, in bed by 23:20</span></span><span class="viz week" aria-hidden="true">${WEEK.map((h, i) => `<i class="${i === 6 ? 'on' : ''}" style="height:${Math.round(((h - 5.5) / 2.5) * 26)}px"></i>`).join('')}</span></button>`;
+  const ANSWERS = {
+    train: ['What’s in Push?', () => `${plan().map((l) => l.name).join(', ')}. ${sets()} sets, about ${mins()} minutes.`],
+    food: ['How’s food today?', () => 'Breakfast is in: 620 kcal and 41 g protein. You need about 100 g more protein by tonight. Skyr after training covers 20 of it.'],
+    sleep: ['How did I sleep?', () => '7 h 40, in bed by 23:20. That’s 50 minutes more than your average this week. A good day to push the bench.'],
+    why: ['Why 82.5?', () => 'Your first two sets have been clean 8s three weeks running. That’s the sign to add weight, and 2.5 kg is the smallest step the plates allow.'],
+  };
+  const answer = (key) => { const [q, a] = ANSWERS[key]; post([mine(q), coach(a())]); };
+
+  function offerCard() {
+    const el = box('card offer', '');
+    const open = () => {
+      el.innerHTML = `<div class="k">Bench press today</div>
+        <div class="swap"><s>80 kg × 8</s>${ARROW}<span>82.5 kg × 6</span></div>
+        <div class="acts"><button class="pillbtn" data-a="use">Use 82.5 kg</button><button class="pillbtn" data-a="keep">Keep 80</button></div>`;
+      $('[data-a="use"]', el).onclick = () => {
+        S.heavy = true;
+        el.innerHTML = `<div class="done"><span>Bench press is 82.5 kg × 6 today</span><button class="pillbtn" disabled>Undo</button></div>`;
+        const undo = $('button', el);
+        setTimeout(() => { undo.disabled = false; }, 600); // never tappable in the same moment as the action
+        const note = coach('Done. If the first set moves slowly, say so and we go back to 80.');
+        undo.onclick = () => { S.heavy = false; note.remove(); open(); };
+        post([note]);
+      };
+      $('[data-a="keep"]', el).onclick = () => {
+        el.innerHTML = `<div class="done"><span>Bench press stays at 80 kg × 8</span></div>`;
+        post([coach('Fine. Then the job is 8, 8, 8 at 80, one rep up on last week.')]);
+      };
+    };
+    open();
+    return el;
+  }
+
+  function shortPlan() {
+    const el = box('card offer', `<div class="k">A shorter Push</div><div class="swap"><s>5 lifts</s>${ARROW}<span>3 lifts, 30 min</span></div>
+      <div class="acts"><button class="pillbtn" data-a="use">Use the short plan</button><button class="pillbtn" data-a="keep">Keep all 5</button></div>`);
+    const settle = (short) => {
+      S.short = short;
+      $('#trainV').textContent = `Push, ${plan().length} lifts, about ${mins()} min`; $('#trainM').innerHTML = liftMarks();
+      el.innerHTML = `<div class="done"><span>${short ? 'Push is 3 lifts today' : 'Push stays at 5 lifts'}</span>${short ? '<button class="pillbtn" disabled>Undo</button>' : ''}</div>`;
+      const undo = $('button', el);
+      if (undo) { setTimeout(() => { undo.disabled = false; }, 600); undo.onclick = () => settle(false); }
+    };
+    $('[data-a="use"]', el).onclick = () => settle(true);
+    $('[data-a="keep"]', el).onclick = () => settle(false);
+    post([mine('Short on time'), coach('Then three lifts: bench press, incline press and cable fly. About 30 minutes, and the main work stays.'), el]);
+  }
+
+  function todayChips() {
+    chips.innerHTML = '';
+    const add = (label, fn) => { const b = document.createElement('button'); b.className = 'pillbtn'; b.textContent = label; b.onclick = fn; chips.append(b); };
+    $('#startBtn').hidden = S.done;
+    if (S.done) { add('What’s tomorrow?', () => post([mine('What’s tomorrow?'), coach('Rest. Pull is on Tuesday, and your legs get Thursday.')])); return; }
+    add('Why 82.5?', () => answer('why'));
+    add('Short on time', shortPlan);
+    add('My week', () => post([mine('How’s my week?'), coach('Three sessions done out of four, and sleep is up 40 minutes a night on last week. Push today makes it four.')]));
+  }
+
+  function openDay() {
+    const day = box('card', dayRows());
+    day.onclick = (e) => { const r = e.target.closest('[data-ask]'); if (r) answer(r.dataset.ask); };
+    thread.append(
+      coach('Morning. 7 h 40 of sleep, your longest night this week.', 'big hero', 300),
+      day,
+      coach('Push today. I’d take bench to 82.5 for sixes.', 'mid', 900),
+      offerCard(),
+    );
+    drawTop(); todayChips();
+    glowTo(low(), 1500); // the day opens: the light comes up as the first words arrive
+  }
+
+  /* ---------- the workout ---------- */
+  function start() {
+    S.on = true; S.li = 0; S.si = 0; S.log = []; S.t0 = Date.now();
+    PUSH[0].kg = S.heavy ? 82.5 : 80; PUSH[0].reps = S.heavy ? 6 : 8;
+    S.kg = lift().kg; S.reps = lift().reps;
+    chips.hidden = true; $('#startBtn').hidden = true; live.hidden = false;
+    const morning = box('fold', ''), show = document.createElement('button');
+    morning.hidden = true; morning.inert = true; morning.append(...thread.children); // this morning's offers are history now, not buttons
+    show.className = 'stamp more'; show.textContent = 'Show this morning';
+    show.onclick = () => { morning.hidden = !morning.hidden; show.textContent = morning.hidden ? 'Show this morning' : 'Hide this morning'; };
+    thread.append(morning, show);
+    mood('work'); glowTo(low(), 600, EASE); drawTop(); drawLive();
+    clearInterval(tick); tick = setInterval(() => { drawClock(); drawRest(); }, 250);
+    const l = lift();
+    post([box('stamp', 'Push started'), coach(`${l.name} first.`, 'big', 120),
+      coach(`${l.sets} sets of ${l.reps} at ${num(l.kg)} kg. Last week you got ${l.last.join(', ')} at ${num(l.lastKg)}.`, '', 450),
+      coach(`Tap Log set, or tap the mic and say “${num(l.kg)} for ${l.reps}”.`, 'soft', 1100)]);
+    if (!calm) live.animate([{ transform: 'translate3d(0, 28px, 0)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: 420, easing: EASE });
+  }
+
+  function drawLive() {
+    const l = lift();
+    say.placeholder = `Say or type: ${num(S.kg)} for ${S.reps}`;
+    if (S.rest) {
+      const end = S.si >= l.sets ? plan()[S.li + 1] : null; // resting before the next lift
+      const nextUp = end ? `Next: ${end.name}, ${num(end.kg)} kg × ${end.reps}` : `Next: set ${S.si + 1}, ${num(S.kg)} kg × ${S.reps}`;
+      live.innerHTML = `<div class="in swapin"><div class="head"><span class="name">Rest</span><span class="where">${l.name}</span></div>
+        <div class="nums"><span class="clock" id="restClock">${mmss(S.rest.end - Date.now())}</span><span class="sp"></span><button class="pillbtn" id="more">+30 s</button></div>
+        <div class="under"><span>${nextUp}</span><span class="sp"></span><button class="pillbtn" id="undo" disabled>Undo set</button></div>
+        <button class="go quiet" id="skip">Skip rest</button></div>`;
+      $('#more').onclick = () => rest(S.rest.end - Date.now() + 30000);
+      const u = $('#undo'); setTimeout(() => { u.disabled = false; }, 600); u.onclick = undo;
+      $('#skip').onclick = endRest;
+      return;
+    }
+    const lastReps = l.last[S.si];
+    const under = S.edit
+      ? `<button class="pillbtn" id="less" aria-label="Less">− ${S.edit === 'kg' ? num(l.step) : 1}</button><span class="lab">${S.edit === 'kg' ? 'Weight' : 'Reps'}</span><button class="pillbtn" id="plus" aria-label="More">+ ${S.edit === 'kg' ? num(l.step) : 1}</button>`
+      : `<span>Last week ${num(l.lastKg)} × ${lastReps}</span><span class="sp"></span><span>Best ${num(l.best.kg)} × ${l.best.reps}</span>`;
+    live.innerHTML = `<div class="in"><div class="head"><span class="name">${l.name}</span><span class="where">Set ${S.si + 1} of ${l.sets}</span></div>
+      <div class="nums" id="nums"><button class="num${S.edit === 'kg' ? ' on' : ''}" id="nKg" aria-label="Change the weight"><b>${num(S.kg)}</b><i>kg</i></button><span class="x">×</span><button class="num${S.edit === 'reps' ? ' on' : ''}" id="nReps" aria-label="Change the reps"><b>${S.reps}</b><i>reps</i></button></div>
+      <div class="under">${under}</div>
+      <button class="go" id="log">Log set ${S.si + 1}</button></div>`;
+    $('#nKg').onclick = () => { S.edit = S.edit === 'kg' ? null : 'kg'; drawLive(); };
+    $('#nReps').onclick = () => { S.edit = S.edit === 'reps' ? null : 'reps'; drawLive(); };
+    if (S.edit) {
+      const by = (sign) => () => {
+        if (S.edit === 'kg') S.kg = Math.max(0, S.kg + sign * l.step); else S.reps = Math.max(1, S.reps + sign);
+        drawLive();
+      };
+      $('#less').onclick = by(-1); $('#plus').onclick = by(1);
+    }
+    $('#log').onclick = () => logSet(S.kg, S.reps, $('#nums').getBoundingClientRect());
+  }
+  function drawRest() { const c = $('#restClock'); if (!S.rest || !c) return; const left = S.rest.end - Date.now(); if (left <= 0) endRest(); else c.textContent = mmss(left); }
+
+  const better = (kg, reps, best) => kg > best.kg || (kg === best.kg && reps > best.reps);
+  const count = (n) => ['No', 'One', 'Two', 'Three', 'Four', 'Five'][n] ?? String(n);
+
+  function logSet(kg, reps, from, note) {
+    const l = lift(), n = S.si + 1, lastReps = l.last[S.si];
+    const record = better(kg, reps, l.best);
+    const els = [setChip(n, kg, reps)];
+    const entry = { li: S.li, si: S.si, kg, reps, els, was: { ...l.best }, record };
+    if (note) els.push(coach(note, 'soft'));
+    if (record) {
+      els.push(coach('New best.', 'big'), coach(`${l.name} ${num(kg)} × ${reps}. Your old best was ${num(l.best.kg)} × ${l.best.reps}.`, '', 500));
+      l.best = { kg, reps };
+    } else {
+      const line = kg > l.lastKg ? `${num(kg - l.lastKg)} kg more than last week.`
+        : kg < l.lastKg ? 'Lighter than last week. Noted.'
+        : reps > lastReps ? `${count(reps - lastReps)} more than last week.`
+        : reps < lastReps ? `${count(lastReps - reps)} short of last week.`
+        : 'Same as last week.';
+      els.push(coach(line, 'soft'));
+    }
+    S.log.push(entry); S.si++; S.edit = null;
+    const lastOfLift = S.si >= l.sets, next = plan()[S.li + 1];
+    if (lastOfLift) {
+      const done = S.log.filter((e) => e.li === S.li);
+      els.push(coach(`${l.name} done: ${done.map((e) => `${num(e.kg)} × ${e.reps}`).join(', ')}.`, 'soft', 500));
+      if (!next) { post(els, [els[0], from]); return finish(); }
+      els.push(coach(`${next.name} next.`, 'big', 800), coach(`${next.sets} sets of ${next.reps} at ${num(next.kg)} kg. Last week you got ${next.last.join(', ')}.`, '', 1100));
+    }
+    post(els, [els[0], from]);
+    if (navigator.vibrate) navigator.vibrate(12);
+    mood(record ? 'gold' : 'work');
+    rest((FAST ? 6 : l.rest) * 1000, true);
+    drawTop();
+  }
+
+  function rest(ms, rise) {
+    S.rest = { end: Date.now() + ms };
+    drawLive();
+    const drain = () => glowTo(low(), Math.max(0, S.rest ? S.rest.end - Date.now() : 0), 'linear');
+    if (rise) glowTo(LEVEL.high, 620).then(() => { if (S.rest) drain(); }); else drain();
+  }
+  function endRest() {
+    if (!S.rest) return;
+    S.rest = null;
+    const l = lift();
+    if (S.si >= l.sets) { S.li++; S.si = 0; S.kg = lift().kg; S.reps = lift().reps; }
+    mood('work'); glowTo(low(), 520, EASE);
+    if (navigator.vibrate) navigator.vibrate(30);
+    drawTop(); drawLive();
+  }
+  function undo() {
+    const e = S.log.pop();
+    if (!e) { post([coach('Nothing to take back yet.', 'soft')]); return; }
+    e.els.forEach((el) => el.remove());
+    S.rest = null; S.li = e.li; S.si = e.si; S.kg = e.kg; S.reps = e.reps;
+    plan()[e.li].best = e.was;
+    mood('work'); glowTo(low(), 420, EASE);
+    post([coach(`Set ${e.si + 1} is back to do.`, 'soft', 0)]);
+    drawTop(); drawLive();
+  }
+
+  function askEnd() {
+    const n = S.log.length;
+    const said = mine('End workout'), q = coach(n ? `End Push here? ${n} ${n === 1 ? 'set is' : 'sets are'} logged.` : 'End Push before the first set?');
+    post([said, q, options([['End workout', finish, true], ['Keep going', () => { said.remove(); q.remove(); }]])]);
+  }
+  function finish() {
+    clearInterval(tick);
+    const min = Math.max(1, Math.round((Date.now() - S.t0) / 60000));
+    const kilos = S.log.reduce((a, e) => a + e.kg * e.reps, 0);
+    const bests = S.log.filter((e) => e.record), peak = bests[bests.length - 1];
+    S.on = false; S.rest = null; S.done = true;
+    const rows = plan().map((l, i) => { const d = S.log.filter((e) => e.li === i); return d.length ? `<div><b>${l.name}</b><span>${d.map((e) => `${num(e.kg)} × ${e.reps}`).join(', ')}</span></div>` : ''; }).join('');
+    const els = [box('stamp', 'Push ended'), coach(S.log.length ? 'Push done.' : 'Push ended with nothing logged.', 'big', 120)];
+    if (S.log.length) {
+      els.push(coach(`${S.log.length} ${S.log.length === 1 ? 'set' : 'sets'} and ${Math.round(kilos).toLocaleString('en-US')} kg in ${min} ${min === 1 ? 'minute' : 'minutes'}.${peak ? ` One to remember: ${plan()[peak.li].name.toLowerCase()} ${num(peak.kg)} × ${peak.reps}.` : ''}`, '', 500),
+        box('card sum', rows), coach('You’re at 41 of 140 g protein. Eat within the hour.', 'soft', 900));
+    }
+    live.hidden = true; chips.hidden = false; say.placeholder = 'Message your coach';
+    mood('morning'); glowTo(low(), 520, EASE);
+    drawTop(); todayChips(); post(els);
+  }
+
+  /* ---------- reading what was said or typed (the app's own set parser, no AI) ---------- */
+  const read = (text) => A2.parseSetCommand(A2.mergeDecimals(A2.mergeNumberWords(text.trim().split(/\s+/)).join(' ')));
+  const sayRect = () => (app.classList.contains('listening') || heard.classList.contains('show') ? heardP : say).getBoundingClientRect();
+
+  function hear(text) {
+    text = text.trim();
+    if (!text) return;
+    const from = sayRect(), cmd = read(text);
+    if (!S.on) return hearToday(text, cmd);
+    const bubble = mine(text);
+    if (!cmd) return post([bubble, coach('I didn’t catch a set in that. Say it like “80 for 8”, or “same again”, “skip”, “undo”.', 'soft')], [bubble, from]);
+    if (cmd.kind === 'undo') return undo();
+    const aSet = ['set', 'same', 'done'].includes(cmd.kind) || (cmd.kind === 'ask' && (cmd.options ?? []).some((o) => o.kind === 'set'));
+    if (aSet && S.rest && S.si >= lift().sets) endRest(); // said in the rest after a lift's last set, it belongs to the next lift
+    if (cmd.kind === 'ask') {
+      const picks = (cmd.options ?? []).filter((o) => o.kind === 'set').map((o) => [`${num(o.kg ?? S.kg)} kg × ${o.reps ?? S.reps}`, () => logOrRest(o.kg ?? S.kg, o.reps ?? S.reps)]);
+      const q = cmd.why === 'bareNo' ? 'No to what? Say “undo” to take the last set back, or say the set again.' : cmd.why === 'correction' ? 'Not sure what to change. Say the whole set again.' : 'Which one did you mean?';
+      return post([bubble, coach(q), ...(picks.length ? [options(picks, true)] : [])], [bubble, from]);
+    }
+    if (cmd.kind === 'rest') { if (S.rest) { rest(S.rest.end - Date.now() + cmd.sec * 1000); return post([bubble, coach(`${cmd.sec} seconds added.`, 'soft', 0)], [bubble, from]); } return post([bubble, coach('You’re not resting right now.', 'soft', 0)], [bubble, from]); }
+    if (cmd.kind === 'skip') { if (S.rest) { endRest(); return post([bubble, coach('Rest skipped.', 'soft', 0)], [bubble, from]); } return post([bubble, coach('To drop a set, tap End or just log what you did.', 'soft', 0)], [bubble, from]); }
+    // a set, "same again" or "done"
+    // anything not said is taken from the card; "same again" repeats the last set of this lift
+    const prev = S.log.at(-1), base = cmd.kind === 'same' && prev && prev.li === S.li ? prev : S;
+    const said = cmd.kind === 'set' ? { kg: cmd.kg, reps: cmd.reps } : {};
+    const fixed = A2.fixMisheard(said, { kg: S.kg, reps: S.reps });
+    const kg = fixed.kg ?? base.kg, reps = fixed.reps ?? base.reps;
+    // the guard runs on the numbers after a misheard fix, so a second odd number is still asked about
+    const odd = A2.guardSet({ kg: said.kg === undefined ? undefined : kg, reps: said.reps === undefined ? undefined : reps }, { kg: S.kg, reps: S.reps });
+    if (odd) {
+      const picks = (odd.kg ?? [kg]).flatMap((k) => (odd.reps ?? [reps]).map((r) => [`${num(k)} kg × ${r}`, () => logOrRest(k, r)]));
+      return post([bubble, coach(`${odd.kg ? `${num(kg)} kg` : `${reps} reps`} is far from your ${odd.kg ? `${num(S.kg)} kg` : `${S.reps} reps`}. Which one?`), options(picks, true)], [bubble, from]);
+    }
+    const note = fixed.heard ? `I heard ${fixed.heard.kg !== undefined ? num(fixed.heard.kg) : fixed.heard.reps} and took it as ${fixed.heard.kg !== undefined ? `${num(kg)} kg` : `${reps} reps`}. Say “undo” if that’s wrong.` : '';
+    logOrRest(kg, reps, from, note);
+  }
+  function logOrRest(kg, reps, from = say.getBoundingClientRect(), note = '') {
+    if (S.rest) endRest(); // saying the next set while resting starts it
+    if (!S.on) return;
+    logSet(kg, reps, from, note);
+  }
+  function hearToday(text, cmd) {
+    const t = text.toLowerCase();
+    if (/\b(start|begin|let'?s go|go)\b/.test(t) && !S.done) { post([mine(text)]); return start(); }
+    if (/\bwhy\b/.test(t)) return answer('why');
+    if (/\b(short|minutes|time|hurry|late)\b/.test(t) && !S.done) return shortPlan();
+    if (/\b(food|protein|eat|kcal|calories)\b/.test(t)) return answer('food');
+    if (/\b(sleep|slept|tired)\b/.test(t)) return answer('sleep');
+    post([mine(text), coach(cmd && cmd.kind !== 'ask' ? 'No workout is open. Start Push and say it again.' : 'Right now I can talk about sleep, food, the bench weight or a shorter session. Or say “start” and we go.', 'soft')]);
+  }
+
+  /* ---------- the ask bar ---------- */
+  $('#ask').onsubmit = (e) => { e.preventDefault(); const t = say.value; say.value = ''; send.classList.remove('ready'); hear(t); };
+  say.oninput = () => send.classList.toggle('ready', !!say.value.trim());
+
+  /* ---------- the microphone: Claude's dictation where the page is given it, else the browser's, else typing ---------- */
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let dict = null, rec = null, heardText = '', settle, fade;
+  if (window.claude?.use) window.claude.use('dictation').then((d) => {
+    if (!d) return;
+    dict = d;
+    d.onPartial(({ text }) => { if (text) showHeard(`${heardText} ${text}`); });
+    d.onFinal(({ text }) => { heardText = `${heardText}${text}`.trim(); showHeard(heardText); clearTimeout(settle); settle = setTimeout(stopListening, 900); });
+    d.onState(({ state, reason }) => { if (state === 'listening') listening(true); if (state === 'idle') ended(reason === 'not_granted' ? 'blocked' : reason === 'unavailable' || reason === 'upstream_error' || reason === 'rate_limited' ? 'down' : ''); });
+  });
+
+  function showHeard(text) { heardP.textContent = text || (S.on ? 'Say the set' : 'Go ahead'); heardP.classList.toggle('dim', !text); }
+  function listening(on) {
+    clearTimeout(fade); heard.classList.remove('show');
+    app.classList.toggle('listening', on); app.classList.toggle('hush', on);
+    mic.setAttribute('aria-pressed', on);
+    if (on) { heardK.textContent = 'Listening'; if (!S.rest) glowTo(LEVEL.hear(), 700); }
+    else if (!S.rest) glowTo(low(), 600, EASE);
+  }
+  function tell(k, text) { // a short note where the heard words go, when the microphone can't be used
+    heardK.textContent = k; heardP.textContent = text; heardP.classList.remove('dim');
+    heard.classList.add('show'); app.classList.add('hush');
+    clearTimeout(fade); fade = setTimeout(() => { heard.classList.remove('show'); app.classList.remove('hush'); }, 2600);
+  }
+  function ended(why) {
+    if (!app.classList.contains('listening') && !why) return;
+    const text = heardText; heardText = ''; rec = null;
+    if (text) hear(text);
+    listening(false);
+    if (text) return;
+    if (why === 'blocked') { tell('Microphone is off here', 'Type it instead.'); say.focus(); }
+    else if (why === 'down') { tell('Can’t listen right now', 'Type it instead.'); say.focus(); }
+    else if (why === 'quiet') tell('Didn’t catch that', 'Tap the mic and say it again.');
+  }
+  function stopListening() {
+    clearTimeout(settle);
+    if (dict) dict.stop().catch(() => {});
+    else if (rec) { const r = rec; r.stop(); setTimeout(() => { if (rec === r) ended(''); }, 700); } // some browsers never answer a stop
+  }
+
+  $('#startBtn').onclick = start;
+  mic.onclick = () => {
+    if (app.classList.contains('listening')) return stopListening();
+    heardText = ''; showHeard('');
+    if (dict) { dict.start().catch((err) => ended(err?.code === 'not_granted' ? 'blocked' : err?.code === 'stopped' || err?.code === 'dismissed' ? '' : 'down')); return; }
+    if (!SR) { tell('This browser can’t listen', 'Type it instead.'); say.focus(); return; }
+    const r = rec = new SR(); rec.lang = navigator.language?.startsWith('da') ? 'da-DK' : 'en-US'; rec.interimResults = true; // the parser reads Danish sets too
+    let fail = '';
+    rec.onresult = (e) => {
+      if (rec !== r) return;
+      let text = '', final = true;
+      for (const r of e.results) { text += r[0].transcript; if (!r.isFinal) final = false; }
+      showHeard(text.trim());
+      if (final) heardText = text.trim();
+    };
+    rec.onerror = (e) => { fail = e.error === 'not-allowed' || e.error === 'service-not-allowed' ? 'blocked' : e.error === 'no-speech' ? 'quiet' : e.error === 'aborted' ? '' : 'down'; };
+    rec.onend = () => { if (rec === r) ended(fail || (heardText ? '' : 'quiet')); }; // a late end from an earlier recording must not close this one
+    listening(true); // shown on the tap itself, not when the browser gets round to it
+    try { rec.start(); } catch { ended('down'); }
+  };
+
+  /* ---------- fit: the dock's height pads the thread, and the keyboard never covers the ask bar ---------- */
+  new ResizeObserver(() => { app.style.setProperty('--dock', `${dock.offsetHeight}px`); if (S.on || S.done) feed.scrollTop = feed.scrollHeight; }).observe(dock);
+  if (window.visualViewport) visualViewport.addEventListener('resize', () => {
+    const stage = $('.stage'), short = visualViewport.height < window.innerHeight - 80;
+    stage.style.height = short ? `${visualViewport.height}px` : '';
+    stage.style.alignItems = short ? 'start' : '';
+    if (short) { window.scrollTo(0, 0); feed.scrollTop = feed.scrollHeight; }
+  });
+
+  openDay();
+})();
+</script>
+</body>
+</html>
