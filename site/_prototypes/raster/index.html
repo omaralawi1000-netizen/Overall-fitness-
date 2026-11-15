@@ -1,0 +1,949 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#F0F0EE">
+<title>Raster</title>
+<link rel="preload" href="archivo.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+/* Raster: Swiss editorial grid. Paper, black, and red for whatever is happening now.
+   One typeface (Archivo, variable width), a 4-column grid, rules instead of boxes. */
+@font-face { font-family: Archivo; src: url(archivo.woff2) format("woff2"); font-weight: 100 900; font-stretch: 62% 125%; font-display: block; }
+:root {
+  --paper: #F0F0EE;
+  --ink: #000;
+  --red: #E4002B;
+  --hair: rgba(0, 0, 0, 0.16);
+  /* motion: two durations and three curves, used by everything that moves */
+  --t: 500ms;
+  --fast: 140ms;
+  --out: cubic-bezier(0.23, 1, 0.32, 1);
+  --spring: var(--out); /* numbers: replaced by a sampled spring in the script */
+  --glide: var(--out);  /* whole surfaces: replaced by a sampled spring with no overshoot */
+  --m: 16px;            /* page margin */
+  --g: 8px;             /* gutter */
+}
+* { box-sizing: border-box; margin: 0; -webkit-tap-highlight-color: transparent; }
+[hidden] { display: none !important; }
+html, body { height: 100%; background: #DADAD6; overscroll-behavior: none; }
+body {
+  font-family: Archivo, "Helvetica Neue", Arial, sans-serif;
+  font-stretch: 100%; font-weight: 600; font-size: 13px; line-height: 1.3;
+  color: var(--ink); -webkit-font-smoothing: antialiased;
+  user-select: none; -webkit-user-select: none; touch-action: manipulation;
+  display: grid; place-items: center;
+}
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
+button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
+
+.app { position: relative; width: min(100vw, 430px); height: min(100dvh, 932px); background: var(--paper); overflow: clip; }
+.screen { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--paper);
+  padding-top: max(12px, env(safe-area-inset-top)); }
+.workout { transform: translateX(100%); transition: transform var(--t) var(--glide); will-change: transform; }
+.app[data-screen="workout"] .workout { transform: none; }
+
+/* shared type */
+.mute { opacity: 0.62; }
+.big { font-weight: 800; font-stretch: 75%; letter-spacing: -0.015em; line-height: 1; }
+.sq { display: inline-block; width: 9px; height: 9px; background: currentColor; }
+.cols { display: grid; grid-template-columns: repeat(4, 1fr); column-gap: var(--g); }
+
+/* rolling digits: each digit is a column, only the one that changes moves */
+.num { display: inline-block; line-height: 1; white-space: nowrap; }
+.d { display: inline-block; height: 1em; width: 1ch; overflow-x: visible; overflow-y: clip; text-align: center; vertical-align: top; }
+.col { display: block; transition: transform var(--t) var(--spring); will-change: transform; }
+.col i { display: block; height: 1em; line-height: 1em; font-style: normal; }
+.p { display: inline-block; height: 1em; vertical-align: top; }
+.fr { display: inline-block; height: 1em; vertical-align: top; transition: transform var(--t) var(--spring), opacity var(--fast) var(--out); }
+.fr.off { opacity: 0; transform: translateY(0.3em); } /* the half kilo keeps its place, so 82.5 can roll to 85 */
+.x { font-weight: 300; }
+
+/* the one filled button */
+.slab { flex: none; margin: 0 var(--m) max(16px, env(safe-area-inset-bottom)); height: 72px; padding: 0 18px;
+  background: var(--ink); color: var(--paper); display: flex; align-items: center; justify-content: space-between;
+  transition: transform var(--fast) var(--out); }
+.slab:active { transform: scale(0.98); }
+.slab b { font-size: 26px; font-weight: 800; letter-spacing: -0.02em; }
+.slab > span { font-size: 15px; opacity: 0.78; }
+.slab[disabled] { background: none; color: var(--ink); border: 2px solid var(--ink); }
+
+/* ---------- Today ---------- */
+.today .scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 0 var(--m) 10px; scrollbar-width: none; }
+.meta { height: 34px; border-top: 2px solid var(--ink); align-items: center; }
+.meta > :nth-child(1) { grid-column: span 2; }
+.meta > :last-child { text-align: right; }
+
+.hero { position: relative; height: 190px; margin-top: 4px; }
+.hero .now { position: absolute; right: 0; top: 0; bottom: 0; width: calc(50% - var(--g) / 2);
+  background: var(--red); color: #fff; padding: 12px 12px 0; }
+.hero .now .num { font-size: 40px; display: block; }
+.hero .now > span { display: block; margin-top: 4px; font-size: 13px; }
+.word { position: absolute; left: 0; bottom: 0; white-space: nowrap; font-size: 150px; font-weight: 800;
+  letter-spacing: -0.045em; line-height: 0.74; text-box: trim-both cap alphabetic; }
+@supports not (text-box: trim-both cap alphabetic) { .word { margin-bottom: -0.036em; } }
+
+.spec { margin-top: 10px; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--hair); padding: 9px 0 10px; }
+.spec .big { font-size: 30px; display: block; }
+.spec span { font-size: 12px; }
+
+.coach { padding: 13px 0 15px; }
+.coach .who { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+.coach .who .sq { color: var(--red); }
+.coach p, .fin-line { text-wrap: pretty; margin-top: 6px; font-size: 17px; line-height: 23px; letter-spacing: -0.01em; }
+
+.stats { display: grid; grid-template-columns: 1fr 1fr; border-top: 2px solid var(--ink); }
+.cell { padding: 9px 0 12px; border-bottom: 1px solid var(--hair); }
+.cell:nth-child(odd) { padding-right: 8px; border-right: 1px solid var(--hair); }
+.cell:nth-child(even) { padding-left: 8px; }
+.cell .big { font-size: 46px; margin-top: 3px; display: inline-block; }
+.cell .of { font-size: 14px; margin-left: 4px; }
+.bar { height: 3px; margin-top: 8px; background: var(--hair); }
+.bar i { display: block; height: 100%; background: var(--ink); transform-origin: 0 50%; }
+
+.week { padding: 10px 0 0; }
+.days { display: grid; grid-template-columns: repeat(7, 1fr); margin-top: 8px; }
+.days span { display: block; font-size: 12px; }
+.days .sq { display: block; width: 14px; height: 14px; margin: 5px 0 4px; background: none; border: 1.5px solid var(--hair); }
+.days .did .sq { background: var(--ink); border-color: var(--ink); }
+.days .today-d { color: var(--red); }
+.days .today-d .sq { border-color: var(--red); }
+.days .today-d.did .sq { background: var(--red); }
+
+/* ---------- Workout ---------- */
+.wk-head { flex: none; padding: 0 var(--m) 10px; }
+.prog { display: flex; gap: 6px; height: 6px; }
+.prog div { display: flex; gap: 2px; }
+.prog i { flex: 1; background: var(--hair); }
+.prog i.done { background: var(--ink); }
+.prog i.cur { background: var(--red); }
+.wk-meta { height: 40px; align-items: center; font-size: 13px; white-space: nowrap; }
+.wk-meta button { height: 40px; }
+#back { display: flex; align-items: center; gap: 5px; }
+#back i { font-style: normal; font-size: 20px; line-height: 1; margin-top: -3px; }
+.wk-meta .tog { justify-self: end; display: flex; gap: 10px; align-items: center; min-width: 76px; justify-content: flex-end; } /* a 76 × 40 target for a small label */
+.tog span { padding: 3px 0 2px; border-bottom: 2px solid transparent; opacity: 0.45; font-weight: 700; }
+.app[data-mode="words"] .tog span:first-child, .app[data-mode="nums"] .tog span:last-child { opacity: 1; border-color: var(--ink); }
+.title-wrap { overflow: hidden; margin-top: 2px; }
+.title { will-change: transform, opacity; font-size: 46px; font-weight: 800; letter-spacing: -0.035em; line-height: 1; white-space: nowrap; display: inline-block; vertical-align: top; }
+.best { height: 20px; margin-top: 5px; display: flex; gap: 6px; align-items: baseline; }
+.best b { font-weight: 800; }
+
+.wk-body { position: relative; flex: 1; min-height: 0; }
+.setview { position: absolute; inset: 0; display: flex; flex-direction: column; }
+.setview > .in { flex: 1; min-height: 0; margin: 0 var(--m); border-top: 2px solid var(--ink); }
+.hrow { position: relative; height: var(--rowh, 150px); border-bottom: 1px solid var(--hair); white-space: nowrap; }
+.hrow .num { font-size: calc(var(--rowh, 150px) - 16px); letter-spacing: -0.035em; vertical-align: top; }
+.hrow .unit { position: absolute; left: 0; bottom: 5px; }
+.hrow .x { display: inline-block; font-size: calc(var(--rowh, 150px) * 0.7); line-height: calc(var(--rowh, 150px) - 22px); margin: 0 4px 0 -5px; vertical-align: top; }
+.step { position: absolute; right: 0; top: 0; bottom: 0; width: calc(25% - 6px); display: grid; grid-template-rows: 1fr 1fr;
+  border-left: 1px solid var(--hair); }
+.step button { text-align: center; font-size: 34px; font-weight: 400; line-height: 1; }
+.step button + button { border-top: 1px solid var(--hair); }
+.step button:active { background: var(--ink); color: var(--paper); }
+
+.table { border-top: 1px solid var(--ink); margin-top: -1px; }
+.thead { height: 26px; align-items: center; font-size: 12px; }
+.row { height: 38px; align-items: center; border-top: 1px solid var(--hair); position: relative; }
+.row .n { font-size: 15px; display: flex; align-items: center; gap: 8px; }
+.row .n .sq { background: none; border: 1.5px solid var(--hair); }
+.row .v { grid-column: span 2; font-size: 22px; font-weight: 800; font-stretch: 75%; letter-spacing: -0.035em; display: flex; gap: 5px; align-items: center; }
+.row .v span { display: inline-block; line-height: 1; }
+.row .l { font-size: 15px; opacity: 0.62; padding-left: 8px; }
+.row[data-st="todo"] .n, .row[data-st="todo"] .v { opacity: 0.55; }
+.row[data-st="done"] .n .sq { background: var(--ink); border-color: var(--ink); }
+.row[data-st="cur"] .n .sq { background: var(--red); border-color: var(--red); }
+.then { height: 38px; display: flex; align-items: center; gap: 6px; border-top: 1px solid var(--hair); font-size: 13px; white-space: nowrap; }
+.then b { font-weight: 700; }
+
+/* rest: a red field as tall as the time that is left. Two copies of the same layout,
+   black on paper and white on red; the red copy is cut by the falling edge.
+   Every layer is there from the start, so nothing is created while something moves. */
+.rest { position: absolute; inset: 0; overflow: clip; pointer-events: none; }
+.rest-paper, .rest-red { position: absolute; inset: 0; }
+.rest-paper { background: var(--paper); color: var(--ink); opacity: 0; will-change: opacity; --line: var(--hair); }
+.rest-clip { position: absolute; inset: 0; overflow: clip; transform: translateY(100%); will-change: transform; }
+.rest-red { background: var(--red); color: #fff; transform: translateY(-100%); will-change: transform; --line: rgba(255, 255, 255, 0.4); }
+.rest-in, .rest-hit { position: absolute; inset: 0; padding: 0 var(--m); display: flex; flex-direction: column; }
+.zone { position: relative; flex: none; height: calc(var(--rowh, 150px) * 2 + 2px); border-top: 2px solid currentColor; padding-top: 8px;
+  display: flex; flex-direction: column; overflow: clip; }
+.rlab { display: flex; justify-content: space-between; height: 18px; flex: none; }
+.cd { flex: none; font-size: 180px; font-weight: 800; font-stretch: 75%; letter-spacing: -0.035em; align-self: flex-start; margin: -0.07em 0 -0.13em;
+  clip-path: inset(0.07em -0.1em 0.1em); } /* a rolling digit never pokes into the line above */
+.nx { margin-top: auto; padding-bottom: 8px; white-space: nowrap; }
+.nx b { font-weight: 800; }
+.nxnum { display: flex; align-items: center; gap: 9px; margin-top: 2px; font-size: 54px; font-weight: 800; font-stretch: 75%; letter-spacing: -0.015em; line-height: 1; }
+.nxnum .x { font-size: 40px; }
+.nxnum .x, .nxnum .num { will-change: transform; }
+.nxnum .fr.off { width: 0; }
+.nstep { position: absolute; right: 0; bottom: 8px; width: 124px; height: 54px; display: grid; grid-template-columns: 1fr 1fr;
+  border: 1.5px solid currentColor; font-size: 17px; font-weight: 700; }
+.nstep > * { display: grid; place-items: center; height: 100%; }
+.nstep > * + * { border-left: 1.5px solid currentColor; }
+
+/* a new best takes the whole zone for a moment, in black so it is not mistaken for a rest, then lifts away */
+.recshow { position: absolute; inset: 0; background: var(--ink); color: #fff; padding: 8px 12px 10px; display: flex; flex-direction: column;
+  transition: transform var(--t) var(--glide); will-change: transform; }
+.rest.rec-out .recshow { transform: translateY(-101%); }
+.rectop { display: flex; justify-content: space-between; height: 18px; flex: none; }
+.rectop b { font-weight: 800; }
+.recshow .old { position: relative; align-self: flex-start; margin-top: auto; font-size: 34px; font-weight: 400; font-stretch: 75%; line-height: 1; white-space: nowrap; }
+.recshow .old::after { content: ""; position: absolute; left: -3px; right: -3px; top: 50%; height: 2px; background: currentColor;
+  transform: scaleX(0); transform-origin: 0 50%; }
+.rest.settled .recshow .old::after { transform: scaleX(1); transition: transform var(--t) var(--out) var(--fast); }
+.recbig { align-self: flex-start; font-size: 120px; font-weight: 800; font-stretch: 75%; letter-spacing: -0.035em; line-height: 1; margin: 0.04em 0 -0.13em; white-space: nowrap; }
+
+.rest .table { border-color: currentColor; }
+.rest .row, .rest .then { border-color: var(--line); }
+.rest-red .mute, .rest-red .row .l { opacity: 0.92; }
+.rest-red .row[data-st="todo"] .n, .rest-red .row[data-st="todo"] .v { opacity: 0.75; }
+.rest-red .row .n .sq { border-color: rgba(255, 255, 255, 0.6); }
+.rest-red .row[data-st="done"] .n .sq { background: #fff; border-color: #fff; }
+.rest-red .row[data-st="cur"] .n .sq { background: none; border-color: #fff; }
+.ctl { margin-top: auto; flex: none; height: calc(72px + max(16px, env(safe-area-inset-bottom))); padding-bottom: max(16px, env(safe-area-inset-bottom));
+  display: grid; grid-template-columns: 1fr 1fr; border-top: 2px solid currentColor; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; }
+.ctl > * { display: flex; align-items: center; height: 100%; }
+.ctl > :last-child { border-left: 1px solid var(--line, transparent); padding-left: 16px; }
+.rest-hit .zone, .rest-hit .ctl, .rest-hit .nstep, .rest-hit .nstep > * { border-color: transparent; }
+.rest-hit button:focus-visible { outline-color: var(--ink); outline-offset: -4px; }
+.rest.on .rest-hit button { pointer-events: auto; }
+.rest[data-p="more"] .rest-in .ctl > :first-child, .rest[data-p="skip"] .rest-in .ctl > :last-child,
+.rest[data-p="nm"] .rest-in .nstep > :first-child, .rest[data-p="np"] .rest-in .nstep > :last-child { opacity: 0.45; }
+
+/* finish: the red field comes back for the whole day */
+.finish { position: absolute; inset: 0; z-index: 5; background: var(--red); color: #fff; display: flex; flex-direction: column;
+  padding-top: max(12px, env(safe-area-inset-top)); transform: translateY(100%); transition: transform var(--t) var(--glide);
+  will-change: transform; pointer-events: none; }
+.finish.on { transform: none; pointer-events: auto; }
+.fin-in { flex: 1; min-height: 0; padding: 0 var(--m); }
+.finish .meta, .finish .spec { border-top-color: #fff; }
+.finish .spec { border-bottom-color: rgba(255, 255, 255, 0.4); }
+.finish .mute { opacity: 0.92; }
+.fin-line { margin-top: 13px; }
+.ftab { margin-top: 14px; border-top: 1px solid #fff; }
+.frow { height: 34px; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.4); font-size: 15px; white-space: nowrap; }
+.frow > :first-child { grid-column: span 2; }
+.frow b { font-size: 22px; font-weight: 800; font-stretch: 75%; letter-spacing: -0.035em; }
+.frow > :last-child { text-align: right; font-size: 13px; }
+.finish .slab { background: #fff; color: var(--ink); }
+.finish button:focus-visible { outline-color: #fff; }
+
+/* numbers-only mode: every label goes */
+.app[data-mode="nums"] .lab { visibility: hidden; }
+.app[data-mode="nums"] .lab.gone { display: none; }
+.app[data-mode="words"] .n-only, .app[data-mode="nums"] .w-only { display: none; }
+
+/* ---------- the 3-second test: a screen for 3 s, then questions; words against numbers only ---------- */
+.trial-cta { margin-top: 16px; border-top: 2px solid var(--ink); padding: 11px 0 6px; }
+.trial-cta .who { display: flex; align-items: center; gap: 6px; font-weight: 700; }
+.trial-cta p { margin-top: 6px; font-size: 15px; line-height: 20px; text-wrap: pretty; }
+.outline { width: 100%; height: 60px; margin-top: 12px; padding: 0 16px; border: 2px solid var(--ink); display: flex; align-items: center;
+  justify-content: space-between; transition: transform var(--fast) var(--out); }
+.outline:active { transform: scale(0.98); }
+.outline b { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
+.app.test .workout, .app.test .finish, .app.test .col, .app.test .fr, .app.test .recshow { transition: none !important; }
+.trial { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; background: var(--paper);
+  padding-top: max(12px, env(safe-area-inset-top)); }
+.trial[data-phase="look"] { background: none; }
+.trial[data-phase="look"] > :not(.tbar) { visibility: hidden; }
+.tbar { position: absolute; left: 0; right: 0; top: 0; height: 5px; background: var(--red); transform-origin: 0 50%; transform: scaleX(0); will-change: transform; }
+.tin { flex: 1; min-height: 0; padding: 0 var(--m); display: flex; flex-direction: column; overflow-y: auto; scrollbar-width: none; }
+.tin .meta > :nth-child(2) { text-align: center; }
+.t-title { margin-top: 18px; font-size: 64px; font-weight: 800; letter-spacing: -0.045em; line-height: 0.9; }
+.t-title .red { color: var(--red); }
+.t-copy { margin-top: 16px; font-size: 17px; line-height: 23px; letter-spacing: -0.01em; text-wrap: pretty; }
+.t-list { margin-top: 18px; border-top: 2px solid var(--ink); }
+.t-list > div { display: grid; grid-template-columns: 34px 1fr; padding: 10px 0; border-bottom: 1px solid var(--hair); font-size: 15px; line-height: 20px; }
+.t-list b { font-weight: 800; }
+.t-q { margin-top: 22px; font-size: 34px; font-weight: 800; letter-spacing: -0.03em; line-height: 1.02; text-wrap: balance; }
+.t-tag { display: inline-flex; align-items: center; gap: 6px; margin-top: 14px; font-weight: 700; }
+.t-tag .sq { color: var(--red); }
+.t-mode { margin-top: auto; padding-bottom: 6px; font-size: min(150px, 20vh); font-weight: 800; font-stretch: 75%; letter-spacing: -0.04em; line-height: 0.8; }
+.t-mode.nums { color: var(--red); }
+.t-key > div { grid-template-columns: 84px 1fr; align-items: baseline; }
+.t-key b { font-size: 22px; font-stretch: 75%; letter-spacing: -0.03em; white-space: nowrap; }
+.t-key b.red { color: var(--red); }
+.t-opts { display: grid; grid-template-columns: 1fr 1fr; border-top: 2px solid var(--ink); }
+.t-opts button { height: 104px; padding: 10px 12px; border-bottom: 1px solid var(--hair); display: flex; align-items: flex-end;
+  font-size: 40px; font-weight: 800; font-stretch: 75%; letter-spacing: -0.03em; line-height: 1; white-space: nowrap;
+  transition: background-color var(--fast) var(--out), color var(--fast) var(--out); }
+.t-opts button:nth-child(odd) { border-right: 1px solid var(--hair); }
+.t-opts button.small { font-size: 28px; }
+.t-opts button:active, .t-opts button.picked { background: var(--ink); color: var(--paper); }
+.t-score { margin-top: 14px; display: grid; grid-template-columns: 1fr 1fr; border-top: 2px solid var(--ink); }
+.t-score > div { padding: 10px 0 12px; border-bottom: 1px solid var(--hair); }
+.t-score > div + div { padding-left: 8px; border-left: 1px solid var(--hair); }
+.t-score .big { display: block; margin-top: 4px; font-size: 76px; letter-spacing: -0.035em; }
+.t-score .big small { font-size: 32px; font-weight: 600; }
+.t-score .win .big { color: var(--red); }
+.t-miss { margin-top: 12px; }
+.t-miss > div { display: grid; grid-template-columns: 1fr auto; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--hair); font-size: 14px; line-height: 19px; }
+.t-miss s { opacity: 0.62; }
+.trial .slab { margin-top: 12px; }
+.t-row2 { flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: var(--g); margin: 12px var(--m) max(16px, env(safe-area-inset-bottom)); }
+.t-row2 .slab, .t-row2 .outline { margin: 0; height: 64px; width: auto; }
+.t-row2 .slab b, .t-row2 .outline b { font-size: 20px; }
+/* the two numbers that travel between the big rows and the table: made once, reused */
+.fly { position: fixed; left: 0; top: 0; z-index: 50; opacity: 0; pointer-events: none; transform-origin: 0 0; will-change: transform, opacity; white-space: nowrap; }
+
+@media (prefers-reduced-motion: reduce) { :root { --t: 1ms; --fast: 1ms; } }
+</style>
+</head>
+<body>
+<div class="app" id="app" data-screen="today" data-mode="words">
+
+  <section class="screen today" id="today">
+    <div class="scroll">
+      <header class="meta cols"><span data-da="Søndag 15. november">Sunday 15 November</span><span data-da="Uge 46">Week 46</span><span>16:38</span></header>
+
+      <div class="hero">
+        <div class="now"><b class="num big" id="nowBig">17:00</b><span id="nowSmall" data-da="om 22 min">in 22 min</span></div>
+        <h1 class="word" id="word">Push</h1>
+      </div>
+
+      <div class="spec cols">
+        <div><b class="big">6</b><span class="mute" data-da="øvelser">lifts</span></div>
+        <div><b class="big">21</b><span class="mute" data-da="sæt">sets</span></div>
+        <div><b class="big">52</b><span class="mute" data-da="minutter">minutes</span></div>
+        <div><b class="big" id="planT">7.0</b><span class="mute" data-da="ton">tonnes</span></div>
+      </div>
+
+      <div class="coach">
+        <div class="who"><i class="sq"></i>Coach</div>
+        <p id="coachLine" data-da="Du sov 7 t 42, og sidste uges bænkpres gik hurtigt. Topsættet går til 85 kg i dag. Det vil være ny rekord.">You slept 7 h 42 and last week's bench moved fast. The top set goes to 85 kg today. That would be a new best.</p>
+      </div>
+
+      <div class="stats">
+        <div class="cell"><div class="mute" data-da="Søvn">Sleep</div><b class="big">7:42</b><span class="of mute" data-da="af 8:00">of 8:00</span><div class="bar"><i style="transform:scaleX(.96)"></i></div></div>
+        <div class="cell"><div class="mute" data-da="Parathed">Readiness</div><b class="big">82</b><span class="of mute" data-da="af 100">of 100</span><div class="bar"><i style="transform:scaleX(.82)"></i></div></div>
+        <div class="cell"><div class="mute">Protein</div><b class="big">96</b><span class="of mute" data-da="af 160 g">of 160 g</span><div class="bar"><i style="transform:scaleX(.6)"></i></div></div>
+        <div class="cell"><div class="mute" data-da="Energi">Energy</div><b class="big">1840</b><span class="of mute" data-da="af 2900 kcal">of 2900 kcal</span><div class="bar"><i style="transform:scaleX(.634)"></i></div></div>
+      </div>
+
+      <div class="week">
+        <div class="mute" id="weekLine" data-da="4 af 5 træninger klaret i denne uge">4 of 5 sessions done this week</div>
+        <div class="days">
+          <div class="did"><span data-da="Man">Mon</span><i class="sq"></i><span class="mute">Push</span></div>
+          <div class="did"><span data-da="Tir">Tue</span><i class="sq"></i><span class="mute">Pull</span></div>
+          <div><span data-da="Ons">Wed</span><i class="sq"></i></div>
+          <div class="did"><span data-da="Tor">Thu</span><i class="sq"></i><span class="mute" data-da="Ben">Legs</span></div>
+          <div><span data-da="Fre">Fri</span><i class="sq"></i></div>
+          <div class="did"><span data-da="Lør">Sat</span><i class="sq"></i><span class="mute">Pull</span></div>
+          <div class="today-d" id="sun"><span data-da="Søn">Sun</span><i class="sq"></i><span>Push</span></div>
+        </div>
+      </div>
+      <div class="trial-cta">
+        <div class="who"><i class="sq" style="color:var(--red)"></i><span data-da="Prøv det">Try it</span></div>
+        <p data-da="Kan du læse en træningsskærm på 3 sekunder uden ord, kun med tal? Hver øvelse vises én gang med ord og én gang med kun tal.">Can you read a workout screen in 3 seconds without words, with numbers only? Each lift is shown once with words and once with numbers only.</p>
+        <button class="outline" id="trialGo"><b data-da="Tag 3-sekunders-testen">Take the 3-second test</b><span class="mute" data-da="2 min">2 min</span></button>
+      </div>
+    </div>
+    <button class="slab" id="start"><b id="startLabel">Start Push</b><span id="startSide" data-da="Bænkpres først">Bench first</span></button>
+  </section>
+
+  <section class="screen workout" id="workout" aria-label="Workout" inert>
+    <div class="wk-head">
+      <div class="prog" id="prog"></div>
+      <div class="wk-meta cols">
+        <button id="back" aria-label="Back to Today" data-da-label="Tilbage til i dag"><i>&lsaquo;</i><span class="w-only" data-da="I dag">Today</span></button>
+        <span><span class="lab gone" data-da="Nr. ">Lift </span><span id="liftNo">1</span><span class="w-only" data-da=" af 6"> of 6</span><span class="n-only">/6</span></span>
+        <span id="elapsed">0:00</span>
+        <button class="tog" id="tog" aria-label="Switch between words and numbers only" data-da-label="Skift mellem ord og kun tal"><span>Aa</span><span>12</span></button>
+      </div>
+      <div class="title-wrap"><h2 class="title" id="title"></h2></div>
+      <div class="best lab gone"><span class="mute" data-da="Bedst">Best</span><b id="bestV"></b></div>
+    </div>
+
+    <div class="wk-body">
+      <div class="setview" id="setview">
+        <div class="in">
+          <div class="hrow">
+            <span class="num big" id="hw"></span>
+            <span class="unit lab mute">kg</span>
+            <div class="step"><button data-k="w" data-d="1" aria-label="More weight" data-da-label="Mere vægt">+</button><button data-k="w" data-d="-1" aria-label="Less weight" data-da-label="Mindre vægt">&minus;</button></div>
+          </div>
+          <div class="hrow reps">
+            <span class="x">&times;</span><span class="num big" id="hr"></span>
+            <span class="unit lab mute" data-da="gentagelser">reps</span>
+            <div class="step"><button data-k="r" data-d="1" aria-label="More reps" data-da-label="Flere gentagelser">+</button><button data-k="r" data-d="-1" aria-label="Fewer reps" data-da-label="Færre gentagelser">&minus;</button></div>
+          </div>
+          <div class="table">
+            <div class="thead cols lab gone mute"><span data-da="Sæt">Set</span><span style="grid-column:span 2" data-da="I dag">Today</span><span style="padding-left:8px" data-da="Sidst">Last time</span></div>
+            <div id="rows"></div>
+            <div id="tail"></div>
+          </div>
+        </div>
+        <button class="slab" id="done"></button>
+      </div>
+
+      <div class="rest" id="rest">
+        <div class="rest-paper" id="restPaper"></div>
+        <div class="rest-clip" id="clip"><div class="rest-red" id="restRed"></div></div>
+        <div class="rest-hit">
+          <div class="zone"><div class="nstep">
+            <button id="nm" aria-label="Less weight on the next set" data-da-label="Mindre vægt på næste sæt"></button><button id="np" aria-label="More weight on the next set" data-da-label="Mere vægt på næste sæt"></button>
+          </div></div>
+          <div class="ctl">
+            <button id="more" aria-label="Add 30 seconds" data-da-label="Læg 30 sekunder til"></button><button id="skip" aria-label="Skip the rest" data-da-label="Spring pausen over"></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="finish" id="finish" inert>
+      <div class="fin-in" id="finIn"></div>
+      <button class="slab" id="finBack"><b data-da="Tilbage til i dag">Back to Today</b></button>
+    </div>
+  </section>
+  <div class="trial" id="trial" hidden></div>
+</div>
+
+<script>
+(() => {
+const $ = (id) => document.getElementById(id);
+const Q = new URLSearchParams(location.search);
+const app = $('app');
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- language: English, or Danish with ?lang=da ---------- */
+const DA = Q.get('lang') === 'da';
+const L = (en, da) => (DA ? da : en);
+const SEP = DA ? ',' : '.';
+const OF = L('of', 'af');
+if (DA) {
+  document.documentElement.lang = 'da';
+  document.querySelectorAll('[data-da]').forEach((el) => { el.textContent = el.dataset.da; });
+  document.querySelectorAll('[data-da-label]').forEach((el) => el.setAttribute('aria-label', el.dataset.daLabel));
+}
+
+/* ---------- motion: springs sampled into linear(), so the browser runs them ---------- */
+function sample(zeta, omega, dur) {
+  const n = 40, pts = [];
+  for (let i = 0; i <= n; i++) {
+    const t = (i / n) * dur, wd = omega * Math.sqrt(Math.max(0, 1 - zeta * zeta));
+    const wave = zeta >= 1 ? 1 + omega * t : Math.cos(wd * t) + ((zeta * omega) / wd) * Math.sin(wd * t);
+    pts.push((1 - Math.exp(-zeta * omega * t) * wave).toFixed(4));
+  }
+  pts[n] = '1';
+  return `linear(${pts.join(',')})`;
+}
+const SPRING = sample(0.8, 14, 0.5); /* numbers: a small overshoot, so they land with weight */
+const GLIDE = sample(1, 17, 0.5);    /* surfaces: no overshoot */
+const OUT = 'cubic-bezier(0.23, 1, 0.32, 1)';
+const T = calm ? 1 : 500, FAST = calm ? 1 : 140;
+document.documentElement.style.setProperty('--spring', SPRING);
+document.documentElement.style.setProperty('--glide', GLIDE);
+
+/* ---------- data: one Push day ---------- */
+const plan = [
+  { name: L('Bench press', 'Bænkpres'), step: 2.5, rest: 120, best: [82.5, 6], sets: [[80, 6], [82.5, 6], [82.5, 6], [85, 6]], last: [[77.5, 6], [80, 6], [80, 6], [82.5, 5]] },
+  { name: L('Incline press', 'Skrå bænkpres'), step: 2, rest: 90, best: [30, 10], sets: [[30, 10], [30, 10], [30, 10]], last: [[28, 10], [28, 10], [28, 9]] },
+  { name: L('Shoulder press', 'Skulderpres'), step: 2.5, rest: 90, best: [52.5, 6], sets: [[50, 8], [50, 8], [50, 8]], last: [[50, 8], [50, 7], [50, 6]] },
+  { name: 'Cable fly', step: 2.5, rest: 60, best: [22.5, 12], sets: [[20, 12], [20, 12], [20, 12]], last: [[20, 12], [20, 11], [20, 10]] },
+  { name: L('Lateral raise', 'Sideløft'), step: 1, rest: 60, best: [10, 14], sets: [[10, 12], [10, 12], [10, 12], [10, 12]], last: [[10, 12], [10, 12], [10, 10], [10, 10]] },
+  { name: 'Triceps pushdown', step: 2.5, rest: 60, best: [37.5, 10], sets: [[35, 12], [35, 12], [35, 12], [35, 12]], last: [[35, 12], [35, 11], [35, 10], [35, 10]] },
+];
+plan.forEach((x) => { x.done = []; });
+const TOTAL = plan.reduce((n, x) => n + x.sets.length, 0);
+const st = { e: 0, s: 0, w: 0, r: 0, started: 0, finished: 0, busy: false, rising: false, resting: false, poster: false, pending: null, queued: null, records: [] };
+
+const kg = (w) => (Number.isInteger(w) ? String(w) : w.toFixed(1).replace('.', SEP));
+const tonnes = (k) => (k / 1000).toFixed(1).replace('.', SEP);
+const setTxt = (a) => `${kg(a[0])} × ${a[1]}`;
+const clockTxt = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+const beats = (a, b) => a[0] > b[0] || (a[0] === b[0] && a[1] > b[1]);
+const doneCount = () => plan.reduce((n, x) => n + x.done.length, 0);
+const lifted = () => plan.reduce((n, x) => n + x.done.reduce((m, d) => m + d[0] * d[1], 0), 0);
+const nextOf = (e, s) => (s + 1 < plan[e].sets.length ? [e, s + 1] : e + 1 < plan.length ? [e + 1, 0] : null);
+const half = (x) => x.step % 1 !== 0; /* this lift moves in half kilos */
+
+/* ---------- rolling digits ---------- */
+const DIGITS = '0123456789'.split('').map((c) => `<i>${c}</i>`).join('') + '<i>0</i>';
+const isD = (c) => c >= '0' && c <= '9';
+const cell = (c) => (isD(c)
+  ? `<span class="d"><span class="col" style="transform:translateY(-${c}em)">${DIGITS}</span></span>`
+  : `<span class="p">${c}</span>`);
+function setNum(el, str, o = {}) {
+  str = String(str);
+  const m = o.slot ? /^(\d+)(?:[.,](\d))?$/.exec(str) : null; /* slot: the half kilo has its own place that fades, so the whole kilos can roll */
+  const body = m ? m[1] : str, prev = el.dataset.b || '';
+  const key = (m ? 's' : 'p') + [...body].map((c) => (isD(c) ? 'd' : c)).join('');
+  if (el.dataset.k !== key) {
+    el.innerHTML = [...body].map(cell).join('') + (m ? `<span class="fr${m[2] ? '' : ' off'}">${SEP}${m[2] || 5}</span>` : '');
+    el.dataset.k = key;
+  } else {
+    const cols = el.querySelectorAll('.col');
+    let k = 0;
+    [...body].forEach((c, i) => {
+      if (!isD(c)) return;
+      const col = cols[k++];
+      if (c === prev[i]) return;
+      if (o.down && prev[i] === '0') { /* counting down past zero: start from the spare 0 under the 9 */
+        col.style.transition = 'none'; col.style.transform = 'translateY(-10em)'; void col.offsetWidth; col.style.transition = '';
+      }
+      col.style.transform = `translateY(-${c}em)`;
+    });
+    if (m) { const fr = el.querySelector('.fr'); if (m[2]) fr.textContent = SEP + m[2]; fr.classList.toggle('off', !m[2]); }
+  }
+  el.dataset.b = body;
+}
+
+/* type is fitted to the grid: the widest cut of the face that still fits its columns */
+function fitWidth(el, room, cuts) {
+  for (const c of cuts) { el.style.fontStretch = c + '%'; if (el.offsetWidth <= room) return c; }
+  return cuts[cuts.length - 1];
+}
+function fitSize(el, room, max) {
+  el.style.fontSize = '100px';
+  el.style.fontSize = Math.max(40, Math.min(max, Math.floor((100 * room) / el.offsetWidth))) + 'px';
+}
+
+/* a number travels to its new place instead of being replaced by a copy */
+const pool = [0, 1].map(() => { const c = document.createElement('span'); c.className = 'fly num'; document.body.appendChild(c); return c; });
+function fly(from, to, i) {
+  const a = from.getBoundingClientRect(), b = to.getBoundingClientRect(), cs = getComputedStyle(from), c = pool[i];
+  c.innerHTML = from.innerHTML;
+  Object.assign(c.style, { fontSize: cs.fontSize, fontWeight: cs.fontWeight, fontStretch: cs.fontStretch, letterSpacing: cs.letterSpacing, color: cs.color, opacity: 1 });
+  from.style.visibility = 'hidden'; to.style.visibility = 'hidden';
+  const an = c.animate([{ transform: `translate(${a.left}px, ${a.top}px) scale(1)` }, { transform: `translate(${b.left}px, ${b.top}px) scale(${b.height / a.height})` }],
+    { duration: T, easing: SPRING, fill: 'forwards' });
+  return an.finished.then(() => { to.style.visibility = ''; c.style.opacity = 0; an.cancel(); });
+}
+
+/* ---------- workout: set view ---------- */
+const hw = $('hw'), hr = $('hr');
+function drawHero() {
+  setNum(hw, kg(st.w), { slot: half(plan[st.e]) }); setNum(hr, st.r);
+  const room = hw.parentElement.clientWidth - hw.parentElement.querySelector('.step').offsetWidth - 8;
+  hr.style.fontStretch = fitWidth(hw, room, [75, 62]) + '%'; /* the same cut as every other figure, narrower only for 100 kg and up */
+}
+function drawProg() {
+  const n = doneCount();
+  let k = 0;
+  $('prog').innerHTML = plan.map((x) => `<div style="flex:${x.sets.length}">${x.sets.map(() => {
+    const c = k < n ? 'done' : k === n && !st.finished ? 'cur' : ''; k++; return `<i class="${c}"></i>`;
+  }).join('')}</div>`).join('');
+}
+function rowsHTML(e, cur, cv) {
+  const x = plan[e];
+  return x.sets.map((p, i) => {
+    const state = i < x.done.length ? 'done' : i === cur ? 'cur' : 'todo';
+    const v = x.done[i] || (i === cur ? cv : p);
+    return `<div class="row cols" data-st="${state}"><span class="n"><i class="sq"></i>${i + 1}</span>` +
+      `<span class="v"><span class="rw">${kg(v[0])}</span><span class="x">×</span><span class="rr">${v[1]}</span></span>` +
+      `<span class="l">${setTxt(x.last[i])}</span></div>`;
+  }).join('');
+}
+function thenHTML(e) {
+  const nx = plan[e + 1];
+  if (!nx) return `<div class="then"><span class="lab mute">${L('Last lift of the day', 'Dagens sidste øvelse')}</span></div>`;
+  const p = nx.sets[0], n = nx.sets.length;
+  return `<div class="then"><span class="lab gone mute">${L('Then', 'Derefter')}</span><b>${nx.name}</b><span class="mute">` +
+    `<span class="w-only">${L(`${n} sets of ${p[1]} at ${kg(p[0])} kg`, `${n} sæt a ${p[1]} med ${kg(p[0])} kg`)}</span><span class="n-only">${setTxt(p)}</span></span></div>`;
+}
+function drawRows() { $('rows').innerHTML = rowsHTML(st.e, st.s, [st.w, st.r]); $('tail').innerHTML = thenHTML(st.e); }
+function paintCur() {
+  document.querySelectorAll('.row[data-st="cur"]').forEach((row) => { row.querySelector('.rw').textContent = kg(st.w); row.querySelector('.rr').textContent = st.r; });
+}
+function drawSlab() {
+  const x = plan[st.e];
+  $('done').innerHTML = `<b><span class="w-only">${L('Done', 'Færdig')}</span><span class="n-only">${setTxt([st.w, st.r])}</span></b>` +
+    `<span><span class="w-only">${L('Set', 'Sæt')} ${st.s + 1} ${OF} ${x.sets.length}</span><span class="n-only">${st.s + 1}/${x.sets.length}</span></span>`;
+}
+function drawTitle(animate) {
+  const x = plan[st.e], t = $('title');
+  const put = () => {
+    t.textContent = x.name; fitWidth(t, t.parentElement.clientWidth, [100, 88, 75, 62]);
+    $('liftNo').textContent = st.e + 1; $('bestV').textContent = setTxt(x.best);
+  };
+  if (!animate) return put();
+  t.animate([{ transform: 'none', opacity: 1 }, { transform: 'translateY(-60%)', opacity: 0 }], { duration: FAST, easing: OUT }).finished.then(() => {
+    put(); t.animate([{ transform: 'translateY(60%)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: T, easing: SPRING });
+  });
+}
+function loadSet() { [st.w, st.r] = plan[st.e].sets[st.s]; drawHero(); drawRows(); drawSlab(); }
+
+document.querySelectorAll('.step button').forEach((b) => b.addEventListener('click', () => {
+  if (st.rising || st.resting || st.finished) return;
+  const x = plan[st.e], d = +b.dataset.d;
+  if (b.dataset.k === 'w') st.w = Math.max(0, st.w + d * x.step); else st.r = Math.max(1, st.r + d);
+  drawHero(); drawSlab(); paintCur();
+}));
+
+/* ---------- tick a set: one tap ---------- */
+$('done').addEventListener('click', () => {
+  if (st.busy || st.resting) return;
+  st.busy = st.rising = true;
+  const x = plan[st.e], logged = [st.w, st.r], row = $('rows').children[st.s], nx = nextOf(st.e, st.s);
+  const record = beats(logged, x.best) ? { old: x.best, neu: logged, name: x.name } : null;
+  x.done.push(logged);
+  if (record) { x.best = logged; st.records.push(record); $('bestV').textContent = setTxt(logged); }
+  if (!nx) st.finished = Date.now();
+  /* the numbers leave on this frame; the next screen is put together while they travel */
+  const flights = Promise.all([fly(hw, row.querySelector('.rw'), 0), fly(hr, row.querySelector('.rr'), 1)]);
+  const built = new Promise((ok) => setTimeout(() => { if (nx) buildRest(x, nx, record); else buildFinish(); ok(); }, calm ? 0 : 30));
+  Promise.all([flights, built]).then(() => {
+    row.dataset.st = 'done';
+    drawProg(); paintToday();
+    if (!nx) { $('finish').inert = false; $('finish').classList.add('on'); return; }
+    if (nx[0] === st.e) { st.s = nx[1]; loadSet(); } /* same lift: the table moves on now, the big numbers wait for the rest to end */
+    riseRest(nx);
+  });
+});
+
+/* ---------- rest ---------- */
+const rest = $('rest'), clip = $('clip'), red = $('restRed'), paper = $('restPaper');
+let endAt = 0, total = 0, timer = 0, recTimer = 0, level = [];
+const stepTxt = (x) => kg(x.step);
+function buildRest(x, nx, record) {
+  total = +Q.get('rest') || x.rest;
+  const n = plan[nx[0]], p = n.sets[nx[1]], same = nx[0] === st.e;
+  const html = `<div class="rest-in">
+    <div class="zone">
+      <div class="rlab lab gone"><span>${L('Rest', 'Pause')}</span><span>${OF} <span class="rtot">${clockTxt(total)}</span></span></div>
+      <div class="cd num"></div>
+      <div class="nx"><div><span class="lab gone">${L('Next', 'Næste')} </span>${same ? `<span class="w-only">${L('set', 'sæt')} ${nx[1] + 1} ${OF} ${n.sets.length}</span>` : `<b>${n.name}</b>`}<span class="note lab gone"> · ${L('A new best if you get it', 'Ny rekord, hvis du tager den')}</span></div>
+        <div class="nxnum"><span class="num nw"></span><span class="x">×</span><span class="num nr"></span></div></div>
+      <div class="nstep"><span>−${stepTxt(n)}</span><span>+${stepTxt(n)}</span></div>
+      ${record ? `<div class="recshow"><div class="rectop"><span class="lab">${L('New best', 'Ny rekord')}</span><b>${x.name}</b></div>
+        <div class="old">${setTxt(record.old)}</div><div class="recbig">${setTxt(record.neu)}</div></div>` : ''}
+    </div>
+    <div class="table">${document.querySelector('.setview .thead').outerHTML}${rowsHTML(st.e, same ? nx[1] : -1, p)}${thenHTML(st.e)}</div>
+    <div class="ctl"><span><span class="w-only">+30 s</span><span class="n-only">+0:30</span></span><span><span class="w-only">${L('Skip rest', 'Spring over')}</span><span class="n-only">→ 0:00</span></span></div>
+  </div>`;
+  paper.innerHTML = html; red.innerHTML = html;
+  rest.classList.remove('settled', 'rec-out');
+  st.poster = !!record;
+  rest.querySelectorAll('.nw').forEach((el) => setNum(el, kg(p[0]), { slot: half(n) }));
+  rest.querySelectorAll('.nr').forEach((el) => setNum(el, p[1]));
+  rest.querySelectorAll('.note').forEach((el) => { el.hidden = !beats(p, n.best); });
+  rest.querySelectorAll('.cd').forEach((el) => setNum(el, clockTxt(total)));
+  fitRest();
+}
+/* the countdown is as wide as the grid, unless a short screen leaves less height than that needs */
+function fitRest() {
+  const zone = paper.querySelector('.zone');
+  if (!zone) return;
+  const high = (zone.clientHeight - 12 - paper.querySelector('.rlab').offsetHeight - paper.querySelector('.nx').offsetHeight) / 0.8;
+  rest.querySelectorAll('.cd').forEach((el) => fitSize(el, zone.clientWidth, Math.min(200, high)));
+  rest.querySelectorAll('.recbig').forEach((el) => fitSize(el, zone.clientWidth - 24, Math.min(150, (zone.clientHeight - 90) / 0.9)));
+}
+function showTime(up) {
+  const left = Math.max(0, Math.ceil((endAt - performance.now()) / 1000));
+  rest.querySelectorAll('.cd').forEach((el) => setNum(el, clockTxt(left), { down: !up }));
+  if (left <= 0) endRest();
+}
+/* the red field: both layers move together, opposite ways, so the red copy stays still while its edge falls */
+function moveLevel(frames, opts) {
+  level.forEach((a) => a.cancel());
+  const inv = frames.map((f) => ({ ...f, transform: f.transform.replace('(', '(-') }));
+  level = [clip.animate(frames, { fill: 'forwards', ...opts }), red.animate(inv, { fill: 'forwards', ...opts })];
+  return level[0].finished;
+}
+const pct = (p) => `translateY(${(p * 100).toFixed(3)}%)`;
+const gone = () => 1 - Math.max(0, endAt - performance.now()) / (total * 1000);
+
+function riseRest(nx) {
+  rest.classList.add('on');
+  moveLevel([{ transform: pct(1) }, { transform: pct(0) }], { duration: T, easing: GLIDE }).then(() => {
+    paper.style.opacity = 1;
+    rest.classList.add('settled');
+    st.pending = nx[0] !== st.e ? nx : null;
+    endAt = performance.now() + total * 1000;
+    moveLevel([{ transform: pct(0) }, { transform: pct(1) }], { duration: total * 1000, easing: 'linear' }).catch(() => {});
+    showTime(); timer = setInterval(showTime, 200);
+    if (st.poster) recTimer = setTimeout(() => { rest.classList.add('rec-out'); st.poster = false; }, 1900);
+    st.busy = st.rising = false; st.resting = true;
+    const q = st.queued; st.queued = null;
+    if (q) q();
+  }).catch(() => {});
+}
+/* a tap that lands while the red field is still rising is kept and runs when it has landed */
+const inRest = (f) => () => { if (st.resting && !st.busy) f(); else if (st.rising) st.queued = f; };
+$('more').addEventListener('click', inRest(() => {
+  const from = gone();
+  endAt += 30000; total += 30;
+  const left = endAt - performance.now(), to = gone();
+  moveLevel([{ transform: pct(from), easing: OUT }, { transform: pct(to), offset: Math.min(0.9, (FAST * 2) / left), easing: 'linear' }, { transform: pct(1) }], { duration: left }).catch(() => {});
+  rest.querySelectorAll('.rtot').forEach((el) => { el.textContent = clockTxt(total); });
+  showTime(true);
+}));
+$('skip').addEventListener('click', inRest(() => endRest(gone())));
+/* the next set can be made heavier or lighter while resting */
+function nudge(d) {
+  if (st.poster) return;
+  const nx = st.pending || [st.e, st.s], n = plan[nx[0]];
+  if (st.pending) n.sets.forEach((q) => { q[0] = Math.max(0, q[0] + d * n.step); });
+  else { st.w = Math.max(0, st.w + d * n.step); drawHero(); drawSlab(); paintCur(); }
+  const w = st.pending ? n.sets[nx[1]][0] : st.w, r = st.pending ? n.sets[nx[1]][1] : st.r;
+  rest.querySelectorAll('.nxnum').forEach((box) => { /* the "× 6" glides over when the half kilo comes or goes */
+    const els = [...box.querySelectorAll('.x, .nr')], was = els.map((el) => el.getBoundingClientRect().left);
+    setNum(box.querySelector('.nw'), kg(w), { slot: half(n) });
+    els.forEach((el, i) => {
+      const d = was[i] - el.getBoundingClientRect().left;
+      if (d) el.animate([{ transform: `translateX(${d}px)` }, { transform: 'none' }], { duration: T, easing: SPRING });
+    });
+  });
+  rest.querySelectorAll('.note').forEach((el) => { el.hidden = !beats([w, r], n.best); });
+  if (st.pending) rest.querySelectorAll('.then').forEach((el) => { el.outerHTML = thenHTML(st.e); });
+}
+$('nm').addEventListener('click', inRest(() => nudge(-1)));
+$('np').addEventListener('click', inRest(() => nudge(1)));
+['more', 'skip', 'nm', 'np'].forEach((id) => {
+  $(id).addEventListener('pointerdown', () => { rest.dataset.p = id; });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach((ev) => $(id).addEventListener(ev, () => { delete rest.dataset.p; }));
+});
+function endRest(at = 1) {
+  if (!st.resting || st.busy) return;
+  st.busy = true; st.resting = false; st.poster = false; clearInterval(timer); clearTimeout(recTimer);
+  rest.classList.add('rec-out');
+  /* what is left of the red field falls away while the next numbers travel up to the big rows */
+  if (at < 0.98) moveLevel([{ transform: pct(at) }, { transform: pct(1) }], { duration: T, easing: GLIDE }).catch(() => {});
+  else level.forEach((a) => a.cancel());
+  if (st.pending) { [st.e, st.s] = st.pending; st.pending = null; drawTitle(true); loadSet(); }
+  const fade = paper.animate([{ opacity: 1 }, { opacity: 0 }], { duration: FAST * 2, easing: OUT, fill: 'forwards' });
+  Promise.all([fly(paper.querySelector('.nw'), hw, 0), fly(paper.querySelector('.nr'), hr, 1)]).then(() => {
+    rest.classList.remove('on', 'settled');
+    paper.style.opacity = 0; fade.cancel();
+    st.busy = false;
+  });
+}
+
+/* ---------- finish, clocks, Today ---------- */
+function elapsed() { return st.started ? Math.floor(((st.finished || Date.now()) - st.started) / 1000) : 0; }
+function buildFinish() {
+  const r = st.records, last = r[r.length - 1];
+  $('finIn').innerHTML = `<header class="meta cols"><span>${L('Sunday 15 November', 'Søndag 15. november')}</span><span>${L('Week 46', 'Uge 46')}</span><span>${L('Done', 'Klaret')}</span></header>
+    <div class="hero"><div class="now"><b class="num big">${clockTxt(elapsed())}</b><span>${L('Push is logged', 'Push er logført')}</span></div><div class="word" id="finWord">Push</div></div>
+    <div class="spec cols">
+      <div><b class="big">${doneCount()}</b><span class="mute">${L('sets', 'sæt')}</span></div>
+      <div><b class="big">${tonnes(lifted())}</b><span class="mute">${L('tonnes', 'ton')}</span></div>
+      <div><b class="big">${r.length}</b><span class="mute">${r.length === 1 ? L('new best', 'ny rekord') : L('new bests', 'nye rekorder')}</span></div>
+      <div><b class="big">5/5</b><span class="mute">${L('this week', 'denne uge')}</span></div>
+    </div>
+    <p class="fin-line">${last ? L(`${last.name} went to ${setTxt(last.neu)}. That is a new best.`, `${last.name} gik til ${setTxt(last.neu)}. Det er ny rekord.`) : L('Every set done.', 'Alle sæt er taget.')}</p>
+    <div class="ftab">${plan.map((x) => {
+      const top = x.done.reduce((a, d) => (beats(d, a) ? d : a));
+      return `<div class="frow cols"><span>${x.name}</span><b>${setTxt(top)}</b><span>${r.some((q) => q.name === x.name) ? L('new best', 'ny rekord') : ''}</span></div>`;
+    }).join('')}</div>`;
+  fitSize($('finWord'), $('finWord').parentElement.clientWidth, 190);
+}
+function paintToday() {
+  const n = doneCount(), x = plan[st.e], last = st.records[st.records.length - 1];
+  if (st.finished) {
+    setNum($('nowBig'), clockTxt(elapsed())); $('nowSmall').textContent = L('Push is logged', 'Push er logført');
+    $('startLabel').textContent = L('Push logged', 'Push logført'); $('startSide').textContent = `${n} ${L('sets', 'sæt')}`;
+    $('start').disabled = true; $('sun').classList.add('did');
+    $('weekLine').textContent = L('5 of 5 sessions done this week', '5 af 5 træninger klaret i denne uge');
+    $('coachLine').textContent = L(
+      `Push is done. ${n} sets and ${tonnes(lifted())} tonnes. ${last ? `${last.name} went to ${setTxt(last.neu)}, a new best. ` : ''}Eat 64 g of protein before bed.`,
+      `Push er klaret. ${n} sæt og ${tonnes(lifted())} ton. ${last ? `${last.name} gik til ${setTxt(last.neu)}, ny rekord. ` : ''}Spis 64 g protein inden sengetid.`);
+  } else if (st.started) {
+    setNum($('nowBig'), clockTxt(elapsed())); $('nowSmall').textContent = x.name;
+    $('startLabel').textContent = L('Resume Push', 'Fortsæt Push'); $('startSide').textContent = `${n} ${OF} ${TOTAL} ${L('sets', 'sæt')}`;
+  }
+}
+setInterval(() => {
+  if (!st.started || st.finished) return;
+  const t = clockTxt(elapsed());
+  $('elapsed').textContent = t;
+  if (app.dataset.screen === 'today') setNum($('nowBig'), t);
+}, 1000);
+
+/* the screen that is off to the side cannot take focus */
+function show(name) { app.dataset.screen = name; $('workout').inert = name !== 'workout'; $('today').inert = name === 'workout'; }
+$('start').addEventListener('click', () => {
+  if (!st.started) { st.started = Date.now() - (+Q.get('set') > 1 ? 580000 : 0); $('elapsed').textContent = clockTxt(elapsed()); }
+  show('workout');
+});
+$('back').addEventListener('click', () => { paintToday(); show('today'); });
+$('finBack').addEventListener('click', () => show('today'));
+$('tog').addEventListener('click', () => {
+  app.dataset.mode = app.dataset.mode === 'words' ? 'nums' : 'words';
+  sizeRows(); drawHero(); fitRest();
+});
+
+/* ---------- first paint ---------- */
+if (Q.get('mode') === 'nums') app.dataset.mode = 'nums';
+const jump = Math.min(plan[0].sets.length, +Q.get('set') || 1) - 1; /* ?set=3 opens mid-workout, for screenshots */
+for (let i = 0; i < jump; i++) plan[0].done.push(plan[0].sets[i]);
+st.s = jump;
+$('planT').textContent = tonnes(plan.reduce((n, x) => n + x.sets.reduce((m, p) => m + p[0] * p[1], 0), 0));
+/* the two big rows take the height the table and the button leave free */
+function sizeRows() {
+  const nums = app.dataset.mode === 'nums';
+  const free = document.querySelector('.setview .in').clientHeight - 2 - ((nums ? 0 : 26) + 4 * 38 + 38 + 2);
+  app.style.setProperty('--rowh', Math.max(112, Math.min(nums ? 186 : 172, Math.floor(free / 2))) + 'px');
+}
+function fit() { fitSize($('word'), $('word').parentElement.clientWidth, 190); sizeRows(); drawTitle(false); }
+fit(); drawProg(); loadSet();
+document.fonts.ready.then(() => { fit(); drawHero(); });
+if (Q.get('screen') === 'workout') $('start').click();
+
+/* ---------- the 3-second test ----------
+   Six real workout screens, three with words and three with numbers only, in a shuffled order.
+   Each is shown for 3 seconds, then hidden, then two or three questions about it. Results stay on the page. */
+const trial = $('trial'), LOOK = 3000;
+const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const ofTxt = (i, n) => `${i} ${OF} ${n}`;
+function choices(right, wrong) {
+  const out = [right];
+  for (const w of shuffle(wrong.filter((v) => v !== right))) { if (!out.includes(w)) out.push(w); if (out.length === 4) break; }
+  return shuffle(out);
+}
+/* builds one screen's state and its questions from the same plan the app shows */
+function makeRound(mode, resting, e, avoid) {
+  const x = plan[e], n = x.sets.length;
+  const s = shuffle([...Array(resting ? n - 1 : n).keys()].filter((i) => i !== avoid))[0];
+  const [w, r] = x.sets[s], st0 = x.step;
+  if (!resting) {
+    return { mode, e, s, rest: null, qs: [
+      { q: L('What weight is on the bar?', 'Hvilken vægt er på stangen?'), a: `${kg(w)} kg`,
+        o: choices(`${kg(w)} kg`, [x.last[s][0], w + st0, w - st0, x.best[0], w + 2 * st0].map((v) => `${kg(v)} kg`)) },
+      { q: L('How many reps?', 'Hvor mange gentagelser?'), a: String(r), o: choices(String(r), [r + 1, r - 1, r + 2, r - 2, x.last[s][1]].map(String)) },
+      { q: L('Which set are you on?', 'Hvilket sæt er du på?'), a: ofTxt(s + 1, n),
+        o: choices(ofTxt(s + 1, n), [...x.sets.map((_, i) => ofTxt(i + 1, n)), ofTxt(s + 1, n + 1)]), small: true },
+    ] };
+  }
+  const left = 15 + Math.floor(Math.random() * (x.rest - 30)), nxt = x.sets[s + 1];
+  return { mode, e, s, rest: left, qs: [
+    { q: L('How much rest is left?', 'Hvor meget pause er der tilbage?'), a: clockTxt(left),
+      o: choices(clockTxt(left), [x.rest, x.rest - left, left + 15, left - 10, left + 30].filter((v) => v > 0).map(clockTxt)) },
+    { q: L('What is the next set?', 'Hvad er næste sæt?'), a: setTxt(nxt),
+      o: choices(setTxt(nxt), [x.last[s + 1], [nxt[0] + st0, nxt[1]], [nxt[0], nxt[1] - 2], [nxt[0] - st0, nxt[1]], x.best].map(setTxt)), small: true },
+  ] };
+}
+/* puts the real app into that state at once: no slide, no rolling digits */
+function stage(R) {
+  clearInterval(timer); clearTimeout(recTimer); level.forEach((a) => a.cancel());
+  $('finish').classList.remove('on'); $('finish').inert = true; /* a finished day's poster would cover the screens under test */
+  rest.classList.remove('on', 'settled', 'rec-out'); paper.style.opacity = 0;
+  Object.assign(st, { e: R.e, s: R.s, started: 0, finished: 0, busy: false, rising: false, resting: false, poster: false, pending: null, queued: null });
+  plan.forEach((x, i) => { x.done = x.sets.slice(0, i < R.e ? x.sets.length : i === R.e ? R.s : 0).map((p) => [...p]); });
+  app.dataset.mode = R.mode; hw.style.visibility = hr.style.visibility = '';
+  show('workout'); sizeRows(); drawTitle(false); drawProg(); loadSet();
+  $('elapsed').textContent = clockTxt(240 + R.e * 420 + R.s * 130);
+  if (R.rest == null) return;
+  const x = plan[R.e];
+  x.done.push([...x.sets[R.s]]); st.s = R.s + 1; drawProg(); loadSet();
+  buildRest(x, [R.e, R.s + 1], null);
+  total = x.rest; endAt = performance.now() + R.rest * 1000;
+  rest.classList.add('on', 'settled'); paper.style.opacity = 1;
+  const g = pct(1 - R.rest / total);
+  moveLevel([{ transform: g }, { transform: g }], { duration: 1 }).catch(() => {});
+  rest.querySelectorAll('.cd').forEach((el) => setNum(el, clockTxt(R.rest)));
+  rest.querySelectorAll('.rtot').forEach((el) => { el.textContent = clockTxt(total); });
+}
+const MODE = { words: L('With words', 'Med ord'), nums: L('Numbers only', 'Kun tal') };
+const tr = { rounds: [], i: 0, q: 0, t0: 0, log: [] };
+function put(html, phase) { trial.dataset.phase = phase; trial.innerHTML = html; trial.hidden = false; }
+const head = (mid, right) => `<header class="meta cols"><span>${L('3-second test', '3-sekunders-test')}</span><span>${mid}</span><span>${right}</span></header>`;
+function intro() {
+  snap = { plan: JSON.stringify(plan.map((x) => ({ done: x.done, best: x.best, sets: x.sets }))), st: { ...st, records: [...st.records] }, mode: app.dataset.mode, fin: $('finish').classList.contains('on') };
+  app.classList.add('test');
+  put(`<div class="tin">${head('', '')}
+    <h2 class="t-title">3 ${L('seconds', 'sekunder')}<span class="red">.</span></h2>
+    <p class="t-copy">${L('You will see a workout screen for 3 seconds. Then it hides, and you answer what you saw.',
+      'Du ser en træningsskærm i 3 sekunder. Så forsvinder den, og du svarer på, hvad du så.')}</p>
+    <div class="t-list t-key">
+      <div><b>82.5</b><span>${L('the big number is the weight in kg', 'det store tal er vægten i kg')}</span></div>
+      <div><b>× 6</b><span>${L('reps', 'gentagelser')}</span></div>
+      <div><b>3/4</b><span>${L('set 3 of 4', 'sæt 3 af 4')}</span></div>
+      <div><b class="red">1:20</b><span>${L('on red: rest left. The red falls as the time runs out', 'på rødt: pause tilbage. Det røde falder, mens tiden løber')}</span></div>
+      <div><b>→ 0:00</b><span>${L('skip the rest', 'spring pausen over')}</span></div>
+    </div>
+    <p class="t-copy">${L('That is all numbers only leaves out. 12 screens, about 2 minutes: every lift once with words and once with numbers only. Go with your first read.',
+      'Det er alt, kun tal udelader. 12 skærme, cirka 2 minutter: hver øvelse én gang med ord og én gang med kun tal. Tag din første tanke.')}</p>
+    </div></div>
+    <div class="t-row2"><button class="outline" id="tNo"><b>${L('Not now', 'Ikke nu')}</b></button><button class="slab" id="tGo"><b>${L('Start', 'Start')}</b></button></div>`, 'intro');
+  $('tNo').addEventListener('click', leave);
+  $('tGo').addEventListener('click', () => {
+    /* each mode gets the same mix, two mid-set screens and one rest, so the two scores compare like for like */
+    /* every lift twice, once per mode, so both modes see the same lifts. Two lifts are shown resting (in both modes).
+       Half the lifts come numbers-only first, half words first, and the second showing is a different set. */
+    const k6 = [0, 1, 2, 3, 4, 5], resting = new Set(shuffle([...k6]).slice(0, 2)), numsFirst = new Set(shuffle([...k6]).slice(0, 3));
+    const A = k6.map((e) => ({ e, rest: resting.has(e), mode: numsFirst.has(e) ? 'nums' : 'words' }));
+    const B = A.map((r) => ({ ...r, mode: r.mode === 'nums' ? 'words' : 'nums' })), used = {};
+    tr.rounds = [...shuffle(A), ...shuffle(B)].map((r) => { const R = makeRound(r.mode, r.rest, r.e, used[r.e]); used[r.e] = R.s; return R; });
+    tr.i = 0; tr.log = []; look();
+  });
+}
+function look() {
+  const R = tr.rounds[tr.i];
+  stage(R);
+  put('<div class="tbar"></div>', 'look');
+  trial.querySelector('.tbar').animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: LOOK, easing: 'linear', fill: 'forwards' })
+    .finished.then(() => { tr.q = 0; ask(); });
+}
+function ask() {
+  const R = tr.rounds[tr.i], Q1 = R.qs[tr.q];
+  put(`<div class="tin">${head(`${tr.i + 1}/${tr.rounds.length}`, `${tr.q + 1}/${R.qs.length}`)}
+    <span class="t-tag"><i class="sq"></i>${MODE[R.mode]}</span>
+    <h2 class="t-q">${Q1.q}</h2>
+    <div class="t-mode ${R.mode}" aria-hidden="true">${R.mode === 'nums' ? '12' : 'Aa'}</div>
+    <div class="t-opts">${Q1.o.map((o) => `<button class="${Q1.small ? 'small' : ''}">${o}</button>`).join('')}</div></div>`, 'ask');
+  trial.querySelector('.tin').style.paddingBottom = 'max(16px, env(safe-area-inset-bottom))';
+  tr.t0 = performance.now();
+  trial.querySelectorAll('.t-opts button').forEach((b) => b.addEventListener('click', () => {
+    if (trial.dataset.phase !== 'ask') return;
+    trial.dataset.phase = 'picked'; b.classList.add('picked');
+    tr.log.push({ mode: R.mode, q: Q1.q, a: Q1.a, got: b.textContent, ok: b.textContent === Q1.a, ms: performance.now() - tr.t0 });
+    setTimeout(() => {
+      if (++tr.q < R.qs.length) return ask();
+      if (++tr.i < tr.rounds.length) return look();
+      results();
+    }, 160);
+  }));
+}
+function results() {
+  const sum = (m) => { const l = tr.log.filter((x) => x.mode === m); return { ok: l.filter((x) => x.ok).length, n: l.length, s: l.reduce((t, x) => t + x.ms, 0) / l.length / 1000 }; };
+  const W = sum('words'), N = sum('nums'), sec = (v) => v.toFixed(1).replace('.', SEP) + ' s';
+  const miss = tr.log.filter((x) => !x.ok);
+  const dOk = N.ok - W.ok;
+  const verdict = Math.abs(dOk) <= 1
+    ? (N.s > W.s * 1.2 ? L('Same answers, but numbers only took longer.', 'Samme svar, men kun tal tog længere tid.')
+      : L('No real difference between words and numbers only.', 'Ingen reel forskel på ord og kun tal.'))
+    : dOk < 0 ? L(`The words helped: ${-dOk} more right with words.`, `Ordene hjalp: ${-dOk} flere rigtige med ord.`)
+      : L(`Numbers only did better: ${dOk} more right.`, `Kun tal klarede sig bedre: ${dOk} flere rigtige.`);
+  tr.text = `Raster 3-second test: ${MODE.words} ${W.ok}/${W.n} (${sec(W.s)}), ${MODE.nums} ${N.ok}/${N.n} (${sec(N.s)}).` +
+    (miss.length ? ` ${L('Missed', 'Forkert')}: ${miss.map((x) => `${x.q} ${x.got} (${x.a}, ${MODE[x.mode].toLowerCase()})`).join('; ')}.` : '');
+  put(`<div class="tin">${head('', L('Done', 'Klaret'))}
+    <h2 class="t-q" style="margin-top:18px">${verdict}</h2>
+    <p class="t-copy mute" style="margin-top:8px;font-size:14px;line-height:19px">${L('12 screens is a first read, not proof. Take it again, or hand the phone to a friend.', '12 skærme er et første indtryk, ikke et bevis. Tag den igen, eller giv telefonen til en ven.')}</p>
+    <div class="t-score">
+      <div class="${dOk < -1 ? 'win' : ''}"><span class="mute">${MODE.words}</span><b class="big">${W.ok}<small>/${W.n}</small></b><span class="mute">${sec(W.s)} ${L('per answer', 'pr. svar')}</span></div>
+      <div class="${dOk > 1 ? 'win' : ''}"><span class="mute">${MODE.nums}</span><b class="big">${N.ok}<small>/${N.n}</small></b><span class="mute">${sec(N.s)} ${L('per answer', 'pr. svar')}</span></div>
+    </div>
+    <div class="t-miss">${miss.length ? miss.map((x) => `<div><span>${x.q} <span class="mute">${MODE[x.mode]}</span></span><span><s>${x.got}</s> ${x.a}</span></div>`).join('')
+      : `<div><span>${L('No wrong answers.', 'Ingen forkerte svar.')}</span><span></span></div>`}</div></div>
+    <div class="t-row2"><button class="outline" id="tCopy"><b>${L('Copy result', 'Kopiér')}</b></button><button class="slab" id="tEnd"><b>${L('Back', 'Tilbage')}</b></button></div>`, 'done');
+  $('tCopy').addEventListener('click', async () => {
+    const b = $('tCopy').querySelector('b');
+    try { await navigator.clipboard.writeText(tr.text); b.textContent = L('Copied', 'Kopieret'); } catch { b.textContent = L('Copy failed', 'Kunne ikke kopiere'); }
+  });
+  $('tEnd').addEventListener('click', leave);
+}
+/* back to the app exactly as it was before the test (a rest that was running simply ends) */
+let snap = null;
+function leave() {
+  const P = JSON.parse(snap.plan);
+  plan.forEach((x, i) => Object.assign(x, P[i]));
+  clearInterval(timer); clearTimeout(recTimer); level.forEach((a) => a.cancel());
+  rest.classList.remove('on', 'settled', 'rec-out'); paper.style.opacity = 0;
+  Object.assign(st, snap.st, { busy: false, rising: false, resting: false, poster: false, queued: null });
+  app.dataset.mode = snap.mode; hw.style.visibility = hr.style.visibility = '';
+  show('today'); sizeRows();
+  /* ending a saved rest moves on to the next lift; otherwise the set keeps any + and − made before the test */
+  if (st.pending) { [st.e, st.s] = st.pending; st.pending = null; loadSet(); } else { drawHero(); drawRows(); drawSlab(); }
+  drawTitle(false); drawProg();
+  if (snap.fin) { $('finish').classList.add('on'); $('finish').inert = false; }
+  if (st.started) $('elapsed').textContent = clockTxt(elapsed());
+  trial.hidden = true; trial.innerHTML = '';
+  requestAnimationFrame(() => requestAnimationFrame(() => app.classList.remove('test')));
+}
+$('trialGo').addEventListener('click', intro);
+if (Q.get('test')) intro();
+})();
+</script>
+</body>
+</html>
