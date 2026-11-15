@@ -865,7 +865,7 @@ function renderHealth(){
   c.addEventListener('pointerdown',e=>{down=true;c.setPointerCapture(e.pointerId);scrub(e)});
   c.addEventListener('pointermove',e=>{if(down)scrub(e)});
   c.addEventListener('pointerup',()=>{down=false;$('#ccur').style.opacity=0;hwRoll.set(WEIGHTS[WEIGHTS.length-1]);$('#hwd').textContent='Down 0.6 kg this week';placePt()});
-  $('#addw').addEventListener('click',()=>{S.water=Math.min(2.5,S.water+.25);vib(8);waterPaint(true);watRoll&&watRoll.set(S.water);const tb=$('#twbar');tb&&setFill(tb,S.water/2.5);toast('250 ml logged','Undo',()=>{S.water=Math.max(0,S.water-.25);waterPaint(true);watRoll&&watRoll.set(S.water);tb&&setFill(tb,S.water/2.5)})});
+  $('#addw').addEventListener('click',()=>{const prev=S.water;S.water=Math.min(2.5,S.water+.25);vib(8);waterPaint(true);watRoll&&watRoll.set(S.water);const tb=$('#twbar');tb&&setFill(tb,S.water/2.5);toast('250 ml logged','Undo',()=>{S.water=prev;waterPaint(true);watRoll&&watRoll.set(S.water);tb&&setFill(tb,S.water/2.5)})});
   addEventListener('deviceorientation',e=>{if(e.gamma!=null)$('#liq')&&$('#liq').style.setProperty('--tilt',Math.max(-25,Math.min(25,-e.gamma/2))+'deg')});
   $('#gl').addEventListener('pointermove',e=>{const r=e.currentTarget.getBoundingClientRect();$('#liq').style.setProperty('--tilt',(-((e.clientX-r.left)/r.width-.5)*30)+'deg')});
   $('#gl').addEventListener('pointerleave',()=>$('#liq').style.setProperty('--tilt','0deg'));
