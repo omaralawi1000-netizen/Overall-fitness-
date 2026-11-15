@@ -143,7 +143,8 @@ button:focus-visible { outline: 3px solid var(--deep); outline-offset: 2px; }
 #work { position: absolute; inset: 0; z-index: 20; background: var(--cream); transform: translateY(102%); visibility: hidden;
   box-shadow: 0 -10px 30px rgba(22, 27, 63, .25); border-radius: 0; }
 #work.on { visibility: visible; }
-.wcol { position: absolute; inset: 0; display: flex; flex-direction: column; padding: var(--top) 16px var(--bot); }
+.wcol { position: absolute; inset: 0; display: flex; flex-direction: column; padding: var(--top) 16px var(--bot); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+@media (max-height: 700px) { .stage { min-height: 150px; } .big .v { font-size: 80px; } .reps .v { font-size: 56px; } .lastrow { margin-top: 10px; } .extab { height: 44px; padding-top: 4px; } }
 .wbar { height: 48px; margin: 0 -8px; flex: none; display: flex; align-items: center; justify-content: space-between; }
 .wbar button { height: 44px; padding: 0 12px; border-radius: 22px; font-size: 15px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
 .wbar .clock { font-size: 15px; font-weight: 600; color: var(--ink-2); display: flex; align-items: center; gap: 8px; }
@@ -452,7 +453,7 @@ addEventListener('pointerup', endDrag); addEventListener('pointercancel', endDra
 
 /* ---------- Today text ---------- */
 function weekDone() { return S.finished ? 4 : 3; }
-function minutes() { return Math.max(1, Math.round((Date.now() - S.t0) / 60000)); }
+function minutes() { return Math.max(1, Math.round(((S.t1 || Date.now()) - S.t0) / 60000)); }
 function setCount() { return S.done.reduce((a, d) => a + d.length, 0); }
 function volume() { return S.done.reduce((a, d) => a + d.reduce((b, s) => b + s.w * s.r, 0), 0); }
 function renderToday() {
@@ -501,7 +502,7 @@ function swapText(el, text) { anim(el, [{ opacity: 1, transform: 'none' }, { opa
 let trayOpen = false;
 function list(rows) { return `<ul>${rows.map(([a, b]) => `<li><span>${a}</span><b>${b}</b></li>`).join('')}</ul>`; }
 function hillTray(i) { return `<h3>${t('days')[i]} · ${t('sess')[i]}</h3><p>${t('hillP')}</p>` + list(i === 3 ? (S.finished ? summaryRows() : EX.map((e) => [e.name[S.lang], `${e.sets} × ${num(e.plan[1][0])} kg`])) :
-  [[['Bench press', 'Incline DB press', 'Dips'], ['Pull-ups', 'Barbell row', 'Curls'], ['Drills', 'Live rounds', 'Sprints']][i].join(', '), ['58 min', '61 min', '75 min'][i]]); }
+  [[[['Bench press', 'Incline DB press', 'Dips'], ['Pull-ups', 'Barbell row', 'Curls'], ['Drills', 'Live rounds', 'Sprints']][i].join(', '), ['58 min', '61 min', '75 min'][i]]]); }
 function summaryRows() { return EX.map((e, k) => [e.name[S.lang], S.done[k].length ? S.done[k].map((s) => `${num(s.w)}×${s.r}`).join('  ') : '–']); }
 /* Morph: a surface grows out of the thing you tapped (its place, size, corners and colour) and goes back into it.
    Only the surface's transform, corners and colour move; its content fades in once the shape is nearly there. */
@@ -555,8 +556,8 @@ let shownPlates = [];
 function renderPlates(animate) {
   const want = perSide(S.w), box = $('plates');
   let keep = 0; while (keep < want.length && keep < shownPlates.length && want[keep] === shownPlates[keep]) keep++;
-  const kids = [...box.children];
-  kids.slice(keep).forEach((el, k) => { if (!animate) { el.remove(); return; } el.style.position = 'absolute'; el.style.left = el.offsetLeft + 'px';
+  const kids = [...box.children].filter((el) => !el.classList.contains('out')); // plates already sliding off are not on the bar any more
+  kids.slice(keep).forEach((el, k) => { if (!animate) { el.remove(); return; } el.classList.add('out'); el.style.position = 'absolute'; el.style.left = el.offsetLeft + 'px';
     const a = anim(el, [{ transform: 'none', opacity: 1 }, { transform: 'translate(70px, -10px) rotate(6deg)', opacity: 0 }], SNAP, { delay: (kids.length - keep - 1 - k) * 25 }); a.onfinish = () => el.remove(); });
   want.slice(keep).forEach((kg, k) => { const [, col, wd, ht] = PLATES.find((p) => p[0] === kg); const el = document.createElement('div');
     el.className = 'plate' + (kg === 5 ? ' p5' : ''); el.style.cssText = `width:${wd}px;height:${ht}px;background:${col}`; box.appendChild(el);
@@ -590,8 +591,8 @@ function renderWork(animatePlates) {
   $('lastrow').innerHTML = `${t('lastTime')} ` + e.lastSets.map(([w, r]) => `<span>${num(w)}×${r}</span>`).join('');
   $('log').textContent = all ? t('finish') : t('log', i + 1);
 }
-$('extabs').addEventListener('click', (e) => { const b = e.target.closest('.extab'); if (!b) return; const k = +b.dataset.k; if (k === S.ex) return; S.ex = k; S.noteLoad = null; loadSet(); renderWork(true); });
-function nudge(dw, dr) { const ow = S.w; S.w = Math.max(20, +(S.w + dw).toFixed(2)); S.r = Math.max(1, Math.min(30, S.r + dr));
+$('extabs').addEventListener('click', (e) => { const b = e.target.closest('.extab'); if (!b || busy) return; const k = +b.dataset.k; if (k === S.ex) return; S.ex = k; S.noteLoad = null; loadSet(); renderWork(true); });
+function nudge(dw, dr) { if (busy) return; const ow = S.w; S.w = Math.max(20, +(S.w + dw).toFixed(2)); S.r = Math.max(1, Math.min(30, S.r + dr));
   renderPlates(dw !== 0); roll($('wv'), num(S.w), dw >= 0 ? 1 : -1); roll($('rv'), String(S.r), dr >= 0 ? 1 : -1); if (ow !== S.w) S.noteLoad = S.w; }
 $('wm').onclick = () => nudge(-2.5, 0); $('wp').onclick = () => nudge(2.5, 0); $('rm').onclick = () => nudge(0, -1); $('rp').onclick = () => nudge(0, 1);
 
@@ -602,7 +603,8 @@ function openWork() {
   const w = $('work'); w.classList.add('on'); renderWork(false);
   anim(w, [{ transform: 'translateY(102%)' }, { transform: 'none' }], SOFT); w.style.transform = 'none';
   anim($('today'), [{ transform: 'none', opacity: 1 }, { transform: 'scale(.94)', opacity: .7 }], SOFT, { fill: 'forwards' }); $('today').classList.add('away');
-  if ($('coach').classList.contains('on')) $('coach').classList.remove('on');
+  if ($('coach').classList.contains('on')) { clearTimeout(coachTimer); $('coach').classList.remove('on'); $('coach').getAnimations({ subtree: true }).forEach((x) => x.cancel()); $('sunIn').getAnimations().forEach((x) => x.cancel()); }
+  else clearTimeout(coachTimer);
   // plates go onto the bar one by one as the bench arrives
   [...$('plates').children].forEach((el, k) => anim(el, [{ transform: 'translate(90px, -14px) rotate(-5deg)', opacity: 0 }, { transform: 'none', opacity: 1 }], POP, { delay: 180 + k * 70, fill: 'backwards' }));
 }
@@ -724,7 +726,7 @@ function showPR(prev, after) {
 function finish() {
   if (busy) return; if (S.rest) endRest(false);
   if (!S.done.some((d) => d.length)) { closeWork(); return; }
-  S.finished = true; S.coachState = 'done'; hideToast();
+  S.finished = true; S.t1 = Date.now(); S.coachState = 'done'; hideToast();
   closeWork(() => {
     buildHills(); startSway();
     const L = $('hills').children[3];
