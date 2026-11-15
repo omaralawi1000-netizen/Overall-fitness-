@@ -1,0 +1,824 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ECE6DD">
+<title>Aven Ceramic</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.min.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"}}</script>
+<style>
+:root{
+  --paper:#ECE6DD; --paper-hi:#F7F3ED; --paper-lo:#E0D8CC;
+  --ink:#24252A; --ink-2:#67625B; --ink-3:#958F86;
+  --cobalt:#2D4B9E; --cobalt-hi:#5574C8; --cobalt-lo:#1F3577;
+  --celadon:#7EA893; --lilac:#9C99C2; --gold:#E3C277; --gold-ink:#A47C2C;
+  --frost:rgba(248,245,240,.78);
+  --r-lg:28px; --r-md:20px;
+  --sp:cubic-bezier(.2,.8,.2,1); --sp-d:480ms;   /* replaced by a sampled spring at start */
+  --pop:cubic-bezier(.3,1.4,.4,1); --pop-d:560ms;
+  --noise:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .55 0'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#D9D1C5;overscroll-behavior:none}
+body{font-family:Manrope,system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;display:flex;justify-content:center}
+button{font:inherit;color:inherit;border:0;background:none;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation}
+#app{position:relative;width:100%;max-width:430px;height:100dvh;overflow:hidden;overflow:clip;background:var(--paper);isolation:isolate}
+.num{font-variant-numeric:tabular-nums;letter-spacing:-.02em}
+
+/* screens */
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top) + 14px) 20px calc(env(safe-area-inset-bottom) + 20px);will-change:transform}
+.screen::after{content:"";position:absolute;inset:0;background:var(--noise);opacity:.09;mix-blend-mode:soft-light;pointer-events:none;z-index:-1}
+#today{background:radial-gradient(120% 70% at 50% 18%,var(--paper-hi) 0%,var(--paper) 55%,var(--paper-lo) 100%);z-index:1;transform-origin:50% 40%}
+#workout{background:radial-gradient(130% 75% at 50% 22%,#4A69BE 0%,#2E4C9F 48%,#213A82 100%);color:#fff;z-index:2;visibility:hidden}
+
+.row{display:flex;align-items:center;justify-content:space-between}
+.eyebrow{font-size:13px;font-weight:600;color:var(--ink-2);letter-spacing:.01em}
+.pill{height:36px;padding:0 14px;border-radius:18px;font-size:13px;font-weight:700;display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.55);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 2px rgba(60,50,40,.08);transition:transform 120ms}
+.pill:active{transform:scale(.95)}
+#workout .pill{background:rgba(255,255,255,.13);box-shadow:inset 0 1px 0 rgba(255,255,255,.22);color:#fff;-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px)}
+
+/* Today */
+.greet{margin-top:22px;font-size:15px;font-weight:600;color:var(--ink-2)}
+.title{font-size:44px;line-height:1.02;font-weight:800;letter-spacing:-.035em;margin-top:4px}
+.sub{font-size:15px;font-weight:500;color:var(--ink-2);margin-top:6px}
+.hero{position:relative;margin:0 -20px;flex:0 0 auto}
+.hero canvas{position:absolute;inset:0;width:100%!important;height:100%!important;display:block}
+.hero canvas.poster{pointer-events:none}
+#todayHero{height:300px;margin-top:2px}
+.legend{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tile{position:relative;text-align:left;display:flex;flex-direction:column;justify-content:flex-start;padding:12px 12px 11px;border-radius:var(--r-md);background:linear-gradient(180deg,rgba(255,255,255,.7),rgba(255,255,255,.42));box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 0 0 1px rgba(255,255,255,.5),0 1px 2px rgba(70,55,40,.08),0 8px 18px -6px rgba(70,55,40,.2);transition:transform 140ms}
+.tile:active{transform:scale(.96)}
+.tile .lab{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:var(--ink-2)}
+.chip{width:10px;height:10px;border-radius:50%;box-shadow:inset 0 -1px 2px rgba(0,0,0,.25),inset 0 1px 1px rgba(255,255,255,.6)}
+.tile .val{font-size:22px;font-weight:800;margin-top:6px;letter-spacing:-.02em;white-space:nowrap}
+.tile .val small{font-size:13px;font-weight:600;color:var(--ink-3);margin-left:2px}
+.tile .of{font-size:12px;font-weight:600;color:var(--ink-3);margin-top:1px}
+.coach{margin-top:12px;padding:14px 16px;border-radius:var(--r-md);display:flex;gap:12px;background:rgba(255,255,255,.38);box-shadow:inset 0 0 0 1px rgba(255,255,255,.6)}
+.pebble{flex:0 0 auto;width:22px;height:22px;margin-top:1px;border-radius:50% 46% 52% 48%;background:radial-gradient(circle at 34% 30%,#8FA6E4 0%,var(--cobalt) 52%,var(--cobalt-lo) 100%);box-shadow:inset 0 1px 1px rgba(255,255,255,.55),0 3px 6px -2px rgba(31,53,119,.5)}
+.coach p{font-size:15px;line-height:1.38;font-weight:500}
+.coach .acts{display:flex;gap:8px;margin-top:10px}
+.coach .acts button{height:40px;padding:0 16px;border-radius:20px;font-size:13px;font-weight:700;background:rgba(255,255,255,.8);box-shadow:0 1px 2px rgba(60,50,40,.12)}
+.coach .acts button.primary{background:var(--cobalt);color:#fff}
+.spacer{flex:1}
+.cta{position:relative;height:64px;border-radius:32px;width:100%;font-size:17px;font-weight:800;color:#fff;letter-spacing:-.01em;
+  background:radial-gradient(120% 160% at 28% 0%,#6482D6 0%,var(--cobalt) 46%,var(--cobalt-lo) 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.45),inset 0 -4px 10px rgba(10,20,60,.32),0 12px 26px -10px rgba(31,53,119,.55);
+  transition:transform 110ms,box-shadow 110ms}
+.cta:active{transform:translateY(2px) scale(.985);box-shadow:inset 0 1px 0 rgba(255,255,255,.4),inset 0 -2px 6px rgba(10,20,60,.3),0 5px 12px -6px rgba(31,53,119,.5)}
+.cta.done{background:rgba(255,255,255,.55);color:var(--cobalt);box-shadow:inset 0 0 0 1.5px rgba(45,75,158,.35)}
+.cta .live{display:inline-flex;align-items:center;gap:10px}
+.cta .dot{width:8px;height:8px;border-radius:50%;background:#9FE0BE;box-shadow:0 0 0 4px rgba(159,224,190,.25)}
+
+/* Workout */
+.clock{font-size:15px;font-weight:700;opacity:.85}
+.lifthead{margin-top:16px;position:relative}
+.lifthead .eyebrow{color:rgba(255,255,255,.8)}
+.liftname{font-size:34px;font-weight:800;letter-spacing:-.03em;margin-top:2px}
+.wcoach{display:flex;gap:9px;align-items:flex-start;margin-top:8px;font-size:14px;line-height:1.35;font-weight:500;color:rgba(255,255,255,.92)}
+.wcoach .pebble{width:15px;height:13px;margin-top:3px;border-radius:52% 46% 50% 44%;background:radial-gradient(circle at 34% 30%,#D6EBDD 0%,#8DB7A0 55%,#5E8C75 100%);box-shadow:inset 0 1px 1px rgba(255,255,255,.7),0 2px 4px -1px rgba(0,0,0,.4)}
+.stage{position:relative;flex:0 0 auto;height:478px;margin:0 -20px}
+#plateHero{position:absolute;left:0;right:0;top:0;height:306px;transition:opacity 260ms,transform var(--sp-d) var(--sp)}
+.controls{position:absolute;left:20px;right:20px;top:306px;transition:opacity 220ms,transform var(--sp-d) var(--sp)}
+.dials{display:grid;grid-template-columns:1.3fr 1fr;gap:10px}
+.knob{display:flex;align-items:center;justify-content:space-between;height:88px;padding:0 10px;border-radius:var(--r-md);background:rgba(255,255,255,.1);box-shadow:inset 0 1px 0 rgba(255,255,255,.18)}
+.knob .big{font-size:38px;font-weight:800;line-height:1;letter-spacing:-.04em;display:flex;flex-direction:column;align-items:center;gap:2px}
+.knob .big small{font-size:12px;font-weight:700;opacity:.65;letter-spacing:.02em}
+.step{flex:0 0 auto;width:42px;height:42px;border-radius:50%;font-size:24px;font-weight:600;line-height:1;color:var(--cobalt);display:grid;place-items:center;
+  background:radial-gradient(circle at 36% 28%,#fff 0%,#EFEAE2 55%,#CFC6B9 100%);box-shadow:inset 0 1px 1px #fff,inset 0 -2px 4px rgba(60,50,40,.18),0 4px 10px -3px rgba(8,16,50,.55);transition:transform 100ms}
+.step:active{transform:scale(.9)}
+.ref{margin-top:12px;font-size:14px;font-weight:600;color:rgba(255,255,255,.82);display:flex;gap:14px}
+.ref b{color:#fff;font-weight:700}
+.beads{display:flex;gap:10px;margin-top:14px;align-items:center}
+.bead{width:30px;height:30px;border-radius:50%;position:relative;display:grid;place-items:center;
+  background:radial-gradient(circle at 36% 30%,rgba(255,255,255,.35),rgba(255,255,255,.08));box-shadow:inset 0 0 0 1.5px rgba(255,255,255,.28)}
+.bead.cur{box-shadow:inset 0 0 0 2px #fff}
+.bead.done{background:radial-gradient(circle at 34% 28%,#fff 0%,#EEE9E1 55%,#C8BFB2 100%);box-shadow:inset 0 1px 1px #fff,0 3px 6px -2px rgba(0,0,0,.4)}
+.bead.done::after{content:"";width:9px;height:5px;border-left:2.2px solid var(--cobalt);border-bottom:2.2px solid var(--cobalt);transform:translateY(-1px) rotate(-45deg)}
+.bead.pr{background:radial-gradient(circle at 34% 28%,#FFF3CF 0%,#E6C373 50%,#A47C2C 100%)}
+.bead.pr::after{border-color:#5B3F0C}
+.beadlab{font-size:13px;font-weight:700;color:rgba(255,255,255,.85);margin-left:4px}
+.wcta{margin-top:auto;height:64px;border-radius:32px;width:100%;font-size:17px;font-weight:800;color:var(--cobalt);position:relative;overflow:hidden;
+  background:radial-gradient(130% 170% at 30% 0%,#fff 0%,#F2EEE7 50%,#D8D0C4 100%);
+  box-shadow:inset 0 1px 0 #fff,inset 0 -4px 10px rgba(60,50,40,.2),0 14px 28px -12px rgba(5,12,40,.7);transition:transform 110ms,box-shadow 110ms}
+.wcta:active{transform:translateY(2px) scale(.985);box-shadow:inset 0 1px 0 #fff,inset 0 -2px 6px rgba(60,50,40,.2),0 6px 14px -8px rgba(5,12,40,.7)}
+.wcta span{display:block;transition:opacity 180ms,filter 180ms,transform 180ms}
+
+/* rest dial (CSS 3D, compositor-driven) */
+.rest{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;opacity:0;transform:translateY(40px) scale(.94);pointer-events:none;transition:opacity 260ms,transform var(--sp-d) var(--sp)}
+.resting .rest{opacity:1;transform:none;pointer-events:auto}
+.resting #plateHero,.resting .controls{opacity:0;transform:translateY(-30px) scale(.96);pointer-events:none}
+.rest .eyebrow{color:rgba(255,255,255,.7);margin-top:22px}
+.dialwrap{position:relative;width:300px;height:300px;margin-top:22px;perspective:900px;touch-action:none}
+.dial{position:absolute;inset:0;transform:rotateX(14deg);transform-style:preserve-3d}
+.dial .shadow{position:absolute;inset:8px;border-radius:50%;transform:translateZ(-30px) translateY(26px);background:rgba(8,16,48,.5);filter:blur(18px)}
+.dial .body{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 38% 30%,#FFFFFF 0%,#F2EEE7 38%,#DDD5C9 78%,#C4BBAE 100%);box-shadow:inset 0 2px 1px rgba(255,255,255,.95),inset 0 -8px 18px rgba(70,60,50,.28)}
+.dial .rot{position:absolute;inset:0;border-radius:50%;will-change:transform}
+.dial .rot svg{position:absolute;inset:0;width:100%;height:100%}
+.dial .shade{position:absolute;inset:0;border-radius:50%;pointer-events:none;background:radial-gradient(circle at 36% 26%,rgba(255,255,255,.55) 0%,rgba(255,255,255,0) 40%),radial-gradient(circle at 60% 80%,rgba(60,50,40,.16) 0%,rgba(60,50,40,0) 55%)}
+.dial .cap{position:absolute;inset:74px;border-radius:50%;display:grid;place-items:center;
+  background:radial-gradient(circle at 36% 28%,#8AA2E2 0%,#4060B4 34%,var(--cobalt) 62%,var(--cobalt-lo) 100%);
+  box-shadow:inset 0 2px 2px rgba(255,255,255,.5),inset 0 -6px 12px rgba(5,12,40,.45),0 10px 18px -6px rgba(10,20,60,.5)}
+.dial .cap::before{content:"";position:absolute;left:22%;top:12%;width:42%;height:22%;border-radius:50%;background:radial-gradient(closest-side,rgba(255,255,255,.55),rgba(255,255,255,0));transform:rotate(-18deg)}
+.dial .time{position:relative;font-size:44px;font-weight:800;letter-spacing:-.03em;color:#fff;display:flex;height:46px;overflow:hidden;align-items:center}
+.notch{position:absolute;left:50%;top:-14px;width:14px;height:12px;margin-left:-7px;background:#fff;clip-path:polygon(0 0,100% 0,50% 100%);filter:drop-shadow(0 2px 2px rgba(0,0,0,.3));z-index:2}
+.restbtns{display:flex;gap:10px;margin-top:22px}
+.restbtns .pill{height:44px;padding:0 18px;font-size:15px}
+.nextup{margin-top:18px;font-size:14px;font-weight:600;color:rgba(255,255,255,.75)}
+.nextup b{color:#fff}
+
+/* rolling digits */
+.roll{display:inline-flex;position:relative}
+.roll .ch{display:inline-block;position:relative}
+
+/* sheet, toast, PR */
+.scrim{position:absolute;inset:0;background:rgba(36,30,24,.22);opacity:0;pointer-events:none;transition:opacity 300ms;z-index:20}
+.scrim.on{opacity:1;pointer-events:auto}
+.sheet{position:absolute;left:8px;right:8px;bottom:8px;z-index:21;border-radius:32px;padding:10px 20px calc(env(safe-area-inset-bottom) + 20px);color:var(--ink);
+  background:var(--frost);-webkit-backdrop-filter:blur(26px) saturate(1.5);backdrop-filter:blur(26px) saturate(1.5);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 20px 50px -20px rgba(30,25,20,.45);visibility:hidden}
+.sheet.on{visibility:visible}
+.grab{width:40px;height:5px;border-radius:3px;background:rgba(36,37,42,.18);margin:0 auto 14px}
+.sheet h2{font-size:24px;font-weight:800;letter-spacing:-.02em}
+.sheet .note{font-size:14px;color:var(--ink-2);margin-top:4px;line-height:1.4}
+.list{margin-top:14px;display:flex;flex-direction:column;gap:8px}
+.item{display:flex;align-items:center;justify-content:space-between;min-height:58px;padding:0 16px;border-radius:18px;background:rgba(255,255,255,.62);box-shadow:inset 0 1px 0 #fff;font-size:16px;font-weight:600;transition:transform 120ms,background 160ms}
+button.item:active{transform:scale(.97);background:rgba(255,255,255,.85)}
+.item .r{font-size:14px;font-weight:700;color:var(--ink-2)}
+.item .plus{width:30px;height:30px;border-radius:50%;display:grid;place-items:center;background:var(--celadon);color:#fff;font-size:20px;font-weight:700;box-shadow:inset 0 1px 1px rgba(255,255,255,.5)}
+.sheet .cta{margin-top:16px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.stat{padding:12px;border-radius:18px;background:rgba(255,255,255,.62);box-shadow:inset 0 1px 0 #fff}
+.stat b{display:block;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.stat span{font-size:12px;font-weight:700;color:var(--ink-2)}
+.toast{position:absolute;left:50%;bottom:calc(env(safe-area-inset-bottom) + 96px);z-index:30;display:flex;align-items:center;gap:14px;height:48px;padding:0 8px 0 18px;border-radius:24px;font-size:14px;font-weight:700;white-space:nowrap;
+  background:rgba(36,37,42,.78);color:#fff;-webkit-backdrop-filter:blur(18px) saturate(1.4);backdrop-filter:blur(18px) saturate(1.4);
+  transform:translate(-50%,24px) scale(.96);opacity:0;pointer-events:none;transition:transform var(--sp-d) var(--sp),opacity 200ms}
+.toast.on{transform:translate(-50%,0);opacity:1;pointer-events:auto}
+.toast button{height:34px;padding:0 14px;border-radius:17px;background:rgba(255,255,255,.16);font-weight:800;font-size:13px}
+#pr{position:absolute;inset:0;z-index:25;display:flex;flex-direction:column;align-items:center;padding:calc(env(safe-area-inset-top) + 70px) 24px calc(env(safe-area-inset-bottom) + 20px);color:#fff;
+  background:rgba(24,40,96,.32);-webkit-backdrop-filter:blur(30px) saturate(1.4);backdrop-filter:blur(30px) saturate(1.4);opacity:0;visibility:hidden;transition:opacity 320ms,visibility 0s 320ms}
+#pr.on{opacity:1;visibility:visible;transition:opacity 320ms,visibility 0s}
+#prHero{width:330px;height:330px;margin:0}
+#pr .t{text-align:center;opacity:0;transform:translateY(14px);transition:opacity 400ms,transform var(--sp-d) var(--sp)}
+#pr.reveal .t{opacity:1;transform:none}
+#pr .k{font-size:13px;font-weight:800;letter-spacing:.14em;color:var(--gold);text-transform:uppercase}
+#pr .n{font-size:30px;font-weight:800;letter-spacing:-.03em;margin-top:8px}
+#pr .d{font-size:15px;font-weight:500;color:rgba(255,255,255,.78);margin-top:6px;line-height:1.4}
+#pr .wcta{margin-top:auto}
+@media (prefers-reduced-motion:reduce){*{transition-duration:1ms!important;animation-duration:1ms!important}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<section class="screen" id="today">
+  <div class="row">
+    <span class="eyebrow" id="date"></span>
+    <button class="pill" id="lang" aria-label="Language">DA</button>
+  </div>
+  <div class="greet" data-t="greet"></div>
+  <h1 class="title" data-t="pushDay"></h1>
+  <div class="sub" id="todaySub"></div>
+  <div class="hero" id="todayHero"><canvas class="poster"></canvas></div>
+  <div class="legend">
+    <button class="tile" data-open="train"><span class="lab"><i class="chip" style="background:var(--cobalt)"></i><span data-t="train"></span></span><div class="val num" id="vTrain"></div><div class="of" id="oTrain"></div></button>
+    <button class="tile" data-open="food"><span class="lab"><i class="chip" style="background:var(--celadon)"></i><span data-t="food"></span></span><div class="val num" id="vFood"></div><div class="of" id="oFood"></div></button>
+    <button class="tile" data-open="sleep"><span class="lab"><i class="chip" style="background:var(--lilac)"></i><span data-t="sleep"></span></span><div class="val num" id="vSleep"></div><div class="of" data-t="sleepOf"></div></button>
+  </div>
+  <div class="coach" id="coach"><i class="pebble"></i><div><p id="coachText"></p><div class="acts" id="coachActs"></div></div></div>
+  <div class="spacer"></div>
+  <button class="cta" id="start"></button>
+</section>
+
+<section class="screen" id="workout">
+  <div class="row">
+    <button class="pill" id="back">‹ <span data-t="today"></span></button>
+    <span class="clock num" id="clock">0:00</span>
+    <button class="pill" id="finishBtn" data-t="finish"></button>
+  </div>
+  <div class="lifthead"><div class="eyebrow" id="liftPos"></div><div class="liftname" id="liftName"></div>
+    <div class="wcoach"><i class="pebble"></i><span id="wCoach"></span></div></div>
+  <div class="stage" id="stage">
+    <div class="hero" id="plateHero"><canvas class="poster"></canvas></div>
+    <div class="controls">
+      <div class="dials">
+        <div class="knob"><button class="step" id="wMinus" aria-label="-2.5 kg">−</button><span class="big"><span class="roll num" id="wVal"></span><small>kg</small></span><button class="step" id="wPlus" aria-label="+2.5 kg">+</button></div>
+        <div class="knob"><button class="step" id="rMinus" aria-label="-1">−</button><span class="big"><span class="roll num" id="rVal"></span><small data-t="reps"></small></span><button class="step" id="rPlus" aria-label="+1">+</button></div>
+      </div>
+      <div class="ref" id="ref"></div>
+      <div class="beads" id="beads"></div>
+    </div>
+    <div class="rest" id="rest">
+      <div class="eyebrow" data-t="restLabel"></div>
+      <div class="dialwrap" id="dialwrap"><div class="notch"></div>
+        <div class="dial" id="dial"><div class="shadow"></div><div class="body"></div><div class="rot" id="dialRot"></div><div class="shade"></div>
+          <div class="cap"><div class="time num" id="restTime"></div></div></div></div>
+      <div class="restbtns"><button class="pill" id="rLess">−15 s</button><button class="pill" id="rMore">+15 s</button></div>
+      <div class="nextup" id="nextUp"></div>
+    </div>
+  </div>
+  <button class="wcta" id="logBtn"><span id="logLabel"></span></button>
+</section>
+
+<div id="pr">
+  <div class="hero" id="prHero"><canvas class="poster"></canvas></div>
+  <div class="t"><div class="k" data-t="newBest"></div><div class="n num" id="prN"></div><div class="d" id="prD"></div></div>
+  <button class="wcta t" id="prGo"><span data-t="keepGoing"></span></button>
+</div>
+
+<div class="scrim" id="scrim"></div>
+<div class="sheet" id="sheet"><div class="grab"></div><div id="sheetBody"></div></div>
+<div class="toast" id="toast"><span id="toastText"></span><button id="toastUndo" data-t="undo"></button></div>
+</div>
+
+<script type="module">
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+const $ = s => document.querySelector(s);
+const Q = new URLSearchParams(location.search);
+const REST_OVERRIDE = Q.has('rest') ? Math.max(3, +Q.get('rest')) : 0;
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- one shared set of springs ---------- */
+// Sampled once into CSS linear() so the browser's compositor runs them; the same constants drive the 3D.
+function springPoints(zeta, omega){
+  const pts=[]; let x=0,v=0,t=0; const dt=1/240; let still=0;
+  while(t<2.5){ const a=omega*omega*(1-x)-2*zeta*omega*v; v+=a*dt; x+=v*dt; t+=dt;
+    if(Math.round(t*240)%4===0) pts.push(x);
+    if(Math.abs(1-x)<.0015&&Math.abs(v)<.01){ if(++still>12) break; } else still=0; }
+  pts.push(1); return {pts,ms:Math.round(t*1000)};
+}
+const SP={soft:{z:.86,w:17},pop:{z:.56,w:19}};
+for(const [k,s] of Object.entries(SP)){
+  const {pts,ms}=springPoints(s.z,s.w);
+  const css='linear(0,'+pts.map(p=>p.toFixed(4)).join(',')+')';
+  const name=k==='soft'?'sp':'pop';
+  document.documentElement.style.setProperty('--'+name,css);
+  document.documentElement.style.setProperty('--'+name+'-d',ms+'ms');
+  s.css=css; s.ms=ms;
+}
+class Spring{ // same physics in JS for the 3D scene
+  constructor(x,{z,w}){this.x=x;this.v=0;this.t=x;this.z=z;this.w=w}
+  step(dt){const a=this.w*this.w*(this.t-this.x)-2*this.z*this.w*this.v;this.v+=a*dt;this.x+=this.v*dt;
+    if(Math.abs(this.t-this.x)<1e-4&&Math.abs(this.v)<1e-3){this.x=this.t;this.v=0;return false}return true}
+}
+
+/* ---------- words ---------- */
+const T={
+ en:{greet:'Good morning',pushDay:'Push day',sub:'3 lifts · about 50 min · 17:30',train:'Train',food:'Food',sleep:'Sleep',sleepOf:'of 8 h',
+  liftsOf:(a,b)=>`${a} of ${b} lifts`,protOf:'of 160 g protein',today:'Today',finish:'Finish',reps:'reps',restLabel:'Rest',newBest:'New best',keepGoing:'Keep going',undo:'Undo',
+  start:'Start Push',resume:(n,s)=>`Resume · ${n} · set ${s}`,done:m=>`Push done · ${m} min`,log:n=>`Log set ${n}`,skip:'Skip rest',
+  coach1:'Bench went up three weeks in a row, so I put 85 kg on set 3. Get 8 reps and it’s a new best.',coach1u:'Back to 82.5 kg on set 3. You can still add it in the workout.',
+  coachDone:p=>`Good session. ${p} g protein to go today; skyr and two eggs gets you most of it.`,keep:'Keep it',
+  last:'Last time',best:'Best',lift:(a,b)=>`Lift ${a} of ${b}`,next:'Next',set:'set',kg:'kg',
+  wc:{bench:'Set 3 at 85 kg is a new best if you get all 8.',ohp:'45 × 6 moved fast last week. 47.5 today.',cgb:'Elbows in. 65 for three, 2.5 up from last time.'},
+  beats:(w,r,d)=>`Beats ${w} × ${r} from ${d}. Gold seam, new number.`,
+  foodT:'Add food',foodN:'One tap logs it. Protein fills the green ring.',added:'Added',
+  sleepT:'7 h 40 last night',sleepN:'In bed 23:20, up 07:05. Close to your 23:30 promise.',sleepRows:[['Asleep','23:41'],['Woke','07:05'],['Deep','1 h 32'],['Promise','bed by 23:30']],
+  trainT:'Push',trainN:'What the Coach planned. Tap Start when you get to the gym.',
+  finT:'Push done',finN:'Saved to your history. The blue ring is glazed.',save:'Save workout',notDone:'not done',min:'min',kgMoved:'kg moved',records:'new best',
+  foods:[['Skyr, 200 g',22],['2 eggs',12],['Rugbrød, 2 slices',6],['Chicken, 150 g',46]],
+  lifts:{bench:'Bench press',ohp:'Overhead press',cgb:'Close-grip bench'},
+  days:['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'],months:['January','February','March','April','May','June','July','August','September','October','November','December'],
+ },
+ da:{greet:'Godmorgen',pushDay:'Push-dag',sub:'3 øvelser · cirka 50 min · 17:30',train:'Træning',food:'Mad',sleep:'Søvn',sleepOf:'af 8 t',
+  liftsOf:(a,b)=>`${a} af ${b} øvelser`,protOf:'af 160 g protein',today:'I dag',finish:'Afslut',reps:'gent.',restLabel:'Pause',newBest:'Ny rekord',keepGoing:'Videre',undo:'Fortryd',
+  start:'Start Push',resume:(n,s)=>`Fortsæt · ${n} · sæt ${s}`,done:m=>`Push klaret · ${m} min`,log:n=>`Log sæt ${n}`,skip:'Spring pausen over',
+  coach1:'Bænkpres er gået op tre uger i træk, så jeg har sat 85 kg på sæt 3. Tager du 8 gentagelser, er det ny rekord.',coach1u:'Tilbage til 82,5 kg på sæt 3. Du kan stadig lægge det på under træningen.',
+  coachDone:p=>`God træning. ${p} g protein tilbage i dag; skyr og to æg dækker det meste.`,keep:'Behold',
+  last:'Sidst',best:'Rekord',lift:(a,b)=>`Øvelse ${a} af ${b}`,next:'Næste',set:'sæt',kg:'kg',
+  wc:{bench:'Sæt 3 på 85 kg er ny rekord, hvis du tager alle 8.',ohp:'45 × 6 gik hurtigt sidste uge. 47,5 i dag.',cgb:'Albuer ind. 65 i tre sæt, 2,5 over sidst.'},
+  beats:(w,r,d)=>`Slår ${w} × ${r} fra ${d}. Guldsøm, nyt tal.`,
+  foodT:'Tilføj mad',foodN:'Et tryk logger det. Protein fylder den grønne ring.',added:'Tilføjet',
+  sleepT:'7 t 40 i nat',sleepN:'I seng 23:20, op 07:05. Tæt på dit løfte om 23:30.',sleepRows:[['Sov','23:41'],['Vågnede','07:05'],['Dyb søvn','1 t 32'],['Løfte','i seng 23:30']],
+  trainT:'Push',trainN:'Det Coach har planlagt. Tryk Start, når du er i centret.',
+  finT:'Push klaret',finN:'Gemt i din historik. Den blå ring er glaseret.',save:'Gem træning',notDone:'ikke lavet',min:'min',kgMoved:'kg løftet',records:'ny rekord',
+  foods:[['Skyr, 200 g',22],['2 æg',12],['Rugbrød, 2 skiver',6],['Kylling, 150 g',46]],
+  lifts:{bench:'Bænkpres',ohp:'Skulderpres',cgb:'Smal bænkpres'},
+  days:['søndag','mandag','tirsdag','onsdag','torsdag','fredag','lørdag'],months:['januar','februar','marts','april','maj','juni','juli','august','september','oktober','november','december'],
+ }};
+let L=Q.get('lang')==='da'?'da':'en';
+const t=(k,...a)=>{const v=T[L][k];return typeof v==='function'?v(...a):v};
+const fmt=w=>{const s=(Math.round(w*100)/100).toString();return L==='da'?s.replace('.',','):s};
+
+/* ---------- state (made-up data, nothing stored) ---------- */
+const S={
+  protein:96, food:[], sleep:.96, coachSet:true, done:false, active:false, start:0,
+  lifts:[
+    {id:'bench',rest:120,sets:[[82.5,8],[82.5,8],[85,8],[82.5,8]],last:[82.5,8],best:[82.5,8],bestDate:{en:'25 Oct',da:'25. okt.'}},
+    {id:'ohp',rest:90,sets:[[47.5,6],[47.5,6],[47.5,6]],last:[45,6],best:[50,5],bestDate:{en:'4 Oct',da:'4. okt.'}},
+    {id:'cgb',rest:90,sets:[[65,8],[65,8],[65,8]],last:[62.5,8],best:[67.5,8],bestDate:{en:'11 Oct',da:'11. okt.'}},
+  ],
+  li:0, si:0, w:82.5, r:8, logged:[[],[],[]], records:0, restEnd:0, restTotal:0,
+};
+const e1=(w,r)=>w*(1+r/30);
+
+/* ---------- three.js: one renderer, moved between screens ---------- */
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:true,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.outputColorSpace=THREE.SRGBColorSpace;
+renderer.toneMapping=THREE.NeutralToneMapping; renderer.toneMappingExposure=1.0;
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.VSMShadowMap;
+const pmrem=new THREE.PMREMGenerator(renderer);
+const envTex=pmrem.fromScene(new RoomEnvironment(),.04).texture;
+
+function noiseTex(size=256,amp=40){const c=document.createElement('canvas');c.width=c.height=size;const x=c.getContext('2d');const d=x.createImageData(size,size);
+  for(let i=0;i<d.data.length;i+=4){const v=128+(Math.random()-.5)*amp;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255}x.putImageData(d,0,0);
+  const tx=new THREE.CanvasTexture(c);tx.wrapS=tx.wrapT=THREE.RepeatWrapping;tx.repeat.set(4,4);return tx}
+const grain=noiseTex();
+const bisque=(color)=>new THREE.MeshPhysicalMaterial({color,roughness:.9,bumpMap:grain,bumpScale:.35,envMapIntensity:.5});
+const glaze=(color,rough=.32)=>new THREE.MeshPhysicalMaterial({color,roughness:rough,clearcoat:1,clearcoatRoughness:.14,envMapIntensity:.9});
+
+function lights(scene,{key=2.4,from=[-3,6,4],shadow=true,hemi=[0xffffff,0xd9cfc2,1.1]}={}){
+  scene.environment=envTex; scene.environmentIntensity=.55;
+  scene.add(new THREE.HemisphereLight(hemi[0],hemi[1],hemi[2]));
+  const d=new THREE.DirectionalLight(0xfffaf3,key); d.position.set(...from);
+  if(shadow){d.castShadow=true;d.shadow.mapSize.set(1024,1024);d.shadow.radius=9;d.shadow.blurSamples=16;d.shadow.bias=-.0005;
+    const c=d.shadow.camera;c.left=c.bottom=-5;c.right=c.top=5;c.near=.5;c.far=20}
+  scene.add(d); return d;
+}
+
+/* An arc-able torus whose triangles run along the ring, so drawRange = how much is glazed. */
+function arcTorus(R,r,T=240,N=28){
+  const pos=[],nor=[],idx=[];
+  for(let i=0;i<=T;i++){const u=Math.PI/2-(i/T)*Math.PI*2;
+    for(let j=0;j<=N;j++){const v=(j/N)*Math.PI*2;const cx=Math.cos(u),cy=Math.sin(u);
+      pos.push((R+r*Math.cos(v))*cx,(R+r*Math.cos(v))*cy,r*Math.sin(v));nor.push(Math.cos(v)*cx,Math.cos(v)*cy,Math.sin(v))}}
+  for(let i=0;i<T;i++)for(let j=0;j<N;j++){const a=i*(N+1)+j,b=(i+1)*(N+1)+j,c=b+1,d=a+1;idx.push(a,d,b,b,d,c)}
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(pos,3));g.setAttribute('normal',new THREE.Float32BufferAttribute(nor,3));g.setIndex(idx);
+  g.userData={T,N};return g;
+}
+
+/* ---------- Today: three ceramic rings that settle like a spun disc ---------- */
+const today={scene:new THREE.Scene(),cam:new THREE.PerspectiveCamera(27,1.28,.1,60),rings:[],busy:0};
+{
+  const {scene,cam}=today; cam.position.set(0,5.3,6.7); cam.lookAt(0,-.05,0);
+  lights(scene);
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(30,30),new THREE.ShadowMaterial({opacity:.16,color:0x5a4a3a}));floor.rotation.x=-Math.PI/2;floor.position.y=-.002;floor.receiveShadow=true;scene.add(floor);
+  // plinth: a low thrown porcelain disc
+  const prof=[[0,0],[1.98,0],[2.06,.03],[2.1,.08],[2.08,.13],[2.0,.16],[0,.16]].map(p=>new THREE.Vector2(p[0],p[1]));
+  const plinth=new THREE.Mesh(new THREE.LatheGeometry(prof,128),glaze(0xf3eee6,.42));plinth.castShadow=plinth.receiveShadow=true;scene.add(plinth);
+  const defs=[{R:1.56,c:0x4562ad,key:'train'},{R:1.12,c:0x7ea893,key:'food'},{R:.7,c:0x9c99c2,key:'sleep'}];
+  const r=.15, top=.16;
+  defs.forEach((d,k)=>{
+    const g=new THREE.Group(); const tilt=new THREE.Group(); g.add(tilt);
+    const base=new THREE.Mesh(arcTorus(d.R,r,200,24),bisque(0xe4dfd7)); base.castShadow=base.receiveShadow=true;
+    const gl=new THREE.Mesh(arcTorus(d.R,r*1.06,240,28),glaze(d.c)); gl.castShadow=true;
+    const capA=new THREE.Mesh(new THREE.SphereGeometry(r*1.06,24,16),gl.material), capB=capA.clone();
+    [base,gl,capA,capB].forEach(m=>{m.rotation.x=-Math.PI/2;tilt.add(m)});
+    capA.position.set(0,0,-d.R); // start of the glaze, 12 o'clock (far side)
+    base.userData.key=d.key;
+    scene.add(g);
+    today.rings.push({...d,g,tilt,base,gl,capA,capB,frac:new Spring(0,SP.soft),theta:0,phi:k*2.1,omega:0,age:9,top,r,lift:new Spring(0,SP.pop)});
+  });
+}
+function setGlaze(ring){
+  const f=Math.max(0,Math.min(1,ring.frac.x)); const {T,N}=ring.gl.geometry.userData;
+  const n=Math.round(f*T); ring.gl.geometry.setDrawRange(0,n*N*6);
+  const vis=n>0; ring.gl.visible=ring.capA.visible=ring.capB.visible=vis;
+  const u=Math.PI/2-(n/T)*Math.PI*2; // end cap follows the glaze edge (local XY, then turned flat)
+  ring.capB.position.set(ring.R*Math.cos(u),0,-ring.R*Math.sin(u));
+}
+function wobble(ring,amount){ring.theta=Math.max(ring.theta,amount);ring.age=0;today.busy=1}
+function spinIn(){today.rings.forEach((g,k)=>{g.theta=.42-k*.05;g.age=-k*.12;g.phi=k*2.3})}
+today.update=dt=>{
+  let busy=false;
+  for(const g of today.rings){
+    if(g.frac.step(dt))busy=true; setGlaze(g);
+    if(g.lift.step(dt))busy=true;
+    if(g.theta>0){
+      g.age+=dt; if(g.age>0){
+        // Euler's-disk settle: the tilt dies away while the rolling contact speeds up.
+        g.theta*=Math.exp(-dt/.62);
+        g.omega=Math.min(34,4.2/Math.sqrt(g.theta+.012)); g.phi+=g.omega*dt;
+        if(g.theta<.0012)g.theta=0; }
+      busy=true;
+    }
+    const ax=new THREE.Vector3(Math.cos(g.phi),0,Math.sin(g.phi));
+    g.tilt.quaternion.setFromAxisAngle(ax,g.theta);
+    g.g.position.y=g.top+g.R*Math.sin(g.theta)+g.r*Math.cos(g.theta)+g.lift.x;
+  }
+  return busy;
+};
+
+/* ---------- Workout: the plates on the bar, ceramic ---------- */
+const PLATES=[[20,1.62,.34,0xf1ece4],[15,1.48,.3,0xd9c4a4],[10,1.3,.27,0x9fc0ad],[5,1.0,.21,0xe8dfd2],[2.5,.8,.16,0x9b98c4],[1.25,.66,.12,0xf1ece4]];
+const plates={scene:new THREE.Scene(),cam:new THREE.PerspectiveCamera(30,1.5,.1,60),list:[],geo:{},busy:0};
+function plateDecal(w,Ro,ri,ro){
+  const S=512,c=document.createElement('canvas');c.width=c.height=S;const x=c.getContext('2d');
+  const k=S/2/ro; x.translate(S/2,S/2);
+  x.strokeStyle='rgba(45,75,158,.55)';x.lineWidth=3;x.beginPath();x.arc(0,0,(ri+ (ro-ri)*.12)*k,0,7);x.stroke();
+  x.fillStyle='#2D4B9E';x.textAlign='center';x.textBaseline='middle';
+  const band=(ro-ri)*k; x.font=`800 ${Math.round(band*.74)}px Manrope`;
+  const label=(w%1?String(w):String(w));
+  x.fillText(label,0,-(ri*k+band*.5));
+  x.font=`800 ${Math.round(band*.3)}px Manrope`;x.fillText('KG',0,(ri*k+band*.5));
+  const tx=new THREE.CanvasTexture(c);tx.colorSpace=THREE.SRGBColorSpace;tx.anisotropy=4;return tx;
+}
+{
+  const {scene,cam}=plates; cam.position.set(5.6,1.9,5.1); cam.lookAt(1.25,-.12,0);
+  lights(scene,{key:2.6,from:[2,7,6],hemi:[0xffffff,0x3a56a8,1.0]});
+  scene.environmentIntensity=.6;
+  const floor=new THREE.Mesh(new THREE.PlaneGeometry(40,40),new THREE.ShadowMaterial({opacity:.32,color:0x0a1440}));floor.rotation.x=-Math.PI/2;floor.position.y=-1.63;floor.receiveShadow=true;scene.add(floor);
+  const steel=new THREE.MeshStandardMaterial({color:0xd2d6de,metalness:1,roughness:.28,envMapIntensity:1.1});
+  const shaft=new THREE.Mesh(new THREE.CylinderGeometry(.13,.13,9,32),steel);shaft.rotation.z=Math.PI/2;shaft.position.x=-4.55;shaft.castShadow=true;scene.add(shaft);
+  const collar=new THREE.Mesh(new THREE.CylinderGeometry(.33,.33,.16,48),steel);collar.rotation.z=Math.PI/2;collar.position.x=-.08;collar.castShadow=true;scene.add(collar);
+  const sleeve=new THREE.Mesh(new THREE.CylinderGeometry(.2,.2,3.4,40),steel);sleeve.rotation.z=Math.PI/2;sleeve.position.x=1.7;sleeve.castShadow=true;scene.add(sleeve);
+  const cap=new THREE.Mesh(new THREE.SphereGeometry(.2,24,12,0,Math.PI*2,0,Math.PI/2),steel);cap.rotation.z=-Math.PI/2;cap.position.x=3.4;scene.add(cap);
+  for(const [w,Ro,th,col] of PLATES){
+    const h=th/2,e=Math.min(.07,h*.6),d=.028,ri=.22;
+    const p=[[ri,-h],[.42*Ro,-h],[.46*Ro,-h+d],[.82*Ro,-h+d],[.86*Ro,-h],[Ro-e,-h],[Ro-e*.3,-h+e*.3],[Ro,-h+e],[Ro,h-e],[Ro-e*.3,h-e*.3],[Ro-e,h],[.86*Ro,h],[.82*Ro,h-d],[.46*Ro,h-d],[.42*Ro,h],[ri,h],[ri,-h]];
+    const g=new THREE.LatheGeometry(p.map(q=>new THREE.Vector2(q[0],q[1])),128);g.rotateZ(-Math.PI/2);g.computeVertexNormals();
+    const ringG=new THREE.RingGeometry(.46*Ro,.82*Ro,96,1);ringG.rotateY(Math.PI/2);
+    const decal=new THREE.MeshPhysicalMaterial({map:plateDecal(w,Ro,.46*Ro,.82*Ro),transparent:true,roughness:.3,clearcoat:1,clearcoatRoughness:.15,polygonOffset:true,polygonOffsetFactor:-2});
+    // ring uv: RingGeometry maps uv to the outer radius, so the canvas is drawn with ro as its edge
+    plates.geo[w]={g,ringG,mat:glaze(col,.36),decal,h,d};
+  }
+}
+function platesFor(total){let side=(total-20)/2;const out=[];for(const [w] of PLATES){while(side>=w-1e-6){out.push(w);side-=w}}return out}
+function layoutPlates(total,animate=true){
+  const want=platesFor(total); const keep=[];
+  let k=0; while(k<want.length&&k<plates.list.length&&plates.list[k].w===want[k]&&!plates.list[k].leaving)k++;
+  // leave: everything after the common start slides off the end of the sleeve
+  plates.list.forEach((p,i)=>{if(i>=k&&!p.leaving){p.leaving=true;p.x.t=6.5;p.x.z=.9;p.x.w=9;p.delay=(plates.list.length-1-i)*.06}});
+  const staying=plates.list.filter(p=>!p.leaving);
+  let x=.02; staying.forEach(p=>x+=p.geo.h*2+.012);
+  want.slice(k).forEach((w,i)=>{
+    const geo=plates.geo[w];const g=new THREE.Group();
+    const m=new THREE.Mesh(geo.g,geo.mat);m.castShadow=m.receiveShadow=true;g.add(m);
+    const dc=new THREE.Mesh(geo.ringG,geo.decal);dc.position.x=geo.h-geo.d+.004;g.add(dc);
+    const tx=x+geo.h; x+=geo.h*2+.012;
+    const p={w,geo,g,x:new Spring(animate?5.2+i*.5:tx,{z:1.05,w:13}),spin:Math.random()*Math.PI*2,leaving:false,delay:animate?.12+i*.09+(plates.list.length-k)*.05:0,hit:0};
+    p.x.t=tx;g.position.x=p.x.x;g.rotation.x=p.spin;plates.scene.add(g);plates.list.push(p);
+  });
+  plates.list.sort((a,b)=>(a.leaving-b.leaving)||(a.x.t-b.x.t));
+  if(animate)kick();
+}
+plates.update=dt=>{
+  let busy=false;
+  for(const p of [...plates.list]){
+    if(p.delay>0){p.delay-=dt;busy=true;continue}
+    const before=p.x.x; const moving=p.x.step(dt);
+    if(!p.leaving&&p.x.x<p.x.t){p.x.x=p.x.t;if(p.x.v<-.4){p.x.v*=-.28;p.hit=1}else{p.x.v=0}} // clack against the plate inside it
+    // a plate rolls a little around the sleeve as it slides
+    p.g.rotation.x=p.spin+(p.x.x-p.x.t)*.55;
+    p.g.position.x=p.x.x;
+    if(p.leaving&&p.x.x>6.2){plates.scene.remove(p.g);plates.list.splice(plates.list.indexOf(p),1);continue}
+    if(moving||Math.abs(p.x.v)>1e-3)busy=true;
+  }
+  return busy;
+};
+
+/* ---------- The record: a bisque medallion that cracks and is mended in gold ---------- */
+const medal={scene:new THREE.Scene(),cam:new THREE.PerspectiveCamera(28,1,.1,40),t:-1};
+const CRACK=[[-.78,-.5],[-.5,-.36],[-.42,-.12],[-.18,-.04],[-.08,.2],[.16,.26],[.3,.48],[.56,.58]];
+const CRACK2=[[-.08,.2],[-.2,.42],[-.16,.62]];
+function paintFace(x,y,S,kind,prog,w,r){
+  x.clearRect(0,0,S,S);y.clearRect(0,0,S,S);
+  const front=kind==='front';
+  x.fillStyle=front?'#E7DACA':'#F5F1EB';x.fillRect(0,0,S,S);
+  if(front){const d=x.getImageData(0,0,S,S);for(let i=0;i<d.data.length;i+=4){const n=(Math.random()-.5)*16;d.data[i]+=n;d.data[i+1]+=n;d.data[i+2]+=n}x.putImageData(d,0,0)}
+  y.fillStyle='rgb(0,150,0)';y.fillRect(0,0,S,S); // roughness .59, not metal
+  const gold='#E2BC63', ink=front?'#2D4B9E':gold;
+  x.save();y.save();x.translate(S/2,S/2);y.translate(S/2,S/2);
+  const ring=(ctx,col,lw,rad)=>{ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.beginPath();ctx.arc(0,0,rad,0,7);ctx.stroke()};
+  ring(x,ink,4,S*.43); if(!front)ring(y,'rgb(0,70,175)',4,S*.43);
+  // the seam
+  const draw=(ctx,col,lw,path,p)=>{const pts=path.map(q=>[q[0]*S/2,-q[1]*S/2]);let L=0;const seg=[];for(let i=1;i<pts.length;i++){const l=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]);seg.push(l);L+=l}
+    let left=L*p;ctx.strokeStyle=col;ctx.lineWidth=lw;ctx.lineCap=ctx.lineJoin='round';ctx.beginPath();ctx.moveTo(...pts[0]);
+    for(let i=1;i<pts.length&&left>0;i++){const f=Math.min(1,left/seg[i-1]);ctx.lineTo(pts[i-1][0]+(pts[i][0]-pts[i-1][0])*f,pts[i-1][1]+(pts[i][1]-pts[i-1][1])*f);left-=seg[i-1]}ctx.stroke()};
+  if(prog>0){
+    if(front){draw(x,'rgba(60,40,20,.55)',7,CRACK,Math.min(1,prog*1.6));}
+    const g=Math.max(0,prog*1.25-.25);
+    draw(x,gold,front?4.5:6,CRACK,g);draw(y,'rgb(0,50,255)',front?4.5:6,CRACK,g);
+    draw(x,gold,3.5,CRACK2,Math.max(0,g*1.6-.6));draw(y,'rgb(0,50,255)',3.5,CRACK2,Math.max(0,g*1.6-.6));
+  }
+  x.fillStyle=ink;x.textAlign='center';x.textBaseline='middle';
+  if(front){x.font=`800 ${S*.05}px Manrope`;x.fillText(t('best').toUpperCase(),0,-S*.24)}
+  x.font=`800 ${S*(String(w).length>3?.25:.3)}px Manrope`;x.fillText(fmt(w),0,S*.0);
+  x.font=`700 ${S*.065}px Manrope`;x.fillText(`kg × ${r}`,0,S*.2);
+  if(!front){y.fillStyle='rgb(0,70,175)';y.textAlign='center';y.textBaseline='middle';
+        y.font=`800 ${S*(String(w).length>3?.25:.3)}px Manrope`;y.fillText(fmt(w),0,0);y.font=`700 ${S*.065}px Manrope`;y.fillText(`kg × ${r}`,0,S*.2)}
+  x.restore();y.restore();
+}
+{
+  const {scene,cam}=medal; cam.position.set(0,0,7.2); cam.lookAt(0,0,0);
+  lights(scene,{key:2.2,from:[-3,4,6],shadow:false,hemi:[0xffffff,0x6b80c4,1.0]});
+  const R=1.32,h=.17;
+  const prof=[[0,-h],[R-.08,-h],[R,-h+.06],[R+.03,0],[R,h-.06],[R-.08,h],[0,h]].map(p=>new THREE.Vector2(p[0],p[1]));
+  const g=new THREE.LatheGeometry(prof,128);g.rotateX(Math.PI/2);
+  const goldM=new THREE.MeshPhysicalMaterial({color:0xd7b062,metalness:1,roughness:.26,envMapIntensity:1.4});
+  medal.body=new THREE.Group(); scene.add(medal.body);
+  const rim=new THREE.Mesh(g,goldM); medal.body.add(rim);
+  const faceGeo=new THREE.CircleGeometry(R-.09,96);
+  const newFace=()=>{const c=document.createElement('canvas'),m=document.createElement('canvas');c.width=c.height=m.width=m.height=512;
+    const map=new THREE.CanvasTexture(c);map.colorSpace=THREE.SRGBColorSpace;map.anisotropy=4;const mr=new THREE.CanvasTexture(m);
+    const mat=new THREE.MeshPhysicalMaterial({map,metalnessMap:mr,roughnessMap:mr,metalness:1,roughness:1,clearcoat:.6,clearcoatRoughness:.2,envMapIntensity:1.2});
+    return {c,m,map,mr,mat}};
+  medal.front=newFace(); medal.back=newFace();
+  const f=new THREE.Mesh(faceGeo,medal.front.mat);f.position.z=h+.001;medal.body.add(f);
+  const b=new THREE.Mesh(faceGeo,medal.back.mat);b.rotation.y=Math.PI;b.position.z=-h-.001;medal.body.add(b);
+  medal.sweep=new THREE.PointLight(0xffe3a8,0,12,1.2); scene.add(medal.sweep);
+  medal.rot=new Spring(0,{z:.5,w:7.5}); medal.rise=new Spring(0,SP.pop);
+}
+function repaint(face,kind,prog,w,r){paintFace(face.c.getContext('2d'),face.m.getContext('2d'),512,kind,prog,w,r);face.map.needsUpdate=face.mr.needsUpdate=true}
+medal.update=dt=>{
+  if(medal.t<0)return false;
+  medal.t+=dt; const T=medal.t;
+  medal.rise.step(dt); medal.body.position.y=(medal.rise.x-1)*.9; const s=.86+.14*medal.rise.x; medal.body.scale.setScalar(s);
+  if(T>.5&&T<1.45){const p=(T-.5)/.95;repaint(medal.front,'front',p,medal.old[0],medal.old[1]);medal.body.rotation.z=Math.sin(T*55)*.02*Math.max(0,1-p)}
+  if(T>=1.45&&!medal.turned){medal.turned=true;medal.rot.t=Math.PI;medal.body.rotation.z=0}
+  const busyR=medal.rot.step(dt); medal.body.rotation.y=medal.rot.x;
+  // a warm light runs across as it turns, so the gold catches it edge-on
+  const k=Math.max(0,Math.min(1,(T-1.45)/1.2)); medal.sweep.position.set(-4+8*k,1.4,3.2); medal.sweep.intensity=Math.sin(k*Math.PI)*60;
+  if(T>2.05&&!medal.revealed){medal.revealed=true;$('#pr').classList.add('reveal')}
+  return T<1.45||busyR||k<1;
+};
+
+/* render on demand: only while something moves */
+let cur=null,raf=0,lastT=0;
+function kick(){if(!raf){lastT=performance.now();raf=requestAnimationFrame(loop)}}
+function loop(now){ // physics in small fixed steps that follow real time, so a slow frame never slows the motion
+  const el=Math.max(0,Math.min(.5,(now-lastT)/1000));lastT=Math.max(lastT,now);const n=Math.max(1,Math.ceil(el/(1/60)));let busy=false;
+  for(let i=0;i<n;i++)busy=cur.update(el/n)||busy;renderer.render(cur.scene,cur.cam);raf=busy?requestAnimationFrame(loop):0}
+function mount(sceneObj,slot){
+  if(cur&&cur!==sceneObj){ // leave a still copy of the last frame behind, so nothing pops while screens move
+    renderer.render(cur.scene,cur.cam);const pc=renderer.domElement.parentElement.querySelector('canvas.poster');
+    if(pc){pc.width=renderer.domElement.width;pc.height=renderer.domElement.height;pc.getContext('2d').drawImage(renderer.domElement,0,0)}
+  }
+  cur=sceneObj; slot.appendChild(renderer.domElement);
+  const w=slot.clientWidth,h=slot.clientHeight; renderer.setSize(w,h,false); sceneObj.cam.aspect=w/h; sceneObj.cam.updateProjectionMatrix();
+  renderer.render(cur.scene,cur.cam); kick();
+}
+
+/* ---------- rolling digits (only the characters that change roll) ---------- */
+function roll(el,text,dir=1){
+  const old=el.dataset.v||''; el.dataset.v=text;
+  if(!old||reduce){el.innerHTML=[...text].map(c=>`<span class="ch">${c}</span>`).join('');return}
+  const n=Math.max(old.length,text.length); const oa=[...old.padStart(n,' ')],na=[...text.padStart(n,' ')];
+  el.innerHTML='';
+  na.forEach((c,i)=>{const s=document.createElement('span');s.className='ch';s.textContent=c===' '?'':c;el.appendChild(s);
+    if(c!==oa[i]&&c!==' '){s.animate([{transform:`translateY(${55*dir}%)`,opacity:0,filter:'blur(2px)'},{transform:'none',opacity:1,filter:'blur(0)'}],{duration:SP.soft.ms*.7,easing:SP.soft.css});
+      if(oa[i]!==' '){const g=document.createElement('span');g.textContent=oa[i];g.style.cssText='position:absolute;left:0;top:0';s.appendChild(g);
+        g.animate([{transform:'none',opacity:1},{transform:`translateY(${-55*dir}%)`,opacity:0}],{duration:SP.soft.ms*.55,easing:SP.soft.css,fill:'forwards'}).onfinish=()=>g.remove()}}});
+}
+
+/* ---------- Today UI ---------- */
+function paintToday(){
+  document.documentElement.lang=L;
+  document.querySelectorAll('[data-t]').forEach(e=>e.textContent=t(e.dataset.t));
+  $('#lang').textContent=L==='en'?'DA':'EN';
+  const d=new Date();$('#date').textContent=`${t('days')[d.getDay()]} ${d.getDate()}${L==='da'?'.':''} ${t('months')[d.getMonth()]}`;
+  $('#todaySub').textContent=t('sub');
+  const done=S.lifts.filter((l,i)=>S.logged[i].length>=l.sets.length).length;
+  const liftsDone=S.done?3:done;
+  roll($('#vTrain'),`${liftsDone}/3`); $('#oTrain').textContent=t('liftsOf',liftsDone,3);
+  roll($('#vFood'),`${S.protein}`); $('#vFood').insertAdjacentHTML('beforeend','<small>g</small>'); $('#oFood').textContent=t('protOf');
+  $('#vSleep').innerHTML=L==='da'?'7 t 40':'7 h 40';
+  const ct=$('#coachText'),ca=$('#coachActs');
+  if(S.done){ct.textContent=t('coachDone',Math.max(0,160-S.protein));ca.innerHTML=`<button class="primary" data-open="food">${t('foodT')}</button>`}
+  else if(S.coachSet){ct.textContent=t('coach1');ca.innerHTML=`<button id="cKeep">${t('keep')}</button><button id="cUndo">${t('undo')}</button>`}
+  else {ct.textContent=t('coach1u');ca.innerHTML=''}
+  const st=$('#start');st.classList.toggle('done',S.done);
+  if(S.done)st.textContent=t('done',Math.max(1,Math.round((S.endAt-S.start)/60000)));
+  else if(S.active)st.innerHTML=`<span class="live"><i class="dot"></i>${t('resume',t('lifts')[S.lifts[S.li].id],S.si+1)}</span>`;
+  else st.textContent=t('start');
+  today.rings[0].frac.t=S.done?1:(liftsDone+(S.active?S.logged[S.li].length/S.lifts[S.li].sets.length:0))/3;
+  today.rings[1].frac.t=Math.min(1,S.protein/160); today.rings[2].frac.t=S.sleep; kick();
+}
+$('#coach').addEventListener('click',e=>{
+  if(e.target.id==='cUndo'){S.coachSet=false;S.lifts[0].sets[2]=[82.5,8];paintToday();
+    toast(L==='da'?'Sæt 3 er tilbage på 82,5 kg':'Set 3 back to 82.5 kg',()=>{S.coachSet=true;S.lifts[0].sets[2]=[85,8];paintToday()})}
+  if(e.target.id==='cKeep'){const a=$('#coachActs');a.animate([{opacity:1},{opacity:0,transform:'translateY(-4px)'}],{duration:200,fill:'forwards'}).onfinish=()=>{a.innerHTML='';a.getAnimations().forEach(x=>x.cancel())}}
+});
+$('#lang').onclick=()=>{L=L==='en'?'da':'en';paintToday();paintWorkout();};
+
+/* sheets */
+/* morph: a pop-up grows out of the thing you touched, and folds back into it */
+const appR=()=>$('#app').getBoundingClientRect();
+function rectIn(el){const a=appR(),b=el.getBoundingClientRect();return {l:b.left-a.left,t:b.top-a.top,r:b.right-a.left,b:b.bottom-a.top,rad:parseFloat(getComputedStyle(el).borderTopLeftRadius)||16}}
+function clipFrom(target,src){const R=rectIn(target),A=appR();
+  // the target is laid out at its final place; clip it down to the source's rectangle
+  return `inset(${src.t-R.t}px ${R.r-src.r}px ${R.b-src.b}px ${src.l-R.l}px round ${src.rad}px)`}
+function morph(target,src,open,finalRad){
+  const from=clipFrom(target,src),to=`inset(0px 0px 0px 0px round ${finalRad}px)`;
+  target.getAnimations().forEach(a=>a.cancel());
+  return target.animate({clipPath:open?[from,to]:[to,from]},{duration:SP.soft.ms*(open?1:.8),easing:open?SP.soft.css:'cubic-bezier(.4,0,.2,1)',fill:'forwards'});
+}
+let sheetOn=false,sheetSrc=null;
+function openSheet(html,src){
+  const sh=$('#sheet'),body=$('#sheetBody');body.innerHTML=html;sh.classList.add('on');$('#scrim').classList.add('on');sheetOn=true;
+  sheetSrc=src&&src.isConnected?src:null;
+  sh.style.transform='';
+  if(sheetSrc&&!reduce){morph(sh,rectIn(sheetSrc),true,32);
+    body.animate([{opacity:0,transform:'translateY(10px) scale(.97)',filter:'blur(3px)'},{opacity:1,transform:'none',filter:'blur(0)'}],{duration:SP.soft.ms*.8,delay:70,easing:SP.soft.css,fill:'backwards'});
+    sheetSrc.animate([{opacity:1},{opacity:.0}],{duration:120,fill:'forwards'});}
+  else sh.animate([{transform:'translateY(110%)'},{transform:'none'}],{duration:SP.soft.ms,easing:SP.soft.css});
+}
+function closeSheet(){
+  if(!sheetOn)return;sheetOn=false;const sh=$('#sheet'),src=sheetSrc;$('#scrim').classList.remove('on');
+  const done=()=>{sh.classList.remove('on');sh.getAnimations().forEach(a=>a.cancel());sh.style.transform=''};
+  if(src&&src.isConnected&&!reduce&&!sh.style.transform){
+    $('#sheetBody').animate([{opacity:1},{opacity:0}],{duration:140,fill:'forwards'}).onfinish=function(){this.cancel()};
+    morph(sh,rectIn(src),false,32).onfinish=()=>{done();src.getAnimations().forEach(a=>a.cancel())};
+  } else {const y=sh.style.transform;sh.animate([{transform:y||'none'},{transform:'translateY(110%)'}],{duration:260,easing:'cubic-bezier(.4,0,.2,1)',fill:'forwards'}).onfinish=()=>{done();src&&src.getAnimations().forEach(a=>a.cancel())}}
+}
+$('#scrim').onclick=closeSheet;
+let dragY=null;
+$('#sheet').addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;dragY={y:e.clientY,t:performance.now()};$('#sheet').style.transition='none';$('#sheet').setPointerCapture(e.pointerId)});
+$('#sheet').addEventListener('pointermove',e=>{if(!dragY)return;const d=Math.max(0,e.clientY-dragY.y);$('#sheet').style.transform=`translateY(${d}px)`});
+$('#sheet').addEventListener('pointerup',e=>{if(!dragY)return;const d=e.clientY-dragY.y,v=d/(performance.now()-dragY.t);dragY=null;const sh=$('#sheet');sh.style.transition='';if(d>90||v>.6)closeSheet();else{sh.animate([{transform:sh.style.transform},{transform:'none'}],{duration:SP.pop.ms,easing:SP.pop.css});sh.style.transform=''}});
+function sheetFor(k,src){
+  if(k==='food'){openSheet(`<h2>${t('foodT')}</h2><p class="note">${t('foodN')}</p><div class="list">${t('foods').map((f,i)=>`<button class="item" data-food="${i}"><span>${f[0]}</span><span class="row" style="gap:10px"><span class="r">${f[1]} g</span><span class="plus">+</span></span></button>`).join('')}</div>`,src)}
+  if(k==='sleep'){openSheet(`<h2>${t('sleepT')}</h2><p class="note">${t('sleepN')}</p><div class="list">${t('sleepRows').map(r=>`<div class="item"><span>${r[0]}</span><span class="r">${r[1]}</span></div>`).join('')}</div>`,src)}
+  if(k==='train'){openSheet(`<h2>${t('trainT')}</h2><p class="note">${t('trainN')}</p><div class="list">${S.lifts.map((l,i)=>`<div class="item"><span>${t('lifts')[l.id]}</span><span class="r num">${S.logged[i].length?S.logged[i].map(s=>fmt(s[0])+'×'+s[1]).join('  '):l.sets.map(s=>fmt(s[0])+'×'+s[1]).join('  ')}</span></div>`).join('')}</div>${S.done?'':`<button class="cta" id="sheetStart">${S.active?t('resume',t('lifts')[S.lifts[S.li].id],S.si+1):t('start')}</button>`}`,src)}
+}
+document.addEventListener('click',e=>{const o=e.target.closest('[data-open]');if(o){sheetFor(o.dataset.open,o)}
+  const f=e.target.closest('[data-food]');if(f){const [name,p]=t('foods')[+f.dataset.food];S.protein+=p;closeSheet();setTimeout(()=>{paintToday();wobble(today.rings[1],.09)},120);
+    toast(`${t('added')} ${name.split(',')[0]} · +${p} g`,()=>{S.protein-=p;paintToday()})}
+  if(e.target.id==='sheetStart'){sheetOn=false;$('#sheet').classList.remove('on');$('#scrim').classList.remove('on');goWorkout(e.target)}});
+
+/* taps on the rings: flick one, open its sheet */
+{const ray=new THREE.Raycaster(),v=new THREE.Vector2();let down=null;
+ $('#todayHero').addEventListener('pointerdown',e=>down={x:e.clientX,y:e.clientY});
+ $('#todayHero').addEventListener('pointerup',e=>{if(!down||cur!==today)return;if(Math.hypot(e.clientX-down.x,e.clientY-down.y)>8)return;down=null;
+  const r=renderer.domElement.getBoundingClientRect();v.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(v,today.cam);
+  const hit=ray.intersectObjects(today.rings.map(g=>g.base),false)[0];if(!hit)return;
+  const g=today.rings.find(x=>x.base===hit.object);g.lift.v=1.6;wobble(g,.07);setTimeout(()=>sheetFor(g.key,document.querySelector(`.tile[data-open=${g.key}]`)),180)});}
+
+let toastTimer=0,undoFn=null;
+function toast(text,undo){$('#toastText').textContent=text;undoFn=undo;$('#toastUndo').style.display=undo?'':'none';$('#toast').classList.add('on');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('on'),4200)}
+$('#toastUndo').onclick=()=>{undoFn&&undoFn();undoFn=null;$('#toast').classList.remove('on')};
+
+/* ---------- screens ---------- */
+const anim=(el,kf,opts)=>el.animate(kf,{duration:SP.soft.ms,easing:SP.soft.css,fill:'forwards',...opts});
+function goWorkout(src){
+  if(S.done)return;
+  if(!S.active){S.active=true;S.start=Date.now();S.li=0;S.si=0;loadSet(false)}
+  const W=$('#workout'),D=$('#today');W.style.visibility='visible';
+  const from=rectIn(src&&src.isConnected?src:$('#start'));
+  if(reduce)W.style.clipPath='none';else morph(W,from,true,0);
+  // the button's own blue glaze becomes the room: the workout grows out of it (Days, card to page)
+  W.animate([{filter:'brightness(1.12)'},{filter:'none'}],{duration:SP.soft.ms,easing:SP.soft.css});
+  anim(D,[{transform:'none',opacity:1},{transform:'scale(.95)',opacity:.6}]).onfinish=()=>{D.style.visibility='hidden'};
+  mount(plates,$('#plateHero')); layoutPlates(S.w,true); paintWorkout(); tick();
+}
+function goToday(){
+  const W=$('#workout'),D=$('#today');D.style.visibility='visible';paintToday();
+  D.getAnimations().forEach(a=>a.cancel());
+  const into=S.done?null:rectIn($('#start'));
+  if(into&&!reduce)morph(W,into,false,0).onfinish=()=>{W.style.visibility='hidden'};
+  else anim(W,[{opacity:1},{opacity:0}],{duration:240}).onfinish=function(){W.style.visibility='hidden';this.cancel();W.getAnimations().forEach(a=>a.cancel())};
+  anim(D,[{transform:'scale(.95)',opacity:.6},{transform:'none',opacity:1}]).onfinish=function(){this.cancel()};
+  mount(today,$('#todayHero'));
+}
+$('#start').onclick=e=>{if(S.done){sheetFor('train',$('#start'));return}goWorkout($('#start'))};
+$('#back').onclick=goToday;
+
+/* ---------- workout logic ---------- */
+function loadSet(animate=true){const l=S.lifts[S.li];const [w,r]=l.sets[Math.min(S.si,l.sets.length-1)];S.w=w;S.r=r;if(animate)layoutPlates(S.w,true)}
+function paintWorkout(){
+  const l=S.lifts[S.li];
+  $('#liftPos').textContent=t('lift',S.li+1,S.lifts.length);
+  $('#liftName').textContent=t('lifts')[l.id];
+  $('#wCoach').textContent=t('wc')[l.id];
+  roll($('#wVal'),fmt(S.w),1); roll($('#rVal'),String(S.r),1);
+  $('#ref').innerHTML=`<span>${t('last')} <b class="num">${fmt(l.last[0])} × ${l.last[1]}</b></span><span>${t('best')} <b class="num">${fmt(l.best[0])} × ${l.best[1]}</b></span>`;
+  const b=$('#beads');b.innerHTML='';
+  l.sets.forEach((s,i)=>{const d=document.createElement('i');d.className='bead'+(i<S.logged[S.li].length?(' done'+(S.logged[S.li][i][2]?' pr':'')):i===S.si?' cur':'');b.appendChild(d)});
+  const lab=document.createElement('span');lab.className='beadlab';lab.textContent=`${t('set')} ${S.si+1}/${l.sets.length}`;b.appendChild(lab);
+  setLog(S.resting?t('skip'):t('log',S.si+1));
+}
+function setLog(text){const s=$('#logLabel');if(s.textContent===text)return;if(!s.textContent){s.textContent=text;return}
+  s.animate([{opacity:1,filter:'blur(0)',transform:'none'},{opacity:0,filter:'blur(4px)',transform:'translateY(-6px)'}],{duration:140,easing:'ease-in'}).onfinish=()=>{s.textContent=text;s.animate([{opacity:0,filter:'blur(4px)',transform:'translateY(6px)'},{opacity:1,filter:'blur(0)',transform:'none'}],{duration:SP.soft.ms*.6,easing:SP.soft.css})}}
+function nudgeW(d){const w=Math.max(20,Math.min(200,S.w+d));if(w===S.w)return;S.w=w;roll($('#wVal'),fmt(w),d>0?1:-1);layoutPlates(w,true);haptic(6)}
+function nudgeR(d){const r=Math.max(1,Math.min(30,S.r+d));if(r===S.r)return;S.r=r;roll($('#rVal'),String(r),d>0?1:-1);haptic(6)}
+$('#wPlus').onclick=()=>nudgeW(2.5);$('#wMinus').onclick=()=>nudgeW(-2.5);$('#rPlus').onclick=()=>nudgeR(1);$('#rMinus').onclick=()=>nudgeR(-1);
+const haptic=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
+
+$('#logBtn').onclick=()=>{
+  if(S.resting){endRest(true);return}
+  const l=S.lifts[S.li];
+  const isPR=e1(S.w,S.r)>e1(l.best[0],l.best[1])+.01;
+  const old=[...l.best];
+  S.logged[S.li].push([S.w,S.r,isPR]);
+  if(isPR){l.best=[S.w,S.r];S.records++}
+  haptic(isPR?[12,40,18]:14);
+  // the bead swells under the thumb, then settles (Not Boring's swell, one tap)
+  paintWorkout(); const bd=$('#beads').children[S.logged[S.li].length-1];
+  bd&&bd.animate([{transform:'scale(.6)'},{transform:'scale(1.35)'},{transform:'scale(1)'}],{duration:SP.pop.ms,easing:'ease-out'});
+  S.si++;
+  const liftDone=S.si>=l.sets.length;
+  const last=liftDone&&S.li===S.lifts.length-1;
+  const after=()=>{ if(last){finish();return}
+    if(liftDone){S.li++;S.si=0}
+    startRest(l.rest);
+  };
+  if(isPR)showPR(old,[S.w,S.r],after);else after();
+};
+$('#finishBtn').onclick=()=>finish($('#finishBtn'));
+
+/* ---------- rest: a porcelain kitchen-timer dial ---------- */
+const DEG=2; // 2° per second, a full turn is 3 minutes
+{const s=['<svg viewBox="-136 -136 272 272">'];
+ s.push('<defs><radialGradient id="kn" r="1"><stop offset=".9" stop-color="#000" stop-opacity="0"/><stop offset="1" stop-color="#5a4a3a" stop-opacity=".18"/></radialGradient></defs>');
+ for(let i=0;i<180;i++){const a=i*DEG,major=i%15===0,mid=i%5===0;if(!mid&&i%1)continue;const r1=mid?104:110,r2=major?126:122;
+   const rad=(a-90)*Math.PI/180;s.push(`<line x1="${(r1*Math.cos(rad)).toFixed(1)}" y1="${(r1*Math.sin(rad)).toFixed(1)}" x2="${(r2*Math.cos(rad)).toFixed(1)}" y2="${(r2*Math.sin(rad)).toFixed(1)}" stroke="#2D4B9E" stroke-opacity="${major?.95:mid?.6:.22}" stroke-width="${major?2.6:mid?1.6:1}" stroke-linecap="round"/>`)}
+ [0,15,30,45,60,75,90,105,120,135,150,165].forEach(v=>{if(v%30)return;const rad=(v*DEG-90)*Math.PI/180;s.push(`<text x="${(90*Math.cos(rad)).toFixed(1)}" y="${(90*Math.sin(rad)+4).toFixed(1)}" transform="rotate(${v*DEG} ${(90*Math.cos(rad)).toFixed(1)} ${(90*Math.sin(rad)).toFixed(1)})" text-anchor="middle" font-family="Manrope" font-weight="800" font-size="12" fill="#2D4B9E">${v===0?'0':v<60?v:(v/60|0)+':'+String(v%60).padStart(2,'0')}</text>`)});
+ s.push('<circle r="131" fill="none" stroke="url(#kn)" stroke-width="10"/></svg>');$('#dialRot').innerHTML=s.join('');}
+let dialAnim=null;
+function remaining(){return Math.max(0,(S.restEnd-Date.now())/1000)}
+function spinDial(){ // the browser turns the dial back to zero by itself
+  const r=remaining(); dialAnim&&dialAnim.cancel();
+  dialAnim=$('#dialRot').animate([{transform:`rotate(${-r*DEG}deg)`},{transform:'rotate(0deg)'}],{duration:r*1000,easing:'linear',fill:'forwards'});
+}
+function startRest(sec){
+  S.restTotal=REST_OVERRIDE||sec; S.restEnd=Date.now()+S.restTotal*1000; S.resting=true;
+  $('#stage').classList.add('resting'); $('#workout').classList.add('resting');
+  const l=S.lifts[S.li];const [w,r]=l.sets[S.si];
+  $('#nextUp').innerHTML=`${t('next')}: <b>${t('lifts')[l.id]} · ${t('set')} ${S.si+1} · ${fmt(w)} × ${r}</b>`;
+  $('#restTime').dataset.v='';
+  // the dial winds up from zero to the rest time, then runs down
+  dialAnim&&dialAnim.cancel();
+  const wind=$('#dialRot').animate([{transform:'rotate(0deg)'},{transform:`rotate(${-S.restTotal*DEG}deg)`}],{duration:SP.pop.ms,easing:SP.pop.css,fill:'forwards'});
+  wind.onfinish=()=>{if(S.resting&&!dialDrag)spinDial()};
+  paintWorkout(); restTick();
+}
+let lastShown='';
+function restTick(){
+  if(!S.resting)return;
+  const r=Math.ceil(remaining());
+  const txt=r<=3&&r>0?String(r):`${r/60|0}:${String(r%60).padStart(2,'0')}`;
+  if(txt!==lastShown){
+    const el=$('#restTime');
+    if(r<=3&&r>0){ // last three seconds: each number blurs and flips into the next (Miles)
+      el.innerHTML=`<span class="ch" style="font-size:60px">${txt}</span>`;
+      el.firstChild.animate([{transform:'translateY(-40%)',filter:'blur(6px)',opacity:0},{transform:'none',filter:'blur(0)',opacity:1}],{duration:260,easing:SP.soft.css});
+      haptic(8);
+    } else roll(el,txt,-1);
+    lastShown=txt;
+  }
+  if(remaining()<=0){endRest(false);return}
+  setTimeout(restTick,1000-(Date.now()%1000)+5);
+}
+function endRest(skipped){
+  if(!S.resting)return; S.resting=false; lastShown='';
+  dialAnim&&dialAnim.cancel();
+  if(!skipped){haptic([30,60,30]);$('#dial').animate([{transform:'rotateX(14deg) rotate(0)'},{transform:'rotateX(14deg) rotate(7deg)'},{transform:'rotateX(14deg) rotate(-3deg)'},{transform:'rotateX(14deg) rotate(0)'}],{duration:420,easing:'ease-out'})}
+  setTimeout(()=>{$('#stage').classList.remove('resting');$('#workout').classList.remove('resting');loadSet(true);paintWorkout()},skipped?0:300);
+}
+$('#rMore').onclick=()=>{S.restEnd=Math.min(Date.now()+178000,S.restEnd+15000);spinDial();lastShown='';restTick()};
+$('#rLess').onclick=()=>{S.restEnd-=15000;if(remaining()<=0){endRest(true);return}spinDial();lastShown='';restTick()};
+// drag the dial like a real one: the finger turns it, letting go hands it back to the clock
+let dialDrag=null;
+{const wrap=$('#dialwrap');const ang=e=>{const b=wrap.getBoundingClientRect();return Math.atan2(e.clientY-(b.top+b.height/2),e.clientX-(b.left+b.width/2))*180/Math.PI};
+ wrap.addEventListener('pointerdown',e=>{if(!S.resting)return;wrap.setPointerCapture(e.pointerId);dialAnim&&dialAnim.pause();dialDrag={a:ang(e),r:remaining()}});
+ wrap.addEventListener('pointermove',e=>{if(!dialDrag)return;let d=ang(e)-dialDrag.a;if(d>180)d-=360;if(d<-180)d+=360;dialDrag.a+=d;dialDrag.r=Math.max(0,Math.min(178,dialDrag.r-d/DEG));
+   dialAnim&&dialAnim.cancel();$('#dialRot').style.transform=`rotate(${-dialDrag.r*DEG}deg)`;S.restEnd=Date.now()+dialDrag.r*1000;lastShown='';const r=Math.ceil(dialDrag.r);roll($('#restTime'),`${r/60|0}:${String(r%60).padStart(2,'0')}`,-1)});
+ const up=()=>{if(!dialDrag)return;dialDrag=null;$('#dialRot').style.transform='';if(remaining()<1){endRest(true);return}spinDial();haptic(6)};
+ wrap.addEventListener('pointerup',up);wrap.addEventListener('pointercancel',up);}
+
+/* ---------- PR moment ---------- */
+async function showPR(old,now,after){
+  const l=S.lifts[S.li];
+  $('#prN').textContent=`${t('lifts')[l.id]} · ${fmt(now[0])} × ${now[1]}`;
+  $('#prD').textContent=t('beats',fmt(old[0]),old[1],l.bestDate[L]);
+  repaint(medal.front,'front',0,old[0],old[1]); repaint(medal.back,'back',1,now[0],now[1]);
+  medal.old=old; medal.t=0; medal.turned=false; medal.revealed=false; medal.rot.x=medal.rot.t=0; medal.rot.v=0; medal.rise.x=0; medal.rise.t=1; medal.body.rotation.set(0,0,0);
+  const pr=$('#pr'); pr.classList.remove('reveal'); pr.classList.add('on');
+  const bd=$('#beads').children[S.logged[S.li].length-1]; if(bd&&!reduce)morph(pr,{...rectIn(bd),rad:12},true,0).onfinish=function(){this.cancel()};
+  mount(medal,$('#prHero'));
+  $('#prGo').onclick=()=>{pr.classList.remove('on','reveal');l.bestDate={en:'today',da:'i dag'};mount(plates,$('#plateHero'));after()};
+}
+
+/* ---------- finish ---------- */
+function finish(src){src=src||$('#logBtn');
+  if(!S.active)return;
+  S.resting&&endRest(true);
+  const sets=S.logged.flat(); const vol=sets.reduce((a,s)=>a+s[0]*s[1],0); const min=Math.max(1,Math.round((Date.now()-S.start)/60000));
+  openSheet(`<h2>${t('finT')}</h2><p class="note">${t('finN')}</p><div class="stats"><div class="stat"><b class="num">${min}</b><span>${t('min')}</span></div><div class="stat"><b class="num">${vol.toLocaleString(L==='da'?'da-DK':'en-GB')}</b><span>${t('kgMoved')}</span></div><div class="stat"><b class="num">${S.records}</b><span>${t('records')}</span></div></div>
+  <div class="list">${S.lifts.map((l,i)=>`<div class="item"><span>${t('lifts')[l.id]}</span><span class="r num">${S.logged[i].map(s=>fmt(s[0])+'×'+s[1]).join('  ')||t('notDone')}</span></div>`).join('')}</div><button class="cta" id="saveW">${t('save')}</button>`,src);
+}
+document.addEventListener('click',e=>{if(e.target.id!=='saveW')return;sheetSrc=null;closeSheet();S.done=true;S.active=false;S.endAt=Date.now();
+  setTimeout(()=>{goToday();setTimeout(()=>{wobble(today.rings[0],.16)},SP.soft.ms*.6)},200)});
+
+/* session clock from wall time (a locked phone throttles timers) */
+function tick(){if(!S.active)return;const s=Math.floor((Date.now()-S.start)/1000);$('#clock').textContent=`${s/60|0}:${String(s%60).padStart(2,'0')}`;setTimeout(tick,1000-(Date.now()%1000)+5)}
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&S.resting){spinDial();lastShown='';restTick()}});
+
+/* ---------- start ---------- */
+await document.fonts.load('800 40px Manrope').catch(()=>{});
+paintToday();
+today.rings.forEach(g=>{g.frac.x=0});
+mount(today,$('#todayHero'));
+if(!reduce)spinIn(); else today.rings.forEach(g=>g.frac.x=g.frac.t);
+kick();
+window.__ceramic={S,today,plates,medal,renderer,busy:()=>raf!==0};
+if(Q.get('screen')==='workout')setTimeout(()=>goWorkout($('#start')),300);
+</script>
+</body>
+</html>
