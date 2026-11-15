@@ -57,6 +57,21 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: Claude's taste 1 "Cadence", kinetic typography (/_prototypes/cadence/)
+Asked (Omar, 06:21): "Have it have its own taste also on the fitness app. Not only my taste … With the folder's animation styles, it can copy them in reverse and near anything … Be creative, but do not make it ugly." Then (06:29): "they have to be alive … instant … the best animations … morph animations with pop-ups … pop-up with morph."
+Reading before building: plain flat screens always lose, frost only shows over something bold, numbers must transform and never cross-fade ("it fades away and there's a number replacing it"), and the workout must not copy Today (15 Nov).
+Built (clickable, English and Danish, one family: Mona Sans with width and weight axes):
+- **Today:** warm paper with grain; the day's session as one giant pigment word ("Push", blue to violet to rose) whose foot sits under a light frosted pane, so the frost has colour to blur. The date and greeting write themselves in word by word, the letters rise one by one, and sleep, protein and weight lock in digit by digit.
+- **Workout (its own design, not Today's):** a blue-violet pigment field; the set is the poster, a giant 80 and × 8 you change with big ± buttons or by dragging the number. Only the digits that change roll. Logging flies the very same numbers into the set's row. The log button turns lime only when the set would be a new best.
+- **Rest:** the countdown in giant digits that fill with mint light from the bottom as you recover; the last three seconds roll the other way; at zero the clock's digits roll straight into the next weight. The Coach writes in between sets and can load 85 × 6 for you, with Undo.
+- **New best:** the screen grows out of the set row; the old record (82.5) turns over like a medal and shows 85 in lime.
+- **Pop-ups morph out of what you tapped** (rows, Ask, Finish, the set row, the Finish button), and morph back into it. Every press dips on the next frame. Finish is a hold, whose fill runs back if you let go.
+Library motions used: NumberFlow and Motion's price switcher (only changed digits move, the rest slide aside), Push and Runmo digit roll, Fitness Wrapped lock-in (on Today's numbers and the Done stats), Family Continue→Confirm letter morph (button labels) and Family "the amount travels" (set flight), Miles countdown flip reversed (last three seconds roll up instead of down), Any Distance medal turn (new best), Alma hold-to-commit (Finish), motion-primitives morphing dialog (every pop-up).
+Judge (one fresh design-judge, Sonnet): 7.5. Biggest weakness in its words: "the poster numbers are the whole idea, yet the rest screen and the finish screen show them washed out". Fixed after it: the rest fill is mint with a visible water line, the flying numbers leave a faint ghost instead of a hole, upcoming sets are lighter, the pane sits lower so "Push" reads, a darker scrim behind the Finish sheet. Not re-judged.
+My own score: 7.5. Biggest weakness: the workout is blue and violet everywhere, so set, rest, new best and done share one colour; and the headless frame meter shows the new-best moment (full-screen blur, 3D turn, gradient text) dropping frames, so that moment may stutter on the phone.
+Needs his phone: the frost over the pigment letters, banding in the violet field, the clip-path morphs and the number flights at 120 Hz.
+Verdict: waiting for Omar.
+
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.
