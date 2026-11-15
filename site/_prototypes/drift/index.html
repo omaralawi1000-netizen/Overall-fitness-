@@ -321,7 +321,7 @@ const S={
  heroLine:['Slept 7 h 12 and your legs are fresh. A good day to push bench.','7 t 12 min søvn og friske ben. En god dag til bænkpres.'],
  coach:['Coach','Coach'],
  training:['Training','Træning'], pushDay:['Push day','Pressedag'], pushSub:['Bench, incline, dips','Bænk, skrå, dips'],
- today:['today','i dag'], start:['Start','Start'], resume:['Resume · set ','Fortsæt · sæt '], doneTile:['Done · 1 new best','Færdig · 1 ny rekord'],
+ today:['today','i dag'], start:['Start','Start'], resume:['Resume · set ','Fortsæt · sæt '], doneTile:['Done','Færdig'], doneBest:['Done · {n} new best','Færdig · {n} ny rekord'], doneBests:['Done · {n} new bests','Færdig · {n} nye rekorder'],
  protein:['Protein','Protein'], of150:['of 150 g','af 150 g'], addSkyr:['+ Skyr 200 g','+ Skyr 200 g'],
  sleep:['Sleep','Søvn'], sleepVal:['7 h 12','7 t 12'], sleepSub:['In bed 23:20','I seng 23.20'],
  ask:['Ask your coach','Spørg din coach'], todayBack:['Today','I dag'],
@@ -640,7 +640,7 @@ function openWorkout(){
   [...wk.children].forEach((c,i)=>{if(c.id!=='dune')anim(c,[{opacity:0,transform:'translateY(16px) scale(.98)'},{opacity:1,transform:'none'}],{duration:360,delay:80+i*35,easing:EO,fill:'backwards'})});
   anim($('dune'),[{transform:`translateY(${duneY+120}px)`},{transform:`translateY(${duneY}px)`}],{...SP.soft,delay:120,fill:'backwards'});
   anim($('sky'),[{opacity:getComputedStyle($('sky')).opacity},{opacity:.55}],{duration:500,fill:'forwards'});
-  if(resting&&restShown){$('rest').style.visibility='visible';syncShed(false)}
+  if(resting&&restShown)showSphere();
   setWind(resting?.7:1+W.sets.length*.12);
   if(!W.formed){W.formed=true;setTimeout(()=>{setNum($('wNum'),fmt(W.w),{force:true,dur:700,stagger:160});setNum($('rNum'),String(W.r),{force:true,dur:700,stagger:120})},180)}
 }
@@ -657,7 +657,7 @@ function closeWorkout(){
 }
 function renderTrainTile(){
   const lab=$('startLab'),st=$('trainState');
-  if(W.done){lab.textContent=t('doneTile');$('startBtn').style.background='var(--brass)'}
+  if(W.done){lab.textContent=W.prs?t(W.prs>1?'doneBests':'doneBest',{n:W.prs}):t('doneTile');$('startBtn').style.background='var(--brass)'}
   else if(W.sets.length>2||W.touched){lab.textContent=t('resume')+Math.min(W.sets.length+1,W.total)}
 }
 function logSet(){
@@ -692,7 +692,8 @@ function startRest(delay,set){
   $('logLab').textContent=t('logSet');
 }
 function showSphere(){
-  restShown=true;const rest=$('rest');rest.style.visibility='visible';
+  restShown=true;if(screen!=='workout')return; // shown when the workout opens again
+  const rest=$('rest');rest.style.visibility='visible';
   formSphere(sphDots,SR,950);shed=0;syncShed(false);
   anim(rest,[{opacity:0},{opacity:1}],{duration:300,fill:'backwards'});
   anim($('cdNum').parentElement,[{opacity:0,transform:'scale(.92)'},{opacity:1,transform:'none'}],{...SP.soft,delay:350,fill:'backwards'});
