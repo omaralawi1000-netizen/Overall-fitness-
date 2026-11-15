@@ -478,7 +478,7 @@ function fromSnap() {
   const key = `${p.year}-${p.month}-${p.day}T${String(+p.hour % 24).padStart(2, '0')}:00`;
   const t0 = Date.parse(SNAP.from + 'Z'), i = Math.round((Date.parse(key + 'Z') - t0) / 3600000);
   if (i < 0 || i >= SNAP.code.length) return false;
-  W.code = SNAP.code[i]; W.temp = SNAP.temp[i]; W.snap = true;
+  W.code = SNAP.code[i]; W.temp = SNAP.temp[i]; W.snap = true; W.dry = null;
   if (wxClass(W.code) === 'rain') for (let k = i + 1; k < i + 14 && k < SNAP.code.length; k++)
     if (wxClass(SNAP.code[k]) !== 'rain') { const hh = new Date(t0 + k * 3600000).toISOString().slice(11, 16); W.dry = lang === 'da' ? hh.replace(':', '.') : hh; break; }
   return true;
@@ -494,7 +494,7 @@ async function loadWeather() {
   try {
     const ctl = new AbortController(); setTimeout(() => ctl.abort(), 5000);
     const r = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${LAT}&longitude=${LON}&current=temperature_2m,weather_code&hourly=weather_code&timezone=Europe%2FCopenhagen&forecast_days=2`, { signal: ctl.signal });
-    const j = await r.json(); W.ok = true; W.code = j.current.weather_code; W.temp = Math.round(j.current.temperature_2m);
+    const j = await r.json(); W.ok = true; W.dry = null; W.code = j.current.weather_code; W.temp = Math.round(j.current.temperature_2m);
     const nowH = j.current.time.slice(0, 13); const i0 = j.hourly.time.findIndex((t) => t.slice(0, 13) === nowH);
     if (wxClass(W.code) === 'rain' && i0 >= 0) { for (let i = i0 + 1; i < i0 + 14 && i < j.hourly.time.length; i++)
       if (wxClass(j.hourly.weather_code[i]) !== 'rain') { W.dry = j.hourly.time[i].slice(11, 16).replace(':', lang === 'da' ? '.' : ':'); break; } }
@@ -697,7 +697,7 @@ $('veil').addEventListener('click', closeCard);
 $('card').addEventListener('click', (e) => {
   if (e.target.closest('[data-close]')) return closeCard();
   const add = e.target.closest('[data-add]');
-  if (add) { const g = +add.dataset.add; S.prot += g; roll($('vProt'), String(S.prot)); $('foodS').textContent = T('foodS', S.prot);
+  if (add) { const g = +add.dataset.add; S.prot += g; roll($('vProt'), String(S.prot)); $('foodS').textContent = T('foodS', S.prot); if (S.done) $('heroP').textContent = T('doneP', Math.max(0, 150 - S.prot));
     floatChip(`${IC.up}+${g} g`, add); if (navigator.vibrate) navigator.vibrate(8); }
   if (e.target.closest('[data-lang]')) { lang = lang === 'en' ? 'da' : 'en'; closeCard(); renderAll(); }
   const act = e.target.closest('[data-act]');
@@ -948,7 +948,8 @@ $('card')._onclose = null;
 /* ---------------- fit to the screen ---------------- */
 function fit() {
   const w = innerWidth, h = innerHeight; let s, H, x = 0, y = 0;
-  if (w < 520) { s = w / 384; H = Math.round(h / s); app.classList.remove('desk'); }
+  // short phones shrink the whole app rather than letting the workout panels overlap
+  if (w < 520) { s = Math.min(w / 384, h / 680); H = Math.round(h / s); x = (w - 384 * s) / 2; app.classList.remove('desk'); }
   else { H = 832; s = Math.min(1.05, (h - 32) / H); x = (w - 384 * s) / 2; y = Math.max(16, (h - H * s) / 2); app.classList.add('desk'); }
   app.style.setProperty('--H', `${H}px`); app.style.setProperty('--s', s); app.style.height = `${H}px`;
   app.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
@@ -958,7 +959,9 @@ addEventListener('resize', fit); fit();
 /* ---------------- run ---------------- */
 function renderAll() { renderToday(true); if (S.view === 'workout') renderWorkout(true); if (sheetOpen) drawArc(); document.documentElement.lang = lang; }
 function clockTick() { $('clock').textContent = hm24(new Date()); if (S.active) { if (S.view === 'today') renderToday(true); if (S.view === 'workout') $('liftSub').textContent = T('setOf', S.si + 1, lift().sets.length, elapsed()); }
-  if (sky.live) { sky.t = Date.now(); applySky(); } }
+  if (sky.live) { sky.t = Date.now(); if (!W.ok) fromSnap(); applySky(); } }
+// live weather is fetched again every 30 minutes; the saved forecast follows the hour on each tick
+setInterval(() => loadWeather().then(() => { if (sky.live) applySky(); }), 30 * 60000);
 document.addEventListener('visibilitychange', () => app.classList.toggle('paused', document.hidden));
 if (params.get('scene')) { sky.live = false; const sc = params.get('scene'); sky.wx = ({ night: 'clear', dawn: 'clear', dusk: 'clear', sun: 'clear', summer: 'clear', fog: 'cloudy', rain: 'rain', snow: 'snow' })[sc];
   const st = sunTimes(new Date()); const at = { night: 23, dawn: (st.rise - st.start) / 3600000 + .3, dusk: (st.set - st.start) / 3600000 + .3, sun: 12, summer: 13, fog: 11, rain: 11, snow: 10 }[sc];
