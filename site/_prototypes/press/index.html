@@ -1,0 +1,932 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Aven Press</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gabarito:wght@500..900&family=Onest:wght@400..700&display=swap">
+<style>
+/* Layout: one phone-size app. Only things you can press have a side wall; information lies flat.
+   Colour comes from the weight plates (red 25, blue 20, yellow 15, green 10, white 5). */
+:root {
+  color-scheme: light;
+  --chalk: #f0eff6;        /* ground */
+  --paper: #ffffff;        /* mats and quiet keys */
+  --ink: #1d1a33;          /* text */
+  --ink-2: #66627f;        /* quiet text */
+  --wall: #cdcbdd;         /* side wall of a light key */
+  --grape: #5340e6;        /* the workout's colour */
+  --grape-up: #6e5df4;     /* raised on grape */
+  --grape-down: #4130c6;   /* recessed on grape */
+  --grape-wall: #33249f;
+  --lilac: #e2dcff;        /* quiet text on grape */
+  --sun: #ffc533;
+  --sun-wall: #cf9100;
+  --p25: #e03c50; --p20: #2a86f0; --p15: #f6be2e; --p10: #14a66b; --p5: #f4f3f9; --p2: #2b2847; --p1: #b4b8cc;
+  --surround: #dddbe9;
+  --display: "Gabarito", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --text: "Onest", "Helvetica Neue", "Segoe UI", system-ui, sans-serif;
+  --sp-snappy: cubic-bezier(.2,.9,.3,1); --ms-snappy: 300ms;
+  --sp-bouncy: cubic-bezier(.3,1.5,.5,1); --ms-bouncy: 520ms;
+  --sp-soft: cubic-bezier(.2,.9,.2,1); --ms-soft: 560ms;
+  --gut-l: max(16px, env(safe-area-inset-left, 0px));
+  --gut-r: max(16px, env(safe-area-inset-right, 0px));
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; background: var(--surround); color: var(--ink); }
+body { font-family: var(--text); font-size: 16px; line-height: 1.4; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; }
+.room { height: 100%; display: grid; place-items: center; }
+.app { position: relative; width: 100%; height: 100%; overflow: hidden; background: var(--chalk);
+  -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; touch-action: manipulation; }
+@media (min-width: 520px) {
+  .app { width: 392px; height: min(100%, 852px); border-radius: 44px; box-shadow: 0 30px 60px -20px rgba(29,26,51,.35); }
+}
+
+/* ---------- keys: the one pressable shape ---------- */
+.key { --depth: 6px; --r: 22px; --face: var(--paper); --side: var(--wall); --on: var(--ink);
+  display: flex; flex-direction: column; border: 0; margin: 0; padding: 0 0 var(--depth); border-radius: var(--r); background: var(--side);
+  box-shadow: 0 10px 16px -8px rgba(29,26,51,.28); cursor: pointer; text-align: left; -webkit-tap-highlight-color: transparent; }
+.key__face { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; padding: 0 18px;
+  border-radius: var(--r); background: var(--face); color: var(--on); font-family: var(--display); font-weight: 700; font-size: 18px;
+  box-shadow: inset 0 2px 0 rgba(255,255,255,.38), inset 0 -2px 0 rgba(0,0,0,.05);
+  transition: transform var(--ms-bouncy) var(--sp-bouncy); will-change: transform; }
+.key.is-down .key__face, .key.is-latched .key__face { transform: translateY(calc(var(--depth) - 1px)); transition: transform 50ms linear; }
+.key:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.key--sun { --face: var(--sun); --side: var(--sun-wall); }
+.key--ink { --face: var(--ink); --side: #08071a; --on: #fff; }
+.key--ink .key__face { box-shadow: inset 0 2px 0 rgba(255,255,255,.14); }
+.key--chalk { --face: var(--chalk); }
+.key--grape { --face: var(--grape-up); --side: var(--grape-wall); --on: #fff; box-shadow: 0 10px 16px -8px rgba(15,8,80,.6); }
+.key--grape .key__face { box-shadow: inset 0 2px 0 rgba(255,255,255,.22); }
+.key--round { --r: 26px; }
+.key--round .key__face { width: 52px; padding: 0; }
+.key--big { --depth: 8px; --r: 26px; }
+.key--big .key__face { min-height: 66px; font-size: 22px; font-weight: 800; }
+.key[disabled] { opacity: .38; pointer-events: none; }
+svg.i { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+
+/* ---------- screens ---------- */
+.screen { position: absolute; inset: 0; padding: 14px var(--gut-r) 0 var(--gut-l); }
+.today { overflow-y: auto; overscroll-behavior: contain; padding-bottom: 28px; display: flex; flex-direction: column; gap: 14px; }
+.today__top { display: flex; align-items: center; justify-content: space-between; }
+.date { font-weight: 600; font-size: 15px; color: var(--ink-2); }
+h1 { font-family: var(--display); font-weight: 800; font-size: 50px; line-height: 1; letter-spacing: -.025em; margin: 2px 0 0; }
+.ready { display: flex; align-items: center; gap: 10px; }
+.pips { display: flex; gap: 5px; flex: 1; }
+.pip { position: relative; flex: 1; height: 14px; border-radius: 7px; background: var(--wall); overflow: hidden; }
+.pip i { position: absolute; inset: 0; border-radius: 7px; background: var(--grape); transform: translateX(-101%);
+  transition: transform var(--ms-bouncy) var(--sp-bouncy); }
+.ready .pips { flex: 0 0 150px; }
+.ready span { font-weight: 600; font-size: 15px; }
+.coachline { margin: 0; font-size: 17px; line-height: 1.4; max-width: 34ch; }
+
+.slab { background: var(--grape); color: #fff; border-radius: 34px; padding: 20px 18px 18px; display: flex; flex-direction: column; gap: 4px;
+  box-shadow: 0 18px 28px -16px rgba(60,40,200,.7), inset 0 2px 0 rgba(255,255,255,.16); }
+.slab__row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.slab h2 { font-family: var(--display); font-weight: 800; font-size: 30px; line-height: 1.05; letter-spacing: -.015em; margin: 0; }
+.chip { flex: none; font-weight: 600; font-size: 14px; padding: 5px 11px; border-radius: 99px; background: var(--grape-down); color: #fff; }
+.slab p { margin: 0; color: var(--lilac); font-size: 15px; }
+.mini { position: relative; height: 138px; margin: 10px -2px 2px; display: flex; align-items: center; justify-content: center; }
+.mini__shaft { height: 9px; flex: 1 1 0; min-width: 28px; border-radius: 2px; background: linear-gradient(#fff, #c9cde0 45%, #8d92ad); }
+.mini__collar { flex: none; width: 9px; height: 30px; border-radius: 3px; background: linear-gradient(#fff, #c9cde0 45%, #8d92ad); }
+.mini__end { flex: none; height: 12px; width: 18px; border-radius: 0 4px 4px 0; background: linear-gradient(#fff, #c9cde0 45%, #8d92ad); }
+.mini__end.l { border-radius: 4px 0 0 4px; }
+.mini .plate { position: static; margin: 0 1px; transform: none; flex: none; }
+.mini .plate span { font-size: 12px; }
+.mini__cap { text-align: center; font-size: 13px !important; font-weight: 600; margin: -2px 0 10px !important; min-height: 18px; }
+.slab__first { font-weight: 600; color: #fff !important; margin: 0 0 12px !important; }
+.slab .key { width: 100%; box-shadow: 0 12px 18px -8px rgba(15,8,80,.7); }
+
+.mat { background: var(--paper); border-radius: 28px; padding: 16px 16px 16px 18px; display: grid; grid-template-columns: 1fr auto; gap: 10px 12px; align-items: center; }
+.label { font-weight: 600; font-size: 14px; color: var(--ink-2); }
+.big { font-family: var(--display); font-weight: 800; font-size: 30px; line-height: 1; letter-spacing: -.01em; display: flex; align-items: flex-end; gap: 6px; }
+.big small { font-family: var(--text); font-weight: 600; font-size: 15px; color: var(--ink-2); padding-bottom: 3px; }
+.mat .pips { grid-column: 1 / -1; }
+.mat .pip { background: var(--chalk); height: 16px; border-radius: 8px; }
+.mat .pip i { background: var(--ink); border-radius: 8px; }
+.pair { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.tile { --r: 26px; width: 100%; }
+.tile .key__face { flex-direction: column; align-items: flex-start; justify-content: center; gap: 4px; padding: 14px 16px; min-height: 104px; font-family: var(--text); font-weight: 400; }
+.tile .label { display: flex; justify-content: space-between; align-items: center; width: 100%; }
+svg.i.go { width: 18px; height: 18px; color: var(--wall); stroke-width: 3.5; }
+.tile .note { font-size: 13px; color: var(--ink-2); font-weight: 500; }
+.week { padding: 4px 2px 0; }
+.week__row { display: flex; justify-content: space-between; margin: 10px 0 8px; }
+.day { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--ink-2); width: 38px; }
+.dot { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; }
+.dot::after { content: ""; width: 9px; height: 9px; border-radius: 50%; background: var(--chalk); }
+.dot.lift { background: var(--grape); box-shadow: inset 0 0 0 4px rgba(255,255,255,.22), 0 3px 0 var(--grape-wall); }
+.dot.mat-day { background: var(--sun); box-shadow: inset 0 0 0 4px rgba(255,255,255,.35), 0 3px 0 var(--sun-wall); }
+.dot.rest::after { background: var(--wall); }
+.dot.now { box-shadow: inset 0 0 0 4px var(--grape); }
+.dot.now::after { background: var(--grape); }
+.week p { margin: 0; font-size: 15px; }
+.week__head { display: flex; justify-content: space-between; align-items: center; }
+.key-legend { display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.lg { width: 10px; height: 10px; border-radius: 50%; margin-left: 8px; }
+.lg.lift { background: var(--grape); } .lg.mat-day { background: var(--sun); }
+.lab { margin-top: 6px; border: 2px dashed var(--wall); border-radius: 26px; padding: 14px 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.lab p { margin: 0; font-size: 15px; }
+.lab b { font-family: var(--display); font-size: 18px; }
+
+/* ---------- the grow layer and the workout ---------- */
+.grow { position: absolute; inset: 0; background: var(--grape); transform-origin: 0 0; opacity: 0; pointer-events: none; will-change: transform, opacity; z-index: 10; }
+.workout { z-index: 20; background: var(--grape); color: #fff; opacity: 0; pointer-events: none; transition: opacity 140ms linear;
+  display: flex; flex-direction: column; padding-top: 12px; }
+.workout.is-on { opacity: 1; pointer-events: auto; transition: opacity 220ms linear 150ms; }
+.workout > * { position: relative; z-index: 1; }
+.workout canvas.lit { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; }
+.w-top { display: flex; align-items: center; gap: 12px; }
+.w-top .key { flex: none; }
+.w-name { flex: 1; min-width: 0; }
+.w-name b { display: block; font-family: var(--display); font-weight: 800; font-size: 24px; line-height: 1.1; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.w-name span { font-size: 14px; font-weight: 600; color: var(--lilac); }
+.clock { font-family: var(--display); font-weight: 700; font-size: 18px; font-variant-numeric: tabular-nums; color: var(--lilac); padding-right: 2px; }
+.w-pips { margin-top: 12px; display: flex; gap: 6px; flex: none; }
+.w-pips .pip { background: var(--grape-down); height: 12px; border-radius: 6px; }
+.w-pips .pip i { background: #fff; border-radius: 6px; }
+.w-pips .pip.best i { background: var(--sun); }
+.w-pips .pip.is-done i { transform: none; }
+.w-pips .pip.is-now { box-shadow: inset 0 0 0 3px #fff; background: var(--grape-up); }
+.target { display: none; margin-top: 10px; align-items: baseline; gap: 10px; font-weight: 600; color: var(--lilac); }
+.target b { font-family: var(--display); font-weight: 800; font-size: 30px; color: var(--sun); }
+.w-info { margin: 10px 0 0; font-size: 15px; color: var(--lilac); min-height: 21px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.loader { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; margin-top: 10px; padding: 0 12px 10px; border-radius: 34px; background: var(--grape-down);
+  box-shadow: inset 0 4px 0 rgba(0,0,0,.18); overflow: hidden; }
+.w-load { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 0 4px; }
+.num { position: relative; display: flex; align-items: flex-end; font-family: var(--display); font-weight: 800; font-size: 76px; line-height: 1; letter-spacing: -.03em; height: 76px; }
+.num.is-long { font-size: 56px; }
+.num .unit { font-size: 24px; font-weight: 700; letter-spacing: 0; padding: 0 0 10px 7px; color: var(--lilac); }
+.slot { position: relative; display: inline-block; height: 1em; line-height: 1em; clip-path: inset(0 -.3em); }
+.slot > b { visibility: hidden; font-weight: inherit; }
+.col { position: absolute; left: 50%; top: 0; width: 1em; margin-left: -.5em; transition: transform var(--ms-snappy) var(--sp-snappy); will-change: transform; }
+.col > span { display: block; height: 1em; line-height: 1em; text-align: center; }
+.side { margin: 0 4px 10px; min-height: 21px; font-size: 15px; font-weight: 600; color: var(--lilac); white-space: nowrap; }
+.step { display: flex; gap: 8px; }
+.step .key { box-shadow: none; }
+.step .key .key__face { width: 58px; min-height: 52px; padding: 0; }
+
+/* the bar */
+.stage { position: relative; flex: 1 1 150px; min-height: 118px; margin: 0 -12px; touch-action: none; }
+.zoom { pointer-events: none; position: absolute; left: 0; top: 0; height: 100%; width: calc(100% / var(--k, 1)); transform: scale(var(--k, 1)); transform-origin: 0 50%; }
+.bar { position: absolute; inset: 0; transform-origin: -80px 50%; will-change: transform; }
+.shaft, .collar, .sleeve { position: absolute; top: 50%; background: linear-gradient(#fff 0%, #dfe2ee 28%, #b7bcd0 62%, #7f85a3 100%); }
+.shaft { left: 0; width: calc(var(--x0, 112px) - 22px); height: 12px; margin-top: -6px; }
+.collar { left: calc(var(--x0, 112px) - 24px); width: 20px; height: 54px; margin-top: -27px; border-radius: 7px; box-shadow: 3px 0 4px rgba(20,10,80,.35); }
+.sleeve { left: calc(var(--x0, 112px) - 6px); right: 22px; height: 22px; margin-top: -11px; border-radius: 0 8px 8px 0; }
+.plate { position: absolute; left: 0; top: 50%; border-radius: 8px; background-color: var(--c);
+  background-image: linear-gradient(rgba(255,255,255,.5) 0%, rgba(255,255,255,.12) 10%, rgba(255,255,255,0) 30%, rgba(0,0,0,0) 58%, rgba(0,0,0,.32) 100%);
+  box-shadow: inset 0 0 0 1.5px rgba(0,0,0,.14), 4px 0 5px -1px rgba(20,10,80,.45);
+  transition: transform var(--ms-snappy) var(--sp-snappy); will-change: transform; display: grid; place-items: center; }
+.plate span { font-family: var(--display); font-weight: 800; font-size: 14px; letter-spacing: -.02em; color: #fff; }
+.plate.p5 span { font-size: 13px; }
+.slotmark { position: absolute; left: 0; top: 50%; border: 2px dashed rgba(255,255,255,.8); border-radius: 8px; opacity: 0; transition: opacity 120ms linear; }
+.slotmark.is-on { opacity: 1; }
+.twice { position: absolute; z-index: 2; right: 12px; top: 12px; padding: 3px 10px 4px; border-radius: 99px; background: var(--grape); color: #fff;
+  font-weight: 600; font-size: 13px; pointer-events: none; }
+.p25 { --c: var(--p25); } .p20 { --c: var(--p20); } .p15 { --c: var(--p15); } .p10 { --c: var(--p10); }
+.p5 { --c: var(--p5); } .p2 { --c: var(--p2); } .p1 { --c: var(--p1); }
+.p15 span, .p5 span { color: var(--ink); }
+
+/* decks: the set controls and the rest timer swap places */
+.deck { position: relative; flex: none; height: 150px; margin-top: 12px; margin-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
+.deck > div { position: absolute; inset: 0; display: flex; flex-direction: column; transition: transform var(--ms-snappy) var(--sp-snappy); will-change: transform; }
+.deck__rest { transform: translateY(calc(100% + 60px)); }
+.workout.is-resting .deck__set { transform: translateY(calc(100% + 60px)); }
+.workout.is-resting .deck__rest { transform: none; transition-delay: 40ms; }
+.rack { display: flex; align-items: center; justify-content: space-between; background: #3323a8; border-radius: 24px; padding: 8px 8px 11px; touch-action: none; }
+.rack.is-off, .step.is-off { opacity: .28; pointer-events: none; }
+.disc { flex: none; border: 0; padding: 0; width: var(--d); height: var(--d); border-radius: 50%; background-color: var(--c); color: #fff; cursor: grab;
+  font-family: var(--display); font-weight: 800; font-size: 15px; display: grid; place-items: center; touch-action: none;
+  box-shadow: inset 0 0 0 5px rgba(255,255,255,.16), inset 0 0 0 6.5px rgba(0,0,0,.12), inset 0 2px 0 rgba(255,255,255,.3), 0 4px 0 rgba(0,0,0,.34); transition: transform var(--ms-snappy) var(--sp-snappy), opacity var(--ms-snappy) linear; }
+.disc.p15, .disc.p5 { color: var(--ink); }
+.disc.p1 { color: var(--ink); font-size: 12px; box-shadow: inset 0 0 0 2.5px #6f7391, inset 0 0 0 6px rgba(255,255,255,.3), 0 4px 0 rgba(0,0,0,.34); } .disc.p2 { font-size: 13px; }
+.disc.is-held { transform: scale(.86); opacity: .5; }
+.ghost { position: absolute; z-index: 60; pointer-events: none; margin: 0; will-change: transform, opacity; box-shadow: inset 0 0 0 5px rgba(255,255,255,.2), 0 16px 18px -6px rgba(15,8,80,.6); transition: none; }
+.hint { margin: 7px 4px 0; font-size: 14px; font-weight: 600; color: var(--lilac); white-space: nowrap; }
+.deck__set { justify-content: flex-end; }
+.reps { display: flex; align-items: center; gap: 7px; }
+.reps > span { width: 42px; font-weight: 600; font-size: 15px; color: var(--lilac); }
+.reps .key { flex: 1; --depth: 5px; --r: 18px; }
+.reps .key .key__face { min-height: 48px; padding: 0; font-size: 20px; }
+.reps .key.is-latched { --face: #fff; --on: var(--ink); }
+#log { margin-top: 12px; width: 100%; }
+.key.quit { display: none; margin-top: auto; width: 100%; }
+.workout.is-test .reps, .workout.is-test #log, .workout.is-test .w-pips { display: none; }
+.workout.is-test .quit { display: flex; }
+.workout.is-test .target { display: flex; }
+
+.rest__label { font-weight: 600; font-size: 15px; color: var(--lilac); display: flex; justify-content: space-between; }
+.rest__row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 2px; }
+.rest__time { font-family: var(--display); font-weight: 800; font-size: 64px; line-height: 1; letter-spacing: -.03em; height: 64px; display: flex; }
+.rest__time span { display: inline-block; width: .6em; text-align: center; }
+.rest__time span.c { width: .3em; }
+.drain { margin-top: 8px; height: 16px; border-radius: 8px; background: #2b1f8f; overflow: hidden; box-shadow: inset 0 3px 0 rgba(0,0,0,.2); }
+.drain i { display: block; height: 100%; border-radius: 8px; background: var(--sun); will-change: transform; }
+.next { margin: 8px 0 0; font-size: 15px; font-weight: 600; min-height: 21px; }
+.next.best { color: var(--sun); }
+.rest__keys { display: flex; gap: 8px; }
+.rest__keys .key { --depth: 5px; --r: 18px; }
+.rest__keys .key .key__face { width: 58px; min-height: 48px; padding: 0; font-size: 17px; }
+
+/* ---------- tray ---------- */
+.scrim { position: absolute; inset: 0; z-index: 40; background: rgba(29,26,51,.42); opacity: 0; pointer-events: none; transition: opacity var(--ms-snappy) ease-out; }
+.scrim.is-on { opacity: 1; pointer-events: auto; }
+.tray { position: absolute; left: 0; right: 0; bottom: 0; z-index: 50; background: var(--paper); border-radius: 36px 36px 0 0;
+  padding: 10px var(--gut-r) max(22px, env(safe-area-inset-bottom, 0px)) var(--gut-l); transform: translateY(105%);
+  transition: transform var(--ms-soft) var(--sp-soft); will-change: transform; box-shadow: 0 -20px 40px -20px rgba(29,26,51,.4); }
+.tray::after { content: ""; position: absolute; left: 0; right: 0; top: 100%; height: 40px; background: var(--paper); }
+.tray.is-on { transform: none; }
+.tray.is-dragging { transition: none; }
+.grab { height: 26px; display: grid; place-items: center; touch-action: none; cursor: grab; }
+.grab::after { content: ""; width: 44px; height: 6px; border-radius: 3px; background: var(--wall); }
+.tray h3 { font-family: var(--display); font-weight: 800; font-size: 28px; line-height: 1.1; letter-spacing: -.015em; margin: 4px 2px 8px; }
+.tray p { margin: 0 2px 14px; font-size: 16px; color: var(--ink); max-width: 38ch; }
+.tray p.q { color: var(--ink-2); font-size: 14px; margin-bottom: 8px; }
+.tray .rowkeys { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
+.tray .stack { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.tray .stack .key__face { justify-content: space-between; font-size: 17px; }
+.tray .stack small { font-family: var(--text); font-weight: 600; font-size: 14px; color: var(--ink-2); }
+.tray .key { width: 100%; }
+.tray .key.is-latched { --face: var(--ink); --on: #fff; --side: #08071a; }
+.wrow { display: flex; align-items: center; justify-content: space-between; margin: 6px 0 16px; }
+.wrow .big { font-size: 56px; }
+.wrow .big small { padding-bottom: 9px; }
+.wrow .key { width: auto; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0 18px; }
+.stats.two { grid-template-columns: 1fr 1fr; }
+.stats.two b { font-size: 40px; }
+.stats div { background: var(--chalk); border-radius: 20px; padding: 12px 12px 10px; }
+.stats b { display: block; font-family: var(--display); font-weight: 800; font-size: 26px; line-height: 1.1; }
+.stats span { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.bars { display: flex; align-items: flex-end; gap: 8px; height: 84px; margin: 4px 0 16px; }
+.bars div { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 5px; height: 100%; font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.bars i { width: 100%; border-radius: 9px; background: var(--wall); }
+.bars div:last-child i { background: var(--grape); }
+
+@media (max-height: 700px) {
+  .num { font-size: 60px; height: 60px; } .num.is-long { font-size: 50px; } .num .unit { font-size: 20px; padding-bottom: 7px; }
+  .w-info { margin-top: 6px; } h1 { font-size: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .key__face, .col, .plate, .deck > div, .tray, .pip i { transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+<div class="room">
+<main class="app" id="app">
+
+  <section class="screen today" id="today">
+    <div class="today__top">
+      <span class="date">Sunday 15 November</span>
+      <button class="key key--round" id="coachKey" aria-label="Ask the Coach why"><span class="key__face">
+        <svg class="i" viewBox="0 0 24 24"><path d="M5 6.5h14v9.5h-7l-4 3.2V16H5z"/></svg></span></button>
+    </div>
+    <h1>Fresh today.</h1>
+    <div class="ready" aria-label="Readiness 4 of 5">
+      <div class="pips" id="readyPips"></div><span>Readiness 4 of 5</span>
+    </div>
+    <p class="coachline" id="coachLine"></p>
+
+    <div class="slab" id="slab">
+      <div class="slab__row"><h2 id="slabTitle">Upper body</h2><span class="chip" id="slabChip">about 50 min</span></div>
+      <p id="slabSub">Bench press, overhead press, barbell row</p>
+      <div class="mini" id="mini" aria-hidden="true"></div>
+      <p class="mini__cap" id="miniCap"></p>
+      <p class="slab__first" id="slabFirst"></p>
+      <button class="key key--sun key--big" id="start"><span class="key__face" id="startText">Start workout</span></button>
+    </div>
+
+    <div class="mat">
+      <div><div class="label">Protein so far</div><div class="big"><span id="protein"></span><small>of 160 g</small></div></div>
+      <button class="key key--ink" id="foodKey"><span class="key__face"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>Food</span></button>
+      <div class="pips" id="proteinPips"></div>
+    </div>
+
+    <div class="pair">
+      <button class="key tile" id="sleepKey"><span class="key__face"><span class="label">Sleep<svg class="i go" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></svg></span><span class="big">7 h 40</span><span class="note">20 min over usual</span></span></button>
+      <button class="key tile" id="weightKey"><span class="key__face"><span class="label">Weight<svg class="i go" viewBox="0 0 24 24"><path d="M9.5 6l6 6-6 6"/></svg></span><span class="big"><span id="weightVal">78.4</span><small>kg</small></span><span class="note" id="weightNote">−0.3 kg this week</span></span></button>
+    </div>
+
+    <div class="week">
+      <div class="week__head"><span class="label">This week</span><span class="key-legend"><i class="lg lift"></i>Lifting<i class="lg mat-day"></i>Wrestling</span></div>
+      <div class="week__row" id="week"></div>
+      <p>Lifting twice, wrestling twice. Today makes five.</p>
+    </div>
+
+    <div class="lab">
+      <span class="label">Only in this prototype</span>
+      <b>One question for you</b>
+      <p>Is loading plates faster than tapping plus and minus? Set four weights each way and see your own times.</p>
+      <button class="key key--ink" id="testKey"><span class="key__face">Time yourself</span></button>
+    </div>
+  </section>
+
+  <div class="grow" id="grow"></div>
+
+  <section class="screen workout" id="workout" aria-hidden="true">
+    <canvas class="lit" id="lit"></canvas>
+    <div class="w-top">
+      <button class="key key--grape key--round" id="minimise" aria-label="Back to Today"><span class="key__face"><svg class="i" viewBox="0 0 24 24"><path d="M6 9.5l6 6 6-6"/></svg></span></button>
+      <div class="w-name"><b id="liftName">Bench press</b><span id="setLabel">Set 1 of 4</span></div>
+      <span class="clock" id="clock">0:00</span>
+    </div>
+    <div class="w-pips pips" id="setPips"></div>
+    <div class="target" id="target"><span>Make it</span><b id="targetKg">60 kg</b><span id="targetLeft"></span></div>
+    <p class="w-info" id="info"></p>
+    <div class="loader">
+      <div class="stage" id="stage" role="group" aria-label="Plates on one side of the bar. Tap a plate to take it off.">
+        <div class="zoom"><div class="bar" id="bar"><div class="shaft"></div><div class="sleeve"></div><div class="collar"></div><div class="slotmark" id="slotmark"></div></div></div>
+        <span class="twice" aria-hidden="true">Both sides</span>
+      </div>
+      <div class="w-load">
+        <div class="num" id="num" aria-live="polite"></div>
+        <div class="step" id="step">
+          <button class="key key--grape" id="minus" aria-label="Take off 2.5 kg"><span class="key__face"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></span></button>
+          <button class="key key--grape" id="plus" aria-label="Add 2.5 kg"><span class="key__face"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button>
+        </div>
+      </div>
+      <p class="side" id="side"></p>
+      <div class="rack" id="rack"></div>
+      <p class="hint">Tap a plate to load it. Tap the bar to unload.</p>
+    </div>
+    <div class="deck">
+      <div class="deck__set">
+        <div class="reps" id="reps"><span>Reps</span></div>
+        <button class="key key--sun key--big" id="log"><span class="key__face" id="logText">Log set 1</span></button>
+        <button class="key key--grape quit" id="quit"><span class="key__face">Stop the test</span></button>
+      </div>
+      <div class="deck__rest" aria-live="off">
+        <div class="rest__label"><span>Rest</span><span id="restOf"></span></div>
+        <div class="rest__row">
+          <div class="rest__time" id="restTime"></div>
+          <div class="rest__keys">
+            <button class="key key--grape" id="less" aria-label="15 seconds less"><span class="key__face">−15</span></button>
+            <button class="key key--grape" id="more" aria-label="15 seconds more"><span class="key__face">+15</span></button>
+            <button class="key key--grape" id="skip"><span class="key__face">Skip</span></button>
+          </div>
+        </div>
+        <div class="drain"><i id="drain"></i></div>
+        <p class="next" id="next"></p>
+      </div>
+    </div>
+  </section>
+
+  <div class="scrim" id="scrim"></div>
+  <div class="tray" id="tray" role="dialog" aria-modal="true"><div class="grab" id="grab"></div><div id="trayBody"></div></div>
+</main>
+</div>
+
+<script>
+(() => {
+const $ = (s, r = document) => r.querySelector(s);
+const app = $('#app'), today = $('#today'), workout = $('#workout'), grow = $('#grow'), slab = $('#slab');
+const fast = location.hash === '#fast';
+
+/* ---- one shared set of springs, sampled into linear() so the browser runs them ---- */
+function spring(k, c) {
+  const w0 = Math.sqrt(k), z = c / (2 * Math.sqrt(k)), wd = w0 * Math.sqrt(Math.max(1e-6, 1 - z * z));
+  const f = t => 1 - Math.exp(-z * w0 * t) * (Math.cos(wd * t) + (z * w0 / wd) * Math.sin(wd * t));
+  let T = 1.6; for (let t = 1.6; t > 0; t -= 0.004) if (Math.abs(f(t) - 1) > 0.002) { T = t + 0.004; break; }
+  const n = Math.round(T * 120), pts = [];
+  for (let i = 0; i <= n; i++) pts.push(+f(T * i / n).toFixed(4));
+  pts[n] = 1;
+  return { ms: Math.round(T * 1000), ease: `linear(${pts.join(',')})` };
+}
+const SP = { snappy: spring(600, 46), bouncy: spring(420, 24), soft: spring(200, 24) };
+if (window.CSS && CSS.supports('transition-timing-function', 'linear(0, 1)')) {
+  for (const k in SP) { app.style.setProperty('--sp-' + k, SP[k].ease); app.style.setProperty('--ms-' + k, SP[k].ms + 'ms'); }
+} else {
+  SP.snappy.ease = 'cubic-bezier(.2,.9,.3,1)'; SP.bouncy.ease = 'cubic-bezier(.3,1.5,.5,1)'; SP.soft.ease = 'cubic-bezier(.2,.9,.2,1)';
+}
+const calm = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const fmt = n => String(+n.toFixed(2));
+
+/* ---- keys go down on the very next frame ---- */
+app.addEventListener('pointerdown', e => { const k = e.target.closest('.key'); if (k) k.classList.add('is-down'); });
+for (const ev of ['pointerup', 'pointercancel', 'pointerleave'])
+  app.addEventListener(ev, () => app.querySelectorAll('.key.is-down').forEach(k => k.classList.remove('is-down')), true);
+
+/* ---- numbers that roll: only the digit that changed moves, the rest slide to their new place ---- */
+function roller(el) {
+  const slots = new Map();
+  const parts = str => {
+    const [i, d = ''] = str.split('.'), out = [];
+    [...i].forEach((ch, k) => out.push({ key: 'i' + (i.length - 1 - k), ch }));
+    if (d) { out.push({ key: 'p', ch: '.' }); [...d].forEach((ch, k) => out.push({ key: 'd' + k, ch })); }
+    return out;
+  };
+  return str => {
+    const before = new Map(); slots.forEach((s, k) => before.set(k, s.getBoundingClientRect().left));
+    const unit = el.querySelector('.unit'), unitWas = unit && slots.size ? unit.getBoundingClientRect().left : null;
+    const ps = parts(str), keep = new Set(ps.map(p => p.key));
+    slots.forEach((s, k) => {
+      if (keep.has(k)) return;
+      if (!calm) {   /* a digit that leaves fades where it stood instead of blinking out */
+        const c = s.cloneNode(true); c.style.cssText = `position:absolute;left:${s.offsetLeft}px;top:${s.offsetTop}px`;
+        el.appendChild(c); c.animate([{ opacity: 1 }, { opacity: 0, transform: 'scale(.5)' }], { duration: 120, easing: 'ease-out' }).onfinish = () => c.remove();
+      }
+      s.remove(); slots.delete(k);
+    });
+    const anchor = el.querySelector('.unit');
+    let next = anchor;
+    for (let n = ps.length - 1; n >= 0; n--) {
+      const p = ps[n]; let s = slots.get(p.key);
+      if (!s) {
+        s = document.createElement('span'); s.fresh = true;
+        if (p.ch === '.') s.textContent = '.';
+        else { s.className = 'slot'; s.innerHTML = '<b></b><span class="col">' + [0,1,2,3,4,5,6,7,8,9].map(d => `<span>${d}</span>`).join('') + '</span>'; }
+        slots.set(p.key, s); el.insertBefore(s, next);
+      }
+      if (p.ch !== '.') { s.firstChild.textContent = p.ch; s.lastChild.style.transform = `translateY(${-10 * +p.ch}%)`; }
+      next = s;
+    }
+    slots.forEach(s => s.getAnimations().forEach(a => a.cancel()));
+    if (unitWas !== null && !calm) {
+      unit.getAnimations().forEach(a => a.cancel());
+      const du = unitWas - unit.getBoundingClientRect().left;
+      if (Math.abs(du) > .5) unit.animate([{ transform: `translateX(${du}px)` }, { transform: 'none' }], { duration: SP.snappy.ms, easing: SP.snappy.ease });
+    }
+    slots.forEach((s, k) => {
+      if (s.fresh) { s.fresh = false; if (before.size && !calm) s.animate([{ opacity: 0, transform: 'scale(.5)' }, { opacity: 1, transform: 'none' }], { duration: SP.snappy.ms, easing: SP.snappy.ease }); return; }
+      const dx = before.get(k) - s.getBoundingClientRect().left;
+      if (Math.abs(dx) > .5 && !calm) s.animate([{ transform: `translateX(${dx}px)` }, { transform: 'none' }], { duration: SP.snappy.ms, easing: SP.snappy.ease });
+    });
+  };
+}
+
+/* ---- data ---- */
+const LIFTS = [
+  { name: 'Bench press', sets: 4, reps: 6, kg: 82.5, rest: 120, last: 'Last time 80 kg for 6, 6, 5, 5. Coach says 82.5.', best: [80, 6] },
+  { name: 'Overhead press', sets: 3, reps: 8, kg: 50, rest: 90, last: 'Last time 50 kg for 8, 7, 6. Chase the 8s.', best: [50, 8] },
+  { name: 'Barbell row', sets: 3, reps: 8, kg: 70, rest: 90, last: 'Last time 67.5 kg for 8, 8, 8. Up 2.5 today.', best: [67.5, 8] },
+];
+const SPEC = { 25: { w: 38, h: 168, c: 'p25' }, 20: { w: 33, h: 168, c: 'p20' }, 15: { w: 28, h: 150, c: 'p15' }, 10: { w: 24, h: 132, c: 'p10' },
+  5: { w: 18, h: 102, c: 'p5' }, 2.5: { w: 14, h: 80, c: 'p2' }, 1.25: { w: 11, h: 62, c: 'p1' } };
+const KGS = [25, 20, 15, 10, 5, 2.5, 1.25], BAR = 20, MAX = 200;
+const loadFor = total => { let side = (total - BAR) / 2; const out = []; for (const k of KGS) while (side >= k - 1e-9) { out.push(k); side -= k; } return out; };
+const W = { li: 0, set: 0, reps: 6, started: false, t0: 0, resting: false, sets: 0, volume: 0, bests: 0, done: false, test: null };
+
+/* ---- the bar and its plates ---- */
+const stage = $('#stage'), bar = $('#bar'), rack = $('#rack'), numEl = $('#num');
+numEl.innerHTML = '<span class="unit">kg</span>';
+const setNum = roller(numEl);
+let stack = [], uid = 0;
+const GAP = 3, ROOM = 156;   /* ROOM: the widest stack the bar must hold (200 kg) */
+let K = 1, X0 = 112;
+const stageW = () => stage.clientWidth / K;
+function fit() {   /* the plates grow to fill the bay; the stack sits mid-bay when there is width to spare */
+  K = Math.min(1.45, Math.max(.68, stage.clientHeight / 200)); stage.style.setProperty('--k', K);
+  X0 = Math.round(Math.max(50, (stageW() - ROOM) / 2 - 8)); bar.style.setProperty('--x0', X0 + 'px'); place();
+}
+new ResizeObserver(fit).observe(stage);
+const total = () => BAR + 2 * stack.reduce((a, p) => a + p.kg, 0);
+const thick = () => stack.reduce((a, p) => a + SPEC[p.kg].w + GAP, 0);
+function place() { let x = X0; for (const p of stack) { p.x = x; p.el.style.transform = `translateX(${x}px)`; x += SPEC[p.kg].w + GAP; } }
+function plateEl(kg, scale = 1) {
+  const s = SPEC[kg], el = document.createElement('div');
+  el.className = 'plate ' + s.c; el.style.width = s.w * scale + 'px'; el.style.height = s.h * scale + 'px';
+  if (scale === 1) el.style.marginTop = -s.h / 2 + 'px'; else el.style.borderRadius = '5px';
+  if (s.w * scale >= 18) el.innerHTML = `<span>${kg}</span>`;
+  return el;
+}
+function slot(kg) {
+  const s = SPEC[kg], m = $('#slotmark');
+  if (thick() + s.w + GAP > stageW() - 30 - X0 || total() + 2 * kg > MAX) return;
+  let x = X0; for (const p of stack) { if (p.kg < kg) break; x += SPEC[p.kg].w + GAP; }
+  m.style.width = s.w + 'px'; m.style.height = s.h + 'px'; m.style.marginTop = -s.h / 2 + 'px'; m.style.transform = `translateX(${x}px)`;
+  m.classList.add('is-on');
+}
+function sag(kg, dir = 1) {
+  if (calm) return;
+  bar.animate([{ transform: 'rotate(0deg)', easing: 'ease-out' }, { transform: `rotate(${dir * (.25 + kg * .03)}deg)`, offset: .2, easing: SP.bouncy.ease }, { transform: 'rotate(0deg)' }],
+    { duration: SP.bouncy.ms + 160, delay: dir > 0 ? 150 : 0, composite: 'add' });
+}
+function addPlate(kg, quiet, flown) {
+  if (thick() + SPEC[kg].w + GAP > stageW() - 30 - X0 || total() + 2 * kg > MAX) {
+    if (!calm) stage.animate([{ transform: 'translateX(0)' }, { transform: 'translateX(-7px)' }, { transform: 'translateX(5px)' }, { transform: 'translateX(0)' }], { duration: SP.snappy.ms, easing: SP.snappy.ease });
+    return false;
+  }
+  const el = plateEl(kg), p = { id: ++uid, kg, el };
+  let i = stack.findIndex(q => q.kg < kg); if (i < 0) i = stack.length;
+  stack.splice(i, 0, p);
+  /* a plate flown in by hand appears where the flying disc lands, then slides home; otherwise it comes from off the edge */
+  el.style.transition = 'none'; el.style.transform = `translateX(${flown ? stageW() - 26 - SPEC[kg].w / 2 : stageW() + 30}px)`;
+  bar.appendChild(el); el.getBoundingClientRect(); el.style.transition = '';
+  if (flown && !calm) {
+    el.style.transitionDelay = '90ms'; el.addEventListener('transitionend', () => { el.style.transitionDelay = ''; }, { once: true });
+    el.animate([{ opacity: 0 }, { opacity: 0, offset: .3 }, { opacity: 1 }], { duration: SP.snappy.ms });
+  }
+  place(); sag(kg);
+  if (!quiet) changed();
+  return true;
+}
+function removePlate(p, quiet) {
+  stack = stack.filter(q => q !== p);
+  p.el.style.transform = `translateX(${stageW() + 40}px)`;
+  setTimeout(() => Promise.allSettled(bar.getAnimations().map(a => a.finished)).then(() => p.el.remove()), 320);
+  place(); sag(p.kg, -1);
+  if (!quiet) changed();
+}
+function setTotal(kg) {
+  const need = loadFor(Math.min(MAX, Math.max(BAR, kg))), drop = [];
+  for (const p of stack) { const i = need.indexOf(p.kg); if (i >= 0) need.splice(i, 1); else drop.push(p); }
+  drop.forEach(p => removePlate(p, true)); need.forEach(k => addPlate(k, true));
+  changed();
+}
+function changed() {
+  const t = total();
+  numEl.classList.toggle('is-long', fmt(t).length > 4);
+  setNum(fmt(t));
+  $('#side').textContent = stack.length ? stack.map(p => fmt(p.kg)).join(' + ') + ' on each side' : 'Just the bar, 20 kg';
+  $('#minus').disabled = t <= BAR; $('#plus').disabled = t >= MAX;
+  if (W.resting) nextLine();
+  if (W.test) testCheck();
+}
+KGS.forEach(kg => {
+  const b = document.createElement('button'); b.className = 'disc ' + SPEC[kg].c; b.dataset.kg = kg; b.textContent = fmt(kg);
+  b.style.setProperty('--d', '44px'); b.setAttribute('aria-label', `Load ${fmt(kg)} kg on each side`);
+  rack.appendChild(b);
+});
+rack.addEventListener('pointerdown', e => {
+  const d = e.target.closest('.disc'); if (!d) return;
+  e.preventDefault();
+  const kg = +d.dataset.kg, r = d.getBoundingClientRect(), a = app.getBoundingClientRect();
+  const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  const g = d.cloneNode(true); g.classList.remove('is-held'); g.classList.add('ghost');
+  g.style.left = cx - d.offsetWidth / 2 - a.left + 'px'; g.style.top = cy - d.offsetHeight / 2 - a.top + 'px'; g.style.transform = 'scale(1.2)';
+  app.appendChild(g); d.classList.add('is-held');
+  if (d._g) {   /* grabbed again while the last one was still springing home: carry on from where that one is */
+    const o = d._g.getBoundingClientRect(), ox = o.left + o.width / 2 - cx, oy = o.top + o.height / 2 - cy;
+    d._g.remove(); d._g = null;
+    if (!calm) g.animate([{ transform: `translate(${ox / 1.2}px,${oy / 1.2}px)` }, { transform: 'translate(0,0)' }], { duration: SP.snappy.ms, easing: SP.snappy.ease, composite: 'add' });
+  }
+  try { d.setPointerCapture(e.pointerId); } catch (err) {}
+  const sx = e.clientX, sy = e.clientY; let dx = 0, dy = 0, moved = false;
+  const move = ev => { dx = ev.clientX - sx; dy = ev.clientY - sy; const far = Math.hypot(dx, dy); if (!moved && far > 8) { moved = true; slot(kg); }
+    g.style.transform = `translate(${dx}px,${dy - 56 * Math.min(1, far / 40)}px) scale(1.2)`; };   /* the plate rides above the thumb so the number stays in view */
+  const up = ev => {
+    d.removeEventListener('pointermove', move); d.removeEventListener('pointerup', up); d.removeEventListener('pointercancel', up);
+    $('#slotmark').classList.remove('is-on');
+    const onBar = !moved || r.top + r.height / 2 + dy < rack.getBoundingClientRect().top - 4;
+    const from = { transform: g.style.transform, opacity: 1 };
+    let anim;
+    if (ev.type === 'pointerup' && onBar && addPlate(kg, false, true)) {
+      touch();
+      const s = stage.getBoundingClientRect();
+      const tx = s.left + s.width - 26 * K - (r.left + r.width / 2), ty = s.top + s.height / 2 - (r.top + r.height / 2);
+      anim = g.animate([from, { transform: `translate(${tx}px,${ty}px) scale(.3,1.7)`, opacity: 0 }], { duration: calm ? 1 : SP.snappy.ms, easing: SP.snappy.ease, fill: 'forwards' });
+      d.classList.remove('is-held'); anim.onfinish = () => g.remove();
+    } else {
+      anim = g.animate([from, { transform: 'translate(0,0) scale(1)', opacity: 1 }], { duration: calm ? 1 : SP.bouncy.ms, easing: SP.bouncy.ease, fill: 'forwards' });
+      d._g = g; anim.onfinish = () => { g.remove(); if (d._g === g) { d._g = null; d.classList.remove('is-held'); } };
+    }
+  };
+  d.addEventListener('pointermove', move); d.addEventListener('pointerup', up); d.addEventListener('pointercancel', up);
+});
+stage.addEventListener('click', e => {
+  if (!stack.length || (W.test && W.test.round === 1)) return;
+  const x = (e.clientX - stage.getBoundingClientRect().left) / K;
+  let best = stack[stack.length - 1], gap = 1e9;
+  for (const p of stack) { const g = Math.abs(p.x + SPEC[p.kg].w / 2 - x); if (g < gap) { gap = g; best = p; } }
+  touch(); removePlate(best);
+});
+function holdKey(el, fn) {
+  let t1, t2;
+  const stop = () => { clearTimeout(t1); clearInterval(t2); };
+  el.addEventListener('pointerdown', () => { touch(); fn(); t1 = setTimeout(() => { t2 = setInterval(() => el.disabled ? stop() : fn(), 85); }, 380); });
+  for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) el.addEventListener(ev, stop);
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); } });
+}
+holdKey($('#plus'), () => setTotal(total() + 2.5));
+holdKey($('#minus'), () => setTotal(total() - 2.5));
+
+/* ---- the workout ---- */
+const lift = () => LIFTS[W.li];
+function swapText(el, text) {
+  if (el.textContent === text) return;
+  if (calm || !workout.classList.contains('is-on')) { el.textContent = text; return; }
+  el.animate([{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(-8px)' }], { duration: 90, easing: SP.snappy.ease }).onfinish = () => {
+    el.textContent = text;
+    el.animate([{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }], { duration: SP.snappy.ms, easing: SP.snappy.ease });
+  };
+}
+function buildPips() {
+  const box = $('#setPips'); box.innerHTML = '';
+  for (let i = 0; i < lift().sets; i++) { const p = document.createElement('div'); p.className = 'pip' + (i === W.set ? ' is-now' : ''); p.innerHTML = '<i></i>'; box.appendChild(p); }
+}
+function buildReps() {
+  const box = $('#reps'); box.querySelectorAll('.key').forEach(k => k.remove());
+  for (let r = lift().reps - 2; r <= lift().reps + 2; r++) {
+    const k = document.createElement('button'); k.className = 'key key--grape' + (r === W.reps ? ' is-latched' : ''); k.dataset.r = r;
+    k.setAttribute('aria-label', r + ' reps'); k.setAttribute('aria-pressed', r === W.reps); k.innerHTML = `<span class="key__face">${r}</span>`; box.appendChild(k);
+  }
+}
+$('#reps').addEventListener('click', e => {
+  const k = e.target.closest('.key'); if (!k) return;
+  W.reps = +k.dataset.r;
+  $('#reps').querySelectorAll('.key').forEach(q => { const on = q === k; q.classList.toggle('is-latched', on); q.setAttribute('aria-pressed', on); });
+});
+function showLift() {
+  W.reps = lift().reps;
+  swapText($('#liftName'), lift().name); $('#info').textContent = lift().last;
+  buildPips(); buildReps(); labels(); setTotal(lift().kg);
+}
+function labels() {
+  swapText($('#setLabel'), `Set ${W.set + 1} of ${lift().sets}`);
+  $('#logText').textContent = `Log set ${W.set + 1}`;
+}
+function nextLine() {
+  const n = $('#next');
+  if (n.dataset.best) { n.textContent = n.dataset.best; n.className = 'next best'; return; }
+  n.className = 'next';
+  n.textContent = W.set === 0 ? `Next: ${lift().name.toLowerCase()}, ${fmt(total())} kg for ${W.reps}` : `Next: set ${W.set + 1} of ${lift().sets}, ${fmt(total())} kg for ${W.reps}`;
+}
+let restEnd = 0, restAll = 0, restTick = 0, drainAnim;
+function drawRest() {
+  const left = Math.max(0, Math.ceil((restEnd - performance.now()) / 1000));
+  const s = `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`;
+  const box = $('#restTime');
+  if (box.dataset.s !== s) { box.dataset.s = s; box.innerHTML = [...s].map(ch => `<span${ch === ':' ? ' class="c"' : ''}>${ch}</span>`).join(''); }
+  if (left <= 0) endRest();
+}
+function runDrain(handover) {
+  const el = $('#drain'), dur = Math.max(1, restEnd - performance.now()), frac = Math.min(1, dur / restAll);
+  const at = f => `translateX(${-(1 - f) * 100}%)`;
+  const cur = handover && drainAnim ? getComputedStyle(el).transform : 'none';
+  if (drainAnim) drainAnim.cancel();
+  const lead = Math.min(300, dur / 2);
+  const frames = cur !== 'none' && !calm
+    ? [{ transform: cur, easing: SP.snappy.ease }, { transform: at(frac * (1 - lead / dur)), offset: lead / dur, easing: 'linear' }, { transform: at(0) }]
+    : [{ transform: at(frac) }, { transform: at(0) }];
+  drainAnim = el.animate(frames, { duration: dur, easing: 'linear', fill: 'both' });
+}
+function startRest(sec, best) {
+  W.resting = true; restAll = (fast ? 8 : sec) * 1000; restEnd = performance.now() + restAll;
+  $('#restOf').textContent = `of ${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+  const n = $('#next'); if (best) n.dataset.best = best; else delete n.dataset.best;
+  nextLine(); drawRest(); runDrain();
+  workout.classList.add('is-resting');
+  clearInterval(restTick); restTick = setInterval(drawRest, 200);
+  if (best) setTimeout(() => { delete n.dataset.best; if (W.resting) nextLine(); }, 3200);
+}
+function endRest() {
+  if (!W.resting) return;
+  W.resting = false; clearInterval(restTick); workout.classList.remove('is-resting');
+  try { navigator.vibrate && navigator.vibrate(60); } catch (e) {}
+}
+function shiftRest(ms) { restEnd = Math.max(performance.now() + 1000, restEnd + ms); restAll = Math.max(restAll, restEnd - performance.now()); drawRest(); runDrain(true); }
+$('#less').addEventListener('click', () => shiftRest(-15000));
+$('#more').addEventListener('click', () => shiftRest(15000));
+let restOpened = 0;
+$('#skip').addEventListener('click', () => { if (performance.now() - restOpened > 500) endRest(); });
+
+$('#log').addEventListener('click', () => {
+  if (W.resting || W.done) return;
+  const L = lift(), kg = total(), reps = W.reps;
+  const isBest = !L.gotBest && kg * (1 + reps / 30) > L.best[0] * (1 + L.best[1] / 30) + .01;
+  if (isBest) { L.gotBest = true; W.bests++; }
+  W.sets++; W.volume += kg * reps;
+  const pip = $('#setPips').children[W.set];
+  pip.classList.remove('is-now'); pip.classList.add('is-done'); if (isBest) pip.classList.add('best');
+  try { navigator.vibrate && navigator.vibrate(18); } catch (e) {}
+  const lastSet = W.set + 1 >= L.sets, lastLift = W.li + 1 >= LIFTS.length;
+  if (lastSet && lastLift) { W.done = true; setTimeout(finish, 420); return; }
+  restOpened = performance.now();
+  const bestText = isBest ? `New best: ${fmt(kg)} kg for ${reps}` : '';
+  if (lastSet) {
+    W.li++; W.set = 0;
+    setTimeout(() => { showLift(); nextLine(); }, 430);
+  } else {
+    W.set++;
+    setTimeout(() => { $('#setPips').children[W.set].classList.add('is-now'); labels(); }, 260);
+  }
+  setTimeout(() => startRest(L.rest, bestText), 60);
+});
+
+/* ---- Today to workout and back: the grape slab grows into the screen ---- */
+let clockTick = 0;
+let origin = slab;
+function rects() {
+  const a = app.getBoundingClientRect(), s = origin.getBoundingClientRect(), sx = s.width / a.width, sy = s.height / a.height;
+  grow.style.borderRadius = `${34 / sx}px / ${34 / sy}px`;
+  return { from: `translate(${s.left - a.left}px,${s.top - a.top}px) scale(${sx},${sy})`, to: `translate(${-a.width * .06}px,${-a.height * .06}px) scale(1.12)` };
+}
+let growAnim;
+function growNow() {   // an interrupted grow carries on from where it is
+  if (!growAnim || growAnim.playState !== 'running') { if (growAnim) growAnim.cancel(); return null; }
+  const c = getComputedStyle(grow), now = { transform: c.transform, opacity: c.opacity };
+  growAnim.cancel(); return now;
+}
+function openWorkout() {
+  const r = rects(), now = growNow();
+  growAnim = grow.animate([now || { transform: r.from, opacity: 0 }, { opacity: 1, offset: .1 }, { transform: r.to, opacity: 1 }], { duration: calm ? 1 : SP.soft.ms, easing: SP.soft.ease, fill: 'both' });
+  if (W.resting) runDrain();
+  workout.classList.add('is-on'); workout.setAttribute('aria-hidden', 'false'); today.setAttribute('aria-hidden', 'true'); today.inert = true;
+}
+function closeWorkout() {
+  today.inert = false; today.setAttribute('aria-hidden', 'false'); workout.setAttribute('aria-hidden', 'true');
+  workout.classList.remove('is-on');
+  const r = rects(), now = growNow();
+  growAnim = grow.animate([now || { transform: r.to, opacity: 1 }, { opacity: 1, offset: .8 }, { transform: r.from, opacity: 0 }], { duration: calm ? 1 : SP.snappy.ms + 120, easing: SP.snappy.ease, fill: 'both' });
+  if (drainAnim) drainAnim.pause();
+}
+function startWorkout() {
+  if (W.done) resetWorkout();
+  if (!W.started) {
+    W.started = true; W.t0 = Date.now(); showLift();
+    clearInterval(clockTick);
+    clockTick = setInterval(() => { const s = Math.floor((Date.now() - W.t0) / 1000); $('#clock').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; }, 1000);
+  }
+  origin = slab; openWorkout();
+}
+function resetWorkout() {
+  Object.assign(W, { li: 0, set: 0, started: false, resting: false, sets: 0, volume: 0, bests: 0, done: false, test: null });
+  LIFTS.forEach(l => delete l.gotBest);
+  clearInterval(clockTick); clearInterval(restTick); $('#clock').textContent = '0:00';
+  workout.classList.remove('is-resting', 'is-test'); $('#rack').classList.remove('is-off'); $('#step').classList.remove('is-off');
+  paintSlab();
+}
+function paintSlab() {
+  const first = LIFTS[0];
+  $('#coachLine').textContent = first.kg > 80
+    ? '7 h 40 of sleep and two rest days behind you. Bench goes up 2.5 kg today.'
+    : '7 h 40 of sleep and two rest days behind you. Bench stays at 80 kg, as you asked.';
+  if (W.done) {
+    $('#slabTitle').textContent = 'Upper body'; $('#slabChip').textContent = `done in ${Math.max(1, Math.round((Date.now() - W.t0) / 60000))} min`;
+    $('#slabSub').textContent = `${W.sets} sets, ${Math.round(W.volume).toLocaleString('en-GB')} kg lifted, ${W.bests} new best${W.bests === 1 ? '' : 's'}`;
+    $('#slabFirst').textContent = 'Protein within the hour helps this one count.'; $('#startText').textContent = 'Run it again';
+    miniBar(0);
+  } else if (W.started) {
+    $('#slabTitle').textContent = 'Upper body'; $('#slabChip').textContent = 'in progress';
+    $('#slabSub').textContent = `${lift().name}, set ${W.set + 1} of ${lift().sets}`;
+    $('#slabFirst').textContent = `${fmt(total())} kg on the bar right now.`; $('#startText').textContent = 'Back to the bar';
+    miniBar(total());
+  } else {
+    $('#slabTitle').textContent = 'Upper body'; $('#slabChip').textContent = 'about 50 min';
+    $('#slabSub').textContent = 'Bench press, overhead press, barbell row';
+    $('#slabFirst').textContent = `First up: bench press at ${fmt(first.kg)} kg.`; $('#startText').textContent = 'Start workout';
+    miniBar(first.kg);
+  }
+}
+function miniBar(kg) {
+  const m = $('#mini'); m.innerHTML = '';
+  $('#miniCap').textContent = kg > BAR ? loadFor(kg).map(fmt).join(' + ') + ' on each side' : kg ? 'Empty bar' : 'Bar stripped and put away';
+  const side = kg ? loadFor(kg) : [], add = (cls) => { const d = document.createElement('div'); d.className = cls; m.appendChild(d); return d; };
+  add('mini__end l'); [...side].reverse().forEach(k => m.appendChild(plateEl(k, .76))); add('mini__collar'); add('mini__shaft'); add('mini__collar');
+  side.forEach(k => m.appendChild(plateEl(k, .76))); add('mini__end');
+}
+$('#start').addEventListener('click', startWorkout);
+$('#minimise').addEventListener('click', () => { if (W.test) { resetWorkout(); } else paintSlab(); closeWorkout(); });
+
+function finish() {
+  clearInterval(clockTick);
+  openTray(`<h3>Upper body, done.</h3>
+    <p>${W.bests ? `${W.bests} new best${W.bests === 1 ? '' : 's'} today. The bar told the truth.` : 'Every set logged. Same again next Sunday, a little heavier.'}</p>
+    <div class="stats"><div><b>${W.sets}</b><span>sets</span></div><div><b>${Math.round(W.volume).toLocaleString('en-GB')}</b><span>kg lifted</span></div><div><b>${$('#clock').textContent}</b><span>on the clock</span></div></div>
+    <button class="key key--sun key--big" data-act="home"><span class="key__face">Back to Today</span></button>`, () => { paintSlab(); closeWorkout(); });
+}
+
+/* ---- the speed test: same four weights, plates only, then plus and minus only ---- */
+const TARGETS = [60, 82.5, 85, 50];
+function touch() { const t = W.test; if (!t) return; if (!t.t0) t.t0 = performance.now(); t.touches++; }
+function startTest() {
+  resetWorkout();
+  W.test = { round: 0, i: 0, t0: 0, touches: 0, out: [] };
+  workout.classList.add('is-test');
+  $('#liftName').textContent = 'Speed test'; $('#info').textContent = 'Get the bar to each weight as fast as you can.';
+  $('#clock').textContent = '';
+  stack.slice().forEach(p => removePlate(p, true)); testRound(); origin = $('#testKey'); openWorkout();
+}
+function testRound() {
+  const t = W.test;
+  $('#setLabel').textContent = t.round === 0 ? 'Round 1 of 2: plates only' : 'Round 2 of 2: plus and minus only';
+  $('#rack').classList.toggle('is-off', t.round === 1); $('#step').classList.toggle('is-off', t.round === 0);
+  t.i = 0; t.t0 = 0; t.touches = 0; t.busy = false;
+  changed(); testTarget();
+}
+function testTarget() { $('#targetKg').textContent = fmt(TARGETS[W.test.i]) + ' kg'; $('#targetLeft').textContent = `${W.test.i + 1} of ${TARGETS.length}`; }
+function testCheck() {
+  const t = W.test; if (!t || t.busy || total() !== TARGETS[t.i]) return;
+  t.busy = true;
+  const b = $('#targetKg'); if (!calm) b.animate([{ transform: 'scale(1)' }, { transform: 'scale(1.18)' }, { transform: 'scale(1)' }], { duration: SP.bouncy.ms, easing: SP.bouncy.ease });
+  const stamp = performance.now();
+  setTimeout(() => {
+    if (!W.test) return;
+    t.busy = false; t.i++;
+    if (t.i < TARGETS.length) { testTarget(); testCheck(); return; }
+    t.out.push({ s: (stamp - t.t0) / 1000, n: t.touches });
+    if (t.round === 0) { t.round = 1; stack.slice().forEach(p => removePlate(p, true)); testRound(); return; }
+    const [a, b2] = t.out, win = a.s < b2.s ? 'Plates were' : 'Plus and minus was', gap = Math.abs(a.s - b2.s).toFixed(1);
+    openTray(`<h3>${win} faster by ${gap} s.</h3>
+      <div class="stats two"><div><b>${a.s.toFixed(1)} s</b><span>plates, ${a.n} taps</span></div><div><b>${b2.s.toFixed(1)} s</b><span>stepper, ${b2.n} taps</span></div></div>
+      <p class="q">The clock is half of it. Say in the thread which one felt better in your hand.</p>
+      <button class="key key--sun key--big" data-act="home"><span class="key__face">Back to Today</span></button>`, () => { resetWorkout(); closeWorkout(); });
+  }, 520);
+}
+$('#testKey').addEventListener('click', startTest);
+$('#quit').addEventListener('click', () => { resetWorkout(); closeWorkout(); });
+
+/* ---- trays ---- */
+const tray = $('#tray'), scrim = $('#scrim'), body = $('#trayBody');
+let onClose = null;
+function openTray(html, after) { body.innerHTML = html; onClose = after || null; tray.getAnimations().forEach(a => a.cancel()); tray.style.transform = ''; tray.classList.remove('is-dragging'); tray.classList.add('is-on'); scrim.classList.add('is-on'); }
+function closeTray(flick) {
+  if (flick && flick.dy !== undefined && !calm) {   /* thrown down: leave at the finger's speed instead of starting again from rest */
+    const dist = Math.max(1, tray.offsetHeight * 1.05 - flick.dy), dur = Math.min(380, Math.max(140, dist / Math.max(.5, flick.vy) * 1.5));
+    const slope = Math.min(3, Math.max(1, flick.vy * dur / dist));
+    tray.animate([{ transform: `translateY(${flick.dy}px)` }, { transform: 'translateY(105%)' }], { duration: dur, easing: `cubic-bezier(.3,${(.3 * slope).toFixed(2)},.6,1)` })
+      .onfinish = () => tray.classList.remove('is-dragging');
+    tray.classList.remove('is-on');
+  } else tray.classList.remove('is-on', 'is-dragging');
+  tray.style.transform = ''; scrim.classList.remove('is-on'); const f = onClose; onClose = null; if (f) f();
+}
+scrim.addEventListener('click', () => closeTray());
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && tray.classList.contains('is-on')) closeTray(); });
+$('#grab').addEventListener('pointerdown', e => {
+  const y0 = e.clientY; let dy = 0, vy = 0, last = e.clientY, lt = e.timeStamp; const g = e.currentTarget;
+  try { g.setPointerCapture(e.pointerId); } catch (err) {}
+  tray.classList.add('is-dragging');
+  const move = ev => { dy = Math.max(-12, ev.clientY - y0); vy = (ev.clientY - last) / Math.max(1, ev.timeStamp - lt); last = ev.clientY; lt = ev.timeStamp; tray.style.transform = `translateY(${dy}px)`; };
+  const up = () => { g.removeEventListener('pointermove', move); g.removeEventListener('pointerup', up); g.removeEventListener('pointercancel', up);
+    if (dy > 90 || vy > .5) closeTray({ dy, vy }); else { tray.getBoundingClientRect(); tray.classList.remove('is-dragging'); tray.style.transform = ''; } };
+  g.addEventListener('pointermove', move); g.addEventListener('pointerup', up); g.addEventListener('pointercancel', up);
+});
+
+let protein = 96, lastFood = 0, weight = 78.4;
+const setProtein = roller($('#protein'));
+function paintProtein() {
+  setProtein(String(protein));
+  [...$('#proteinPips').children].forEach((p, i) => { p.firstChild.style.transform = `translateX(${-101 * (1 - Math.max(0, Math.min(1, (protein - i * 20) / 20)))}%)`; });
+}
+const FOODS = [['Skyr, 200 g', 20], ['Two eggs', 13], ['Chicken breast, 150 g', 35]];
+function foodTray() {
+  openTray(`<h3>Add food</h3><p class="q">Your usual three. Protein is at <b id="pNow">${protein}</b> of 160 g.</p>
+    <div class="stack">${FOODS.map((f, i) => `<button class="key key--chalk" data-food="${i}"><span class="key__face">${f[0]}<small>+${f[1]} g protein</small></span></button>`).join('')}</div>
+    <div class="rowkeys"><button class="key key--chalk" data-act="unfood" ${lastFood ? '' : 'disabled'}><span class="key__face">Undo last</span></button>
+    <button class="key key--ink" data-act="close"><span class="key__face">Done</span></button></div>`);
+}
+body.addEventListener('click', e => {
+  const k = e.target.closest('.key'); if (!k) return;
+  if (k.dataset.food) { lastFood = FOODS[k.dataset.food][1]; protein += lastFood; paintProtein(); $('#pNow').textContent = protein; body.querySelector('[data-act=unfood]').disabled = false; }
+  const act = k.dataset.act;
+  if (act === 'unfood') { protein -= lastFood; lastFood = 0; paintProtein(); $('#pNow').textContent = protein; k.disabled = true; }
+  if (act === 'close' || act === 'home') closeTray();
+  if (act === 'bench') {
+    LIFTS[0].kg = +k.dataset.kg; LIFTS[0].last = LIFTS[0].kg > 80 ? 'Last time 80 kg for 6, 6, 5, 5. Coach says 82.5.' : 'Last time 80 kg for 6, 6, 5, 5. Staying at 80.';
+    body.querySelectorAll('[data-act=bench]').forEach(q => q.classList.toggle('is-latched', q === k)); paintSlab();
+  }
+  if (act === 'w-') { weight = +(weight - .1).toFixed(1); $('#wNow').textContent = weight.toFixed(1); }
+  if (act === 'w+') { weight = +(weight + .1).toFixed(1); $('#wNow').textContent = weight.toFixed(1); }
+  if (act === 'wsave') { $('#weightVal').textContent = weight.toFixed(1); const d = +(78.7 - weight).toFixed(1); $('#weightNote').textContent = d === 0 ? 'Level this week' : `${d > 0 ? '−' : '+'}${Math.abs(d)} kg this week`; closeTray(); }
+});
+$('#foodKey').addEventListener('click', foodTray);
+$('#coachKey').addEventListener('click', () => {
+  const locked = W.started;
+  openTray(`<h3>Why 82.5 kg?</h3>
+    <p>Last Sunday you benched 80 kg for 6, 6, 5 and 5, and the first two sets moved fast. You slept 7 h 40 and had two rest days. That is a day to add 2.5 kg.</p>
+    <p class="q">${locked ? 'The workout is running, so change the weight on the bar itself.' : 'Your call. Pick one and the plan changes.'}</p>
+    <div class="rowkeys"><button class="key key--chalk${LIFTS[0].kg > 80 ? ' is-latched' : ''}" data-act="bench" data-kg="82.5" ${locked ? 'disabled' : ''}><span class="key__face">Go 82.5 kg</span></button>
+    <button class="key key--chalk${LIFTS[0].kg > 80 ? '' : ' is-latched'}" data-act="bench" data-kg="80" ${locked ? 'disabled' : ''}><span class="key__face">Stay at 80 kg</span></button></div>
+    <button class="key key--ink" data-act="close"><span class="key__face">Done</span></button>`);
+});
+$('#sleepKey').addEventListener('click', () => {
+  const nights = [['M', 6.9], ['T', 7.2], ['W', 7.6], ['T', 6.5], ['F', 7.1], ['S', 8.2], ['S', 7.67]];
+  openTray(`<h3>7 h 40 last night</h3><p>In bed at 23:20, up at 07:00. That is 20 minutes over your usual, and your best night since Saturday.</p>
+    <div class="bars">${nights.map(n => `<div><i style="height:${Math.round((n[1] - 5) / 3.4 * 60)}px"></i>${n[0]}</div>`).join('')}</div>
+    <button class="key key--ink" data-act="close"><span class="key__face">Done</span></button>`);
+});
+$('#weightKey').addEventListener('click', () => {
+  openTray(`<h3>Log your weight</h3><p class="q">This morning, before food.</p>
+    <div class="wrow"><button class="key key--chalk key--round" data-act="w-" aria-label="0.1 kg less"><span class="key__face"><svg class="i" viewBox="0 0 24 24"><path d="M5 12h14"/></svg></span></button>
+    <div class="big"><span id="wNow">${weight.toFixed(1)}</span><small>kg</small></div>
+    <button class="key key--chalk key--round" data-act="w+" aria-label="0.1 kg more"><span class="key__face"><svg class="i" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span></button></div>
+    <button class="key key--sun key--big" data-act="wsave"><span class="key__face">Save weight</span></button>`);
+});
+
+/* ---- first paint ---- */
+for (let i = 0; i < 5; i++) $('#readyPips').insertAdjacentHTML('beforeend', `<div class="pip"><i style="transform:translateX(${i < 4 ? 0 : -101}%)"></i></div>`);
+for (let i = 0; i < 8; i++) $('#proteinPips').insertAdjacentHTML('beforeend', '<div class="pip"><i></i></div>');
+[['M', 'lift'], ['T', 'mat-day'], ['W', 'rest'], ['T', 'lift'], ['F', 'mat-day'], ['S', 'rest'], ['S', 'now']].forEach(d =>
+  $('#week').insertAdjacentHTML('beforeend', `<div class="day"><div class="dot ${d[1]}"></div>${d[0]}</div>`));
+paintProtein(); paintSlab(); setNum('20'); fit();
+
+/* the workout's ground: one soft light, drawn once with noise so it cannot band */
+(function light() {
+  const c = $('#lit'), w = 196, h = 426, x = c.getContext('2d'); c.width = w; c.height = h;
+  const img = x.createImageData(w, h), d = img.data, A = [0x68, 0x55, 0xf2], B = [0x48, 0x35, 0xd4];
+  for (let j = 0; j < h; j++) for (let i = 0; i < w; i++) {
+    const t = Math.min(1, Math.hypot((i - w * .2) / w, (j - h * .12) / h) / .95), n = (Math.random() - .5) * 3, o = (j * w + i) * 4;
+    for (let k = 0; k < 3; k++) d[o + k] = A[k] + (B[k] - A[k]) * t + n;
+    d[o + 3] = 255;
+  }
+  x.putImageData(img, 0, 0);
+})();
+})();
+</script>
+</body>
+</html>
