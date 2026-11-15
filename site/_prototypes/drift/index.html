@@ -640,6 +640,7 @@ function openWorkout(){
   [...wk.children].forEach((c,i)=>{if(c.id!=='dune')anim(c,[{opacity:0,transform:'translateY(16px) scale(.98)'},{opacity:1,transform:'none'}],{duration:360,delay:80+i*35,easing:EO,fill:'backwards'})});
   anim($('dune'),[{transform:`translateY(${duneY+120}px)`},{transform:`translateY(${duneY}px)`}],{...SP.soft,delay:120,fill:'backwards'});
   anim($('sky'),[{opacity:getComputedStyle($('sky')).opacity},{opacity:.55}],{duration:500,fill:'forwards'});
+  if(resting&&restShown){$('rest').style.visibility='visible';syncShed(false)}
   setWind(resting?.7:1+W.sets.length*.12);
   if(!W.formed){W.formed=true;setTimeout(()=>{setNum($('wNum'),fmt(W.w),{force:true,dur:700,stagger:160});setNum($('rNum'),String(W.r),{force:true,dur:700,stagger:120})},180)}
 }
@@ -648,7 +649,7 @@ function closeWorkout(){
   const td=$('today'),wk=$('workout');td.style.visibility='visible';
   const tile=$('trainTile').getBoundingClientRect(),app=$('app').getBoundingClientRect();
   const to=`inset(${tile.top-app.top}px ${app.right-tile.right}px ${app.bottom-tile.bottom}px ${tile.left-app.left}px round 22px)`;
-  anim(wk,[{clipPath:'inset(0px round 0px)'},{clipPath:to}],{duration:380,easing:'cubic-bezier(.4,0,.2,1)',fill:'forwards'}).onfinish=function(){wk.style.visibility='hidden';this.cancel()};
+  anim(wk,[{clipPath:'inset(0px round 0px)'},{clipPath:to}],{duration:380,easing:'cubic-bezier(.4,0,.2,1)',fill:'forwards'}).onfinish=function(){wk.style.visibility='hidden';$('rest').style.visibility='hidden';this.cancel()};
   [...wk.children].forEach(c=>anim(c,[{opacity:1},{opacity:0}],{duration:160,fill:'forwards'}).onfinish=function(){setTimeout(()=>this.cancel(),260)});
   anim(td,[{opacity:0,transform:'scale(.96)'},{opacity:1,transform:'none'}],{...SP.soft,delay:80,fill:'backwards'});
   $('sky').getAnimations().forEach(a=>a.cancel());anim($('sky'),[{opacity:.55},{opacity:1}],{duration:500});
@@ -679,7 +680,7 @@ function logSet(){
 const SR=112;const sphDots=makeSphere($('sph'),300,SR,2.7);
 sphDots.sort((a,b)=>a.r-b.r);
 const ring=sphDots.filter(d=>d.r>.9),inner=sphDots.filter(d=>d.r<=.9);
-let R0=0,REnd=0,tick=null,shed=0,breath=null,lastCd='';
+let R0=0,REnd=0,tick=null,shed=0,breath=null,lastCd='',restShown=false;
 function startRest(delay,set){
   resting=true;R0=Date.now();REnd=R0+REST*1000;shed=0;lastCd='';
   const rest=$('rest');
@@ -691,7 +692,7 @@ function startRest(delay,set){
   $('logLab').textContent=t('logSet');
 }
 function showSphere(){
-  const rest=$('rest');rest.style.visibility='visible';
+  restShown=true;const rest=$('rest');rest.style.visibility='visible';
   formSphere(sphDots,SR,950);shed=0;syncShed(false);
   anim(rest,[{opacity:0},{opacity:1}],{duration:300,fill:'backwards'});
   anim($('cdNum').parentElement,[{opacity:0,transform:'scale(.92)'},{opacity:1,transform:'none'}],{...SP.soft,delay:350,fill:'backwards'});
@@ -727,9 +728,9 @@ function syncShed(animate){
 }
 function addRest(ms){if(!resting)return;REnd=Math.max(Date.now(),REnd+ms);restTick()}
 function endRest(){
-  if(!resting)return;resting=false;clearInterval(tick);tick=null;
+  if(!resting)return;resting=false;restShown=false;clearInterval(tick);tick=null;
   const rest=$('rest'),app=$('app').getBoundingClientRect();
-  const visible=rest.style.visibility==='visible';
+  const visible=rest.style.visibility==='visible',away=screen!=='workout';
   // the ring that is left condenses into the next set's numbers
   const src=visible?sphDots.filter(d=>!d.gone).map(d=>{const r=d.el.getBoundingClientRect();return{x:r.left+r.width/2-app.left,y:r.top+r.height/2-app.top}}):null;
   if(visible){anim(rest,[{opacity:1},{opacity:0}],{duration:160,fill:'forwards'}).onfinish=function(){rest.style.visibility='hidden';this.cancel();if(breath){breath.cancel();breath=null}}}
@@ -737,8 +738,8 @@ function endRest(){
   setWind(1+W.sets.length*.12);
   if(W.sets.length>=W.total){$('logLab').textContent=t('hold');}
   const half=src?Math.ceil(src.length*.62):0;
-  setNum($('wNum'),fmt(W.w),{force:true,from:src?src.slice(0,half):null,dur:760,stagger:140});
-  setNum($('rNum'),String(W.r),{force:true,from:src?src.slice(half):null,dur:760,stagger:100});
+  setNum($('wNum'),fmt(W.w),{force:true,plain:away,from:src?src.slice(0,half):null,dur:760,stagger:140});
+  setNum($('rNum'),String(W.r),{force:true,plain:away,from:src?src.slice(half):null,dur:760,stagger:100});
   anim(l,[{opacity:0},{opacity:1}],{duration:10,fill:'backwards'});
   [...l.querySelectorAll('.step,.unit,.by,.hint')].forEach(e=>anim(e,[{opacity:0},{opacity:1}],{duration:300,delay:380,fill:'backwards'}));
   renderChip(true);
@@ -813,7 +814,10 @@ $('wMinus').onclick=()=>stepW(-2.5);$('wPlus').onclick=()=>stepW(2.5);
 $('rMinus').onclick=()=>stepR(-1);$('rPlus').onclick=()=>stepR(1);
 const lb=$('logBtn');
 lb.addEventListener('click',()=>{if(W.sets.length<W.total)logSet()});
-lb.addEventListener('pointerdown',holdStart);['pointerup','pointerleave','pointercancel'].forEach(e=>lb.addEventListener(e,holdEnd));
+lb.addEventListener('pointerdown',holdStart);
+// keyboard: holding Space or Enter finishes too
+lb.addEventListener('keydown',e=>{if((e.key===' '||e.key==='Enter')&&!e.repeat&&W.sets.length>=W.total){e.preventDefault();holdStart()}});
+lb.addEventListener('keyup',e=>{if(e.key===' '||e.key==='Enter')holdEnd()});['pointerup','pointerleave','pointercancel'].forEach(e=>lb.addEventListener(e,holdEnd));
 $('skipBtn').onclick=()=>endRest();
 $('plus15').onclick=()=>addRest(15000);$('minus15').onclick=()=>addRest(-15000);
 $('sumOk').onclick=()=>closeSheet('sumSheet');
