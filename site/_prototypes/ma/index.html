@@ -561,7 +561,7 @@ ol, p, h1, h2 { margin: 0; padding: 0; list-style: none; font-weight: inherit; }
     clearTimeout(selTimer); selTimer = setTimeout(() => select(sel), 4000);
   }
 
-  let busy = false;
+  let busy = false, pending = 0;
   function logSet() {
     if (busy) return;
     busy = true;
@@ -570,7 +570,7 @@ ol, p, h1, h2 { margin: 0; padding: 0; list-style: none; font-weight: inherit; }
     S.log[S.ex].push([S.kg, S.reps]);
     renderSeals(i); buzz(14);
     const lastOfEx = i + 1 >= e.sets, lastOfAll = lastOfEx && S.ex === plan.length - 1;
-    setTimeout(() => { busy = false; lastOfAll ? finish() : startRest(B || e.breaths, lastOfEx); }, 560);
+    pending = setTimeout(() => { busy = false; lastOfAll ? finish() : startRest(B || e.breaths, lastOfEx); }, 560);
   }
 
   /* ---------- Rest ---------- */
@@ -629,6 +629,7 @@ ol, p, h1, h2 { margin: 0; padding: 0; list-style: none; font-weight: inherit; }
     S.t0 = Date.now(); renderWorkout(); showWorkout();
   }
   function finish() {
+    clearTimeout(pending); busy = false; // a set tapped just before Finish must not start a rest afterwards
     closeSheet();
     if (!S.log.flat().length) { S = fresh(); renderToday(); phone.dataset.screen = 'today'; return; }
     S.mins = Math.max(1, Math.round((Date.now() - S.t0) / 60000)); S.done = true;
