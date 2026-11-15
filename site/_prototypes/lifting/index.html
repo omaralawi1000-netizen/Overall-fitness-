@@ -919,7 +919,7 @@ const rack = {
     });
     const up = () => { if (a0 == null) return; a0 = null; const snap = Math.round(this.ang / 24) * 24; this.knob.animate([{ transform: `rotate(${this.ang}deg)` }, { transform: `rotate(${snap}deg)` }], { duration: ms(260), easing: SPRING }); this.ang = snap; this.knob.style.transform = `rotate(${snap}deg)`; };
     d.addEventListener('pointerup', up); d.addEventListener('pointercancel', up);
-    d.addEventListener('keydown', (e) => { if (e.key === 'ArrowUp' || e.key === 'ArrowRight') adjust(0, 1); if (e.key === 'ArrowDown' || e.key === 'ArrowLeft') adjust(0, -1); });
+    d.addEventListener('keydown', (e) => { const up = e.key === 'ArrowUp' || e.key === 'ArrowRight', dn = e.key === 'ArrowDown' || e.key === 'ArrowLeft'; if (!up && !dn) return; e.preventDefault(); e.stopPropagation(); adjust(0, up ? 1 : -1); });
   },
   listen() {
     if (S.phase !== 'set') return;
@@ -941,7 +941,7 @@ const rack = {
       const rec = new SR(); REC = rec; const mine = root;
       rec.lang = 'en-US'; rec.interimResults = false; rec.maxAlternatives = 1;
       rec.onresult = (e) => { if (root === mine) finish(e.results[0][0].transcript, false); };
-      rec.onerror = () => demo(); rec.onend = () => { if (!done) demo(); };
+      rec.onerror = () => { if (root === mine) demo(); }; rec.onend = () => { if (!done && root === mine) demo(); };
       rec.start(); T.after(6000, () => { try { rec.stop(); } catch (e) {} });
     } catch (e) { T.after(ms(1300), demo); }
   },
@@ -1195,6 +1195,7 @@ function mount(enter) {
   stage.appendChild(root);
   phone.style.background = getComputedStyle(root).backgroundColor;
   OPT.init();
+  wireSteppers();
   sync();
   OPT.on('mount', {});
   if (enter) setTimeout(() => root && root.classList.remove('enter'), 1200);
@@ -1249,7 +1250,7 @@ items.forEach((el, i) => el.addEventListener('click', () => setActive(i)));
 replay.addEventListener('click', () => { fresh(); mount(false); showToday(true); });
 window.addEventListener('resize', moveHighlight);
 document.addEventListener('keydown', (e) => {
-  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable) return;
+  if (/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName) || e.target.isContentEditable || e.target.closest('[role=slider]')) return;
   if (e.metaKey || e.ctrlKey || e.altKey) return;
   const num = parseInt(e.key, 10);
   if (num >= 1 && num <= OPTS.length) setActive(num - 1);
