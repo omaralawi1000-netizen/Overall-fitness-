@@ -141,7 +141,7 @@ p, h1, h2 { margin: 0; }
 .coachb .dot::after { inset: -8px; }
 
 /* digit roller: numbers roll, they are never swapped */
-.roll { display: inline-flex; align-items: flex-start; }
+.roll { display: inline-flex; align-items: flex-start; pointer-events: none; }
 .roll > span { display: inline-grid; padding: .14em 0; margin: -.14em 0; -webkit-mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent); mask-image: linear-gradient(transparent, #000 22%, #000 78%, transparent); }
 .roll > span > i { grid-area: 1 / 1; font-style: normal; }
 
@@ -502,7 +502,7 @@ const STR = {
     tue:(k,r)=>`Tuesday ${k} × ${r}`, tueBest:(k,r,bk,br)=>`Tuesday ${k} × ${r} · best ${bk} × ${br}`,
     load:(s)=>s?`${s} each side`:'Empty bar', loadNext:(k,s)=>`Load ${k}: ${s} each side`,
     restN:(n)=>`Rest · set ${n} next`, restLift:l=>`Rest · ${l} next`, undo:'Undo', skipRest:'Skip rest', breatheIn:'Breathe in', breatheOut:'Breathe out',
-    go:(n)=>`Set ${n}. Go.`, tenS:'10 seconds. Chalk up.', up:k=>`+${k} kg on Tuesday`, same:'Same as Tuesday', moreReps:r=>`+${r} rep${r>1?'s':''} on Tuesday`,
+    go:(n)=>`Set ${n}. Go.`, tenS:'10 seconds. Chalk up.', up:k=>`+${k} kg on Tuesday`, same:'Same as Tuesday', down:k=>`${k} kg under Tuesday`, fewer:r=>`${r} rep${r>1?'s':''} under Tuesday`, moreReps:r=>`+${r} rep${r>1?'s':''} on Tuesday`,
     best:'New best', bestTx:(l,k,r,o)=>`${l}, ${k} kg × ${r}. Up from ${o} on Tuesday.`, keepGoing:'Keep going', estMax:k=>`Est. max ${k} kg`,
     liftDone:l=>`${l}, done`, liftDoneTx:(s,v)=>`${s} sets, ${v} kg moved.`, nextLift:l=>`Next: ${l}`, holdFinish:'Hold to finish', finish:'Finish',
     finTitle:'Push, done', finSub:(v,t)=>`${v} kg more than Tuesday. Your ridge from today is on the sky.`, finSubLess:'Today\'s ridge is on the sky. Eat within two hours.',
@@ -542,7 +542,7 @@ const STR = {
     tue:(k,r)=>`Tirsdag ${k} × ${r}`, tueBest:(k,r,bk,br)=>`Tirsdag ${k} × ${r} · rekord ${bk} × ${br}`,
     load:(s)=>s?`${s} på hver side`:'Tom stang', loadNext:(k,s)=>`Læg på til ${k}: ${s} på hver side`,
     restN:(n)=>`Pause · sæt ${n} er næste`, restLift:l=>`Pause · ${l} er næste`, undo:'Fortryd', skipRest:'Spring pausen over', breatheIn:'Træk vejret ind', breatheOut:'Pust ud',
-    go:(n)=>`Sæt ${n}. Kør.`, tenS:'10 sekunder. Kridt på.', up:k=>`+${k} kg mere end tirsdag`, same:'Som tirsdag', moreReps:r=>`+${r} gentagelse${r>1?'r':''} mere end tirsdag`,
+    go:(n)=>`Sæt ${n}. Kør.`, tenS:'10 sekunder. Kridt på.', up:k=>`+${k} kg mere end tirsdag`, same:'Som tirsdag', down:k=>`${k} kg under tirsdag`, fewer:r=>`${r} gentagelse${r>1?'r':''} færre end tirsdag`, moreReps:r=>`+${r} gentagelse${r>1?'r':''} mere end tirsdag`,
     best:'Ny rekord', bestTx:(l,k,r,o)=>`${l}, ${k} kg × ${r}. Op fra ${o} i tirsdags.`, keepGoing:'Fortsæt', estMax:k=>`Anslået max ${k} kg`,
     liftDone:l=>`${l}, færdig`, liftDoneTx:(s,v)=>`${s} sæt, ${v} kg løftet.`, nextLift:l=>`Næste: ${l}`, holdFinish:'Hold for at afslutte', finish:'Afslut',
     finTitle:'Push, færdig', finSub:(v,t)=>`${v} kg mere end tirsdag. Dagens bjergkæde står på himlen.`, finSubLess:'Dagens bjergkæde står på himlen. Spis inden for to timer.',
@@ -1073,6 +1073,7 @@ function renderRidge(instant) {
 }
 function placeTarget(instant) {
   const tg = $('tgt'); if (!tg) return; const on = !S.rest && !S.logs[S.li][S.si];
+  const { cx, w } = peakX(Math.min(S.si, lift().sets.length - 1), lift().sets.length); tg.style.left = `${cx - w / 2}px`;
   const sc = peakH(S.kg, S.reps) / PK_MAX;
   if (instant) { tg.style.transition = 'none'; tg.style.transform = `scaleY(${sc})`; tg.offsetWidth; tg.style.transition = ''; } else tg.style.transform = `scaleY(${sc})`;
   tg.style.opacity = on ? 1 : 0;
@@ -1180,7 +1181,7 @@ function wpop(html, fromEl, opts = {}) {
   clearTimeout(wpopT); if (!opts.stay) wpopT = setTimeout(() => closeWpop(), opts.d || 4200);
   return el;
 }
-function closeWpop(now) { clearTimeout(wpopT); const el = wpopEl; if (!el) return; wpopEl = null; if (now) return el.remove(); morphOut(el, () => el.remove()); }
+function closeWpop(now) { clearTimeout(wpopT); if (rec) { rec.onresult = rec.onerror = rec.onend = null; try { rec.abort(); } catch (e) {} rec = null; } const el = wpopEl; if (!el) return; wpopEl = null; if (now) return el.remove(); morphOut(el, () => el.remove()); }
 document.addEventListener('pointerdown', (e) => { if (wpopEl && !e.target.closest('.wpop, #mic')) closeWpop(); }, true);
 
 /* one tap logs the set: the numbers fly into a new peak that rises over Tuesday's */
@@ -1206,13 +1207,13 @@ function logSet(kg, reps, note) {
     const pk = makePeak('mine', S.si, l.sets.length, h, S.li * 10 + S.si); $('peaks').insertBefore(pk, $('tgt'));
     anim(pk, [{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], { s: 'rise' });
     renderRace(); const segs = $('seg').children; segs[S.li].style.setProperty('--p', (S.logs[S.li].filter(Boolean).length / l.sets.length).toFixed(3));
-    const diff = kg - set[2], chip = isBest ? `${IC.up}${T('best')}` : diff > 0 ? `${IC.up}${T('up', nf(diff))}` : (kg === set[2] && reps > set[3]) ? `${IC.up}${T('moreReps', reps - set[3])}` : T('same');
+    const diff = kg - set[2], chip = isBest ? `${IC.up}${T('best')}` : diff > 0 ? `${IC.up}${T('up', nf(diff))}` : diff < 0 ? T('down', nf(-diff)) : reps > set[3] ? `${IC.up}${T('moreReps', reps - set[3])}` : reps < set[3] ? T('fewer', set[3] - reps) : T('same');
     const anchor = document.createElement('i'); anchor.style.cssText = `position:absolute;left:${cx - 10}px;bottom:${h}px;width:20px;height:20px`; $('peaks').appendChild(anchor);
     floatChip(chip, anchor, { cls: `wchip${isBest ? ' gold' : ''}`, dy: -4 }); setTimeout(() => anchor.remove(), 100);
     if (note) wpop(note, $('mic'));
   }, 380);
   const lastSet = S.si === l.sets.length - 1;
-  if (isBest) { const ob = `${nf(l.best.k)} × ${l.best.r}`; S.bests++; l.best = { k: kg, r: reps }; S.flags.push({ li: S.li, si: S.si });
+  if (isBest) { const ob = `${nf(l.best.k)} × ${l.best.r}`; S.bests++; S.flags.push({ li: S.li, si: S.si, prev: l.best }); l.best = { k: kg, r: reps };
     setTimeout(() => { S.busy = false; record(kg, reps, ob, () => afterLog(lastSet)); }, 1000); }
   else setTimeout(() => { S.busy = false; afterLog(lastSet); }, 560);
 }
@@ -1224,7 +1225,7 @@ function undoLast() {
   const l = lift(); let si = S.si; if (S.rest) { clearTimeout(restT); S.rest = null; } else si = S.si - 1;
   const lg = S.logs[S.li][si]; if (si < 0 || !lg) return;
   S.logs[S.li][si] = undefined; S.volume -= lg[0] * lg[1]; S.si = si; S.kg = lg[0]; S.reps = lg[1];
-  const fi = S.flags.findIndex((f) => f.li === S.li && f.si === si); if (fi >= 0) { S.flags.splice(fi, 1); S.bests--; }
+  const fi = S.flags.findIndex((f) => f.li === S.li && f.si === si); if (fi >= 0) { l.best = S.flags[fi].prev; S.flags.splice(fi, 1); S.bests--; }
   restFaceOff(); renderWorkout(); renderRidge(true); placeTarget(); wpop(T('undone'), $('undoSet'), { d: 2200 }); vib(6);
 }
 $('undoSet').addEventListener('click', undoLast);
@@ -1370,7 +1371,7 @@ function drawMiniRidge() { const rg = rangeSVG(260, 46); $('ridgeMini').innerHTM
 /* ---------------- voice: say the set; the app's own parser reads it (no AI) ---------------- */
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
 const read = (text) => window.A2 ? A2.parseSetCommand(A2.mergeDecimals(A2.mergeNumberWords(text.trim().split(/\s+/)).join(' '))) : null;
-let rec = null;
+var rec = null; // var: closeWpop, defined earlier, stops it
 function openVoice() {
   const el = wpop(`<small>${T('sayHint')}</small><span id="vState">${SR ? T('listening') : ''}</span>${SR ? '<span class="listen"><i></i><i></i><i></i><i></i><i></i></span>' : ''}`, $('mic'),
     { stay: true, top: Math.round(H() - 300), extra: '' });
@@ -1382,7 +1383,6 @@ function openVoice() {
   else setTimeout(() => inp.focus({ preventScroll: true }), 300);
 }
 function hear(text) {
-  try { rec && rec.abort(); } catch (e) {}
   const cmd = read(text); closeWpop(true);
   if (!cmd) return wpop(`${T('heard', text)} ${T('notSet')}`, $('mic'), { d: 3600 });
   if (cmd.kind === 'undo') return undoLast();
