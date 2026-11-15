@@ -375,7 +375,7 @@ const T = {
     'j.today': 'Today', 'j.set': 'Live set', 'j.rest': 'Rest', 'j.pr': 'New best', 'j.finish': 'Finish', 'j.realrest': 'Real rest 2:30', 'j.lang': 'Dansk',
     't.date': 'Saturday 15 November', 't.eye': 'Push day · bench, top set', 't.eyeDone': 'Push day · done',
     't.coach': 'You slept 7 h 40 and 82.5 flew up on Tuesday. Today you take 85.',
-    't.coachDone': 'New best on bench, 85 × 6. Now food: 40 g protein in the next hour.',
+    't.coachDone': 'New best on bench, {b}. Now food: 40 g protein in the next hour.', 't.coachDoneNo': 'Solid session. Now food: 40 g protein in the next hour.',
     't.ghost': 'Tuesday: 82.5 × 6, done in 17 min', 't.ghostDone': '{kg} kg in {m} min, {t} faster than Tuesday', 't.ghostSlow': '{kg} kg in {m} min, {t} slower than Tuesday',
     't.sleep': 'Sleep', 't.sleepv': '7 h 40', 't.protof': '/ 160 g', 't.weight': 'Weight', 't.wdelta': '−0.3 this week',
     't.start': 'Start push day', 't.resume': 'Resume · set {n}', 't.see': 'See the workout',
@@ -410,7 +410,7 @@ const T = {
     'j.today': 'I dag', 'j.set': 'Sæt', 'j.rest': 'Pause', 'j.pr': 'Ny rekord', 'j.finish': 'Færdig', 'j.realrest': 'Rigtig pause 2:30', 'j.lang': 'English',
     't.date': 'Lørdag 15. november', 't.eye': 'Pushdag · bænkpres, tungeste sæt', 't.eyeDone': 'Pushdag · færdig',
     't.coach': 'Du sov 7 t 40, og 82,5 røg op i tirsdags. I dag tager du 85.',
-    't.coachDone': 'Ny rekord i bænkpres, 85 × 6. Nu mad: 40 g protein inden for en time.',
+    't.coachDone': 'Ny rekord i bænkpres, {b}. Nu mad: 40 g protein inden for en time.', 't.coachDoneNo': 'Godt pas. Nu mad: 40 g protein inden for en time.',
     't.ghost': 'Tirsdag: 82,5 × 6, færdig på 17 min', 't.ghostDone': '{kg} kg på {m} min, {t} hurtigere end tirsdag', 't.ghostSlow': '{kg} kg på {m} min, {t} langsommere end tirsdag',
     't.sleep': 'Søvn', 't.sleepv': '7 t 40', 't.protof': '/ 160 g', 't.weight': 'Vægt', 't.wdelta': '−0,3 denne uge',
     't.start': 'Start pushdag', 't.resume': 'Fortsæt · sæt {n}', 't.see': 'Se træningen',
@@ -590,7 +590,7 @@ function setClock() {
 function paintToday() {
   const done = st.finished;
   $('tEye').textContent = t(done ? 't.eyeDone' : 't.eye');
-  $('tCoach').textContent = t(done ? 't.coachDone' : 't.coach');
+  $('tCoach').textContent = !done ? t('t.coach') : st.bestSet >= 0 ? t('t.coachDone', { b: `${fmt(st.best.kg)} × ${st.best.reps}` }) : t('t.coachDoneNo');
   $('tGhost').textContent = done ? t(GHOST.done[3] - youEnd() >= 0 ? 't.ghostDone' : 't.ghostSlow', { kg: fmtInt(volume()), m: Math.round(youEnd() / 60), t: fmtGap(GHOST.done[3] - youEnd()) }) : t('t.ghost');
   $('startLbl').textContent = done ? t('t.see') : st.opened ? t('t.resume', { n: st.set }) : t('t.start');
   $('wtv').innerHTML = `${fmt(77.4)}<u>kg</u>`;
@@ -767,7 +767,7 @@ function record(i) {
   $('prH').textContent = t('pr.h');
   $('prD1').textContent = t('pr.d1', { kg: fmt(st.kg[i]), r: st.reps[i] });
   $('prD2').textContent = t('pr.d2', { b: `${fmt(OLD_BEST.kg)} × ${OLD_BEST.reps}` });
-  const chips = $('prChips'); chips.textContent = '';
+  const chips = $('prChips'); chips.textContent = ''; setS(chips, { opacity: '1', transform: 'none' });   // Keep going faded the box itself
   const dk = st.kg[i] - OLD_BEST.kg;
   const list = [[dk > 0 ? t('pr.c1', { d: fmt(dk) }) : t('pr.c2', { m: Math.round(e1(st.kg[i], st.reps[i])) }), 'g'], [dk > 0 ? t('pr.c2', { m: Math.round(e1(st.kg[i], st.reps[i])) }) : '', ''], [raceChip(GHOST.done[i] - st.you[i] - st.extra), '']].filter((x) => x[0]);
   list.forEach(([txt, cls]) => { const s = document.createElement('span'); s.textContent = txt; s.className = cls; chips.appendChild(s); });
@@ -880,7 +880,7 @@ function holdStart(e) {
   if (!st.finishing) return; e.preventDefault();
   const h = $('holdFill'), cur = holdAnim ? new DOMMatrix(getComputedStyle(h).transform).a : 0;
   if (holdAnim) holdAnim.cancel();
-  holdAnim = h.animate([{ transform: `scaleX(${cur})` }, { transform: 'scaleX(1)' }], { duration: RM ? 1 : (1 - cur) * 750, easing: 'linear', fill: 'forwards' });
+  holdAnim = h.animate([{ transform: `scaleX(${cur})` }, { transform: 'scaleX(1)' }], { duration: (1 - cur) * 750, easing: 'linear', fill: 'forwards' });   // the hold is a threshold, not decoration: it keeps its time under reduced motion
   holdAnim.onfinish = () => { holdAnim = null; buzz([14, 60, 30]); finish(); };
   buzz(6);
 }
