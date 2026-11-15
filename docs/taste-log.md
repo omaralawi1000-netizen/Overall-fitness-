@@ -57,6 +57,16 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: ten styles, style 4 "Ma", Japanese calm minimal (/_prototypes/ma/)
+Ask (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test test each thing on some of them. Test some unique things on some of them, like anything, you know what I mean?" One thread per style; this one was given Japanese calm minimal and a breathing-paced rest timer as its experiment.
+Built, clickable, Today and the live workout: warm paper, black ink and one red seal, everything drawn in the page. Today is the week written in ink: one brush stroke per session (a longer session is a longer stroke), today's stroke only a faint trace until the workout is done, then it is brushed in and stamped. In the workout the same stroke is written a little further with every set, one tap on Done stamps a red seal on the set, and the weight and reps open a stepper when tapped. Rest has no clock: an ink pool grows for four seconds and shrinks for six, the phone gives a soft buzz on each breath, rest is counted in breaths (dots), and a tap on the ink shows the seconds.
+Judges (three fresh ones, Sonnet): 7.5 (one lone brush stroke on Today "says nothing about the day"), 7 after Today became the week in ink (Today 8, but the breathing pool was "a flat grey disc"), then 8 after the pool became real ink (Today 8, Workout 7.5, Rest 8.5). The same rest screen got 8 from the first judge and 6.5 from the second, so the scores are as noisy as on 12 Nov. Changed on the judges' word: Japanese numerals on the set seals became 1 2 3 4 (the boxed numeral for three looked like a menu icon).
+Reading, before he has seen it: it is the opposite of the wallpaper he asked for on 12 Nov. There is no picture of a place and almost no frosted glass (one sheet), so it tests whether calm can come from paper and ink alone. Biggest weakness: outside the strokes, the pool and the seals it is black type on cream, and the workout screen is the plainest of the three.
+My own score: 7 as a look for Omar (he has asked for a beautiful picture and frosted glass three times, and this has neither), 8.5 for breathing through the rest as an idea. That idea would work in any of the ten styles.
+Needs his phone: whether the paper reads as paper or as flat beige, the soft edge of the ink pool (rings), the breathing at 120 Hz, how the buzz on each breath feels, and the sheet's blur.
+Artifact: https://claude.ai/artifact/Gh3deBBVEAPhBtvgKF8QzP
+Verdict: waiting for Omar.
+
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.

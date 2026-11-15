@@ -1,0 +1,694 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Aven Ma</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Antique+B1&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap">
+<style>
+/* Layout: one sheet of paper the size of the phone. Each screen says one thing, set to the left
+   with wide margins. Ink is the only dark, red is only ever a seal on finished work. */
+:root {
+  color-scheme: light;
+  --paper: #f2ede3;
+  --paper-hi: #f8f4ec;
+  --ink: #1d1b18;
+  --stone: #6a645a;
+  --stone-mid: #8a8376;
+  --stone-soft: #b4ad9f;
+  --line: rgba(29, 27, 24, .15);
+  --seal: #bd3225;
+  --desk: #d6d0c4;
+  --display: "Shippori Antique B1", "Zen Kaku Gothic New", "Hiragino Sans", "Helvetica Neue", Arial, sans-serif;
+  --text: "Zen Kaku Gothic New", "Hiragino Sans", "Helvetica Neue", Arial, sans-serif;
+  --ease: cubic-bezier(.22, .8, .24, 1);
+  --gl: max(30px, env(safe-area-inset-left, 0px));
+  --gr: max(30px, env(safe-area-inset-right, 0px));
+}
+html { height: 100%; box-sizing: border-box; padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); background: var(--desk); }
+body {
+  height: 100%; margin: 0; display: flex; align-items: center; justify-content: center;
+  background: var(--desk); color: var(--ink); font-family: var(--text); font-size: 16px; line-height: 1.45;
+  -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+  user-select: none; -webkit-user-select: none; overscroll-behavior: none; touch-action: manipulation;
+}
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; text-align: left; cursor: pointer; touch-action: manipulation; }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 8px; }
+ol, p, h1, h2 { margin: 0; padding: 0; list-style: none; font-weight: inherit; }
+
+.phone { position: relative; width: 100%; max-width: 430px; height: 100%; max-height: 900px; overflow: hidden; overflow: clip; background: var(--paper); }
+@media (min-width: 520px) { .phone { border-radius: 34px; box-shadow: 0 30px 80px rgba(60, 50, 34, .22), 0 2px 6px rgba(60, 50, 34, .12); } }
+#paper { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+/* Screens: all three exist from the start; only opacity and transform change. */
+.screen {
+  position: absolute; inset: 0; display: flex; flex-direction: column;
+  padding: 26px var(--gr) 26px var(--gl);
+  opacity: 0; visibility: hidden; transform: translateY(12px);
+  transition: opacity .18s ease, transform .18s ease, visibility 0s .18s;
+}
+[data-screen="today"] #today, [data-screen="workout"] #workout, [data-screen="rest"] #rest {
+  opacity: 1; visibility: visible; transform: none;
+  transition: opacity .42s ease .14s, transform .52s var(--ease) .14s, visibility 0s;
+}
+
+.label { font-size: 13px; font-weight: 500; letter-spacing: .03em; color: var(--stone); }
+.display { font-family: var(--display); font-weight: 400; letter-spacing: -.02em; }
+
+.primary {
+  display: flex; align-items: center; justify-content: center; width: 100%; height: 64px; border-radius: 32px;
+  background: var(--ink); color: var(--paper-hi); font-family: var(--display); font-size: 19px; letter-spacing: .01em;
+  transition: transform .12s ease;
+}
+.primary:active, .ghost:active, .step:active { transform: scale(.965); }
+.ghost {
+  display: flex; align-items: center; justify-content: center; width: 100%; height: 56px; border-radius: 28px;
+  box-shadow: inset 0 0 0 1.5px var(--ink); font-family: var(--display); font-size: 17px; transition: transform .12s ease;
+}
+
+.coach { display: flex; gap: 12px; align-items: baseline; font-size: 16px; line-height: 1.45; color: var(--ink); text-wrap: pretty; }
+.coach .dot { flex: none; width: 7px; height: 7px; border-radius: 50%; background: var(--ink); transform: translateY(-2px); }
+
+/* The seal: red ink pressed on paper. Never a button. */
+.seal {
+  display: grid; place-items: center; width: 40px; height: 40px; border-radius: 15%;
+  background: var(--seal); color: var(--paper-hi); font-family: var(--display); font-style: normal; font-size: 21px; line-height: 1;
+  -webkit-mask: var(--seal-mask) center / 100% 100%; mask: var(--seal-mask) center / 100% 100%;
+  transform: rotate(-3deg);
+}
+@keyframes stamp {
+  0% { opacity: 0; transform: scale(1.7) rotate(-10deg); }
+  55% { opacity: 1; transform: scale(.9) rotate(-3deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-3deg); }
+}
+.seal.new { animation: stamp .3s cubic-bezier(.4, 0, .2, 1) both; }
+
+/* ---------- Today: the week written in ink, one stroke per session ---------- */
+.t-head { min-height: 24px; }
+.t-hero { margin: auto 0; padding-bottom: 3%; }
+.ink { display: grid; gap: 6px; margin-left: -10px; }
+.ink-row { display: grid; }
+.ink-s { position: relative; height: 46px; }
+.ink-s canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.ink-s .trace { opacity: .11; }
+.stroke-clip { position: absolute; inset: 0; overflow: hidden; }
+.ink-row .label { margin: -3px 0 0 10px; }
+.ink-row.today .label { color: var(--ink); }
+.ink-row.today:not(.inked) .stroke-clip { visibility: hidden; }
+#tSeal { position: absolute; top: 2px; width: 38px; height: 38px; font-size: 21px; opacity: 0; }
+.is-done #tSeal { opacity: 1; }
+#tTitle { font-size: 68px; line-height: 1; margin-top: 26px; }
+.t-sub { margin-top: 12px; font-size: 18px; color: var(--stone); }
+
+.t-foot { display: grid; gap: 22px; }
+.t-foot .coach { min-height: 2.9em; }
+.t-foot .ghost { height: 64px; border-radius: 32px; }
+.facts { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.fact { display: grid; gap: 2px; padding: 14px 0 14px 14px; min-height: 64px; }
+.fact:first-child { padding-left: 0; }
+.fact + .fact { border-left: 1px solid var(--line); }
+.fact b { font-family: var(--display); font-weight: 400; font-size: 18px; white-space: nowrap; }
+.fact:active { opacity: .55; }
+
+@keyframes wipe-a { from { transform: translateX(-101%); } to { transform: none; } }
+@keyframes wipe-b { from { transform: translateX(101%); } to { transform: none; } }
+@keyframes rise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.intro .ink-row .stroke-clip { animation: wipe-a .8s cubic-bezier(.5, 0, .2, 1) calc(.12s + var(--i) * .16s) both; }
+.intro .ink-row .stroke-clip canvas { animation: wipe-b .8s cubic-bezier(.5, 0, .2, 1) calc(.12s + var(--i) * .16s) both; }
+.intro .ink-row .label { animation: rise .5s var(--ease) calc(.4s + var(--i) * .16s) both; }
+.intro #tTitle { animation: rise .6s var(--ease) .9s both; }
+.intro .t-sub { animation: rise .6s var(--ease) 1s both; }
+.intro .t-foot { animation: rise .6s var(--ease) 1.1s both; }
+.inking .stroke-clip { animation: wipe-a .9s cubic-bezier(.5, 0, .2, 1) .45s both; }
+.brush { animation: wipe-a .8s cubic-bezier(.5, 0, .2, 1) .3s both; }
+.brush canvas { animation: wipe-b .8s cubic-bezier(.5, 0, .2, 1) .3s both; }
+.inking .stroke-clip canvas { animation: wipe-b .9s cubic-bezier(.5, 0, .2, 1) .45s both; }
+
+/* ---------- Workout ---------- */
+.w-head { display: flex; justify-content: space-between; align-items: center; min-height: 44px; }
+.w-name { display: flex; align-items: center; gap: 8px; min-height: 44px; font-family: var(--display); font-size: 21px; }
+.w-name svg { width: 15px; height: 15px; opacity: .7; transform: translateY(1px); }
+.w-ink { height: 32px; margin: 2px 0 0 -10px; }
+.w-main { flex: 1; display: grid; grid-template-columns: 1fr 44px; gap: 8px; align-items: center; min-height: 0; }
+.w-body { display: grid; grid-template-rows: auto 140px auto auto; justify-items: start; }
+#kgBtn { align-self: end; }
+.num { display: inline-flex; align-items: baseline; font-family: var(--display); letter-spacing: -.035em; line-height: .96; border-bottom: 2px dotted var(--stone-mid); transition: border-color .2s ease; }
+.num .unit { font-family: var(--text); font-size: 17px; font-weight: 500; letter-spacing: 0; color: var(--stone); margin-left: 8px; }
+.num.big { font-size: 138px; }
+.num.big.l3 { font-size: 112px; }
+.num.big.l4 { font-size: 96px; }
+.num.big.l5 { font-size: 78px; }
+.num.mid { font-size: 58px; margin-top: 4px; }
+.num.mid .times { color: var(--stone-soft); margin-right: 10px; font-size: 44px; }
+.num.sel { border-bottom-style: solid; border-bottom-color: var(--ink); }
+.num > span:not(.unit):not(.times) { display: inline-block; }
+.stepper { display: flex; align-items: center; gap: 14px; height: 56px; margin-top: 14px; opacity: 0; pointer-events: none; transform: translateY(-4px); transition: opacity .16s ease, transform .2s var(--ease); }
+.stepper.on { opacity: 1; pointer-events: auto; transform: none; }
+.step { display: grid; place-items: center; width: 56px; height: 56px; border-radius: 50%; box-shadow: inset 0 0 0 1.5px var(--ink); font-family: var(--display); font-size: 26px; line-height: 1; transition: transform .12s ease; }
+.stepper .label { min-width: 54px; text-align: center; }
+.seals { display: grid; gap: 12px; justify-items: center; align-self: center; }
+.slot { display: grid; place-items: center; width: 44px; height: 44px; font-family: var(--display); font-size: 20px; color: var(--stone-mid); }
+.slot.now { color: var(--ink); border-radius: 7px; box-shadow: inset 0 0 0 1.5px var(--ink); }
+.slot:nth-child(2n) .seal { transform: rotate(2deg); }
+.slot:nth-child(3n) .seal { transform: rotate(-1.5deg); }
+.w-foot { display: grid; gap: 18px; }
+.row { display: flex; justify-content: space-between; align-items: center; width: 100%; min-height: 52px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); font-size: 16px; }
+.row span:last-child { font-family: var(--display); }
+.row:active { opacity: .55; }
+
+/* ---------- Rest: breath, not a clock ---------- */
+#rest { align-items: stretch; }
+.r-top { min-height: 84px; }
+.cue { position: relative; height: 44px; margin-top: 4px; font-family: var(--display); font-size: 32px; letter-spacing: -.02em; }
+.cue span { position: absolute; left: 0; top: 0; white-space: nowrap; opacity: 0; }
+.r-stage { position: relative; flex: 1; display: grid; place-items: center; width: 100%; min-height: 0; }
+.r-well { position: relative; width: min(100%, 320px, 46vh); aspect-ratio: 1; }
+.r-well .ring { position: absolute; inset: 1.5%; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(29, 27, 24, .16); }
+.r-well canvas { position: absolute; inset: 0; width: 100%; height: 100%; transform: scale(.56); will-change: transform; }
+.r-well .halo { opacity: 0; }
+.secs { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--display); font-size: 34px; color: var(--paper-hi); opacity: 0; transition: opacity .2s ease; font-variant-numeric: tabular-nums; }
+.secs.on { opacity: 1; }
+@keyframes breathe { 0% { transform: scale(.56); } 40% { transform: scale(1); } 100% { transform: scale(.56); } }
+@keyframes halo { 0% { transform: scale(.5); opacity: 0; } 40% { transform: scale(1.08); opacity: 1; } 55% { opacity: 1; } 100% { transform: scale(.5); opacity: 0; } }
+@keyframes cue-in { 0% { opacity: 0; transform: translateY(6px); } 5% { opacity: 1; transform: none; } 35% { opacity: 1; transform: none; } 39.5% { opacity: 0; transform: translateY(-6px); } 100% { opacity: 0; transform: translateY(-6px); } }
+@keyframes cue-out { 0%, 40.5% { opacity: 0; transform: translateY(6px); } 45.5% { opacity: 1; transform: none; } 94% { opacity: 1; transform: none; } 99%, 100% { opacity: 0; transform: translateY(-6px); } }
+.go .disc { animation: breathe 10s cubic-bezier(.42, 0, .58, 1) var(--n, 6) both; }
+.go .halo { animation: halo 10s cubic-bezier(.42, 0, .58, 1) var(--n, 6) both; }
+.go .cue .in { animation: cue-in 10s linear var(--n, 6) both; }
+.go .cue .out { animation: cue-out 10s linear var(--n, 6) both; }
+.r-count { display: grid; gap: 10px; justify-items: center; padding: 6px 0 22px; }
+.r-count .hint { font-size: 12px; margin-top: -6px; }
+.pebbles { display: flex; gap: 12px; height: 12px; }
+.pebbles i { width: 11px; height: 11px; border-radius: 50%; background: var(--ink); transition: transform .5s var(--ease), background-color .5s ease, box-shadow .5s ease; }
+.pebbles i.spent { background: transparent; box-shadow: inset 0 0 0 1px var(--stone-soft); transform: scale(.82); }
+.r-foot { display: grid; gap: 16px; }
+.next { display: flex; justify-content: space-between; align-items: baseline; padding-top: 14px; border-top: 1px solid var(--line); }
+.next span:last-child { font-family: var(--display); font-size: 17px; }
+
+/* ---------- Sheet: a paper screen that lets shapes through ---------- */
+.scrim { position: absolute; inset: 0; background: rgba(58, 48, 34, .16); opacity: 0; visibility: hidden; transition: opacity .3s ease, visibility 0s .3s; }
+.sheet {
+  position: absolute; left: 0; right: 0; bottom: 0; max-height: 80%; overflow: auto;
+  padding: 0 var(--gr) 30px var(--gl); border-radius: 26px 26px 0 0;
+  background: rgba(248, 244, 236, .88); -webkit-backdrop-filter: blur(22px) saturate(1.2); backdrop-filter: blur(22px) saturate(1.2);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8), 0 -16px 44px rgba(50, 42, 28, .12);
+  transform: translateY(104%); visibility: hidden; transition: transform .34s cubic-bezier(.4, 0, .9, .6), visibility 0s .34s;
+}
+.sheet-open .scrim { opacity: 1; visibility: visible; transition: opacity .3s ease, visibility 0s; }
+.sheet-open .sheet { transform: none; visibility: visible; transition: transform .5s var(--ease), visibility 0s; }
+.sheet.drag { transition: none; }
+.grab { display: grid; place-items: center; width: 100%; height: 34px; touch-action: none; cursor: grab; }
+.grab::before { content: ""; width: 38px; height: 4px; border-radius: 2px; background: var(--stone-soft); }
+.sheet h2 { font-family: var(--display); font-size: 26px; letter-spacing: -.02em; margin-top: 4px; }
+.sheet .sub { margin-top: 2px; color: var(--stone); font-size: 15px; }
+.list { margin-top: 18px; border-top: 1px solid var(--line); }
+.list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 50px; border-bottom: 1px solid var(--line); font-size: 16px; }
+.list li b { font-family: var(--display); font-weight: 400; white-space: nowrap; }
+.list li.cur span:first-child { font-weight: 700; }
+.list .marks { display: flex; gap: 5px; }
+.list .marks i { width: 12px; height: 12px; border-radius: 2px; box-shadow: inset 0 0 0 1px var(--stone-soft); }
+.list .marks i.d { background: var(--seal); box-shadow: none; }
+.bars { display: flex; align-items: flex-end; gap: 10px; height: 76px; margin-top: 22px; }
+.bars div { flex: 1; display: grid; gap: 6px; justify-items: center; align-content: end; height: 100%; font-size: 11px; font-weight: 500; color: var(--stone); }
+.bars i { width: 100%; border-radius: 3px 3px 0 0; background: var(--stone-soft); }
+.bars .hot i { background: var(--ink); }
+.sheet .ghost { margin-top: 22px; }
+
+@media (max-height: 700px) {
+  .w-body { grid-template-rows: auto 114px auto auto; } .w-ink { height: 26px; }
+  .num.big { font-size: 112px; } .num.big.l3 { font-size: 96px; } .num.big.l4 { font-size: 84px; } .num.big.l5 { font-size: 70px; }
+  .num.mid { font-size: 48px; } #tTitle { font-size: 54px; margin-top: 16px; } .ink-s { height: 34px; } .ink { gap: 3px; } .stepper { margin-top: 8px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .intro .ink-row .stroke-clip, .intro .ink-row .stroke-clip canvas, .brush, .brush canvas, .intro .ink-row .label, .intro #tTitle, .intro .t-sub, .intro .t-foot, .inking .stroke-clip, .inking .stroke-clip canvas, .seal.new { animation: none; }
+  @keyframes breathe { 0% { transform: scale(.9); } 40% { transform: scale(1); } 100% { transform: scale(.9); } }
+  @keyframes halo { 0%, 100% { transform: scale(1); opacity: 0; } 40% { transform: scale(1); opacity: .6; } }
+  .screen { transform: none; }
+}
+</style>
+</head>
+<body>
+<main class="phone intro" id="phone" data-screen="today">
+  <canvas id="paper" aria-hidden="true"></canvas>
+
+  <section class="screen" id="today">
+    <header class="t-head"><div class="label" id="tDate"></div></header>
+    <div class="t-hero">
+      <ol class="ink" id="ink"></ol>
+      <h1 class="display" id="tTitle"></h1>
+      <p class="t-sub" id="tSub"></p>
+    </div>
+    <div class="t-foot">
+      <p class="coach"><i class="dot"></i><span id="tCoach"></span></p>
+      <div class="facts" id="facts"></div>
+      <button class="primary" id="beginBtn"></button>
+    </div>
+  </section>
+
+  <section class="screen" id="workout">
+    <header class="w-head">
+      <button class="w-name" id="wName"><span id="wNameText"></span><svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 4.2 6 8l4-3.8"/></svg></button>
+      <div class="label" id="wCount"></div>
+    </header>
+    <div class="ink-s w-ink" aria-hidden="true"><canvas class="trace" id="wTrace"></canvas><div class="stroke-clip" id="wClip"><canvas id="wInk"></canvas></div></div>
+    <div class="w-main">
+      <div class="w-body">
+        <div class="label" id="wSet"></div>
+        <button class="num big" id="kgBtn"><span id="kgVal"></span><span class="unit">kg</span></button>
+        <button class="num mid" id="repBtn"><span class="times">×</span><span id="repVal"></span><span class="unit">reps</span></button>
+        <div class="stepper" id="stepper">
+          <button class="step" id="minus" aria-label="Less">−</button>
+          <span class="label" id="stepLabel"></span>
+          <button class="step" id="plus" aria-label="More">+</button>
+        </div>
+      </div>
+      <ol class="seals" id="seals"></ol>
+    </div>
+    <div class="w-foot">
+      <p class="coach"><i class="dot"></i><span id="wCoach"></span></p>
+      <button class="row" id="lastBtn"><span id="lastLabel"></span><span id="lastVal"></span></button>
+      <button class="primary" id="doneBtn"></button>
+    </div>
+  </section>
+
+  <section class="screen" id="rest">
+    <div class="r-top">
+      <div class="label" id="rLabel"></div>
+      <div class="cue" aria-live="polite"><span class="in" id="cueIn"></span><span class="out" id="cueOut"></span></div>
+    </div>
+    <button class="r-stage" id="discBtn">
+      <span class="r-well">
+        <i class="ring"></i>
+        <canvas class="halo" id="halo" aria-hidden="true"></canvas>
+        <canvas class="disc" id="disc" aria-hidden="true"></canvas>
+        <span class="secs" id="secs"></span>
+      </span>
+    </button>
+    <div class="r-count">
+      <div class="pebbles" id="pebbles" aria-hidden="true"></div>
+      <div class="label" id="breathsLeft"></div>
+      <div class="label hint" id="secsHint"></div>
+    </div>
+    <div class="r-foot">
+      <div class="next"><span class="label" id="nextLabel"></span><span id="nextText"></span></div>
+      <button class="ghost" id="skipBtn"></button>
+    </div>
+  </section>
+
+  <div class="scrim" id="scrim"></div>
+  <aside class="sheet" id="sheet" role="dialog" aria-modal="true">
+    <div class="grab" id="grab"></div>
+    <div id="sheetBody"></div>
+  </aside>
+</main>
+
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const phone = $('phone');
+  const q = new URLSearchParams(location.search);
+  const hash = location.hash.replace('#', '');
+  const da = hash === 'da' || q.get('lang') === 'da' || (hash !== 'en' && q.get('lang') !== 'en' && (navigator.language || '').toLowerCase().startsWith('da'));
+  const loc = da ? 'da-DK' : 'en-GB';
+  document.documentElement.lang = da ? 'da' : 'en';
+  const fmt = (n) => n.toLocaleString(loc, { maximumFractionDigits: 1 });
+  const buzz = (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
+
+  const T = da ? {
+    sub: 'Seks øvelser. Cirka 55 minutter.', begin: 'Begynd',
+    coach: 'Du sov 7 t 40 og spiste godt i går. Gå efter de tunge sæt.',
+    doneTitle: 'Færdig.', doneCoach: 'Spis godt i aften. I morgen er hviledag.', again: 'Start forfra',
+    sleep: 'Søvn', food: 'Mad', weight: 'Vægt', sleepV: '7 t 40', foodV: '640 kcal', weightV: '82,4 kg',
+    set: (a, b) => `Sæt ${a} af ${b}`, of: (a, b) => `${a} af ${b}`, done: 'Færdig', last: 'Sidst', reps: 'reps',
+    rest: 'Pause', inn: 'Ånd ind', out: 'Ånd ud', next: 'Næste', skip: 'Spring pausen over',
+    breaths: (n, k) => `${n} ${n === 1 ? 'roligt åndedrag' : 'rolige åndedrag'}, så ${k}`, nset: (k) => `sæt ${k}`,
+    session: 'Dagens træning', minutes: (m) => `${m} min i gang`, finish: 'Afslut træningen', sets: 'sæt', lifted: 'kg løftet', min: 'min',
+    lastTitle: 'Sidste gang', lastDay: 'Søndag 8. november', best: 'Bedste', secsHint: 'Tryk på blækket for at se sekunder',
+    sleepT: 'Søvn', sleepS: 'I seng 23.10, oppe 06.50. Dit snit er 7 t 05.', foodT: 'Mad i dag', foodS: '640 af 2.900 kcal. Protein 48 af 160 g.', weightT: 'Vægt', weightS: '82,4 kg i morges. 0,3 kg ned på en uge.',
+    meal: ['Havregryn med skyr og banan', '640 kcal'], mealNext: ['Frokost', 'ikke logget endnu'],
+    days: ['M', 'T', 'O', 'T', 'F', 'L', 'S'], today: 'I dag', legs: 'Ben', inkLabel: 'Dine seneste træninger, ét penselstrøg for hver',
+  } : {
+    sub: 'Six exercises. About 55 minutes.', begin: 'Begin',
+    coach: 'You slept 7 h 40 and ate well yesterday. Go for the top sets.',
+    doneTitle: 'Done.', doneCoach: 'Eat well tonight. Tomorrow is a rest day.', again: 'Start again',
+    sleep: 'Sleep', food: 'Food', weight: 'Weight', sleepV: '7 h 40', foodV: '640 kcal', weightV: '82.4 kg',
+    set: (a, b) => `Set ${a} of ${b}`, of: (a, b) => `${a} of ${b}`, done: 'Done', last: 'Last time', reps: 'reps',
+    rest: 'Rest', inn: 'Breathe in', out: 'Breathe out', next: 'Next', skip: 'Skip rest',
+    breaths: (n, k) => `${n} slow ${n === 1 ? 'breath' : 'breaths'}, then ${k}`, nset: (k) => `set ${k}`,
+    session: 'Today’s session', minutes: (m) => `${m} min in`, finish: 'Finish workout', sets: 'sets', lifted: 'kg lifted', min: 'min',
+    lastTitle: 'Last time', lastDay: 'Sunday 8 November', best: 'Best', secsHint: 'Tap the ink to see seconds',
+    sleepT: 'Sleep', sleepS: 'In bed 23:10, up 06:50. Your average is 7 h 05.', foodT: 'Food today', foodS: '640 of 2,900 kcal. Protein 48 of 160 g.', weightT: 'Weight', weightS: '82.4 kg this morning. Down 0.3 kg in a week.',
+    meal: ['Oats with skyr and banana', '640 kcal'], mealNext: ['Lunch', 'not logged yet'],
+    days: ['M', 'T', 'W', 'T', 'F', 'S', 'S'], today: 'Today', legs: 'Legs', inkLabel: 'Your last sessions, one brush stroke each',
+  };
+
+  const B = Math.max(0, parseInt(q.get('breaths'), 10) || 0);
+  const plan = [
+    { en: 'Bench press', da: 'Bænkpres', sets: 4, kg: 80, reps: 8, step: 2.5, breaths: 6, last: [[77.5, 8], [77.5, 8], [77.5, 7], [75, 8]], best: [82.5, 6] },
+    { en: 'Overhead press', da: 'Skulderpres', sets: 3, kg: 50, reps: 8, step: 2.5, breaths: 6, last: [[50, 7], [50, 7], [50, 6]], best: [52.5, 5] },
+    { en: 'Incline dumbbell press', da: 'Skrå håndvægtspres', sets: 3, kg: 28, reps: 10, step: 2, breaths: 4, last: [[26, 10], [26, 10], [26, 10]], best: [28, 8] },
+    { en: 'Lateral raise', da: 'Sidehæv', sets: 3, kg: 10, reps: 14, step: 1, breaths: 4, last: [[10, 14], [10, 13], [10, 12]], best: [12, 10] },
+    { en: 'Triceps pushdown', da: 'Triceps pushdown', sets: 3, kg: 32.5, reps: 12, step: 2.5, breaths: 4, last: [[30, 12], [30, 12], [30, 11]], best: [35, 8] },
+    { en: 'Weighted dip', da: 'Dips med vægt', sets: 2, kg: 10, reps: 10, step: 2.5, breaths: 4, last: [[10, 9], [10, 8]], best: [15, 6] },
+  ];
+  const TOTAL = plan.reduce((a, e) => a + e.sets, 0);
+  let inkPart = -1;
+  let S;
+  const fresh = () => ({ ex: 0, kg: plan[0].kg, reps: plan[0].reps, log: plan.map(() => []), t0: 0, done: false, mins: 0 });
+  S = fresh();
+
+  /* ---------- drawing: paper, brush stroke, ink disc, seal ---------- */
+  const rng = (a) => () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; };
+  const smooth = (t) => t * t * (3 - 2 * t);
+  const noiseGrid = (seed) => {
+    const r = rng(seed), g = new Float32Array(4096).map(() => r());
+    const at = (x, y) => g[((x & 63) + (y & 63) * 64)];
+    const n = (x, y) => { const xi = Math.floor(x), yi = Math.floor(y), fx = smooth(x - xi), fy = smooth(y - yi);
+      const a = at(xi, yi), b = at(xi + 1, yi), c = at(xi, yi + 1), d = at(xi + 1, yi + 1);
+      return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy; };
+    return (x, y) => n(x, y) * .57 + n(x * 2.1 + 9, y * 2.1 + 4) * .29 + n(x * 4.3 + 3, y * 4.3 + 17) * .14;
+  };
+
+  function drawPaper() {
+    const cv = $('paper'), w = phone.clientWidth, h = phone.clientHeight, d = Math.min(2, devicePixelRatio || 1);
+    const W = Math.round(w * d), H = Math.round(h * d);
+    if (cv.width === W && cv.height === H) return;
+    cv.width = W; cv.height = H;
+    const ctx = cv.getContext('2d'), img = ctx.createImageData(W, H), p = img.data, r = rng(11), cloud = noiseGrid(5);
+    const k = 1 / (120 * d);
+    for (let y = 0, i = 0; y < H; y++) {
+      for (let x = 0; x < W; x++, i += 4) {
+        const v = (cloud(x * k, y * k) - .5) * 13 + (r() - .5) * 9;
+        p[i] = 242 + v; p[i + 1] = 237 + v; p[i + 2] = 227 + v * 1.2; p[i + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+    ctx.lineCap = 'round';
+    for (let n = Math.round(W * H / 15000); n--;) {
+      const x = r() * W, y = r() * H, len = (6 + r() * r() * 46) * d, a = r() * Math.PI, bend = (r() - .5) * len * .5;
+      ctx.strokeStyle = r() < .55 ? `rgba(255,252,244,${.16 + r() * .3})` : `rgba(122,104,78,${.04 + r() * .06})`;
+      ctx.lineWidth = (.4 + r() * .8) * d;
+      ctx.beginPath(); ctx.moveTo(x, y);
+      ctx.quadraticCurveTo(x + Math.cos(a) * len / 2 - Math.sin(a) * bend, y + Math.sin(a) * len / 2 + Math.cos(a) * bend, x + Math.cos(a) * len, y + Math.sin(a) * len);
+      ctx.stroke();
+    }
+  }
+
+  // One brush stroke per session, drawn bristle by bristle so the ink runs dry toward the end. Longer session, longer stroke.
+  // `stop` lifts the brush early: the same stroke, written only that far (today's stroke during the workout).
+  function drawStroke(cv, seed, len, stop = 1) {
+    const w = cv.clientWidth, h = cv.clientHeight, d = Math.min(3, devicePixelRatio || 1);
+    if (!w) return;
+    cv.width = Math.round(w * d); cv.height = Math.round(h * d);
+    const ctx = cv.getContext('2d'); ctx.scale(d, d); ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const r = rng(seed), n1 = noiseGrid(seed + 18);
+    const x0 = 10, L = (w - 24) * len, x1 = x0 + L, cy = h * .6, HW = h * .27, N = Math.round(HW * 10);
+    const press = (t) => t < .07 ? .8 + .34 * Math.sin(t / .07 * Math.PI / 2) : t < .5 ? 1.14 - .36 * smooth((t - .07) / .43) : t < .84 ? .78 + .16 * smooth((t - .5) / .34) : .94 - .42 * smooth((t - .84) / .16);
+    const yAt = (t, u, wob, ph) => cy - Math.sin(t * Math.PI) * h * .04 - t * h * .1 + u * HW * press(t) + wob * Math.sin(t * 5 + ph);
+    for (let i = 0; i < N; i++) {
+      const u = i / (N - 1) * 2 - 1, edge = Math.abs(u), ph = r() * 60, wob = (r() - .5) * 1.2;
+      const dry = .3 + .6 * r() * (1 - .5 * edge * edge), end = x0 + L * stop - r() * Math.min(L * stop, 220) * .2 * (.15 + edge), band = i * .13 + seed;
+      let x = x0 + (u + 1) * h * .05 + edge * edge * h * .07 + (r() - .5) * 2, open = false;
+      ctx.strokeStyle = `rgba(25,23,20,${.72 + .28 * r()})`; ctx.lineWidth = HW * 2 / N * (2 + r() * 2);
+      for (; x < end; x += 1.5) {
+        const t = (x - x0) / L;
+        let on = true;
+        if (t / stop > dry) { const k = (t / stop - dry) / (1 - dry); on = n1(x * .022 + ph * .012, band) > .34 + .34 * k; } // gaps run in bands, like a brush going dry
+        if (on) { const y = yAt(t, u, wob, ph); if (!open) { ctx.beginPath(); ctx.moveTo(x, y); open = true; } else ctx.lineTo(x, y); }
+        else if (open) { ctx.stroke(); open = false; }
+      }
+      if (open) ctx.stroke();
+    }
+    ctx.globalCompositeOperation = 'destination-out'; // a few bristles that held less ink
+    for (let i = Math.round(14 * len); i--;) {
+      const u = (r() * 2 - 1) * .9, a = x0 + L * (.08 + r() * .5), ph = r() * 60, wob = (r() - .5) * 1.2, len2 = L * (.08 + r() * .3);
+      ctx.strokeStyle = `rgba(0,0,0,${.08 + r() * .2})`; ctx.lineWidth = .35 + r() * .5; ctx.beginPath();
+      for (let x = a; x < Math.min(a + len2, x0 + L * stop); x += 3) { const y = yAt((x - x0) / L, u, wob, ph); x === a ? ctx.moveTo(x, y) : ctx.lineTo(x, y); }
+      ctx.stroke();
+    }
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  // The breath: a pool of ink wash, flat in the middle with a thin dark edge where the pigment settles.
+  function drawInk(cv, seed, core) {
+    const w = cv.clientWidth, d = Math.min(2, devicePixelRatio || 1), W = Math.round(w * d);
+    cv.width = W; cv.height = W;
+    const ctx = cv.getContext('2d'), img = ctx.createImageData(W, W), p = img.data, n = noiseGrid(seed), r = rng(seed + 1);
+    const c = W / 2, R = c * (core ? .9 : .96), clamp = (v) => Math.min(1, Math.max(0, v));
+    for (let y = 0, i = 0; y < W; y++) {
+      for (let x = 0; x < W; x++, i += 4) {
+        const dx = (x - c) / R, dy = (y - c) / R, rr = Math.hypot(dx, dy);
+        if (rr > 1.16) continue;
+        const ax = dx / (rr || 1), ay = dy / (rr || 1);
+        const rim = 1 + (n(ax * 1.6 + 8, ay * 1.6 + 8) - .5) * (core ? .07 : .09) + (n(ax * 7 + 20, ay * 7 + 20) - .5) * .022, q = rr / rim;
+        if (q >= (core ? 1.06 : 1)) continue;
+        const pool = n(x / W * 4 + 3, y / W * 4 + 7), grain = n(x / d * .9, y / d * .9);
+        let a;
+        if (core) a = q < 1 ? .8 + .17 * pool + .07 * (grain - .5) + .12 * smooth(clamp((q - .88) / .1))
+          : .62 * (1 - (q - 1) / .06) ** 2 * (.35 + .65 * n(x / d * .45, y / d * .45)); // the edge creeps into the paper
+        else a = .17 * (1 - smooth(clamp((q - .3) / .7))) * (.7 + .6 * pool); // the water that runs ahead of the ink
+        a *= .92 + .08 * r();
+        p[i] = 25; p[i + 1] = 24; p[i + 2] = 25; p[i + 3] = clamp(a) * 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+
+  function makeSealMask() {
+    const cv = document.createElement('canvas'); cv.width = cv.height = 128;
+    const ctx = cv.getContext('2d'), r = rng(3);
+    ctx.fillStyle = '#000'; ctx.fillRect(0, 0, 128, 128);
+    ctx.globalCompositeOperation = 'destination-out';
+    for (let i = 0; i < 150; i++) { // worn edge
+      const s = Math.floor(r() * 4), t = r() * 128, o = r() * 2.4;
+      ctx.globalAlpha = .5 + r() * .5; ctx.beginPath();
+      ctx.arc(s === 0 ? o : s === 1 ? 128 - o : t, s === 2 ? o : s === 3 ? 128 - o : t, .8 + r() * 2.6, 0, 7); ctx.fill();
+    }
+    for (let i = 0; i < 90; i++) { // paper showing through
+      ctx.globalAlpha = .25 + r() * .6; ctx.beginPath(); ctx.arc(r() * 128, r() * 128, .4 + r() * r() * 2.6, 0, 7); ctx.fill();
+    }
+    document.documentElement.style.setProperty('--seal-mask', `url(${cv.toDataURL()})`);
+  }
+
+  /* ---------- Today ---------- */
+  const PLAN_MIN = 55, past = [[6, 'Push', 57], [4, 'Pull', 49], [2, T.legs, 62]]; // days ago, session, minutes
+  const lenOf = (m) => Math.min(1, .3 + m / 90);
+  function renderToday() {
+    const now = new Date(), cap = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+    $('tDate').textContent = cap(now.toLocaleDateString(loc, { weekday: 'long', day: 'numeric', month: 'long' }));
+    const day = (ago) => cap(new Date(now - ago * 864e5).toLocaleDateString(loc, { weekday: 'short' }).replace('.', ''));
+    const mins = S.done ? S.mins : PLAN_MIN, len = lenOf(S.done ? Math.max(S.mins, 25) : PLAN_MIN);
+    $('ink').setAttribute('aria-label', T.inkLabel);
+    $('ink').innerHTML = past.map(([ago, what, m], i) => `<li class="ink-row" style="--i:${i}"><div class="ink-s"><div class="stroke-clip"><canvas data-seed="${23 + i * 7}" data-len="${lenOf(m)}"></canvas></div></div><span class="label">${day(ago)} · ${what} · ${m} ${T.min}</span></li>`).join('')
+      + `<li class="ink-row today${S.done ? ' inked' : ''}" id="inkToday" style="--i:3"><div class="ink-s"><canvas class="trace" data-seed="58" data-len="${len}"></canvas><div class="stroke-clip"><canvas data-seed="58" data-len="${len}"></canvas></div><i class="seal" id="tSeal" style="left:calc(${Math.round(len * 100)}% - 34px)">済</i></div><span class="label">${T.today}${S.done ? ` · Push · ${mins} ${T.min}` : ''}</span></li>`;
+    drawStrokes();
+    phone.classList.toggle('is-done', S.done);
+    $('tTitle').textContent = S.done ? T.doneTitle : 'Push.';
+    if (S.done) {
+      const sets = S.log.flat(), vol = sets.reduce((a, s) => a + s[0] * s[1], 0);
+      $('tSub').textContent = `${sets.length} ${T.sets} · ${fmt(Math.round(vol))} ${T.lifted}`;
+    } else $('tSub').textContent = T.sub;
+    $('tCoach').textContent = S.done ? T.doneCoach : T.coach;
+    $('facts').innerHTML = [['sleep', T.sleep, T.sleepV], ['food', T.food, T.foodV], ['weight', T.weight, T.weightV]]
+      .map(([k, l, v]) => `<button class="fact" data-fact="${k}"><span class="label">${l}</span><b>${v}</b></button>`).join('');
+    const b = $('beginBtn');
+    b.textContent = S.done ? T.again : T.begin;
+    b.className = S.done ? 'ghost' : 'primary';
+  }
+  function drawStrokes() { document.querySelectorAll('#ink canvas').forEach((c) => drawStroke(c, +c.dataset.seed, +c.dataset.len)); }
+
+  // The Coach line is worked out from the numbers on screen against the same set last time, so it is always true.
+  function coachLine(e, cur) {
+    const l = e.last[Math.min(cur, e.last.length - 1)], dk = +(S.kg - l[0]).toFixed(2), dr = S.reps - l[1], n = Math.abs(dr);
+    if (dk > 0) return da ? `${fmt(dk)} kg mere end sidst.${dr === 0 ? ` Samme ${S.reps}.` : ''}` : `${fmt(dk)} kg more than last time.${dr === 0 ? ` Same ${S.reps}.` : ''}`;
+    if (dk < 0) return da ? 'Lettere end sidst. Hold formen.' : 'Lighter than last time. Keep the form.';
+    if (dr > 0) return da ? `Samme vægt. ${n} ${n === 1 ? 'rep' : 'reps'} mere end sidst.` : `Same weight. ${n} more ${n === 1 ? 'rep' : 'reps'} than last time.`;
+    if (dr < 0) return da ? `Samme vægt, ${n} færre end sidst.` : `Same weight, ${n} fewer than last time.`;
+    return da ? 'Det samme som sidst. Gør det rent.' : 'Same as last time. Make it clean.';
+  }
+
+  /* ---------- Workout ---------- */
+  const ex = () => plan[S.ex];
+  const name = (e) => da ? e.da : e.en;
+  function setNum(el, text) {
+    if (el.textContent === text) return;
+    el.textContent = text;
+    el.animate([{ transform: 'translateY(.12em)', opacity: .35 }, { transform: 'none', opacity: 1 }], { duration: 180, easing: 'cubic-bezier(.22,.8,.24,1)' });
+  }
+  function renderWorkout() {
+    const e = ex(), n = S.log[S.ex].length, cur = Math.min(n, e.sets - 1);
+    $('wNameText').textContent = name(e);
+    $('wCount').textContent = T.of(S.ex + 1, plan.length);
+    $('wSet').textContent = T.set(cur + 1, e.sets);
+    const kg = fmt(S.kg);
+    $('kgBtn').className = 'num big' + (kg.length >= 5 ? ' l5' : kg.length === 4 ? ' l4' : kg.length === 3 ? ' l3' : '') + (sel === 'kg' ? ' sel' : '');
+    $('repBtn').className = 'num mid' + (sel === 'reps' ? ' sel' : '');
+    setNum($('kgVal'), kg); setNum($('repVal'), String(S.reps));
+    $('wCoach').textContent = coachLine(e, cur);
+    $('lastLabel').textContent = T.last;
+    const l = e.last[Math.min(cur, e.last.length - 1)];
+    $('lastVal').textContent = `${fmt(l[0])} kg × ${l[1]}`;
+    renderSeals();
+    const part = S.log.flat().length / TOTAL; // today's stroke: as long as the share of sets done
+    if (part !== inkPart) { inkPart = part; const c = $('wInk'); c.width = c.width; if (part > 0) drawStroke(c, 58, 1, Math.max(.07, part)); }
+  }
+  function renderSeals(stampIndex) {
+    const e = ex(), n = S.log[S.ex].length;
+    $('seals').innerHTML = Array.from({ length: e.sets }, (_, i) => i < n
+      ? `<li class="slot"><i class="seal${i === stampIndex ? ' new' : ''}">${i + 1}</i></li>`
+      : `<li class="slot${i === n ? ' now' : ''}">${i + 1}</li>`).join('');
+  }
+
+  function showWorkout() {
+    phone.dataset.screen = 'workout';
+    const k = $('wClip'); k.classList.remove('brush'); void k.offsetWidth; k.classList.add('brush');
+  }
+
+  let sel = null, selTimer = 0;
+  function select(which) {
+    sel = sel === which ? null : which;
+    clearTimeout(selTimer);
+    $('stepper').classList.toggle('on', !!sel);
+    $('kgBtn').classList.toggle('sel', sel === 'kg'); $('repBtn').classList.toggle('sel', sel === 'reps');
+    if (sel) { $('stepLabel').textContent = sel === 'kg' ? `${fmt(ex().step)} kg` : '1 rep'; selTimer = setTimeout(() => select(sel), 4000); }
+  }
+  function nudge(dir) {
+    if (!sel) return;
+    if (sel === 'kg') S.kg = Math.max(0, +(S.kg + dir * ex().step).toFixed(2)); else S.reps = Math.max(1, S.reps + dir);
+    buzz(6); renderWorkout();
+    clearTimeout(selTimer); selTimer = setTimeout(() => select(sel), 4000);
+  }
+
+  let busy = false;
+  function logSet() {
+    if (busy) return;
+    busy = true;
+    if (sel) select(sel);
+    const e = ex(), i = S.log[S.ex].length;
+    S.log[S.ex].push([S.kg, S.reps]);
+    renderSeals(i); buzz(14);
+    const lastOfEx = i + 1 >= e.sets, lastOfAll = lastOfEx && S.ex === plan.length - 1;
+    setTimeout(() => { busy = false; lastOfAll ? finish() : startRest(B || e.breaths, lastOfEx); }, 560);
+  }
+
+  /* ---------- Rest ---------- */
+  let restN = 0, restDone = 0, restT0 = 0, exhaleTimer = 0, secsTimer = 0, secsHide = 0, inked = false;
+  function pebbles() {
+    $('pebbles').innerHTML = '<i></i>'.repeat(restN);
+  }
+  function sync() { // breaths are counted from the clock, so a locked phone comes back in step
+    if (phone.dataset.screen !== 'rest') return;
+    restDone = Math.floor((performance.now() - restT0 + 500) / 10000);
+    if (restDone >= restN) return endRest(false);
+    [...$('pebbles').children].forEach((el, i) => el.classList.toggle('spent', i >= restN - restDone));
+    $('breathsLeft').textContent = T.breaths(restN - restDone, nextShort);
+  }
+  let nextShort = '';
+  function startRest(breaths, lastOfEx) {
+    const from = ex();
+    if (lastOfEx) { S.ex++; S.kg = ex().kg; S.reps = ex().reps; }
+    const e = ex(), k = S.log[S.ex].length + 1;
+    nextShort = lastOfEx ? name(e) : T.nset(k);
+    $('nextText').textContent = `${lastOfEx ? name(e) : T.set(k, e.sets)} · ${fmt(S.kg)} kg × ${S.reps}`;
+    restN = breaths; restDone = 0;
+    pebbles(); $('breathsLeft').textContent = T.breaths(restN, nextShort);
+    const r = $('rest');
+    r.classList.remove('go'); r.style.setProperty('--n', restN);
+    phone.dataset.screen = 'rest';
+    if (!inked) { drawInk($('disc'), 71, true); drawInk($('halo'), 97, false); inked = true; }
+    void r.offsetWidth; r.classList.add('go');
+    restT0 = performance.now();
+    renderWorkout();
+    breathHaptics();
+    void from;
+  }
+  function breathHaptics() { buzz(18); clearTimeout(exhaleTimer); exhaleTimer = setTimeout(() => buzz(8), 4000); }
+  function endRest(skipped) {
+    if (phone.dataset.screen !== 'rest') return;
+    clearTimeout(exhaleTimer); clearInterval(secsTimer); clearTimeout(secsHide);
+    $('secs').classList.remove('on');
+    if (!skipped) buzz([24, 90, 24]);
+    showWorkout();
+    setTimeout(() => { if (phone.dataset.screen !== 'rest') $('rest').classList.remove('go'); }, 400);
+  }
+  $('disc').addEventListener('animationiteration', (ev) => { if (ev.animationName === 'breathe') { sync(); breathHaptics(); } });
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) sync(); });
+  $('disc').addEventListener('animationend', (ev) => { if (ev.animationName === 'breathe') { restDone = restN; endRest(false); } });
+  function showSecs() {
+    const tick = () => { const s = Math.max(0, Math.ceil(restN * 10 - (performance.now() - restT0) / 1000)); $('secs').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`; };
+    tick(); $('secs').classList.add('on');
+    clearInterval(secsTimer); secsTimer = setInterval(tick, 250);
+    clearTimeout(secsHide); secsHide = setTimeout(() => { $('secs').classList.remove('on'); clearInterval(secsTimer); }, 3000);
+  }
+
+  /* ---------- Flow ---------- */
+  function begin() {
+    if (S.done) { S = fresh(); renderToday(); return; }
+    S.t0 = Date.now(); renderWorkout(); showWorkout();
+  }
+  function finish() {
+    closeSheet();
+    if (!S.log.flat().length) { S = fresh(); renderToday(); phone.dataset.screen = 'today'; return; }
+    S.mins = Math.max(1, Math.round((Date.now() - S.t0) / 60000)); S.done = true;
+    phone.classList.remove('intro');
+    renderToday(); phone.dataset.screen = 'today';
+    const row = $('inkToday'), s = $('tSeal');
+    row.classList.add('inking');
+    s.style.animationDelay = '1.25s'; s.classList.add('new');
+    setTimeout(() => buzz([20, 60, 30]), 1250);
+  }
+
+  /* ---------- Sheets ---------- */
+  function openSheet(html) { $('sheetBody').innerHTML = html; $('sheet').scrollTop = 0; $('sheet').style.transform = ''; phone.classList.add('sheet-open'); }
+  function closeSheet() { $('sheet').style.transform = ''; phone.classList.remove('sheet-open'); }
+  const bars = (vals, labels, hot) => `<div class="bars">${vals.map((v, i) => `<div class="${i === hot ? 'hot' : ''}"><i style="height:${Math.round(v * 100)}%"></i>${labels[i]}</div>`).join('')}</div>`;
+  const sheets = {
+    sleep: () => `<h2>${T.sleepT} · ${T.sleepV}</h2><p class="sub">${T.sleepS}</p>${bars([.62, .7, .55, .78, .66, .6, .86], T.days.map((_, i) => T.days[(new Date().getDay() + i) % 7]), 6)}`,
+    food: () => `<h2>${T.foodT}</h2><p class="sub">${T.foodS}</p><ol class="list"><li><span>${T.meal[0]}</span><b>${T.meal[1]}</b></li><li><span>${T.mealNext[0]}</span><span class="label">${T.mealNext[1]}</span></li></ol>`,
+    weight: () => `<h2>${T.weightT}</h2><p class="sub">${T.weightS}</p>${bars([.8, .78, .79, .74, .72, .7, .66], T.days.map((_, i) => T.days[(new Date().getDay() + i) % 7]), 6)}`,
+    last: () => { const e = ex(); return `<h2>${name(e)}</h2><p class="sub">${T.lastTitle} · ${T.lastDay}</p><ol class="list">${e.last.map((s, i) => `<li><span>${T.set(i + 1, e.last.length)}</span><b>${fmt(s[0])} kg × ${s[1]}</b></li>`).join('')}<li><span>${T.best}</span><b>${fmt(e.best[0])} kg × ${e.best[1]}</b></li></ol>`; },
+    session: () => `<h2>${T.session}</h2><p class="sub">Push · ${T.minutes(Math.max(1, Math.round((Date.now() - S.t0) / 60000)))}</p><ol class="list">${plan.map((e, i) => `<li class="${i === S.ex ? 'cur' : ''}"><span>${name(e)}</span><span class="marks">${Array.from({ length: e.sets }, (_, k) => `<i class="${k < S.log[i].length ? 'd' : ''}"></i>`).join('')}</span></li>`).join('')}</ol><button class="ghost" id="finishBtn">${T.finish}</button>`,
+  };
+
+  // Drag the sheet down by its handle; let go past a third and it closes.
+  (() => {
+    const sh = $('sheet'), g = $('grab'); let y0 = 0, dy = 0, drag = false;
+    g.addEventListener('pointerdown', (e) => { drag = true; y0 = e.clientY; dy = 0; sh.classList.add('drag'); g.setPointerCapture(e.pointerId); });
+    g.addEventListener('pointermove', (e) => { if (!drag) return; dy = Math.max(0, e.clientY - y0); sh.style.transform = `translateY(${dy}px)`; });
+    const up = () => { if (!drag) return; drag = false; sh.classList.remove('drag'); if (dy > sh.offsetHeight / 3 || dy < 4) closeSheet(); else sh.style.transform = ''; };
+    g.addEventListener('pointerup', up); g.addEventListener('pointercancel', up);
+  })();
+
+  /* ---------- Wiring ---------- */
+  $('beginBtn').addEventListener('click', begin);
+  $('facts').addEventListener('click', (e) => { const b = e.target.closest('[data-fact]'); if (b) openSheet(sheets[b.dataset.fact]()); });
+  $('wName').addEventListener('click', () => openSheet(sheets.session()));
+  $('lastBtn').addEventListener('click', () => openSheet(sheets.last()));
+  $('kgBtn').addEventListener('click', () => select('kg'));
+  $('repBtn').addEventListener('click', () => select('reps'));
+  $('minus').addEventListener('click', () => nudge(-1));
+  $('plus').addEventListener('click', () => nudge(1));
+  $('doneBtn').addEventListener('click', logSet);
+  $('skipBtn').addEventListener('click', () => endRest(true));
+  $('discBtn').addEventListener('click', showSecs);
+  $('scrim').addEventListener('click', closeSheet);
+  $('sheetBody').addEventListener('click', (e) => { if (e.target.id === 'finishBtn') finish(); });
+  addEventListener('keydown', (e) => { if (e.key === 'Escape') closeSheet(); });
+
+  $('doneBtn').textContent = T.done; $('rLabel').textContent = T.rest; $('cueIn').textContent = T.inn; $('cueOut').textContent = T.out;
+  $('nextLabel').textContent = T.next; $('skipBtn').textContent = T.skip; $('discBtn').setAttribute('aria-label', T.secsHint); $('secsHint').textContent = T.secsHint;
+  document.querySelectorAll('#repBtn .unit').forEach((u) => { u.textContent = T.reps; });
+
+  makeSealMask(); drawPaper(); renderToday(); drawStroke($('wTrace'), 58, 1); renderWorkout();
+  let rz = 0; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { drawPaper(); drawStrokes(); drawStroke($('wTrace'), 58, 1); inkPart = -1; renderWorkout(); }, 150); });
+  if (q.get('at')) { // test hook: ?at=workout | rest | done
+    phone.classList.remove('intro'); const at = q.get('at'); S.t0 = Date.now() - 23 * 60000;
+    if (at === 'workout' || at === 'rest') { S.log[0] = [[80, 8], [80, 8]]; renderWorkout(); showWorkout(); if (at === 'rest') { S.log[0].push([80, 8]); startRest(B || 6, false); } }
+    if (at === 'done') { plan.forEach((e, i) => { S.log[i] = Array.from({ length: e.sets }, () => [e.kg, e.reps]); }); finish(); }
+  }
+})();
+</script>
+</body>
+</html>
