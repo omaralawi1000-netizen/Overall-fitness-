@@ -127,6 +127,13 @@ svg { display: block; }
 .pane::after { content: ""; position: absolute; inset: -20% -60%; pointer-events: none;
   background: linear-gradient(112deg, transparent 38%, rgba(255, 255, 255, .5) 46%, rgba(255, 255, 255, .08) 53%, transparent 60%); }
 .pane.rest .tint { display: none; }
+.vlab { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%) rotate(180deg); writing-mode: vertical-rl; font-size: 11px; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+.pane.today .vlab { color: color-mix(in oklab, var(--c) 75%, var(--ink)); }
+.pane.today.fresh { background: linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(255, 255, 255, .55)); }
+.pane.today.fresh::before { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--c) 55%, transparent);
+  animation: breathe 2.8s ease-in-out infinite; }
+@keyframes breathe { 50% { opacity: .35; } }
 .pane.today { box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .95), 0 0 0 1.5px color-mix(in oklab, var(--c) 60%, transparent); }
 .pane.today::after { animation: shine 4.8s cubic-bezier(.4, 0, .2, 1) infinite; }
 .pane.lit::after { animation: shine 1.4s cubic-bezier(.3, 0, .2, 1) 1; }
@@ -157,16 +164,19 @@ svg { display: block; }
 .coachline svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
 .coachline .chev { margin-left: auto; color: var(--ink-3); font-size: 18px; line-height: 1; align-self: center; }
 .cta { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 58px; margin-top: 14px;
-  border-radius: 20px; background: var(--ink); color: #fff; font-size: 17px; font-weight: 580; letter-spacing: -.01em; overflow: hidden;
-  box-shadow: 0 14px 24px -14px rgba(20, 10, 30, .7), inset 0 1px 0 rgba(255, 255, 255, .16); }
-.cta .pip { width: 9px; height: 9px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 3px color-mix(in oklab, var(--c) 30%, transparent); }
+  border-radius: 20px; color: #fff; font-size: 17px; font-weight: 580; letter-spacing: -.01em; overflow: hidden;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--c) 58%, #2a1430), color-mix(in oklab, var(--c) 40%, #170a1c));
+  box-shadow: 0 16px 26px -14px color-mix(in oklab, var(--c) 60%, #1a0a20), inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 -1px 0 rgba(0, 0, 0, .2); }
+.cta .pip { width: 9px; height: 9px; border-radius: 50%; background: color-mix(in oklab, var(--c) 40%, #fff); box-shadow: 0 0 0 3px rgba(255, 255, 255, .18); }
+.cta.done .pip { background: var(--c); }
 .cta.done { background: rgba(255, 255, 255, .55); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .7); }
 
 .nums { margin-top: var(--gap); display: grid; grid-template-columns: repeat(3, 1fr); padding: 6px; gap: 0; }
 .num-b { padding: 10px 11px 12px; border-radius: 22px; text-align: left; min-width: 0; }
 .num-b + .num-b { box-shadow: inset 1px 0 0 var(--hair); border-radius: 0 22px 22px 0; }
-.num-b .lab { font-size: 12.5px; font-weight: 560; color: var(--ink-2); display: flex; justify-content: space-between; }
-.num-b .lab em { font-style: normal; color: var(--ink-3); font-weight: 600; }
+.num-b .lab { font-size: 12.5px; font-weight: 560; color: var(--ink-2); display: flex; justify-content: space-between; align-items: center; height: 22px; }
+.num-b .lab em { font-style: normal; color: var(--ink); font-weight: 600; font-size: 11.5px; height: 22px; padding: 0 7px; border-radius: 11px;
+  background: rgba(255, 255, 255, .7); display: grid; place-items: center; }
 .num-b .v { font-size: 24px; font-weight: 560; letter-spacing: -.03em; margin-top: 3px; display: flex; align-items: baseline; gap: 3px; white-space: nowrap; }
 .num-b .v small { font-size: 12.5px; font-weight: 500; color: var(--ink-3); letter-spacing: 0; }
 .bar { display: block; height: 4px; border-radius: 2px; background: rgba(30, 26, 37, .09); margin-top: 8px; overflow: hidden; }
@@ -185,14 +195,14 @@ svg { display: block; }
 .wmid { text-align: center; font-size: 14px; font-weight: 560; color: var(--ink-2); }
 .wmid b { display: block; font-size: 16px; color: var(--ink); font-weight: 600; letter-spacing: -.01em; }
 .pill { height: 46px; padding: 0 18px; border-radius: 23px; font-size: 15px; font-weight: 580; display: grid; place-items: center; }
-.exhead { display: flex; gap: 16px; align-items: flex-end; margin-top: 14px; }
-.extext { flex: 1; min-width: 0; padding-bottom: 6px; }
+.exhead { display: flex; gap: 16px; align-items: center; margin-top: 18px; }
+.extext { flex: 1; min-width: 0; }
 .exname { display: block; font-size: 32px; line-height: 1.06; font-weight: 600; letter-spacing: -.03em; margin-top: 8px; }
 .exname::after { content: " ›"; color: var(--ink-3); font-weight: 400; }
 .exhead .meta { margin-top: 8px; }
 .daypane { width: 70px; flex: none; text-align: center; }
 .daypane .window { padding: 5px; border-radius: 50% 50% 12px 12px / 30px 30px 12px 12px; }
-.daypane .glasses { display: block; height: 150px; border-radius: 50% 50% 8px 8px / 26px 26px 8px 8px; }
+.daypane .glasses { display: block; height: 118px; border-radius: 50% 50% 8px 8px / 26px 26px 8px 8px; }
 .daypane .pane { height: 100%; border-radius: 0; }
 .daypane .cap { font-size: 12px; font-weight: 560; color: var(--ink-2); margin-top: 7px; }
 .xfade { transition: opacity .26s ease, transform .5s var(--sp-calm); }
@@ -253,9 +263,10 @@ svg { display: block; }
 .dg > span > span { display: block; height: 1em; }
 
 /* sheets */
-.scrim { position: absolute; inset: 0; background: rgba(40, 28, 30, .2); opacity: 0; transition: opacity .34s ease; pointer-events: none; z-index: 20; }
+.scrim { position: absolute; inset: 0; background: rgba(252, 246, 238, .42); opacity: 0; transition: opacity .34s ease; pointer-events: none; z-index: 20; }
 .scrim.on { opacity: 1; pointer-events: auto; }
-.sheet { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 21; max-height: calc(100% - var(--top) - 40px); display: flex; flex-direction: column;
+.sheet { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 21; overflow: hidden;
+  box-shadow: 0 30px 60px -20px rgba(60, 40, 30, .35), 0 2px 8px rgba(60, 40, 30, .08); max-height: calc(100% - var(--top) - 40px); display: flex; flex-direction: column;
   border-radius: 32px; transform: translateY(calc(100% + 24px)); transition: transform var(--sp-sheet-t) var(--sp-sheet);
   --frost: rgba(255, 253, 250, .64); visibility: hidden; }
 .sheet.on { transform: none; visibility: visible; }
@@ -304,18 +315,24 @@ svg { display: block; }
 .chart svg { width: 100%; height: 120px; overflow: visible; }
 
 /* toast */
-.toast { position: absolute; left: 50%; top: calc(var(--top) + 62px); z-index: 30; display: flex; align-items: center; gap: 10px; min-height: 52px; max-width: calc(100% - 32px);
-  padding: 8px 8px 8px 16px; border-radius: 26px; transform: translate(-50%, -160%); transition: transform var(--sp-t) var(--sp);
+.toast { position: absolute; left: 50%; top: calc(var(--top) + 62px); z-index: 30; display: flex; align-items: center; gap: 12px; min-height: 56px; max-width: calc(100% - 32px);
+  padding: 8px 18px 8px 12px; border-radius: 26px; transform: translate(-50%, -160%); transition: transform var(--sp-t) var(--sp);
   font-size: 14.5px; font-weight: 540; visibility: hidden; white-space: nowrap; --frost: rgba(255, 253, 250, .72); }
 .toast.on { transform: translate(-50%, 0); visibility: visible; }
+.toast.low { transform: translate(-50%, 26px) scale(.94); opacity: 0; transition: transform var(--sp-t) var(--sp), opacity .2s ease; }
+.toast.low.on { transform: translate(-50%, 0); opacity: 1; }
+.toast:has(button:not([hidden])) { padding-right: 8px; }
 .toast .tx { overflow: hidden; text-overflow: ellipsis; }
 .toast .tx small { display: block; font-size: 12.5px; color: var(--ink-2); font-weight: 500; }
 .toast button { height: 36px; padding: 0 14px; border-radius: 18px; background: rgba(30, 26, 37, .08); font-weight: 600; font-size: 13.5px; flex: none; }
-.toast .gem { width: 26px; height: 26px; border-radius: 8px; flex: none; background: linear-gradient(150deg, #FFF1C8, var(--gold) 55%, #A86E12);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .8); }
-.toast:not(.gold) .gem { background: linear-gradient(150deg, color-mix(in oklab, var(--c) 45%, #fff), var(--c)); }
-.toast.gold::before { content: ""; position: absolute; inset: -1.5px; border-radius: inherit; z-index: -1;
-  background: conic-gradient(from 0deg, #FFD978, #F7A6C4, #A9C3FF, #9EF0D8, #FFD978); }
+.toast .gem { width: 32px; height: 32px; flex: none; clip-path: polygon(50% 0, 100% 34%, 80% 100%, 20% 100%, 0 34%);
+  background: conic-gradient(from 200deg at 50% 42%, color-mix(in oklab, var(--c) 40%, #fff), var(--c), color-mix(in oklab, var(--c) 70%, #2a1030), color-mix(in oklab, var(--c) 55%, #fff), var(--c), color-mix(in oklab, var(--c) 40%, #fff)); }
+.toast .gem i { display: block; width: 100%; height: 100%; background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, .85) 48%, transparent 60%); transform: translateX(-100%); }
+.toast.gold .gem { background: conic-gradient(from 200deg at 50% 42%, #FFF3CF, #E9B248, #9A6512, #F6D58A, #C98A22, #FFF3CF); }
+.toast.gold.on .gem i { animation: glint 1.1s .25s cubic-bezier(.3, 0, .2, 1) both; }
+@keyframes glint { to { transform: translateX(100%); } }
+.toast.gold { box-shadow: 0 0 0 1px rgba(223, 164, 58, .75), 0 18px 34px -16px rgba(150, 100, 20, .5); }
+.toast.gold .tx small { color: #8A5A10; }
 .toast.plain .gem { display: none; }
 
 .flyer { position: absolute; z-index: 15; pointer-events: none; border-radius: 4px; overflow: hidden;
@@ -324,7 +341,7 @@ svg { display: block; }
 /* shorter screens (a browser with its address bar): keep Log on screen without scrolling */
 @media (max-height: 800px) {
   .exhead { margin-top: 8px; }
-  .daypane .glasses { height: 112px; }
+  .daypane .glasses { height: 96px; }
   .sets { margin-top: 10px; min-height: 172px; padding: 6px; }
   .srow { height: 40px; }
   .coachsay { min-height: 0; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
@@ -385,13 +402,13 @@ svg { display: block; }
 
     <section class="glass nums fade" id="nums">
       <button class="num-b press" id="nProtein"><span class="lab"><span data-t="protein"></span></span><span class="v"><span class="roll" id="vProt"></span><small>/ 150 g</small></span><span class="bar"><i id="bProt"></i></span></button>
-      <button class="num-b press" id="nWater"><span class="lab"><span data-t="water"></span><em>+</em></span><span class="v"><span class="roll" id="vWater"></span><small>/ 2,5 L</small></span><span class="bar"><i id="bWater" style="background:var(--pull)"></i></span></button>
-      <button class="num-b press" id="nSleep"><span class="lab"><span data-t="sleep"></span></span><span class="v"><span id="vSleep"></span><small>h</small></span><span class="bar"><i style="background:var(--wrestle);transform:scaleX(.92)"></i></span></button>
+      <button class="num-b press" id="nWater"><span class="lab"><span data-t="water"></span><em>+250</em></span><span class="v"><span class="roll" id="vWater"></span><small>/ 2,5 L</small></span><span class="bar"><i id="bWater" style="background:var(--pull)"></i></span></button>
+      <button class="num-b press" id="nSleep"><span class="lab"><span data-t="sleep"></span></span><span class="v"><span class="roll" id="vSleep"></span><small>h</small></span><span class="bar"><i style="background:var(--wrestle);transform:scaleX(.92)"></i></span></button>
     </section>
 
     <div class="spacer"></div>
     <nav class="glass tabs" id="tabs">
-      <button class="tab on" data-tab="today"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 20V11a7 7 0 0 1 14 0v9z"/><path d="M12 4.5V20M5.5 13h13"/></svg><span data-t="tToday"></span></button>
+      <button class="tab on" data-tab="today"><svg viewBox="0 0 20 20"><use href="#glyph"/></svg><span data-t="tToday"></span></button>
       <button class="tab" data-tab="train"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12h18M6 8v8M9 6v12M15 6v12M18 8v8"/></svg><span data-t="tTrain"></span></button>
       <button class="tab" data-tab="food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 21c4.4 0 7-3.2 7-7.5S15.5 6 12 6s-7 3.2-7 7.5S7.6 21 12 21z"/><path d="M12 6c0-1.6.7-2.8 2.2-3.4"/></svg><span data-t="tFood"></span></button>
       <button class="tab" data-tab="health"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg><span data-t="tHealth"></span></button>
@@ -427,7 +444,7 @@ svg { display: block; }
           <div class="frow"><span class="eyebrow" id="setLabel"></span><button class="coachmini press" id="wCoachBtn"><svg><use href="#glyph"/></svg><span data-t="askCoach"></span></button></div>
           <p class="coachsay" id="coachSay"></p>
           <div class="stp" data-k="w"><button class="minus" aria-label="minus">−</button><div class="val"><span class="big roll" id="vW"></span><span class="unit">kg</span></div><button class="plus" aria-label="plus">+</button></div>
-          <div class="stp" data-k="r"><button class="minus" aria-label="minus">−</button><div class="val"><span class="big roll" id="vR"></span><span class="unit">reps</span></div><button class="plus" aria-label="plus">+</button></div>
+          <div class="stp" data-k="r"><button class="minus" aria-label="minus">−</button><div class="val"><span class="big roll" id="vR"></span><span class="unit" data-t="repsU"></span></div><button class="plus" aria-label="plus">+</button></div>
           <button class="cta press" id="logBtn"><span class="pip"></span><span data-t="logSet"></span></button>
         </div>
         <div class="face away" id="faceRest" aria-hidden="true">
@@ -444,7 +461,7 @@ svg { display: block; }
 
   <div class="scrim" id="scrim"></div>
   <section class="sheet glass" id="sheet" role="dialog" aria-modal="true"><div class="grab" id="grab"></div><div class="sbody" id="sbody"></div></section>
-  <div class="toast glass" id="toast" role="status"><span class="gem"></span><span class="tx" id="toastTx"></span><button id="toastBtn" hidden></button></div>
+  <div class="toast glass" id="toast" role="status"><span class="gem"><i></i></span><span class="tx" id="toastTx"></span><button id="toastBtn" hidden></button></div>
 </div>
 
 <script>
@@ -480,7 +497,7 @@ const T = {
   en: {
     hello: 'Good morning, Omar', protein: 'Protein', water: 'Water', sleep: 'Sleep',
     tToday: 'Today', tTrain: 'Train', tFood: 'Food', tHealth: 'Health',
-    finish: 'Finish', askCoach: 'Coach', logSet: 'Log set', rest: 'Rest', undoSet: 'Undo set', skip: 'Skip rest',
+    repsU: 'reps', finish: 'Finish', askCoach: 'Coach', logSet: 'Log set', rest: 'Rest', undoSet: 'Undo set', skip: 'Skip rest',
     days: ['M', 'T', 'W', 'T', 'F', 'S', 'S'], dayNames: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
     months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
     types: { push: 'Push', pull: 'Pull', legs: 'Legs', wrestle: 'Wrestling', rest: 'Rest' },
@@ -516,14 +533,14 @@ const T = {
     plan: [['Sun', 'Push', 'today'], ['Mon', 'Pull'], ['Tue', 'Legs'], ['Wed', 'Wrestling'], ['Thu', 'Rest']],
     exHist: 'Your last sessions', exChart: 'Estimated 1-rep max, last 8 sessions',
     finTitle: 'Finish Push?', finLeft: n => `${n} sets not logged. They stay in the plan for next time.`, finAll: 'Every set is logged.',
-    hold: 'Hold to finish', doneTitle: 'Push, done.', doneLead: 'Today\'s pane is in your window.',
+    hold: 'Hold to finish', doneTitle: 'Push, done.', doneLead: n => `Sunday is filled in. ${n} sessions this week.`, setsBest: (n, w, r) => `${n} ${n === 1 ? 'set' : 'sets'} · best ${w} × ${r}`,
     sTime: 'Time', sSets: 'Sets', sLifted: 'Lifted', sBests: 'Bests', backToday: 'Back to Today', restOver: 'Rest is over',
     keepGoing: 'Keep going'
   },
   da: {
     hello: 'Godmorgen, Omar', protein: 'Protein', water: 'Vand', sleep: 'Søvn',
     tToday: 'I dag', tTrain: 'Træning', tFood: 'Mad', tHealth: 'Helbred',
-    finish: 'Afslut', askCoach: 'Coach', logSet: 'Log sæt', rest: 'Pause', undoSet: 'Fortryd', skip: 'Spring pausen over',
+    repsU: 'gent.', finish: 'Afslut', askCoach: 'Coach', logSet: 'Log sæt', rest: 'Pause', undoSet: 'Fortryd', skip: 'Spring pausen over',
     days: ['M', 'T', 'O', 'T', 'F', 'L', 'S'], dayNames: ['mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag', 'søndag'],
     months: ['januar', 'februar', 'marts', 'april', 'maj', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'december'],
     types: { push: 'Push', pull: 'Pull', legs: 'Ben', wrestle: 'Brydning', rest: 'Hvile' },
@@ -559,7 +576,7 @@ const T = {
     plan: [['Søn', 'Push', 'today'], ['Man', 'Pull'], ['Tir', 'Ben'], ['Ons', 'Brydning'], ['Tor', 'Hvile']],
     exHist: 'Dine sidste gange', exChart: 'Anslået 1RM, sidste 8 gange',
     finTitle: 'Afslut Push?', finLeft: n => `${n} sæt ikke logget. De bliver i planen til næste gang.`, finAll: 'Alle sæt er logget.',
-    hold: 'Hold for at afslutte', doneTitle: 'Push, klaret.', doneLead: 'Dagens rude sidder i dit vindue.',
+    hold: 'Hold for at afslutte', doneTitle: 'Push, klaret.', doneLead: n => `Søndag er fyldt ud. ${n} træninger i denne uge.`, setsBest: (n, w, r) => `${n} sæt · bedst ${w} × ${r}`,
     sTime: 'Tid', sSets: 'Sæt', sLifted: 'Løftet', sBests: 'Rekorder', backToday: 'Tilbage til I dag', restOver: 'Pausen er slut',
     keepGoing: 'Fortsæt'
   }
@@ -739,9 +756,7 @@ function paintWall() {
 }
 let pendingWall = null;
 function drawWall(fadeIn) {
-  const t0 = performance.now();
   const cv = pendingWall || paintWall(); pendingWall = null;
-  window.__wallMs = Math.round(performance.now() - t0);
   const old = wallEl.querySelector('canvas');
   if (!old || !fadeIn || reduce) { wallEl.textContent = ''; wallEl.appendChild(cv); return; }
   cv.className = 'next'; wallEl.appendChild(cv);
@@ -765,8 +780,9 @@ function renderWeek() {
   panes.innerHTML = WEEK.map((d, i) => {
     const today = d.t === 'today';
     const c = today ? 'push' : d.t;
-    return `<button class="pane${d.t === 'rest' ? ' rest' : ''}${today ? ' today' : ''}" data-i="${i}" style="--c:var(--${c})" aria-label="${t('dayNames')[i]}">` +
-      (today && !S.finished ? `<div class="bands">${bandsHTML()}</div>` : `<div class="tint"></div>`) + `</button>`;
+    const fresh = today && !S.finished && !S.running && !doneCount();
+    return `<button class="pane${d.t === 'rest' ? ' rest' : ''}${today ? ' today' : ''}${fresh ? ' fresh' : ''}" data-i="${i}" style="--c:var(--${c})" aria-label="${t('dayNames')[i]}">` +
+      (fresh ? `<span class="vlab">${t('tToday')}</span>` : today && !S.finished ? `<div class="bands">${bandsHTML()}</div>` : d.t === 'rest' ? `<span class="vlab">${t('types').rest}</span>` : `<div class="tint"></div>`) + `</button>`;
   }).join('');
   $('#weekDays').innerHTML = t('days').map((d, i) => `<button class="${i === TODAY ? 'on' : ''}" data-i="${i}">${d}</button>`).join('');
   const done = WEEK.filter(d => d.t !== 'rest' && d.t !== 'today').length + (S.finished ? 1 : 0);
@@ -788,7 +804,7 @@ function renderToday() {
   $('#startTx').textContent = S.finished ? t('done')(doneCount(), S.finMin) : (doneCount() ? t('resume')(doneCount(), total()) : t('start'));
   roll($('#vProt'), Math.round(S.protein), false);
   roll($('#vWater'), fmtL(S.water), false);
-  $('#vSleep').textContent = '7:40';
+  roll($('#vSleep'), '7:40', false);
   $('#bProt').style.transform = `scaleX(${Math.min(1, S.protein / 150)})`;
   $('#bWater').style.transform = `scaleX(${Math.min(1, S.water / 2.5)})`;
   $$('.num-b small')[1].textContent = lang === 'da' ? '/ 2,5 L' : '/ 2.5 L';
@@ -799,6 +815,10 @@ let toastTimer = 0;
 function toast(html, { gold = false, plain = false, action = null, ms = 2600 } = {}) {
   const el = $('#toast');
   el.classList.toggle('gold', gold); el.classList.toggle('plain', plain);
+  // in the workout, pop-ups rise from the control card, where the tap happened, instead of covering the header
+  const low = S.screen === 'workout' && !sheet.classList.contains('on');
+  el.classList.toggle('low', low);
+  el.style.top = low ? ($('#ctrl').getBoundingClientRect().top - $('#app').getBoundingClientRect().top - 68) + 'px' : '';
   $('#toastTx').innerHTML = html;
   const b = $('#toastBtn');
   if (action) { b.hidden = false; b.textContent = action.label; b.onclick = () => { action.fn(); hideToast(); }; } else b.hidden = true;
@@ -1185,13 +1205,18 @@ function commitFinish() {
   setTimeout(() => { if (S.finished) pendingWall = paintWall(); }, 1300); // paint the new light while the summary is read
   if (navigator.vibrate) try { navigator.vibrate([10, 30, 10, 30, 30]); } catch (_) {}
   sbody.innerHTML = `<div class="fin-hero"><div class="daypane"><div class="window"><div class="glasses"><div class="pane today lit" style="--c:var(--push)"><div class="bands">${bandsHTML()}</div><div class="tint" id="finTint"></div></div></div></div></div>
-    <div><h3>${t('doneTitle')}</h3><p class="lead" style="margin-top:6px">${t('doneLead')}</p></div></div>
-    <div class="stats"><div class="stat"><div class="lab">${t('sTime')}</div><div class="v">${st.min}<small style="font-size:12px"> min</small></div></div>
+    <div><h3>${t('doneTitle')}</h3><p class="lead" style="margin-top:6px">${t('doneLead')(WEEK.filter(d => d.t !== 'rest' && d.t !== 'today').length + 1)}</p></div></div>
+    <div class="stats" style="grid-template-columns:1fr 1fr"><div class="stat"><div class="lab">${t('sTime')}</div><div class="v">${st.min}<small style="font-size:12px"> min</small></div></div>
     <div class="stat"><div class="lab">${t('sSets')}</div><div class="v">${doneCount()}</div></div>
-    <div class="stat"><div class="lab">${t('sLifted')}</div><div class="v">${(st.kg / 1000).toFixed(1).replace('.', lang === 'da' ? ',' : '.')}<small style="font-size:12px"> t</small></div></div>
+    <div class="stat"><div class="lab">${t('sLifted')}</div><div class="v">${st.kg.toLocaleString(lang === 'da' ? 'da-DK' : 'en-GB')}<small style="font-size:12px"> kg</small></div></div>
     <div class="stat"><div class="lab">${t('sBests')}</div><div class="v">${st.bests}</div></div></div>
-    <div class="list" style="margin-top:12px">${S.plan.map((x, i) => { const l = S.logs[i] || []; if (!l.length) return ''; const top = l.reduce((a, s) => e1(s.w, s.r) > e1(a.w, a.r) ? s : a); return `<div class="li"><span class="grow">${x.n[lang]}<div class="sub">${l.length} × · ${fmt(top.w)} × ${top.r}</div></span>${l.some(s => s.best) ? '<span class="tick gold"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 7.4l2.6 2.6L11 4.4"/></svg></span>' : ''}</div>`; }).join('')}</div>
+    <div class="list" style="margin-top:12px">${S.plan.map((x, i) => { const l = S.logs[i] || []; if (!l.length) return ''; const top = l.reduce((a, s) => e1(s.w, s.r) > e1(a.w, a.r) ? s : a); return `<div class="li"><span class="grow">${x.n[lang]}<div class="sub">${t('setsBest')(l.length, fmt(top.w), top.r)}</div></span>${l.some(s => s.best) ? '<span class="tick gold"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 7.4l2.6 2.6L11 4.4"/></svg></span>' : ''}</div>`; }).join('')}</div>
     <button class="cta press" data-back="1" style="margin-top:16px">${t('backToday')}</button>`;
+  if (!reduce) {
+    const sw = document.createElement('div'); sw.className = 'sweep' + (st.bests ? ' gold' : ''); sheet.appendChild(sw);
+    sw.animate([{ opacity: 1, transform: 'translateX(-110%) skewX(-18deg)' }, { opacity: 1, offset: .75 }, { opacity: 0, transform: 'translateX(200%) skewX(-18deg)' }],
+      { duration: 1300, delay: 700, easing: 'cubic-bezier(.3,.1,.2,1)', fill: 'backwards' }).finished.then(() => sw.remove());
+  }
   if (!reduce) $('#finTint').animate([{ transform: 'scaleY(0)' }, { transform: 'none' }], { duration: 1000, delay: 250, easing: SP.calm.ease, fill: 'backwards' });
   renderPane();
 }
