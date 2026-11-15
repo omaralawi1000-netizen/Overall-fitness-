@@ -168,6 +168,8 @@ button.item:active{transform:scale(.97);background:rgba(255,255,255,.85)}
 #pr .n{font-size:30px;font-weight:800;letter-spacing:-.03em;margin-top:8px}
 #pr .d{font-size:15px;font-weight:500;color:rgba(255,255,255,.78);margin-top:6px;line-height:1.4}
 #pr .wcta{margin-top:auto}
+/* shorter phones and landscape: a smaller stage, and the workout can scroll so Log is always reachable */
+@media (max-height:760px){#workout{overflow-y:auto}.stage{height:410px}#plateHero{height:240px}.controls{top:240px}.dialwrap{width:250px;height:250px;margin-top:12px}.dial .cap{inset:62px}#todayHero{height:240px}.title{font-size:38px}.wcta{flex:0 0 auto;margin-top:16px}}
 @media (prefers-reduced-motion:reduce){*{transition-duration:1ms!important;animation-duration:1ms!important}}
 </style>
 </head>
@@ -354,7 +356,7 @@ function arcTorus(R,r,T=240,N=28){
 }
 
 /* ---------- Today: three ceramic rings that settle like a spun disc ---------- */
-const today={scene:new THREE.Scene(),cam:new THREE.PerspectiveCamera(27,1.28,.1,60),rings:[],busy:0};
+const today={scene:new THREE.Scene(),cam:new THREE.PerspectiveCamera(27,1.28,.1,60),rings:[]};
 {
   const {scene,cam}=today; cam.position.set(0,5.3,6.7); cam.lookAt(0,-.05,0);
   lights(scene);
@@ -383,7 +385,7 @@ function setGlaze(ring){
   const u=Math.PI/2-(n/T)*Math.PI*2; // end cap follows the glaze edge (local XY, then turned flat)
   ring.capB.position.set(ring.R*Math.cos(u),0,-ring.R*Math.sin(u));
 }
-function wobble(ring,amount){ring.theta=Math.max(ring.theta,amount);ring.age=0;today.busy=1}
+function wobble(ring,amount){ring.theta=Math.max(ring.theta,amount);ring.age=0;if(cur===today)kick()}
 function spinIn(){today.rings.forEach((g,k)=>{g.theta=.42-k*.05;g.age=-k*.12;g.phi=k*2.3})}
 today.update=dt=>{
   let busy=false;
@@ -640,7 +642,7 @@ function sheetFor(k,src){
 document.addEventListener('click',e=>{const o=e.target.closest('[data-open]');if(o){sheetFor(o.dataset.open,o)}
   const f=e.target.closest('[data-food]');if(f){const [name,p]=t('foods')[+f.dataset.food];S.protein+=p;closeSheet();setTimeout(()=>{paintToday();wobble(today.rings[1],.09)},120);
     toast(`${t('added')} ${name.split(',')[0]} · +${p} g`,()=>{S.protein-=p;paintToday()})}
-  if(e.target.id==='sheetStart'){sheetOn=false;$('#sheet').classList.remove('on');$('#scrim').classList.remove('on');goWorkout(e.target)}});
+  if(e.target.id==='sheetStart'){sheetSrc&&sheetSrc.getAnimations().forEach(a=>a.cancel());sheetSrc=null;sheetOn=false;$('#sheet').classList.remove('on');$('#scrim').classList.remove('on');goWorkout(e.target)}});
 
 /* taps on the rings: flick one, open its sheet */
 {const ray=new THREE.Raycaster(),v=new THREE.Vector2();let down=null;
@@ -648,7 +650,7 @@ document.addEventListener('click',e=>{const o=e.target.closest('[data-open]');if
  $('#todayHero').addEventListener('pointerup',e=>{if(!down||cur!==today)return;if(Math.hypot(e.clientX-down.x,e.clientY-down.y)>8)return;down=null;
   const r=renderer.domElement.getBoundingClientRect();v.set((e.clientX-r.left)/r.width*2-1,-(e.clientY-r.top)/r.height*2+1);ray.setFromCamera(v,today.cam);
   const hit=ray.intersectObjects(today.rings.map(g=>g.base),false)[0];if(!hit)return;
-  const g=today.rings.find(x=>x.base===hit.object);g.lift.v=1.6;wobble(g,.07);setTimeout(()=>sheetFor(g.key,document.querySelector(`.tile[data-open=${g.key}]`)),180)});}
+  const g=today.rings.find(x=>x.base===hit.object);g.lift.v=1.6;wobble(g,.07);kick();setTimeout(()=>sheetFor(g.key,document.querySelector(`.tile[data-open=${g.key}]`)),180)});}
 
 let toastTimer=0,undoFn=null;
 function toast(text,undo){$('#toastText').textContent=text;undoFn=undo;$('#toastUndo').style.display=undo?'':'none';$('#toast').classList.add('on');clearTimeout(toastTimer);toastTimer=setTimeout(()=>$('#toast').classList.remove('on'),4200)}
@@ -703,6 +705,7 @@ const haptic=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
 $('#logBtn').onclick=()=>{
   if(S.resting){endRest(true);return}
   const l=S.lifts[S.li];
+  if(S.si>=l.sets.length){finish($('#logBtn'));return} // every planned set is in: Log only reopens the summary
   const isPR=e1(S.w,S.r)>e1(l.best[0],l.best[1])+.01;
   const old=[...l.best];
   S.logged[S.li].push([S.w,S.r,isPR]);
@@ -803,7 +806,7 @@ function finish(src){src=src||$('#logBtn');
   openSheet(`<h2>${t('finT')}</h2><p class="note">${t('finN')}</p><div class="stats"><div class="stat"><b class="num">${min}</b><span>${t('min')}</span></div><div class="stat"><b class="num">${vol.toLocaleString(L==='da'?'da-DK':'en-GB')}</b><span>${t('kgMoved')}</span></div><div class="stat"><b class="num">${S.records}</b><span>${t('records')}</span></div></div>
   <div class="list">${S.lifts.map((l,i)=>`<div class="item"><span>${t('lifts')[l.id]}</span><span class="r num">${S.logged[i].map(s=>fmt(s[0])+'×'+s[1]).join('  ')||t('notDone')}</span></div>`).join('')}</div><button class="cta" id="saveW">${t('save')}</button>`,src);
 }
-document.addEventListener('click',e=>{if(e.target.id!=='saveW')return;sheetSrc=null;closeSheet();S.done=true;S.active=false;S.endAt=Date.now();
+document.addEventListener('click',e=>{if(e.target.id!=='saveW')return;sheetSrc&&sheetSrc.getAnimations().forEach(a=>a.cancel());sheetSrc=null;closeSheet();S.done=true;S.active=false;S.endAt=Date.now();
   setTimeout(()=>{goToday();setTimeout(()=>{wobble(today.rings[0],.16)},SP.soft.ms*.6)},200)});
 
 /* session clock from wall time (a locked phone throttles timers) */
