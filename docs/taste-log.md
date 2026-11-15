@@ -7,6 +7,11 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 - **After every test, prototype or rejection:** add a dated entry. His words go in quotes. Our reading of them is marked "Reading".
 - **Rounds alternate:** a wide search (Sonnet), then one small polished slice (Opus).
 
+## 15 Nov 2026, 05:53: the workout screen gets its own design
+His words: "Do not replicate the today screen to the workout screen. The today screen is this beautiful for a reason. The workout screen is something else."
+Reading: Today is the calm photo-wallpaper screen. The workout has a different job (lift, tap, rest), so it must not wear Today's look (photo, frost, thin numbers, pills). Rule for every build: one look per job. Wallpaper and frost belong to Today and the moments that reward you (record, finish); the workout is its own matte, high-contrast world with big heavy numbers and big thumb keys.
+Built in `/_prototypes/summit-live/`: the workout is matte slate with squares for sets, chunky kg and reps slabs, rectangle keys and a chalk Log key. Today stays the sky.
+
 ## RETIRED (9 Nov 2026, 21:58): the "old Aven ingredients" look
 Asked whether design threads should keep using it, Omar said: "No, delete that." The look (near-black room, one soft glow, clear glass, italic serif names, thin numbers, one orange thing to tap, the orb) is **not his taste anymore and not a rule**. Never feed it to a design thread, a judge or a prototype brief. Everything below that praises it is history only. Italic serif titles, which he picked in the taste test, are not part of this retirement; they stand or fall on his latest words.
 
