@@ -16,10 +16,10 @@
   --paper: #EDEFF3;
   --paper-veil: rgba(237, 239, 243, .74);
   --ink: #14162B;
-  --ink-2: rgba(20, 22, 43, .66);
-  --ink-3: rgba(20, 22, 43, .44);
+  --ink-2: rgba(20, 22, 43, .74);
+  --ink-3: rgba(20, 22, 43, .58);
   --line: rgba(20, 22, 43, .09);
-  --card: rgba(255, 255, 255, .62);
+  --card: rgba(255, 255, 255, .44);
   --frost: rgba(255, 255, 255, .46);
   --edge: inset 0 0 0 1px rgba(255, 255, 255, .72), 0 10px 30px -18px rgba(20, 22, 43, .35);
   --voice: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
@@ -44,7 +44,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
 
 /* ---------- the light ---------- */
 .light { position: absolute; inset: 0 0 calc(-1 * env(safe-area-inset-bottom, 0px)) 0; overflow: hidden; z-index: -1; }
-.glow { position: absolute; inset: 0; transform: translate3d(0, 44%, 0); will-change: transform; }
+.glow { position: absolute; inset: 0; transform: translate3d(0, 100%, 0); will-change: transform; }
 /* moods are stacked: the workout's blue fades in over the morning, and a record's gold rises through the blue from
    below instead of fading, because blue and gold mixed on the way would pass through grey */
 .glow canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -82,18 +82,22 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
 .thread { display: flex; flex-direction: column; gap: 14px; }
 .c { margin: 0; max-width: 31ch; font-size: 19px; line-height: 26px; font-weight: 500; letter-spacing: -.008em; text-wrap: pretty; }
 .c.big { max-width: none; font-size: 31px; line-height: 35px; font-weight: 650; letter-spacing: -.028em; text-wrap: balance; margin-top: 6px; }
+.c.hero:first-child { margin-top: 2px; }
 .c.hero { font-size: 37px; line-height: 40px; letter-spacing: -.032em; }
+.c.mid { max-width: none; font-size: 25px; line-height: 30px; font-weight: 600; letter-spacing: -.02em; text-wrap: balance; }
 .c.soft { font-size: 16px; line-height: 23px; color: var(--ink-2); }
 .c .w { display: inline-block; animation: word .44s var(--ease) both; animation-delay: calc(var(--d, 0ms) + var(--i) * 26ms); }
 @keyframes word { from { opacity: 0; transform: translate3d(0, 7px, 0); } }
 .stamp { font-size: 13px; font-weight: 500; color: var(--ink-3); margin: 10px 0 -6px; }
+.stamp.more { align-self: flex-start; min-height: 44px; margin: -6px 0 -16px; text-decoration: underline; text-underline-offset: 3px; }
+.fold { display: flex; flex-direction: column; gap: 14px; }
 .me { align-self: flex-end; max-width: 80%; padding: 9px 15px; border-radius: 20px; font-size: 15px; line-height: 20px; font-weight: 600;
   box-shadow: inset 0 0 0 1.5px rgba(20, 22, 43, .16); transform-origin: 100% 50%; }
 .me.set { background: var(--ink); color: #fff; box-shadow: none; padding: 10px 16px 10px 12px; font-size: 17px; font-weight: 650; display: flex; align-items: center; gap: 10px; transform-origin: 0 0; }
 .me.set .n { font-size: 12px; font-weight: 700; width: 22px; height: 22px; border-radius: 50%; background: rgba(255, 255, 255, .16); display: grid; place-items: center; }
 .me.set svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; opacity: .8; }
 .card { border-radius: 22px; background: var(--card); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .8); overflow: hidden; }
-.row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 60px; padding: 10px 14px 10px 18px; text-align: left; transition: transform .12s var(--ease); }
+.row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 16px 8px 18px; text-align: left; transition: transform .12s var(--ease); }
 .row + .row { box-shadow: 0 -1px 0 var(--line); }
 .row .k { display: block; font-size: 13px; font-weight: 550; color: var(--ink-3); }
 .row .v { display: block; font-size: 16px; font-weight: 600; letter-spacing: -.01em; margin-top: 1px; }
@@ -111,6 +115,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
 .offer .swap s { text-decoration: none; color: var(--ink-3); font-weight: 550; }
 .offer .swap svg { width: 20px; height: 20px; stroke: var(--ink-3); fill: none; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; align-self: center; flex: none; }
 .offer .acts, .opts { display: flex; gap: 8px; flex-wrap: wrap; }
+.card .pillbtn, .opts .pillbtn:not(.ink) { background: rgba(255, 255, 255, .92); box-shadow: 0 1px 2px rgba(20, 22, 43, .1); }
 .offer .done { display: flex; align-items: center; justify-content: space-between; gap: 12px; font-size: 16px; font-weight: 600; }
 .sum { padding: 6px 18px; }
 .sum div { padding: 11px 0; font-size: 15px; line-height: 21px; }
@@ -141,19 +146,20 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
 .live .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .live .name { font-size: 17px; font-weight: 700; letter-spacing: -.012em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .live .where { font-size: 13px; font-weight: 550; color: var(--ink-2); white-space: nowrap; }
-.nums { display: flex; align-items: baseline; gap: 6px; margin: 4px -6px 0; height: 72px; }
+.nums { display: flex; align-items: baseline; gap: 8px; margin: 4px -4px 0; height: 72px; }
 .nums .pillbtn { align-self: center; margin-right: 6px; }
-.num { display: inline-flex; align-items: baseline; gap: 5px; padding: 0 6px; border-radius: 16px; height: 68px; transition: transform .12s var(--ease), background-color .15s linear; }
-.num b { font-size: 58px; line-height: 68px; font-weight: 700; letter-spacing: -.04em; }
+.num { display: inline-flex; align-items: baseline; gap: 5px; padding: 0 10px; border-radius: 16px; height: 68px; transition: transform .12s var(--ease), background-color .15s linear; }
+.num b { font-size: 56px; line-height: 68px; font-weight: 700; letter-spacing: -.04em; }
 .num i { font-style: normal; font-size: 17px; font-weight: 600; color: var(--ink-2); }
-.num.on { background: rgba(255, 255, 255, .7); }
+.num { background: rgba(255, 255, 255, .34); }
+.num.on { background: rgba(255, 255, 255, .85); box-shadow: inset 0 0 0 1.5px var(--ink); }
 .nums .x { font-size: 24px; font-weight: 500; color: var(--ink-3); }
 .clock { font-size: 58px; line-height: 68px; font-weight: 700; letter-spacing: -.04em; padding-left: 6px; }
 .under { height: 44px; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 550; color: var(--ink-2); }
 .under .sp, .nums .sp { flex: 1; }
 .under .lab { flex: 1; text-align: center; color: var(--ink); font-weight: 600; }
 .under .pillbtn { min-width: 76px; justify-content: center; }
-.go { margin-top: auto; height: 56px; border-radius: 28px; background: var(--ink); color: #fff; font-size: 17px; font-weight: 650; letter-spacing: -.01em; transition: transform .12s var(--ease); }
+.go { margin-top: auto; flex: none; height: 56px; border-radius: 28px; background: var(--ink); color: #fff; font-size: 17px; font-weight: 650; letter-spacing: -.01em; transition: transform .12s var(--ease); }
 .go.quiet { background: rgba(255, 255, 255, .7); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .8); }
 .live .in { display: contents; }
 .swapin > * { animation: swapin .22s var(--ease) both; }
@@ -187,6 +193,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
 
     <div class="dock" id="dock">
       <div class="chips" id="chips"></div>
+      <button class="go" id="startBtn">Start Push</button>
       <section class="live frost" id="live" hidden aria-label="This set"></section>
       <form class="ask frost" id="ask" autocomplete="off">
         <button type="button" class="mic" id="mic" aria-label="Talk to your coach">
@@ -263,8 +270,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
   paint('morning');
   setTimeout(() => { paint('work'); paint('gold'); }, 60);
 
-  const LEVEL = { hear: 38, high: 14 };
-  const low = () => (S.on ? 58 : 44); // where the light rests: lower while the set card is up
+  const low = () => (S.on ? 34 : 14); // where the light rests: it fills the morning, and sits low while the set card is up
+  const LEVEL = { high: 12, hear: () => low() - 14 };
   let glowAnim;
   const glowNow = () => { const m = new DOMMatrixReadOnly(getComputedStyle(glow).transform); return (m.m42 / glow.offsetHeight) * 100; };
   function glowTo(pct, ms, easing = SPRING) {
@@ -389,24 +396,25 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
 
   function todayChips() {
     chips.innerHTML = '';
-    const add = (label, fn, ink) => { const b = document.createElement('button'); b.className = `pillbtn${ink ? ' ink' : ''}`; b.textContent = label; b.onclick = fn; chips.append(b); };
+    const add = (label, fn) => { const b = document.createElement('button'); b.className = 'pillbtn'; b.textContent = label; b.onclick = fn; chips.append(b); };
+    $('#startBtn').hidden = S.done;
     if (S.done) { add('What’s tomorrow?', () => post([mine('What’s tomorrow?'), coach('Rest. Pull is on Tuesday, and your legs get Thursday.')])); return; }
-    add('Start Push', start, true);
     add('Why 82.5?', () => answer('why'));
     add('Short on time', shortPlan);
+    add('My week', () => post([mine('How’s my week?'), coach('Three sessions done out of four, and sleep is up 40 minutes a night on last week. Push today makes it four.')]));
   }
 
   function openDay() {
     const day = box('card', dayRows());
     day.onclick = (e) => { const r = e.target.closest('[data-ask]'); if (r) answer(r.dataset.ask); };
     thread.append(
-      box('stamp', '07:42'),
-      coach('Morning. 7 h 40 of sleep, your longest night this week.', 'big hero', 120),
+      coach('Morning. 7 h 40 of sleep, your longest night this week.', 'big hero', 300),
       day,
-      coach('Push today. Bench went 8, 8, 7, 6 at 80 last week. I’d move to 82.5 and aim for sixes.', '', 700),
+      coach('Push today. I’d take bench to 82.5 for sixes.', 'mid', 900),
       offerCard(),
     );
     drawTop(); todayChips();
+    glowTo(low(), 1500); // the day opens: the light comes up as the first words arrive
   }
 
   /* ---------- the workout ---------- */
@@ -414,7 +422,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
     S.on = true; S.li = 0; S.si = 0; S.log = []; S.t0 = Date.now();
     PUSH[0].kg = S.heavy ? 82.5 : 80; PUSH[0].reps = S.heavy ? 6 : 8;
     S.kg = lift().kg; S.reps = lift().reps;
-    chips.hidden = true; live.hidden = false; say.placeholder = 'Say or type: 80 for 8';
+    chips.hidden = true; $('#startBtn').hidden = true; live.hidden = false;
+    const morning = box('fold', ''), show = document.createElement('button');
+    morning.hidden = true; morning.append(...thread.children);
+    show.className = 'stamp more'; show.textContent = 'Show this morning';
+    show.onclick = () => { morning.hidden = !morning.hidden; show.textContent = morning.hidden ? 'Show this morning' : 'Hide this morning'; };
+    thread.append(morning, show);
     mood('work'); glowTo(low(), 600, EASE); drawTop(); drawLive();
     clearInterval(tick); tick = setInterval(() => { drawClock(); drawRest(); }, 250);
     const l = lift();
@@ -426,6 +439,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
 
   function drawLive() {
     const l = lift();
+    say.placeholder = `Say or type: ${num(S.kg)} for ${S.reps}`;
     if (S.rest) {
       const end = S.si >= l.sets ? plan()[S.li + 1] : null; // resting before the next lift
       const nextUp = end ? `Next: ${end.name}, ${num(end.kg)} kg × ${end.reps}` : `Next: set ${S.si + 1}, ${num(S.kg)} kg × ${S.reps}`;
@@ -608,7 +622,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
     clearTimeout(fade); heard.classList.remove('show');
     app.classList.toggle('listening', on); app.classList.toggle('hush', on);
     mic.setAttribute('aria-pressed', on);
-    if (on) { heardK.textContent = 'Listening'; if (!S.rest) glowTo(LEVEL.hear, 700); }
+    if (on) { heardK.textContent = 'Listening'; if (!S.rest) glowTo(LEVEL.hear(), 700); }
     else if (!S.rest) glowTo(low(), 600, EASE);
   }
   function tell(k, text) { // a short note where the heard words go, when the microphone can't be used
@@ -632,6 +646,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
     else if (rec) { rec.stop(); setTimeout(() => ended(''), 700); } // some browsers never answer a stop
   }
 
+  $('#startBtn').onclick = start;
   mic.onclick = () => {
     if (app.classList.contains('listening')) return stopListening();
     heardText = ''; showHeard('');
