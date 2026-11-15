@@ -57,6 +57,18 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: ten-style round, style 10 "Aloud", a Coach-first conversation (/_prototypes/aloud/)
+Asked (Omar, 03:56): the same ten-style request as Pitwall below. This thread was given the Coach-first conversation and one experiment, voice logging.
+Reading of the log before building: he rejects whole looks fast and loves single moments, flat plain screens always lose, Today needs one bold hero, and atmosphere (skies, light floods) has only ever reached "maybe". So the bet here is the mechanic (say the set, it is logged), not the mood.
+Built (Today and the live workout, clickable, English): light paper, one grotesk typeface (Schibsted Grotesk) in deep indigo, no serif, no dark, no glow. The whole app is one thread with the Coach. The day (training, food, sleep), the weight offer ("80 kg × 8 → 82.5 kg × 6", Use or Keep, with Undo), the set card, the rest timer and the summary are cards inside the talk. A soft field of light rises when the day opens, sits low during a set, fills the screen and drains while you rest, and turns gold on a record.
+- **Voice logging:** tap the mic, say "eighty for eight", and the set flies into the thread as a chip. It uses the app's real set parser, so "82.5 for 6", "same again", "skip", "plus thirty seconds" and "undo" work, a bare "80 x 8" asks which number is the weight, and a misheard "18 for 8" becomes 80 kg with a plain note ("I heard 18 and took it as 80 kg. Say undo if that's wrong."). Typing does the same. Talk that is not a set is never logged.
+- **Tested here (42 checks, headless Chromium at 384 px):** the whole tap-through, one-tap logging, Undo locked for 0.6 s, the record, the rest ending by itself, a fake speech engine saying "eighty for eight", a blocked microphone falling back to typing, and a browser with no speech support. Not tested: a real microphone, which only a phone can do.
+Judges (three fresh design-judges, Sonnet, one per pass): 7, 7, 6.5. Under the bar of 8, so it is not shown. What they agreed on: the big type, the black Log set pill, one-tap logging and the misheard recovery are good; the light reads as a generic pastel gradient ("a decorative rainbow rather than a meaningful signal"), the rest screen does not show the drain clearly, and the middle of the workout screen is empty. Two passes on the light did not move the score, so the fault is the idea of the light, not its tuning.
+My own score: 6.5 as a look for Omar, 8 for voice logging as a mechanic. Biggest weakness: take the light away and it is a tidy chat app; the conversation idea has no picture of its own yet. Voice logging is worth keeping whichever style wins.
+Not done: Danish strings (speech already follows the phone's language), sound.
+Needs his phone: a real microphone in a gym, banding in the light, smoothness of the rest drain.
+Verdict: held back under the bar; Omar asked whether he wants to see it at 7.
+
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.
