@@ -671,6 +671,7 @@ function pearl() { // Not Boring's swell, without the hold: the tap itself is th
 function castPillar(i, pr) {
   const c = $('colonnade').children[i]; if (!c) return;
   if (pr) c.dataset.pr = '';
+  const x = S.logged[S.li][i]; if (x) c.querySelector('.cap').textContent = fmtKg(x.w) + '×' + x.r; // what was really lifted
   c.dataset.done = ''; c.removeAttribute('data-now');
   if (reduce) return;
   const cast = c.querySelector('.cast'), sh = c.querySelector('.sh');
@@ -685,7 +686,7 @@ function logSet() {
   S.logged[S.li][S.si] = { w: S.w, r: S.r, pr: isPr };
   haptic(isPr ? [12, 60, 18] : 10); pearl(); castPillar(S.si, isPr);
   const lastOfLift = S.si === L.sets.length - 1, lastOfAll = lastOfLift && S.li === LIFTS.length - 1;
-  if (isPr) { S.prs.push({ li: S.li, w: S.w, r: S.r, was: L.best }); showPR(lastOfAll); return; }
+  if (isPr) { S.prs.push({ li: S.li, si: S.si, w: S.w, r: S.r, was: L.best }); showPR(lastOfAll); return; }
   if (lastOfAll) { openSheet($('go')); return; }
   startRest();
 }
@@ -739,6 +740,7 @@ function undoSet() {
   if (S.phase !== 'rest') return;
   clearInterval(restTimer); hideCoach(); hideToast();
   S.logged[S.li][S.si] = undefined; S.logged[S.li].length = S.si;
+  S.prs = S.prs.filter(p => !(p.li === S.li && p.si === S.si));
   const c = $('colonnade').children[S.si]; if (c) { c.removeAttribute('data-done'); c.removeAttribute('data-pr'); }
   shaftOpen(); phase('lift'); loadSet(-1);
 }
@@ -863,11 +865,15 @@ scrim.onclick = () => openPop ? closePop() : closeSheet(); $('keep').onclick = c
 $('wFinish').onclick = () => openSheet($('wFinish'));
 let holdA = null;
 const hold = $('hold');
-hold.addEventListener('pointerdown', () => {
+function holdStart() {
+  if (holdA && holdA.playState === 'running') return;
   holdA = $('holdBar').animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 900, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' });
   holdA.onfinish = () => { haptic([10, 50, 20]); finish(); };
-});
+}
 const release = () => { if (holdA && holdA.playState === 'running') { const p = holdA.currentTime / 900; holdA.cancel(); $('holdBar').animate([{ transform: `scaleX(${p})` }, { transform: 'scaleX(0)' }], { duration: 300, easing: 'ease-out' }); } };
+hold.addEventListener('pointerdown', holdStart);
+hold.addEventListener('keydown', e => { if ((e.key === ' ' || e.key === 'Enter') && !e.repeat) { e.preventDefault(); holdStart(); } });
+hold.addEventListener('keyup', e => { if (e.key === ' ' || e.key === 'Enter') release(); });
 hold.addEventListener('pointerup', release); hold.addEventListener('pointerleave', release); hold.addEventListener('pointercancel', release);
 
 function finish() {
@@ -919,9 +925,9 @@ function goToday() {
   veilShrink($('begin'), () => { instant(wk, $('today')); enter($('today')); }); pauseLoops(true);
   if (S.done) {
     $('today').dataset.done = '';
-    $('tDone').textContent = `Done in ${S.mins} min · ${S.logged.flat().filter(Boolean).length} sets${S.prs.length ? ' · 1 new best' : ''}`;
+    $('tDone').textContent = `Done in ${S.mins} min · ${S.logged.flat().filter(Boolean).length} sets${S.prs.length ? ` · ${S.prs.length} new best${S.prs.length > 1 ? 's' : ''}` : ''}`;
     $('beginText').textContent = 'See Push';
-    $('tCoachText').textContent = S.prs.length ? 'Bench 85 × 5 is your new best. Protein matters most tonight: about 86 g still to go.' : 'Clean session. About 86 g of protein still to go today.';
+    $('tCoachText').textContent = S.prs.length ? `${S.prs.map(p => `${LIFTS[p.li].name} ${fmtKg(p.w)} × ${p.r}`).join(' and ')} ${S.prs.length > 1 ? 'are new bests' : 'is a new best'}. Protein matters most tonight: about 86 g still to go.` : 'Clean session. About 86 g of protein still to go today.';
     $('tCoachState').textContent = 'After Push'; $('tCoachBtn').hidden = true;
   }
 }
