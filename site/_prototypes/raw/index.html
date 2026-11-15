@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aven Raw</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Martian+Mono:wdth,wght@75..112.5,100..800&display=swap">
+<style>
+/* Layout: one phone screen of hard-ruled bands stacked top to bottom, with a command dock pinned to the bottom edge.
+   Colour: gym chalk, black ink, and one accent taken from a competition plate (20 kg blue; 25 red, 15 yellow, 10 green).
+   Type: one monospace family, condensed for tables and heavy for the numbers. No radius, shadow, gradient or blur. */
+:root {
+  color-scheme: light;
+  --chalk: #E9EAE4;
+  --desk: #D3D5CD;
+  --ink: #000;
+  --dim: #555851;
+  --plate: #1740FF;
+  --on-plate: #fff;
+  --mono: "Martian Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --gl: max(16px, env(safe-area-inset-left, 0px));
+  --gr: max(16px, env(safe-area-inset-right, 0px));
+  padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px);
+}
+:root[data-plate="25"] { --plate: #DE0A2B; --on-plate: #fff; }
+:root[data-plate="15"] { --plate: #FFD000; --on-plate: #000; }
+:root[data-plate="10"] { --plate: #00A84F; --on-plate: #000; }
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+[hidden] { display: none !important; }
+html, body { height: 100%; }
+body {
+  background: var(--chalk); color: var(--ink);
+  font-family: var(--mono); font-stretch: 75%; font-size: 12px; line-height: 1.4; font-weight: 400;
+  -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none; touch-action: manipulation;
+  user-select: none; -webkit-user-select: none;
+  display: grid; place-items: center;
+}
+button { font: inherit; color: inherit; background: none; border: 0; border-radius: 0; cursor: pointer; touch-action: manipulation; text-align: left; }
+button:focus-visible { outline: 3px solid var(--plate); outline-offset: -3px; }
+ul { list-style: none; }
+.app { width: 100%; max-width: 430px; height: 100%; display: flex; flex-direction: column; background: var(--chalk); overflow: hidden; position: relative; }
+@media (min-width: 520px) {
+  body { background: var(--desk); }
+  .app { max-height: 880px; border: 2px solid var(--ink); }
+}
+.pad { padding-left: var(--gl); padding-right: var(--gr); }
+.up { text-transform: uppercase; letter-spacing: 0.06em; }
+.dim { color: var(--dim); }
+.sm { font-size: 10px; font-weight: 500; }
+.b { font-weight: 700; }
+.num { font-variant-numeric: tabular-nums; }
+
+/* A press shows on the next frame: the control turns to solid ink. No fades anywhere. */
+.tap:active { background: var(--ink) !important; color: var(--chalk) !important; }
+.tap:active * { color: var(--chalk) !important; }
+
+/* Top bar */
+.bar { flex: none; height: 44px; display: flex; align-items: stretch; border-bottom: 2px solid var(--ink); padding-left: var(--gl); }
+.bar .brand { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; white-space: nowrap; }
+.bar .brand b { font-weight: 800; font-size: 13px; letter-spacing: 0.08em; }
+.bar .sq { flex: none; min-width: 44px; padding: 0 12px; border-left: 2px solid var(--ink); display: grid; place-items: center; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.bar .sq i { display: block; width: 16px; height: 16px; background: var(--plate); border: 2px solid var(--ink); }
+.bar .end { padding-right: var(--gr); }
+
+/* Scrolling middle */
+.main { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; display: flex; flex-direction: column; container-type: inline-size; }
+/* Giant type always fills the measure: its size comes from the screen width and the number of glyphs (one glyph is 0.55em wide). */
+.band { border-bottom: 2px solid var(--ink); }
+.main > .band:last-child { border-bottom: 0; }
+.main.enter > * { animation: print 1ms steps(1) both; animation-delay: calc(var(--i, 0) * 22ms); }
+@keyframes print { from { visibility: hidden; } to { visibility: visible; } }
+
+/* Today: hero */
+.hero { padding-top: 14px; }
+.hero .top { display: flex; justify-content: space-between; }
+.giant { font-size: min(170px, calc((100cqw - 34px) / (var(--n, 4) * 0.55))); font-weight: 800; line-height: 0.86; letter-spacing: -0.04em; margin: 10px 0 12px -0.04em; text-transform: uppercase; white-space: nowrap; }
+.spec { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 2px solid var(--ink); }
+.spec > div { padding: 9px 0 9px 10px; border-left: 2px solid var(--ink); }
+.spec > div:first-child { border-left: 0; padding-left: var(--gl); }
+.spec b { font-size: 15px; font-weight: 700; margin-right: 5px; }
+.go { width: 100%; height: 68px; background: var(--plate); color: var(--on-plate); display: flex; align-items: center; justify-content: space-between; font-size: 17px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; border-top: 2px solid var(--ink); }
+.go .tri { width: 0; height: 0; border-left: 16px solid currentColor; border-top: 10px solid transparent; border-bottom: 10px solid transparent; }
+.go:active .tri { border-left-color: var(--chalk); }
+
+/* Today: plan, coach, meters */
+.plan li { display: flex; align-items: baseline; gap: 8px; height: 36px; padding-top: 10px; border-bottom: 1px solid var(--ink); }
+.plan li:last-child { border-bottom: 0; }
+.plan .n { width: 20px; font-size: 10px; font-weight: 500; color: var(--dim); }
+.plan .nm { font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; white-space: nowrap; }
+.plan .lead { flex: 1; min-width: 12px; border-bottom: 2px dotted var(--ink); opacity: 0.45; transform: translateY(-3px); }
+.plan .sx { width: 44px; text-align: right; }
+.plan .kg { width: 44px; text-align: right; font-weight: 700; }
+.plan .chg { background: var(--ink); color: var(--chalk); padding: 0 4px; margin-right: -4px; }
+.coach { display: grid; grid-template-columns: 1fr; gap: 10px; padding-top: 14px; padding-bottom: 14px; }
+.coach .tag { justify-self: start; background: var(--ink); color: var(--chalk); padding: 2px 6px; font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; }
+.coach p { font-size: 14px; line-height: 1.45; font-weight: 400; font-stretch: 87%; text-wrap: pretty; }
+.btn { height: 48px; padding: 0 14px; border: 2px solid var(--ink); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; display: inline-flex; align-items: center; justify-content: center; }
+.coach .btn { justify-self: start; }
+.meter { display: grid; grid-template-columns: 62px 1fr auto; align-items: center; gap: 10px; height: 52px; border-bottom: 1px solid var(--ink); width: 100%; }
+.meter:last-child { border-bottom: 0; }
+.cells { display: grid; grid-template-columns: repeat(20, 1fr); gap: 2px; height: 14px; }
+.cells i { border: 1px solid var(--ink); }
+.cells i.on { background: var(--ink); }
+.meter .v { text-align: right; white-space: nowrap; }
+.meter .v b { font-weight: 700; font-size: 13px; }
+.meter .add { display: inline-block; border: 2px solid var(--ink); padding: 9px 9px; margin-left: 8px; font-weight: 700; font-size: 12px; letter-spacing: 0.03em; }
+.two { display: grid; grid-template-columns: 1fr 1fr; }
+.two > div { padding: 12px 0 14px; }
+.two > div + div { border-left: 2px solid var(--ink); padding-left: 12px; }
+.two b { display: block; font-size: 22px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2; }
+
+/* Workout: lift strip */
+.strip { flex: none; display: grid; grid-template-columns: repeat(6, 1fr); }
+.strip button { height: 50px; padding: 7px 0 0 7px; border-left: 2px solid var(--ink); font-size: 9.5px; font-weight: 600; letter-spacing: 0.01em; text-transform: uppercase; line-height: 1.25; display: flex; flex-direction: column; gap: 5px; overflow: hidden; }
+.strip button:first-child { border-left: 0; padding-left: 8px; }
+.strip .on { background: var(--ink); color: var(--chalk); }
+.pips { display: flex; gap: 2px; }
+.pips i { width: 7px; height: 7px; border: 1px solid currentColor; }
+.pips i.f { background: currentColor; }
+
+/* Workout: the set (or the rest) */
+.stage { flex: none; position: relative; height: 270px; overflow: hidden; --cap: 164px; }
+.stage.compact { height: 150px; --cap: 96px; }
+.stage .head { display: flex; justify-content: space-between; align-items: baseline; padding-top: 12px; }
+.stage .head .nm { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; white-space: nowrap; }
+.big { display: flex; align-items: flex-end; gap: 12px; margin-top: 8px; height: calc(var(--cap) * 0.8 + 22px); --fs: min(var(--cap), calc((100cqw - 84px) / (var(--n, 3) * 0.545))); }
+.big .fig { display: flex; flex-direction: column; }
+.big .fig b { font-size: var(--fs); font-weight: 800; line-height: 0.8; letter-spacing: -0.05em; margin-left: -0.04em; }
+.big .fig span { margin-top: 8px; }
+.big .x { width: 28px; text-align: center; font-size: 34px; font-weight: 300; line-height: 1; padding-bottom: calc(var(--fs) * 0.26 + 6px); }
+.facts { margin-top: 14px; display: grid; gap: 5px; }
+.facts .row { display: flex; align-items: center; gap: 10px; height: 22px; white-space: nowrap; }
+.facts .k { width: 62px; flex: none; }
+.barbell { display: flex; align-items: center; height: 22px; gap: 1px; }
+.barbell i { display: block; background: var(--ink); }
+.barbell .shaft { width: 54px; height: 3px; }
+.barbell .stub { width: 8px; height: 3px; }
+.barbell .collar { width: 4px; height: 9px; }
+.stage.compact .facts, .stage.compact .restbtn { display: none; }
+.stage.compact .rest { inset: 0; }
+.stage.compact .rest .cd { font-size: 84px; margin-top: 8px; }
+.stage.flash::after { content: ""; position: absolute; inset: 0; background: var(--ink); animation: blink 0.36s steps(1) both; pointer-events: none; }
+@keyframes blink { 0% { opacity: 1; } 25% { opacity: 0; } 50% { opacity: 1; } 75%, 100% { opacity: 0; } }
+
+.rest { position: absolute; inset: 0 0 52px 0; }
+.rest .lay { position: absolute; inset: 0; padding-top: 12px; display: flex; flex-direction: column; }
+.rest .lay.fill { background: var(--plate); color: var(--on-plate); animation: drain linear both; }
+.rest .lay.fill .dim { color: inherit; }
+@keyframes drain { from { clip-path: inset(0 0 0 0); } to { clip-path: inset(100% 0 0 0); } }
+.rest .cd { font-size: min(150px, calc((100cqw - 34px) / (var(--n, 4) * 0.555))); font-weight: 800; line-height: 0.8; letter-spacing: -0.05em; margin: 12px 0 0 -0.04em; }
+.rest .tagpr { border: 2px solid currentColor; padding: 1px 5px; margin-left: 8px; font-weight: 800; }
+.rest .nx { margin-top: auto; padding-bottom: 10px; white-space: nowrap; }
+.restbtn { position: absolute; left: 0; right: 0; bottom: 0; height: 52px; display: grid; grid-template-columns: 1fr 1fr 2fr; border-top: 2px solid var(--ink); }
+.restbtn button { border-left: 2px solid var(--ink); font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; text-align: center; }
+.restbtn button:first-child { border-left: 0; }
+
+/* Workout: set table */
+.sets { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
+.sets li { display: grid; grid-template-columns: 26px 52px 22px 28px 1fr; align-items: center; height: 46px; border-bottom: 1px solid var(--ink); padding-left: var(--gl); padding-right: var(--gr); }
+.sets li > :nth-child(2), .sets li > :nth-child(4) { text-align: right; font-weight: 700; font-size: 13px; }
+.sets li > :nth-child(3) { text-align: center; }
+.sets li > :last-child { text-align: right; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.sets li.now { background: var(--plate); color: var(--on-plate); border-bottom-color: var(--ink); }
+.sets li.now .dim { color: inherit; }
+.sets li.done .mk { display: inline-block; width: 10px; height: 10px; background: var(--ink); margin-left: 6px; }
+.sets li.pr > :last-child span { background: var(--ink); color: var(--chalk); padding: 2px 5px; }
+.sets li.stamp { animation: stamp 0.18s steps(1) both; }
+@keyframes stamp { 0% { background: var(--ink); color: var(--chalk); } 100% { background: transparent; color: var(--ink); } }
+
+/* Dock: message line, tap deck, prompt, keys */
+.dock { flex: none; border-top: 2px solid var(--ink); background: var(--chalk); }
+.say { height: 44px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--ink); white-space: nowrap; overflow: hidden; }
+.say .m { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+.say.err .m::before { content: "? "; }
+.say.pv .m::before { content: "= "; }
+.say .undo { align-self: stretch; margin-right: calc(var(--gr) * -1); padding: 0 var(--gr) 0 12px; border-left: 1px solid var(--ink); font-weight: 700; font-size: 10px; letter-spacing: 0.06em; text-transform: uppercase; }
+.steps { display: grid; grid-template-columns: 1fr 1fr; border-bottom: 2px solid var(--ink); }
+.steps .grp { display: grid; grid-template-columns: 52px 1fr 52px; height: 56px; }
+.steps .grp + .grp { border-left: 2px solid var(--ink); }
+.steps button { text-align: center; font-weight: 700; font-size: 11px; }
+.steps .val { display: flex; flex-direction: column; align-items: center; justify-content: center; border-left: 1px solid var(--ink); border-right: 1px solid var(--ink); line-height: 1.15; }
+.steps .val b { font-size: 17px; font-weight: 800; letter-spacing: -0.02em; }
+.log { width: 100%; height: 72px; background: var(--plate); color: var(--on-plate); display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid var(--ink); font-size: 19px; font-weight: 800; letter-spacing: 0.03em; text-transform: uppercase; }
+.log small { font-size: 11px; font-weight: 600; letter-spacing: 0.04em; }
+.prompt { height: 50px; display: flex; align-items: stretch; }
+.prompt .line { flex: 1; min-width: 0; display: flex; align-items: center; gap: 8px; padding-left: var(--gl); font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; }
+.prompt .line .gt { font-weight: 800; }
+.prompt .line .ph { color: var(--dim); font-weight: 400; font-size: 13px; }
+.caret { display: inline-block; width: 9px; height: 18px; background: var(--ink); margin-left: -4px; animation: caret 1.06s steps(1) infinite; }
+@keyframes caret { 50% { opacity: 0; } }
+.prompt .k { flex: none; min-width: 50px; padding: 0 12px; border-left: 2px solid var(--ink); text-align: center; font-size: 10px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.prompt .k:last-child { padding-right: max(12px, env(safe-area-inset-right, 0px)); }
+.chips { display: grid; grid-template-columns: repeat(var(--n, 5), 1fr); border-top: 2px solid var(--ink); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.chips button { height: 46px; text-align: center; font-size: 10px; font-weight: 700; letter-spacing: 0.03em; text-transform: uppercase; border-left: 1px solid var(--ink); border-bottom: 1px solid var(--ink); overflow: hidden; }
+.chips button:nth-child(5n + 1) { border-left: 0; }
+.pad4 { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--ink); padding-left: env(safe-area-inset-left, 0px); padding-right: env(safe-area-inset-right, 0px); }
+.pad4 button { height: 52px; text-align: center; font-size: 19px; font-weight: 700; border-left: 1px solid var(--ink); border-top: 1px solid var(--ink); }
+.pad4 button:nth-child(-n + 4) { border-top: 0; }
+.pad4 button:nth-child(4n + 1) { border-left: 0; }
+.pad4 .fn { font-size: 12px; letter-spacing: 0.05em; text-transform: uppercase; }
+.pad4 .ent { grid-column: span 2; background: var(--plate); color: var(--on-plate); font-size: 13px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+
+/* Help sheet and the finished workout */
+.sheet { position: absolute; inset: 0; background: var(--chalk); z-index: 5; display: flex; flex-direction: column; }
+.sheet .scroll { flex: 1; min-height: 0; overflow-y: auto; padding-top: 6px; padding-bottom: 20px; }
+.help li { display: grid; gap: 3px; padding: 10px 0; border-bottom: 1px solid var(--ink); }
+.help code { font: inherit; font-weight: 700; font-size: 13px; white-space: nowrap; }
+.help span { font-stretch: 87%; }
+.help h2, .rcpt h2 { font-size: 10px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 18px 0 8px; border-bottom: 2px solid var(--ink); }
+.rcpt li { display: flex; align-items: baseline; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--ink); white-space: nowrap; }
+.rcpt li .lead { flex: 1; min-width: 12px; border-bottom: 2px dotted var(--ink); opacity: 0.45; transform: translateY(-3px); }
+.rcpt li b { font-weight: 700; }
+.rcpt ul li:last-child { border-bottom: 0; }
+.rcpt .cmp { display: grid; grid-template-columns: 1fr 52px 78px 62px; gap: 8px; padding: 9px 0; border-bottom: 1px solid var(--ink); align-items: baseline; }
+.rcpt .cmp > :not(:first-child) { text-align: right; }
+.rcpt .verdict { padding: 14px 0 4px; font-size: 14px; line-height: 1.45; font-stretch: 87%; text-wrap: pretty; }
+.sheet .foot { flex: none; border-top: 2px solid var(--ink); }
+.sheet .foot .go { border-top: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  .main.enter > *, .sets li.stamp, .stage.flash::after, .caret { animation: none; }
+  .stage.flash::after { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="bar" id="bar"></header>
+  <main class="main" id="main"></main>
+  <footer class="dock" id="dock"></footer>
+  <section class="sheet" id="sheet" hidden></section>
+</div>
+<script>
+(() => {
+'use strict';
+const Q = new URLSearchParams(location.search);
+const $ = (s) => document.querySelector(s);
+const PLATES = ['20', '25', '15', '10'];
+
+// ---------- words (English and Danish) ----------
+const L = {
+  en: {
+    locale: 'en-GB', todays: "Today's workout", week: 'Week 46, day 3 of 4', lifts: 'lifts', sets: 'sets', min: 'min',
+    start: 'Start push', again: 'Run it again', doneToday: 'Done today',
+    coach: 'Coach', coachSay: 'Bench has sat at 80 × 8 for two weeks. Open with 82.5 × 6 today, then build back to 8.',
+    coachDone: 'Push is logged: {0} sets, {1} new records. Protein is at 62 of 160 g, so eat.', coachUse: 'Use 82.5 × 6', undo: 'Undo', coachOn: 'Bench set 1 is now 82.5 × 6.', coachOff: 'Bench set 1 is back to 80 × 8.',
+    energy: 'Energy', protein: 'Protein', water: 'Water', weight: 'Weight', sleep: 'Sleep', wk: 'down 0.3 kg in 7 days', sl: 'bed 23:41, up 06:53',
+    set: 'Set', kg: 'kg', reps: 'reps', load: 'Load', last: 'Last', best: 'Best', lastDate: '12 Nov', side: 'per side',
+    barOnly: 'Empty bar, 20 kg', db: '2 × {0} kg dumbbells', cable: 'Cable stack, pin at {0} kg',
+    now: 'Now', record: 'Record', log: 'Log set {0}', logX: 'Log extra set',
+    rest: 'Rest', thenRest: 'then rest', next: 'Next', skip: 'Skip rest', end: 'End', keys: 'Keys', close: 'Close',
+    phToday: 'type: water 500', phWork: 'type: 82.5x6',
+    hiToday: 'Type or tap. ? lists every command.', hiWork: 'Tap Log, or type the set.',
+    logged: '{0} {1}/{2}: {3} × {4}.', loggedN: '{0}: {1} sets logged.', isPr: ' Record.',
+    tap1: '1 tap', taps: '{0} taps, {1} s', key1: '1 key', keysN: '{0} keys, {1} s',
+    undone: 'Undone.', noUndo: 'Nothing to undo.', waterAdd: 'Water +{0} ml. {1} of 3 l today.', weightSet: 'Weight logged: {0} kg.',
+    restSet: 'Rest set to {0} s.', skipped: 'Rest skipped.', noRest: 'No rest is running.', allDone: 'Every set is logged. End the workout.',
+    startFirst: 'Start the workout first.', cant: "Can't read that. Try 80x8.", which: '{0}: reps or kg? Type {0}x8.', range: 'Out of range. Try 80x8.',
+    needN: 'Add a number, like {0}.', pvLog: '{0} set {1}: {2} kg × {3}', pvLogN: '{0}: {1} sets, {2} kg × {3}', pvStart: 'Start the workout',
+    pvWater: 'Water +{0} ml', pvWeight: 'Weight {0} kg', pvUndo: 'Undo the last entry', pvSkip: 'Skip the rest', pvNext: 'Go to the next lift',
+    pvEnd: 'End the workout', pvRest: 'Rest {0} s', pvHelp: 'Show every command', nextLift: 'Now on {0}.',
+    help: 'Commands', hSets: 'Log sets', hOther: 'Everything else',
+    h1: 'Log the set as planned.', h2: '80 kg for 8 reps.', h3: '8 reps at the planned weight.', h4: 'Two sets of 82.5 kg for 6.',
+    h5: 'Three sets: 8, 8 and 7 reps.', h6: 'Log to another lift without leaving this one.', h7: 'Take back the last entry.',
+    h8: 'Skip the rest, or set it to 90 seconds.', h9: 'Next lift, or end the workout.', h10: 'Add water in ml, or log body weight.', h11: 'Start today’s workout.',
+    done: 'Done', fin: 'Workout finished', finLifts: '{0} of {1} lifts', records: 'Records', how: 'How you logged', hTap: 'Tapped', hType: 'Typed',
+    cSets: 'sets', cTouch: 'touches/set', cSec: 's/set', back: 'Back to today',
+    vNone: 'Log a few sets each way and this compares them.', vOne: 'Only one way used so far. Log a few sets the other way to compare.',
+    vTap: 'Tapping was quicker for you: {0} s a set against {1} s typed.', vType: 'Typing was quicker for you: {0} s a set against {1} s tapped.', vTie: 'Level: about {0} s a set either way.',
+    vTouchTap: 'Tapping took fewer touches: {0} a set against {1} typed. Log 3 sets each way to compare the time too.', vTouchType: 'Typing took fewer touches: {0} a set against {1} tapped. Log 3 sets each way to compare the time too.', vTouchTie: 'The same number of touches either way. Log 3 sets each way to compare the time.',
+    colour: 'Change colour', lang: 'Skift til dansk',
+  },
+  da: {
+    locale: 'da-DK', todays: 'Dagens træning', week: 'Uge 46, dag 3 af 4', lifts: 'øvelser', sets: 'sæt', min: 'min',
+    start: 'Start push', again: 'Kør den igen', doneToday: 'Klaret i dag',
+    coach: 'Coach', coachSay: 'Bænkpres har stået på 80 × 8 i to uger. Åbn med 82,5 × 6 i dag, og byg op til 8 igen.',
+    coachDone: 'Push er logget: {0} sæt, {1} nye rekorder. Protein står på 62 af 160 g, så spis.', coachUse: 'Brug 82,5 × 6', undo: 'Fortryd', coachOn: 'Bænkpres sæt 1 er nu 82,5 × 6.', coachOff: 'Bænkpres sæt 1 er igen 80 × 8.',
+    energy: 'Energi', protein: 'Protein', water: 'Vand', weight: 'Vægt', sleep: 'Søvn', wk: 'ned 0,3 kg på 7 dage', sl: 'seng 23:41, oppe 06:53',
+    set: 'Sæt', kg: 'kg', reps: 'gent.', load: 'Læs', last: 'Sidst', best: 'Bedst', lastDate: '12. nov.', side: 'pr. side',
+    barOnly: 'Tom stang, 20 kg', db: '2 × {0} kg håndvægte', cable: 'Kabeltårn, stift på {0} kg',
+    now: 'Nu', record: 'Rekord', log: 'Log sæt {0}', logX: 'Log ekstra sæt',
+    rest: 'Pause', thenRest: 'så pause', next: 'Næste', skip: 'Spring pause over', end: 'Slut', keys: 'Taster', close: 'Luk',
+    phToday: 'skriv: vand 500', phWork: 'skriv: 82,5x6',
+    hiToday: 'Skriv eller tryk. ? viser alle kommandoer.', hiWork: 'Tryk Log, eller skriv sættet.',
+    logged: '{0} {1}/{2}: {3} × {4}.', loggedN: '{0}: {1} sæt logget.', isPr: ' Rekord.',
+    tap1: '1 tryk', taps: '{0} tryk, {1} s', key1: '1 tast', keysN: '{0} taster, {1} s',
+    undone: 'Fortrudt.', noUndo: 'Intet at fortryde.', waterAdd: 'Vand +{0} ml. {1} af 3 l i dag.', weightSet: 'Vægt logget: {0} kg.',
+    restSet: 'Pause sat til {0} s.', skipped: 'Pause sprunget over.', noRest: 'Ingen pause kører.', allDone: 'Alle sæt er logget. Afslut træningen.',
+    startFirst: 'Start træningen først.', cant: 'Kan ikke læse det. Prøv 80x8.', which: '{0}: gentagelser eller kg? Skriv {0}x8.', range: 'Uden for området. Prøv 80x8.',
+    needN: 'Tilføj et tal, fx {0}.', pvLog: '{0} sæt {1}: {2} kg × {3}', pvLogN: '{0}: {1} sæt, {2} kg × {3}', pvStart: 'Start træningen',
+    pvWater: 'Vand +{0} ml', pvWeight: 'Vægt {0} kg', pvUndo: 'Fortryd det seneste', pvSkip: 'Spring pausen over', pvNext: 'Gå til næste øvelse',
+    pvEnd: 'Afslut træningen', pvRest: 'Pause {0} s', pvHelp: 'Vis alle kommandoer', nextLift: 'Nu på {0}.',
+    help: 'Kommandoer', hSets: 'Log sæt', hOther: 'Alt det andet',
+    h1: 'Log sættet som planlagt.', h2: '80 kg i 8 gentagelser.', h3: '8 gentagelser med den planlagte vægt.', h4: 'To sæt med 82,5 kg i 6.',
+    h5: 'Tre sæt: 8, 8 og 7 gentagelser.', h6: 'Log på en anden øvelse uden at forlade denne.', h7: 'Tag det seneste tilbage.',
+    h8: 'Spring pausen over, eller sæt den til 90 sekunder.', h9: 'Næste øvelse, eller afslut træningen.', h10: 'Tilføj vand i ml, eller log kropsvægt.', h11: 'Start dagens træning.',
+    done: 'Klaret', fin: 'Træning slut', finLifts: '{0} af {1} øvelser', records: 'Rekorder', how: 'Sådan loggede du', hTap: 'Trykket', hType: 'Skrevet',
+    cSets: 'sæt', cTouch: 'tryk/sæt', cSec: 's/sæt', back: 'Tilbage til i dag',
+    vNone: 'Log et par sæt på hver måde, så sammenlignes de her.', vOne: 'Kun én måde brugt indtil nu. Log et par sæt på den anden måde for at sammenligne.',
+    vTap: 'Tryk var hurtigst for dig: {0} s pr. sæt mod {1} s skrevet.', vType: 'Skrift var hurtigst for dig: {0} s pr. sæt mod {1} s trykket.', vTie: 'Lige: cirka {0} s pr. sæt på begge måder.',
+    vTouchTap: 'Tryk krævede færrest berøringer: {0} pr. sæt mod {1} skrevet. Log 3 sæt på hver måde for også at sammenligne tiden.', vTouchType: 'Skrift krævede færrest berøringer: {0} pr. sæt mod {1} trykket. Log 3 sæt på hver måde for også at sammenligne tiden.', vTouchTie: 'Samme antal berøringer på begge måder. Log 3 sæt på hver måde for at sammenligne tiden.',
+    colour: 'Skift farve', lang: 'Switch to English',
+  },
+};
+const t = (k, ...a) => { let s = L[S.lang][k] ?? L.en[k] ?? k; a.forEach((v, i) => { s = s.split('{' + i + '}').join(v); }); return s; };
+
+// ---------- today's plan (made-up example data) ----------
+const LIFTS = [
+  { id: 'bench', en: 'Bench press', da: 'Bænkpres', chip: { en: 'Bench', da: 'Bænk' }, alias: ['bench', 'bænk', 'baenk', 'bp'], kind: 'bar', sets: 4, reps: 8, kg: 80, step: 2.5, rest: 150, last: [[80, 8], [80, 8], [80, 7], [80, 6]], best: [82.5, 6] },
+  { id: 'incline', en: 'Incline dumbbell press', da: 'Skrå håndvægtpres', chip: { en: 'Incline', da: 'Skrå' }, alias: ['incline', 'skrå', 'skraa', 'inc'], kind: 'db', sets: 3, reps: 10, kg: 28, step: 2, rest: 120, last: [[28, 10], [28, 9], [28, 8]], best: [30, 8] },
+  { id: 'ohp', en: 'Overhead press', da: 'Skulderpres', chip: { en: 'OHP', da: 'Skulder' }, alias: ['ohp', 'skulder', 'overhead', 'shoulder'], kind: 'bar', sets: 3, reps: 8, kg: 50, step: 2.5, rest: 120, last: [[50, 8], [50, 7], [50, 6]], best: [52.5, 5] },
+  { id: 'fly', en: 'Cable fly', da: 'Kabel-flyes', chip: { en: 'Fly', da: 'Flyes' }, alias: ['fly', 'flyes', 'cable', 'kabel'], kind: 'cable', sets: 3, reps: 12, kg: 18, step: 2.5, rest: 90, last: [[18, 12], [18, 12], [18, 10]], best: [20.5, 10] },
+  { id: 'lateral', en: 'Lateral raise', da: 'Sideløft', chip: { en: 'Lateral', da: 'Side' }, alias: ['lateral', 'side', 'raise', 'sideløft'], kind: 'db', sets: 3, reps: 12, kg: 10, step: 1, rest: 75, last: [[10, 12], [10, 12], [10, 11]], best: [12, 8] },
+  { id: 'pushdown', en: 'Triceps pushdown', da: 'Triceps pushdown', chip: { en: 'Pushdown', da: 'Triceps' }, alias: ['pushdown', 'triceps', 'tricep', 'pd'], kind: 'cable', sets: 3, reps: 12, kg: 32.5, step: 2.5, rest: 75, last: [[32.5, 12], [32.5, 11], [32.5, 10]], best: [35, 10] },
+];
+const CMD = {
+  start: ['start', 'go', 'begin'], water: ['water', 'vand'], weight: ['weight', 'vægt', 'vaegt'], undo: ['undo', 'fortryd', 'u'],
+  skip: ['skip', 'spring'], next: ['next', 'næste', 'naeste'], end: ['end', 'done', 'finish', 'slut', 'færdig', 'faerdig'],
+  rest: ['rest', 'pause'], help: ['help', 'hjælp', 'hjaelp'],
+};
+
+// ---------- state (memory only: nothing is stored) ----------
+const S = {
+  lang: Q.get('lang') === 'da' ? 'da' : 'en', plate: 0, screen: 'today', deck: false, help: false, buf: '',
+  water: 750, weight: 74.6, coach: false, w: null, done: null, msg: null, undos: [], actAt: 0, enter: true,
+};
+// The input test: every touch on the way to a logged set is counted, and the time between touches is added up.
+// A gap of 5 s or more is the lift itself, not the logging, so it is left out.
+const draft = { n: 0, ms: 0, last: 0 };
+const touch = () => { const now = performance.now(); if (draft.n && now - draft.last < 5000) draft.ms += now - draft.last; draft.last = now; draft.n++; };
+const clearDraft = () => { draft.n = 0; draft.ms = 0; };
+
+const e1 = (kg, reps) => kg * (1 + reps / 30);
+const dec = (s) => (S.lang === 'da' ? String(s).replace('.', ',') : String(s));
+const kgS = (n) => dec(Math.round(n * 100) / 100);
+const kg1 = (n) => dec(n.toFixed(1));
+const nm = (i) => LIFTS[i][S.lang];
+const two = (n) => String(n).padStart(2, '0');
+const clock = (s) => two(Math.floor(s / 3600)) + ':' + two(Math.floor(s / 60) % 60) + ':' + two(s % 60);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+function newWorkout() {
+  return {
+    t0: Date.now(), cur: 0, rest: null, flash: false, stamp: null,
+    stats: { tap: [], type: [] },
+    lifts: LIFTS.map((l, i) => ({
+      bestE: Math.max(e1(l.best[0], l.best[1]), ...l.last.map((q) => e1(q[0], q[1]))),
+      sets: Array.from({ length: l.sets }, (_, k) => (i === 0 && k === 0 && S.coach ? { kg: 82.5, reps: 6, done: false } : { kg: l.kg, reps: l.reps, done: false })),
+    })),
+  };
+}
+const openIdx = (li) => S.w.lifts[li].sets.findIndex((s) => !s.done);
+function planned(li) {
+  const sets = S.w.lifts[li].sets, k = openIdx(li);
+  return k >= 0 ? sets[k] : { kg: sets[sets.length - 1].kg, reps: sets[sets.length - 1].reps };
+}
+function nextUp() {
+  const W = S.w;
+  if (openIdx(W.cur) >= 0) return W.cur;
+  for (let d = 1; d < LIFTS.length; d++) { const i = (W.cur + d) % LIFTS.length; if (openIdx(i) >= 0) return i; }
+  return -1;
+}
+const restLeft = () => (S.w && S.w.rest ? S.w.rest.total - Math.floor((Date.now() - S.w.rest.t0) / 1000) : 0);
+const restFor = (li) => (Q.get('rest') ? Math.max(3, +Q.get('rest') || 8) : LIFTS[li].rest);
+
+// ---------- doing things ----------
+function say(text, kind, tally) { S.msg = { text, kind: kind || 'ok', tally: tally || '', undo: false }; }
+function pushUndo(fn) { S.undos.push(fn); S.msg.undo = true; S.actAt = Date.now(); }
+
+function logSets(li, list, how) {
+  const W = S.w, lift = W.lifts[li];
+  const before = { cur: W.cur, rest: W.rest, sets: lift.sets.map((s) => ({ ...s })), bestE: lift.bestE };
+  let pr = false, lastK = 0;
+  for (const it of list) {
+    let k = lift.sets.findIndex((s) => !s.done);
+    if (k < 0) { lift.sets.push({ kg: it.kg, reps: it.reps, done: false }); k = lift.sets.length - 1; }
+    const s = lift.sets[k];
+    s.kg = it.kg; s.reps = it.reps; s.done = true; s.how = how;
+    s.pr = e1(it.kg, it.reps) > lift.bestE + 1e-9;
+    if (s.pr) { lift.bestE = e1(it.kg, it.reps); pr = true; }
+    lastK = k;
+  }
+  const kgNow = list[list.length - 1].kg;
+  lift.sets.forEach((s) => { if (!s.done) s.kg = kgNow; });
+  const n = draft.n, ms = draft.ms;
+  const stat = { n: list.length, touches: n, ms };
+  W.stats[how].push(stat); clearDraft();
+  W.cur = li; W.stamp = li + ':' + lastK; W.flash = false;
+  W.rest = { t0: Date.now(), total: restFor(li), pr };
+  const nu = nextUp(); if (nu >= 0) W.cur = nu;
+  const secs = dec((ms / 1000).toFixed(1));
+  const tally = n <= 1 ? t(how === 'tap' ? 'tap1' : 'key1') : t(how === 'tap' ? 'taps' : 'keysN', n, secs);
+  const it = list[list.length - 1];
+  say((list.length > 1 ? t('loggedN', LIFTS[li].chip[S.lang], list.length) : t('logged', LIFTS[li].chip[S.lang], lastK + 1, lift.sets.length, kgS(it.kg), it.reps)) + (pr ? t('isPr') : ''), 'ok', tally);
+  pushUndo(() => {
+    lift.sets = before.sets; lift.bestE = before.bestE; W.cur = li; W.rest = null; W.stamp = null;
+    const a = W.stats[how]; a.splice(a.indexOf(stat), 1);
+  });
+}
+function undo() {
+  const fn = S.undos.pop();
+  if (!fn) { say(t('noUndo'), 'err'); return; }
+  fn(); say(t('undone'));
+}
+function addWater(ml) {
+  S.water += ml; say(t('waterAdd', ml, dec((S.water / 1000).toFixed(2))));
+  pushUndo(() => { S.water -= ml; });
+}
+function startWorkout() { S.w = newWorkout(); S.screen = 'workout'; S.deck = false; S.buf = ''; S.undos = []; S.enter = true; clearDraft(); say(t('hiWork'), 'hint'); }
+function endWorkout() {
+  const W = S.w, all = W.lifts.flatMap((l) => l.sets.filter((s) => s.done));
+  if (!all.length) { S.w = null; S.screen = 'today'; S.deck = false; S.buf = ''; S.enter = true; say(t('hiToday'), 'hint'); return; }
+  W.secs = Math.floor((Date.now() - W.t0) / 1000); W.rest = null;
+  S.screen = 'summary'; S.deck = false; S.buf = ''; S.help = false;
+}
+function backToday() {
+  const W = S.w, all = W.lifts.flatMap((l) => l.sets.filter((s) => s.done));
+  S.done = { sets: all.length, secs: W.secs, prs: all.filter((q) => q.pr).length }; S.w = null; S.screen = 'today'; S.undos = []; S.enter = true; say(t('hiToday'), 'hint');
+}
+
+// ---------- the command line ----------
+function num(s) { return /^\d+([.,]\d+)?$/.test(s) ? parseFloat(s.replace(',', '.')) : null; }
+function parseSets(x, li) {
+  const p = planned(li);
+  x = x.replace(/\s/g, '');
+  if (x === '') return { sets: [{ kg: p.kg, reps: p.reps }] };
+  const parts = x.split('x');
+  if (parts.length === 1) {
+    const v = num(parts[0]);
+    if (v == null) return { err: t('cant') };
+    if (/[.,]/.test(parts[0])) return v > 0 && v <= 500 ? { sets: [{ kg: v, reps: p.reps }] } : { err: t('range') };
+    if (v >= 1 && v <= 50) return { sets: [{ kg: p.kg, reps: v }] };
+    return { err: t('which', parts[0]) };
+  }
+  if (parts.length > 3 || parts.some((q) => q === '')) return { err: t('cant') };
+  let a = parts[0], b = parts[1];
+  // Weight comes first. Swap only when the order is unmistakable: "8x82.5" or "8x80".
+  if (/^\d+$/.test(a) && +a <= 50 && (/^\d+[.,]\d+$/.test(b) || (/^\d+$/.test(b) && +b > 50))) { const c = a; a = b; b = c; }
+  const kg = num(a), reps = b.split(',').map((v) => (/^\d+$/.test(v) ? +v : NaN));
+  if (kg == null || reps.some(Number.isNaN)) return { err: t('cant') };
+  let count = 1;
+  if (parts.length === 3) { if (!/^\d+$/.test(parts[2]) || reps.length > 1) return { err: t('cant') }; count = +parts[2]; }
+  if (kg <= 0 || kg > 500 || reps.some((r) => r < 1 || r > 50) || count < 1 || count > 10 || reps.length > 10) return { err: t('range') };
+  const list = count > 1 ? Array.from({ length: count }, () => reps[0]) : reps;
+  return { sets: list.map((r) => ({ kg, reps: r })) };
+}
+function parse(raw) {
+  const inW = S.screen === 'workout';
+  const s = raw.toLowerCase().replace(/[×*]/g, 'x').trim().replace(/\s+/g, ' ');
+  if (s === '?') return { ok: true, kind: 'help', say: t('pvHelp') };
+  const logFor = (li, expr) => {
+    if (!inW) return { ok: false, say: t('startFirst') };
+    const r = parseSets(expr, li);
+    if (r.err) return { ok: false, say: r.err };
+    const k = openIdx(li), n = k < 0 ? S.w.lifts[li].sets.length + 1 : k + 1, f = r.sets[0];
+    const txt = r.sets.length > 1
+      ? t('pvLogN', nm(li), r.sets.length, kgS(f.kg), r.sets.map((q) => q.reps).filter((v, i, arr) => arr.indexOf(v) === i).length === 1 ? f.reps : r.sets.map((q) => q.reps).join(', '))
+      : t('pvLog', nm(li), n, kgS(f.kg), f.reps);
+    return { ok: true, kind: 'log', lift: li, sets: r.sets, say: txt };
+  };
+  const m = s.match(/^([a-zæøå]+)\s*(.*)$/);
+  if (!m) { if (s === '' && !inW) return { ok: false, say: t('hiToday') }; return logFor(inW ? S.w.cur : 0, s); }
+  const word = m[1], rest = m[2];
+  const cmd = Object.keys(CMD).find((c) => CMD[c].includes(word));
+  if (cmd === 'help') return { ok: true, kind: 'help', say: t('pvHelp') };
+  if (cmd === 'start') return inW ? { ok: false, say: t('hiWork') } : { ok: true, kind: 'start', say: t('pvStart') };
+  if (cmd === 'undo') return { ok: true, kind: 'undo', say: t('pvUndo') };
+  if (cmd === 'water') { const v = num(rest); if (v == null) return { ok: false, say: t('needN', S.lang === 'da' ? 'vand 500' : 'water 500') }; const ml = v <= 5 ? Math.round(v * 1000) : Math.round(v); return ml > 5000 ? { ok: false, say: t('range') } : { ok: true, kind: 'water', ml, say: t('pvWater', ml) }; }
+  if (cmd === 'weight') { const v = num(rest); if (v == null) return { ok: false, say: t('needN', S.lang === 'da' ? 'vægt 74,6' : 'weight 74.6') }; return v < 30 || v > 300 ? { ok: false, say: t('range') } : { ok: true, kind: 'weight', kg: v, say: t('pvWeight', kgS(v)) }; }
+  if (cmd && !inW) return { ok: false, say: t('startFirst') };
+  if (cmd === 'skip') return { ok: true, kind: 'skip', say: t('pvSkip') };
+  if (cmd === 'next') return { ok: true, kind: 'next', say: t('pvNext') };
+  if (cmd === 'end') return { ok: true, kind: 'end', say: t('pvEnd') };
+  if (cmd === 'rest') { const v = num(rest); if (v == null || v < 5 || v > 600) return { ok: false, say: t('needN', S.lang === 'da' ? 'pause 90' : 'rest 90') }; return { ok: true, kind: 'rest', secs: Math.round(v), say: t('pvRest', Math.round(v)) }; }
+  const li = LIFTS.findIndex((l) => l.alias.includes(word) || (word.length >= 2 && l.alias.some((a) => a.startsWith(word))));
+  if (li >= 0) return logFor(li, rest);
+  return { ok: false, say: t('cant') };
+}
+function run(r) {
+  const W = S.w;
+  if (r.kind === 'help') { S.help = true; return; }
+  if (r.kind === 'start') return startWorkout();
+  if (r.kind === 'undo') return undo();
+  if (r.kind === 'water') return addWater(r.ml);
+  if (r.kind === 'weight') { const was = S.weight; S.weight = r.kg; say(t('weightSet', kgS(r.kg))); pushUndo(() => { S.weight = was; }); return; }
+  if (r.kind === 'log') return logSets(r.lift, r.sets, 'type');
+  if (r.kind === 'skip') { if (!W.rest) return say(t('noRest'), 'err'); W.rest = null; W.flash = true; return say(t('skipped')); }
+  if (r.kind === 'next') { W.cur = (W.cur + 1) % LIFTS.length; return say(t('nextLift', nm(W.cur))); }
+  if (r.kind === 'rest') { if (W.rest) W.rest.total = Math.floor((Date.now() - W.rest.t0) / 1000) + r.secs; else W.rest = { t0: Date.now(), total: r.secs }; return say(t('restSet', r.secs)); }
+  if (r.kind === 'end') return endWorkout();
+}
+function enter() {
+  touch();
+  const r = parse(S.buf);
+  if (!r.ok) { say(r.say, 'err'); S.buf = ''; clearDraft(); return; }
+  S.buf = ''; run(r);
+  if (r.kind !== 'log') clearDraft();
+}
+
+// ---------- drawing ----------
+function barHTML() {
+  if (S.screen === 'today') {
+    const d = new Date(), loc = t('locale');
+    const date = d.toLocaleDateString(loc, { weekday: 'short', day: 'numeric', month: 'short' }).replace(/[.,]/g, '');
+    return `<div class="brand up"><b>Aven</b><span class="sm">${esc(date)}</span><span class="sm num" id="clock">${two(d.getHours())}:${two(d.getMinutes())}</span></div>
+      <button class="sq tap" data-a="plate" aria-label="${t('colour')}"><i></i></button>
+      <button class="sq tap end" data-a="lang" aria-label="${t('lang')}">${S.lang === 'en' ? 'DA' : 'EN'}</button>`;
+  }
+  const W = S.w, secs = S.screen === 'summary' ? W.secs : Math.floor((Date.now() - W.t0) / 1000);
+  return `<div class="brand up"><b>Push</b><span class="sm num" id="elapsed">${clock(secs)}</span></div>` +
+    (S.screen === 'workout' ? `<button class="sq tap end" data-a="end">${t('end')}</button>` : '');
+}
+function cells(frac) { const on = Math.round(Math.min(1, frac) * 20); return '<div class="cells">' + Array.from({ length: 20 }, (_, i) => `<i${i < on ? ' class="on"' : ''}></i>`).join('') + '</div>'; }
+function todayHTML() {
+  const total = LIFTS.reduce((a, l) => a + l.sets, 0);
+  const plan = LIFTS.map((l, i) => `<li><span class="n num">${two(i + 1)}</span><span class="nm">${esc(l[S.lang])}</span><i class="lead"></i><span class="sx num">${l.sets}×${l.reps}</span><span class="kg num">${i === 0 && S.coach ? `<span class="chg">${kg1(82.5)}</span>` : kg1(l.kg)}</span></li>`).join('');
+  const done = S.done;
+  return `
+  <section class="band hero" style="--i:0">
+    <div class="top pad up sm"><span>${t('todays')}</span><span class="dim">${done ? t('doneToday') : t('week')}</span></div>
+    <h1 class="giant pad">Push</h1>
+    <div class="spec up sm">
+      ${done
+        ? `<div><b class="num">${done.sets}</b>${t('sets')}</div><div><b class="num">${Math.max(1, Math.round(done.secs / 60))}</b>${t('min')}</div><div><b class="num">${LIFTS.length}</b>${t('lifts')}</div>`
+        : `<div><b class="num">${LIFTS.length}</b>${t('lifts')}</div><div><b class="num">${total}</b>${t('sets')}</div><div><b class="num">55</b>${t('min')}</div>`}
+    </div>
+    <button class="go pad tap" data-a="start"><span>${done ? t('again') : t('start')}</span><i class="tri"></i></button>
+  </section>
+  <section class="band pad" style="--i:1"><ul class="plan">${plan}</ul></section>
+  <section class="band pad coach" style="--i:2">
+    <span class="tag">${t('coach')}</span>
+    <p>${done ? t('coachDone', done.sets, done.prs) : t('coachSay')}</p>
+    ${done ? '' : `<button class="btn tap" data-a="coach">${S.coach ? t('undo') : t('coachUse')}</button>`}
+  </section>
+  <section class="band pad" style="--i:3">
+    <div class="meter"><span class="up sm">${t('energy')}</span>${cells(1240 / 2900)}<span class="v num"><b>1240</b> / 2900 kcal</span></div>
+    <div class="meter"><span class="up sm">${t('protein')}</span>${cells(62 / 160)}<span class="v num"><b>62</b> / 160 g</span></div>
+    <button class="meter tap" data-a="water"><span class="up sm">${t('water')}</span>${cells(S.water / 3000)}<span class="v num"><b>${dec((S.water / 1000).toFixed(2))}</b> / 3 l<span class="add">+250</span></span></button>
+  </section>
+  <section class="band pad two" style="--i:4">
+    <div><span class="up sm">${t('weight')}</span><b class="num">${kg1(S.weight)} kg</b><span class="sm dim">${t('wk')}</span></div>
+    <div><span class="up sm">${t('sleep')}</span><b class="num">7 h 12</b><span class="sm dim">${t('sl')}</span></div>
+  </section>`;
+}
+function loadHTML(li, kg) {
+  const l = LIFTS[li];
+  if (l.kind === 'db') return `<span>${t('db', kgS(kg))}</span>`;
+  if (l.kind === 'cable') return `<span>${t('cable', kgS(kg))}</span>`;
+  let side = (kg - 20) / 2; const got = [];
+  for (const p of [25, 20, 15, 10, 5, 2.5, 1.25]) while (side >= p - 1e-9) { got.push(p); side -= p; }
+  if (!got.length) return `<span>${t('barOnly')}</span>`;
+  const H = { 25: 22, 20: 22, 15: 19, 10: 16, 5: 12, 2.5: 9, 1.25: 7 }, Wd = { 25: 8, 20: 7, 15: 6, 10: 5, 5: 4, 2.5: 3, 1.25: 3 };
+  const pl = (arr) => arr.map((p) => `<i style="width:${Wd[p]}px;height:${H[p]}px"></i>`).join('');
+  return `<span class="barbell" aria-hidden="true"><i class="stub"></i>${pl([...got].reverse())}<i class="collar"></i><i class="shaft"></i><i class="collar"></i>${pl(got)}<i class="stub"></i></span><span class="num">${got.map(kgS).join(' + ')} ${t('side')}</span>`;
+}
+function workoutHTML() {
+  const W = S.w, pv = S.buf ? parse(S.buf) : null;
+  const li = pv && pv.ok && pv.kind === 'log' ? pv.lift : W.cur;
+  const L0 = LIFTS[li], lift = W.lifts[li], k = openIdx(li), p = pv && pv.ok && pv.kind === 'log' ? pv.sets[0] : planned(li);
+  const strip = LIFTS.map((l, i) => {
+    const ss = W.lifts[i].sets;
+    return `<button class="${i === W.cur ? 'on' : 'tap'}" data-a="lift" data-v="${i}"><span>${esc(l.chip[S.lang])}</span><span class="pips">${ss.map((s) => `<i${s.done ? ' class="f"' : ''}></i>`).join('')}</span></button>`;
+  }).join('');
+  const left = restLeft();
+  let stage;
+  if (W.rest && left > 0 && !(pv && pv.ok && pv.kind === 'log')) {
+    const el = W.rest.total - left, nu = nextUp(), np = nu >= 0 ? planned(nu) : null;
+    const nx = nu >= 0 ? `${t('next')}: ${esc(nm(nu))} ${openIdx(nu) + 1}/${W.lifts[nu].sets.length}, ${kgS(np.kg)} × ${np.reps}` : t('allDone');
+    const lay = (c, st) => `<div class="lay pad ${c}"${st}><div class="up sm">${t('rest')}${W.rest.pr ? `<span class="tagpr">${t('record')}</span>` : ''}</div><div class="cd num"${left >= 600 ? ' style="--n:5"' : ''}>${Math.floor(left / 60)}:${two(left % 60)}</div><div class="nx up sm">${nx}</div></div>`;
+    stage = `<section class="band stage${S.deck ? ' compact' : ''}" style="--i:1"><div class="rest">${lay('', '')}${lay('fill', ` style="animation-duration:${W.rest.total}s;animation-delay:-${el}s;animation-timing-function:steps(${W.rest.total})" aria-hidden="true"`)}</div>
+      <div class="restbtn"><button class="tap num" data-a="restm">−15</button><button class="tap num" data-a="restp">+15</button><button class="tap" data-a="skip">${t('skip')}</button></div></section>`;
+  } else {
+    const lastS = L0.last.map((s) => `${kgS(s[0])}×${s[1]}`).join('  ');
+    stage = `<section class="band stage pad${S.deck ? ' compact' : ''}${W.flash ? ' flash' : ''}" style="--i:1">
+      <div class="head"><span class="nm">${esc(nm(li))}</span><span class="up sm num">${t('set')} ${k < 0 ? lift.sets.length + 1 : k + 1}/${k < 0 ? lift.sets.length + 1 : lift.sets.length}</span></div>
+      <div class="big" style="--n:${(kgS(p.kg) + p.reps).length}"><div class="fig"><b class="num">${kgS(p.kg)}</b><span class="up sm">${t('kg')}</span></div><span class="x">×</span><div class="fig"><b class="num">${p.reps}</b><span class="up sm">${t('reps')}</span></div></div>
+      <div class="facts">
+        <div class="row"><span class="k up sm dim">${t('load')}</span>${loadHTML(li, p.kg)}</div>
+        <div class="row"><span class="k up sm dim">${t('last')}</span><span class="num">${lastS}</span><span class="dim sm up">${t('lastDate')}</span></div>
+      </div></section>`;
+  }
+  const rows = lift.sets.map((s, i) => {
+    const now = i === k, cls = [s.done ? 'done' : '', now ? 'now' : '', s.pr ? 'pr' : '', W.stamp === li + ':' + i ? 'stamp' : ''].join(' ');
+    const v = now ? p : s;
+    return `<li class="${cls}"><span class="num sm${now ? '' : ' dim'}">${two(i + 1)}</span><span class="num">${kg1(v.kg)}</span><span class="dim">×</span><span class="num">${v.reps}</span><span>${s.pr ? `<span>${t('record')}</span>` : ''}${s.done ? '<i class="mk"></i>' : now ? t('now') : ''}</span></li>`;
+  }).join('');
+  W.flash = false; W.stamp = null;
+  return `<nav class="band strip" style="--i:0">${strip}</nav>${stage}<section class="sets" style="--i:2"><ul>${rows}</ul></section>`;
+}
+function summaryHTML() {
+  const W = S.w, all = W.lifts.flatMap((l) => l.sets.filter((s) => s.done));
+  const vol = Math.round(all.reduce((a, s) => a + s.kg * s.reps, 0)), prs = all.filter((s) => s.pr).length;
+  const per = W.lifts.map((l, i) => { const d = l.sets.filter((s) => s.done); return d.length ? `<li><span class="up b">${esc(LIFTS[i].chip[S.lang])}</span><i class="lead"></i><span class="num">${d.map((s) => `${kgS(s.kg)}×${s.reps}`).join('  ')}</span></li>` : ''; }).join('');
+  const agg = (a) => { const n = a.reduce((x, s) => x + s.n, 0); return n ? { n, touch: a.reduce((x, s) => x + s.touches, 0) / n, sec: a.reduce((x, s) => x + s.ms, 0) / 1000 / n } : null; };
+  const A = agg(W.stats.tap), B = agg(W.stats.type), f1 = (v) => dec(v.toFixed(1));
+  // Time means something only with a few sets behind it, so it shows from 3 sets; before that the touches decide.
+  const row = (name, g) => `<div class="cmp"><span class="up b">${name}</span><span class="num">${g ? g.n : 0}</span><span class="num">${g ? f1(g.touch) : '–'}</span><span class="num">${g && g.n >= 3 ? f1(g.sec) : '–'}</span></div>`;
+  let verdict = t('vNone');
+  if (A && B && A.n >= 3 && B.n >= 3) verdict = Math.abs(A.sec - B.sec) < 0.3 ? t('vTie', f1((A.sec + B.sec) / 2)) : A.sec < B.sec ? t('vTap', f1(A.sec), f1(B.sec)) : t('vType', f1(B.sec), f1(A.sec));
+  else if (A && B) verdict = Math.abs(A.touch - B.touch) < 0.05 ? t('vTouchTie') : A.touch < B.touch ? t('vTouchTap', f1(A.touch), f1(B.touch)) : t('vTouchType', f1(B.touch), f1(A.touch));
+  else if (A || B) verdict = t('vOne');
+  return `<section class="band hero" style="--i:0"><div class="top pad up sm"><span>${t('fin')}</span><span class="dim num">${t('finLifts', W.lifts.filter((l) => l.sets.some((q) => q.done)).length, LIFTS.length)}</span></div>
+      <h1 class="giant pad" style="--n:${t('done').length}">${t('done')}</h1>
+      <div class="spec up sm"><div><b class="num">${all.length}</b>${t('sets')}</div><div><b class="num">${vol.toLocaleString(t('locale'))}</b>kg</div><div><b class="num">${prs}</b>${t('records')}</div></div></section>
+    <section class="band pad rcpt" style="--i:1"><ul>${per}</ul></section>
+    <section class="pad rcpt" style="--i:2"><h2>${t('how')}</h2>
+      <div class="cmp sm up dim"><span></span><span>${t('cSets')}</span><span>${t('cTouch')}</span><span>${t('cSec')}</span></div>
+      ${row(t('hTap'), A)}${row(t('hType'), B)}<p class="verdict">${verdict}</p></section>
+    <div style="flex:1"></div>
+    <button class="go pad tap" data-a="back" style="flex:none"><span>${t('back')}</span><i class="tri"></i></button>`;
+}
+function dockHTML() {
+  if (S.screen === 'summary') return '';
+  const inW = S.screen === 'workout', W = S.w;
+  const pv = S.buf ? parse(S.buf) : null;
+  const m = pv ? { text: pv.say, kind: pv.ok ? 'pv' : 'err', tally: '', undo: false } : S.msg || { text: t(inW ? 'hiWork' : 'hiToday'), kind: 'hint' };
+  let h = `<div class="say pad ${m.kind}"><span class="m${m.kind === 'hint' ? ' dim' : ''}">${esc(m.text)}</span>${m.tally ? `<span class="sm dim up">${esc(m.tally)}</span>` : ''}${m.undo && S.undos.length ? `<button class="undo tap" data-a="undo">${t('undo')}</button>` : ''}</div>`;
+  if (inW && !S.deck) {
+    const li = W.cur, p = planned(li), k = openIdx(li), st = LIFTS[li].step;
+    h += `<div class="steps"><div class="grp"><button class="tap num" data-a="kg" data-v="-1">−${dec(st)}</button><div class="val"><b class="num">${kgS(p.kg)}</b><span class="sm up dim">${t('kg')}</span></div><button class="tap num" data-a="kg" data-v="1">+${dec(st)}</button></div>
+      <div class="grp"><button class="tap num" data-a="reps" data-v="-1">−1</button><div class="val"><b class="num">${p.reps}</b><span class="sm up dim">${t('reps')}</span></div><button class="tap num" data-a="reps" data-v="1">+1</button></div></div>
+      <button class="log pad tap" data-a="log"><span>${k < 0 ? t('logX') : t('log', k + 1)}</span><small class="num">${t('thenRest')} ${Math.floor(restFor(li) / 60)}:${two(restFor(li) % 60)}</small></button>`;
+  }
+  h += `<div class="prompt"><button class="line${S.deck ? '' : ' tap'}" data-a="open"><span class="gt">&gt;</span>${S.buf ? `<span>${esc(S.buf)}</span>` : ''}${S.deck ? '<i class="caret"></i>' : ''}${S.buf ? '' : `<span class="ph">${t(inW ? 'phWork' : 'phToday')}</span>`}</button>
+    <button class="k tap" data-a="help" aria-label="${t('help')}">?</button><button class="k tap" data-a="deck">${S.deck ? t('close') : t('keys')}</button></div>`;
+  if (S.deck) {
+    const chips = inW
+      ? LIFTS.map((l) => [l.chip[S.lang], l.alias[S.lang === 'da' ? 1 : 0] + ' ']).concat([[t('undo'), CMD.undo[S.lang === 'da' ? 1 : 0], 1], [S.lang === 'da' ? 'Spring' : 'Skip', CMD.skip[S.lang === 'da' ? 1 : 0], 1], [t('next'), CMD.next[S.lang === 'da' ? 1 : 0], 1], [t('end'), CMD.end[S.lang === 'da' ? 3 : 0], 1]])
+      : [['Start', 'start', 1], [t('water'), CMD.water[S.lang === 'da' ? 1 : 0] + ' '], [t('weight'), CMD.weight[S.lang === 'da' ? 1 : 0] + ' ']];
+    h += `<div class="chips" style="--n:${inW ? 5 : 3}">${chips.map((c) => `<button class="tap" data-a="chip" data-v="${esc(c[1])}"${c[2] ? ' data-go="1"' : ''}>${esc(c[0])}</button>`).join('')}</div>
+      <div class="pad4">${['7', '8', '9', '⌫', '4', '5', '6', '×', '1', '2', '3', ',', '.', '0'].map((c) => `<button class="tap${c === '⌫' ? ' fn' : ''}" data-a="key" data-v="${c}"${c === '⌫' ? ' aria-label="Backspace"' : ''}>${c === '⌫' ? 'Del' : c}</button>`).join('')}<button class="ent tap" data-a="enter">Enter</button></div>`;
+  }
+  return h;
+}
+function helpHTML() {
+  const da = S.lang === 'da', d = (s) => (da ? s.replace('.', ',') : s);
+  const row = (c, k) => `<li><code>${c}</code><span>${t(k)}</span></li>`;
+  return `<header class="bar"><div class="brand up"><b>${t('help')}</b></div><button class="sq tap end" data-a="help">${t('close')}</button></header>
+    <div class="scroll pad help"><h2>${t('hSets')}</h2><ul>
+      ${row('Enter', 'h1')}${row('80x8', 'h2')}${row('8', 'h3')}${row(d('82.5x6x2'), 'h4')}${row('80x8,8,7', 'h5')}${row(da ? 'skulder 50x8' : 'ohp 50x8', 'h6')}</ul>
+      <h2>${t('hOther')}</h2><ul>
+      ${row(da ? 'fortryd' : 'undo', 'h7')}${row(da ? 'spring / pause 90' : 'skip / rest 90', 'h8')}${row(da ? 'næste / slut' : 'next / end', 'h9')}${row(da ? 'vand 500 / vægt 74,6' : 'water 500 / weight 74.6', 'h10')}${row('start', 'h11')}</ul></div>`;
+}
+function render() {
+  document.documentElement.lang = S.lang;
+  document.documentElement.dataset.plate = PLATES[S.plate];
+  $('#bar').innerHTML = barHTML();
+  const main = $('#main');
+  main.innerHTML = S.screen === 'today' ? todayHTML() : S.screen === 'workout' ? workoutHTML() : summaryHTML();
+  if (S.enter) { main.classList.remove('enter'); void main.offsetWidth; main.classList.add('enter'); main.scrollTop = 0; S.enter = false; setTimeout(() => main.classList.remove('enter'), 400); }
+  const nowRow = main.querySelector('.sets li.now'); if (nowRow) nowRow.scrollIntoView({ block: 'nearest' });
+  const dock = $('#dock'); dock.innerHTML = dockHTML(); dock.hidden = S.screen === 'summary';
+  const sheet = $('#sheet'); sheet.hidden = !S.help; sheet.innerHTML = S.help ? helpHTML() : '';
+}
+
+// ---------- input ----------
+function act(a, v, el) {
+  const W = S.w;
+  switch (a) {
+    case 'plate': S.plate = (S.plate + 1) % PLATES.length; break;
+    case 'lang': S.lang = S.lang === 'en' ? 'da' : 'en'; S.msg = null; break;
+    case 'start': startWorkout(); break;
+    case 'end': endWorkout(); break;
+    case 'back': backToday(); break;
+    case 'water': addWater(250); break;
+    case 'coach':
+      if (Date.now() - S.actAt < 350) return;
+      S.coach = !S.coach; S.actAt = Date.now(); say(t(S.coach ? 'coachOn' : 'coachOff')); break;
+    case 'lift': touch(); W.cur = +v; break;
+    case 'kg': case 'reps': {
+      touch();
+      const li = W.cur, sets = W.lifts[li].sets, k = openIdx(li), p = planned(li);
+      const nv = a === 'kg' ? Math.max(0, Math.min(500, p.kg + v * LIFTS[li].step)) : Math.max(1, Math.min(50, p.reps + +v));
+      if (k < 0) sets.push({ kg: p.kg, reps: p.reps, done: false });
+      const from = k < 0 ? sets.length - 1 : k;
+      if (a === 'kg') sets.forEach((s, i) => { if (i >= from && !s.done) s.kg = nv; }); else sets[from].reps = nv;
+      break;
+    }
+    case 'log': { touch(); const p = planned(W.cur); logSets(W.cur, [{ kg: p.kg, reps: p.reps }], 'tap'); break; }
+    case 'restm': case 'restp': if (W.rest) { W.rest.total += a === 'restp' ? 15 : -15; if (restLeft() <= 0) { W.rest = null; W.flash = true; } } break;
+    case 'skip': W.rest = null; W.flash = true; break;
+    case 'undo': if (Date.now() - S.actAt < 350) return; undo(); break; // a double tap on Log must not land on Undo
+    case 'open': if (!S.deck) { S.deck = true; if (W) touch(); } break;
+    case 'deck': S.deck = !S.deck; if (S.deck && W) touch(); if (!S.deck) S.buf = ''; break;
+    case 'help': S.help = !S.help; break;
+    case 'key': touch(); S.buf = v === '⌫' ? S.buf.slice(0, -1) : (S.buf + (v === '×' ? 'x' : v)).slice(0, 28); break;
+    case 'chip': touch(); S.buf = v; if (el && el.dataset.go) { draft.n--; enter(); } break;
+    case 'enter': enter(); break;
+  }
+  render();
+}
+document.addEventListener('click', (e) => { const b = e.target.closest('[data-a]'); if (b) act(b.dataset.a, b.dataset.v, b); });
+document.addEventListener('touchstart', () => {}, { passive: true });
+document.addEventListener('keydown', (e) => {
+  if (e.metaKey || e.ctrlKey || e.altKey || S.screen === 'summary') { if (e.key === 'Enter' && S.screen === 'summary') act('back'); return; }
+  if (e.key === 'Escape') { if (S.help) S.help = false; else if (S.deck) { S.deck = false; S.buf = ''; } render(); return; }
+  if (S.help) return;
+  if (e.key === 'Enter') { e.preventDefault(); if (!S.deck && S.buf === '' && document.activeElement && document.activeElement.dataset.a) return; act('enter'); return; }
+  if (e.key === 'Backspace') { e.preventDefault(); act('key', '⌫'); return; }
+  if (e.key.length === 1 && /[a-zæøå0-9 .,x*×?]/i.test(e.key)) {
+    if (e.key === ' ' && document.activeElement && document.activeElement.dataset.a && !S.deck) return;
+    e.preventDefault(); S.deck = true; touch(); S.buf = (S.buf + e.key.toLowerCase()).slice(0, 28); render();
+  }
+});
+
+// Clocks: only their own text changes on a tick. The screen is redrawn only when a rest ends.
+setInterval(() => {
+  const c = $('#clock'), d = new Date();
+  if (c) { const s = two(d.getHours()) + ':' + two(d.getMinutes()); if (c.textContent !== s) c.textContent = s; }
+  const W = S.w; if (!W || S.screen !== 'workout') return;
+  const el = $('#elapsed'), s = clock(Math.floor((Date.now() - W.t0) / 1000));
+  if (el && el.textContent !== s) el.textContent = s;
+  if (W.rest) {
+    const left = restLeft();
+    if (left <= 0) { W.rest = null; W.flash = true; render(); return; }
+    const txt = Math.floor(left / 60) + ':' + two(left % 60);
+    document.querySelectorAll('.cd').forEach((n) => { if (n.textContent !== txt) n.textContent = txt; });
+  }
+}, 250);
+
+S.msg = { text: t('hiToday'), kind: 'hint' };
+render();
+})();
+</script>
+</body>
+</html>

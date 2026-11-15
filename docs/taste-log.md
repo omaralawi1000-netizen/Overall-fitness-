@@ -57,6 +57,20 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: ten styles, style 3 "Raw" (/_prototypes/raw/)
+Asked for: "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one is the brutalist, all-monospace one.
+Built (clickable Today and live workout, one file): gym-chalk paper, black ink, hard 2 px rules, one typeface (Martian Mono, condensed for tables, heavy for numbers), and one accent taken from a competition plate (20 kg blue; the square in the top bar switches to 25 red, 15 yellow, 10 green). No blur, gradient, radius or shadow, so there is nothing to band and nothing to lag. The hero on every screen is one giant word or number that fills the width ("PUSH", "80 × 8", the rest countdown, "DONE"). Rest is the accent colour draining down the block one second at a time. Motion is hard cuts only. A barbell drawn from rectangles shows what to load per side.
+The experiment, type-to-log: a command line with its own keypad (digits, ×, comma, the lift names and Undo, Skip, Next, End as keys; no phone keyboard). `80x8` logs a set, `8` is reps at the planned weight, Enter alone logs the set as planned, `82.5x6x2` and `80x8,8,7` log several sets, `ohp 50x8` logs to another lift without leaving, plus `undo`, `skip`, `rest 90`, `water 500`, `weight 74.6`, `start`. The line above the prompt shows the reading before Enter, so nothing is logged on a guess. Every logged set counts its touches and the time between them, and the finished screen compares tapped and typed.
+What the counts say (the prototype's own counter, scripted run; seconds need his thumbs):
+- Set as planned: 1 tap. Typed: 1 key if the keys are already open, 2 if not.
+- Two fields changed a little (+2.5 kg, 2 fewer reps): 4 taps. Typed: 7 to 8 keys.
+- A big jump (50 × 8 to 40 × 12): 9 to 10 taps. Typed: 6 to 7 keys.
+Reading: tapping wins the everyday set. Typing only pays when the numbers jump by five or more stepper presses, or for logging several forgotten sets at once. So the command line is a power tool beside the Log button, not a replacement.
+Open conflict to settle if this idea is kept: the instant parser refuses "80 x 8" (`docs/parser-examples.md` rule 7: the sign does not say which number is the weight). Here weight comes first, as in gym notation, and the reading is shown before Enter.
+Judge (one fresh round): 8. Fixed after it: the +250 water target, the finished screen's verdict (touches decide until there are 3 sets each way), the doubled title on the finished screen. Its biggest weakness: the keypad screen is dense, and the look leans on one move, the giant word.
+Link: https://claude.ai/artifact/PqD6xb1rM2haX2HX6fktCP. Needs his phone: how hard cuts feel at 120 Hz, the 1 px rules and dotted lines at his screen's density, the chalk colour in gym light.
+Verdict: waiting for Omar.
+
 ### 12 Nov 2026, 08:16: Reed and Silk rejected; Oura as the inspiration (/_prototypes/summit/)
 Rejected: Reed and Silk, both of them, about 40 minutes after Silk was published.
 His words: "This is not how I would like it. I wanted to take a look at, make the Aura app as inspiration, like a wallpaper that's very beautiful, like it." ("Aura" is Oura, as on 2 Nov.)
