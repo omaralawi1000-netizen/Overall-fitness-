@@ -241,7 +241,7 @@ button:focus-visible { outline: 2px solid var(--red); outline-offset: 2px; }
   justify-content: space-between; transition: transform var(--fast) var(--out); }
 .outline:active { transform: scale(0.98); }
 .outline b { font-size: 20px; font-weight: 800; letter-spacing: -0.02em; }
-.app.test .workout, .app.test .col, .app.test .fr, .app.test .recshow { transition: none !important; }
+.app.test .workout, .app.test .finish, .app.test .col, .app.test .fr, .app.test .recshow { transition: none !important; }
 .trial { position: absolute; inset: 0; z-index: 60; display: flex; flex-direction: column; background: var(--paper);
   padding-top: max(12px, env(safe-area-inset-top)); }
 .trial[data-phase="look"] { background: none; }
@@ -816,6 +816,7 @@ function makeRound(mode, resting, e, avoid) {
 /* puts the real app into that state at once: no slide, no rolling digits */
 function stage(R) {
   clearInterval(timer); clearTimeout(recTimer); level.forEach((a) => a.cancel());
+  $('finish').classList.remove('on'); $('finish').inert = true; /* a finished day's poster would cover the screens under test */
   rest.classList.remove('on', 'settled', 'rec-out'); paper.style.opacity = 0;
   Object.assign(st, { e: R.e, s: R.s, started: 0, finished: 0, busy: false, rising: false, resting: false, poster: false, pending: null, queued: null });
   plan.forEach((x, i) => { x.done = x.sets.slice(0, i < R.e ? x.sets.length : i === R.e ? R.s : 0).map((p) => [...p]); });
@@ -838,7 +839,7 @@ const tr = { rounds: [], i: 0, q: 0, t0: 0, log: [] };
 function put(html, phase) { trial.dataset.phase = phase; trial.innerHTML = html; trial.hidden = false; }
 const head = (mid, right) => `<header class="meta cols"><span>${L('3-second test', '3-sekunders-test')}</span><span>${mid}</span><span>${right}</span></header>`;
 function intro() {
-  snap = { plan: JSON.stringify(plan.map((x) => ({ done: x.done, best: x.best, sets: x.sets }))), st: { ...st, records: [...st.records] }, mode: app.dataset.mode };
+  snap = { plan: JSON.stringify(plan.map((x) => ({ done: x.done, best: x.best, sets: x.sets }))), st: { ...st, records: [...st.records] }, mode: app.dataset.mode, fin: $('finish').classList.contains('on') };
   app.classList.add('test');
   put(`<div class="tin">${head('', '')}
     <h2 class="t-title">3 ${L('seconds', 'sekunder')}<span class="red">.</span></h2>
@@ -930,9 +931,12 @@ function leave() {
   clearInterval(timer); clearTimeout(recTimer); level.forEach((a) => a.cancel());
   rest.classList.remove('on', 'settled', 'rec-out'); paper.style.opacity = 0;
   Object.assign(st, snap.st, { busy: false, rising: false, resting: false, poster: false, queued: null });
-  if (st.pending) { [st.e, st.s] = st.pending; st.pending = null; }
   app.dataset.mode = snap.mode; hw.style.visibility = hr.style.visibility = '';
-  show('today'); sizeRows(); drawTitle(false); drawProg(); loadSet();
+  show('today'); sizeRows();
+  /* ending a saved rest moves on to the next lift; otherwise the set keeps any + and − made before the test */
+  if (st.pending) { [st.e, st.s] = st.pending; st.pending = null; loadSet(); } else { drawHero(); drawRows(); drawSlab(); }
+  drawTitle(false); drawProg();
+  if (snap.fin) { $('finish').classList.add('on'); $('finish').inert = false; }
   if (st.started) $('elapsed').textContent = clockTxt(elapsed());
   trial.hidden = true; trial.innerHTML = '';
   requestAnimationFrame(() => requestAnimationFrame(() => app.classList.remove('test')));
