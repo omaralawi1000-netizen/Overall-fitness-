@@ -490,7 +490,10 @@ const TOTAL = TG.length;
 
 const S = { lang: q.get('lang') === 'da' ? 'da' : 'en', screen: 'today', live: false, ended: false, clock: 964, ex: 1, set: 2, cur: null, coach: null,
   resting: false, restStart: 0, restTarget: testRest ? Math.max(3, +q.get('rest') || 8) : 120, restMax: 0, ghostRest: 0, restDone: false,
-  towerEx: 1, hist: [], formSel: 4, lastRec: false };
+  towerEx: 1, hist: [], formSel: 4, lastRec: false, t0: 0 };
+const CLOCK0 = S.clock;
+// The session clock comes from the wall clock, so it stays right after the phone was locked or the tab was in the background.
+const goLive = () => { S.live = true; if (!S.t0) S.t0 = Date.now(); };
 
 const t = (k) => T[S.lang][k];
 const num = (x) => { const s = Number.isInteger(x) ? String(x) : x.toFixed(1); return S.lang === 'da' ? s.replace('.', ',') : s; };
@@ -646,7 +649,7 @@ function drawAll() { drawStatic(); drawToday(); drawWorkout(0); }
 let fillAnim = null;
 function startRest() {
   const n = done();
-  S.resting = true; S.restDone = false; S.restStart = performance.now();
+  S.resting = true; S.restDone = false; S.restStart = Date.now();
   S.ghostRest = testRest ? Math.round(S.restTarget * 1.3) : Math.max(60, TG[n] - TG[n - 1] - 45);
   S.restMax = Math.max(S.restTarget, S.ghostRest) * 1.18;
   $('hero').dataset.face = 'rest';
@@ -657,7 +660,7 @@ function startRest() {
 function stopRest() { S.resting = false; S.restDone = false; if (fillAnim) { fillAnim.cancel(); fillAnim = null; } $('hero').dataset.face = 'edit'; }
 setInterval(() => {
   if (!S.resting) return;
-  const el = (performance.now() - S.restStart) / 1000;
+  const el = (Date.now() - S.restStart) / 1000;
   $('rt').textContent = mmss(el); $('rtt').textContent = (S.lang === 'da' ? ',' : '.') + Math.floor((el * 10) % 10);
   $('restChipT').textContent = mmss(el);
   if (!S.restDone && el >= S.restTarget) { S.restDone = true; $('hero').classList.add('restdone'); drawCoach(); }
@@ -739,14 +742,14 @@ function go(screen) {
 }
 
 /* ---------- wiring ---------- */
-$('start').onclick = () => { if (S.ended) return openFinish(); S.live = true; drawToday(); go('workout'); };
+$('start').onclick = () => { if (S.ended) return openFinish(); goLive(); drawToday(); go('workout'); };
 $('toToday').onclick = () => { drawToday(); go('today'); };
 $('lang').onclick = () => { S.lang = S.lang === 'en' ? 'da' : 'en'; for (const id of ['w', 'r', 'gap', 'sY', 'sG']) delete $(id).dataset.v; drawAll(); };
 $('form').onclick = (ev) => { const b = ev.target.closest('button'); if (!b) return; S.formSel = +b.dataset.f; drawToday(); };
 $('log').onclick = logSet;
 $('undo').onclick = undo;
 $('coachAct').onclick = coachAct;
-$('plus30').onclick = () => { S.restTarget += testRest ? 5 : 30; if (S.restDone && (performance.now() - S.restStart) / 1000 < S.restTarget) S.restDone = false; drawWorkout(0); };
+$('plus30').onclick = () => { S.restTarget += testRest ? 5 : 30; if (S.restDone && (Date.now() - S.restStart) / 1000 < S.restTarget) S.restDone = false; drawWorkout(0); };
 $('editNext').onclick = () => { $('hero').dataset.face = 'edit'; S.towerEx = S.ex; drawWorkout(0); };
 $('restChip').onclick = () => { $('hero').dataset.face = 'rest'; drawWorkout(0); };
 $('finBtn').onclick = openFinish;
@@ -756,7 +759,7 @@ document.querySelector('.nums').onclick = (ev) => { const b = ev.target.closest(
 
 setInterval(() => {
   if (!S.live || S.ended || done() >= TOTAL) return;
-  S.clock++;
+  S.clock = CLOCK0 + Math.floor((Date.now() - S.t0) / 1000);
   $('clock').textContent = mmss(S.clock);
   drawGap(0);
   if (S.screen === 'workout') placeMarkers(true); else $('tWhen').textContent = `${t('whenLive')} ${mmss(S.clock)}`;
@@ -765,7 +768,7 @@ setInterval(() => {
 for (const e of PLAN) e.best0 = e.best;
 S.cur = suggest();
 drawAll();
-if (q.get('screen') === 'workout') { S.live = true; drawToday(); S.screen = 'workout'; $('today').inert = true; $('workout').inert = false; placeMarkers(false); }
+if (q.get('screen') === 'workout') { goLive(); drawToday(); S.screen = 'workout'; $('today').inert = true; $('workout').inert = false; placeMarkers(false); }
 addEventListener('resize', () => placeMarkers(false));
 document.fonts && document.fonts.ready.then(() => placeMarkers(false));
 })();
