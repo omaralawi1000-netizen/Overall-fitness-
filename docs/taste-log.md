@@ -57,6 +57,20 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: ten-style round, style 7 "Calibre", analog instrument dials (/_prototypes/calibre/)
+Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given instrument dials and one experiment, a spin dial for weight and reps.
+Reading of the log before building: he picks mechanics he can picture using over atmosphere, Today needs one bold hero, the near-black look is retired, and a judge's 8 has not predicted his yes. So this is light metal, the hero is one big gauge, and it is shown early as a thing he can spin.
+Built (Today and the live workout, clickable, English and Danish, four bezel colours): a light brushed-aluminium faceplate, cream ceramic dial faces, one coloured ceramic bezel, red needles, Archivo for every number and label. No glass, no glow, no photo.
+- **Today:** readiness as one large gauge (bezel 0 to 100, a green "push" zone, a needle that sweeps up like an ignition check, a big 82). Sleep, protein and sessions as three small dials. The session as a plate with a round Start key. The Coach as one plain sentence on top.
+- **Workout:** a needle meter shows the weight against your best (red zone past it), then becomes the rest timer and runs down. Under it the dial: the outer ring is kilos, 2.5 kg per click, 60 kg per turn; the metal knob is reps, 1 to 15 with hard stops. Each click ticks (sound and vibration). A flick coasts through a few clicks and the ring can be caught mid-turn. The Coach acts: "Use 85" turns the ring for you. A record pegs the needle against the stop.
+- **Dial test:** five targets by dial, the same five by −/+ buttons, timed, with a verdict.
+The experiment, measured by script: 282 turns (clean and sloppy), 0 misreads; hard stops hold at 0 and 300 kg and at 1 and 15 reps; a 40-click fast spin counted every click; 36.5 px of thumb travel per click on a 340 px dial. Speed is not settled: a scripted finger needed 1.7 s per set on the dial and 1.8 s on buttons, which says nothing about a real thumb. That needs Omar to run the Dial test on his phone.
+Judge (fresh design-judge, Sonnet, one per round): 7, then 8 after fixes (Danish, lit metal, readable small dials). The second judge's defects (rep numbers grabbed the weight ring, no flick, ring not catchable mid-turn, a thin record moment) are fixed and tested by me, not re-judged. Its biggest weakness for the direction: "precise but not alive": cool grey metal with one colour, and the ring is only a third of the screen.
+My own score: 7.5 as a look for Omar (calm and premium, but no frost and no wallpaper, the two things he asked for last), 8 for the dial as a way to set weight. The dial and the needle meter are the parts worth keeping whichever style wins.
+Needs his phone: how the clicks feel (vibration and sound), bands in the bezel and the brushed metal, needle and ring smoothness at 120 Hz, the rest buttons with gym hands, grey and green in daylight.
+Artifact: https://claude.ai/artifact/Ex8A2kGaDhFV8aX13HRYSJ
+Verdict: waiting for Omar.
+
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.

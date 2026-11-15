@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#dedcd7">
+<!--PAGE-START-->
+<title>Aven Calibre</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap">
+<style>
+/* Layout: one phone screen built like a hi-fi faceplate. A selector switch at the bottom has three
+   positions (Today, Workout, Dial test). Every reading is a needle on a printed scale; the one thing
+   you turn is the big dial. A single committed look (light aluminium), so no dark block. */
+:root {
+  color-scheme: light;
+  --room: #cbc9c3;          /* behind the phone on a wide screen */
+  --plate: #dedcd7;         /* brushed aluminium faceplate */
+  --plate-hi: #f4f3ef;
+  --plate-lo: #c6c4be;
+  --face: #f7f5ee;          /* ceramic dial face */
+  --face-lo: #e8e5da;
+  --ink: #151617;           /* printed scales and type */
+  --ink-2: #505255;
+  --tick: #8d8e8d;
+  --hand: #cf2027;          /* every needle and index */
+  --cer: #103d2f;           /* ceramic bezel insert (the theme colour) */
+  --cer-hi: #1d6049;
+  --cer-ink: #f0ead6;       /* engraving on the ceramic */
+  --font: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --spring-needle: cubic-bezier(.3, 1.4, .5, 1);
+  --spring-ui: cubic-bezier(.2, .9, .3, 1);
+  --brush: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='700' height='260'%3E%3Cfilter id='b' x='0' y='0' width='100%25' height='100%25'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.003 0.95' numOctaves='3' seed='11'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0.42 0 0 0 -0.15'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23b)'/%3E%3C/svg%3E");
+}
+.app[data-theme="navy"]     { --cer: #14264f; --cer-hi: #27458a; }
+.app[data-theme="oxblood"]  { --cer: #4f1521; --cer-hi: #7c2434; }
+.app[data-theme="graphite"] { --cer: #26282b; --cer-hi: #42454a; }
+
+[hidden] { display: none !important; }
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--room); color: var(--ink);
+  font-family: var(--font); font-size: 15px; line-height: 1.35; font-stretch: 100%;
+  -webkit-font-smoothing: antialiased; overscroll-behavior: none;
+  display: flex; justify-content: center; align-items: center;
+}
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--hand); outline-offset: 3px; }
+
+.app {
+  position: relative; width: 100%; max-width: 430px; height: 100%; max-height: 920px;
+  display: flex; flex-direction: column; overflow: hidden;
+  background: var(--brush),
+    linear-gradient(97deg, rgba(0,0,0,.13), rgba(255,255,255,.62) 27%, rgba(255,255,255,.1) 52%, rgba(0,0,0,.05) 74%, rgba(0,0,0,.16)),
+    linear-gradient(180deg, #e9e7e2 0%, var(--plate) 45%, #cfcdc7 100%);
+  background-size: 700px 260px, auto, auto;
+  user-select: none; -webkit-user-select: none;
+}
+.screens { flex: 1; min-height: 0; position: relative; }
+.screen {
+  position: absolute; inset: 0; display: none; flex-direction: column;
+  padding-block: 14px 10px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.screen.is-on { display: flex; }
+
+.label { font-size: 10.5px; font-weight: 650; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); }
+.num { font-stretch: 116%; font-weight: 600; font-variant-numeric: tabular-nums; letter-spacing: -.01em; }
+
+/* ---------- shared materials ---------- */
+.module {
+  border-radius: 20px;
+  background: linear-gradient(180deg, #f3f2ee, #e2e0db);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(0,0,0,.06), 0 0 0 1px rgba(0,0,0,.13), 0 2px 0 rgba(0,0,0,.10), 0 12px 16px -10px rgba(0,0,0,.4);
+}
+.metal {
+  background:
+    repeating-radial-gradient(circle at 50% 50%, rgba(0,0,0,.045) 0 .6px, rgba(255,255,255,0) .6px 2.2px),
+    conic-gradient(from 18deg, #fafaf8, #a9aaaa 11%, #f0f0ee 24%, #9c9d9e 37%, #fbfbf9 50%, #a6a7a8 62%, #efefed 75%, #9a9b9c 88%, #fafaf8);
+}
+.key {
+  height: 58px; border-radius: 16px; padding: 0 18px; display: inline-flex; align-items: center; justify-content: center; gap: 10px;
+  font-size: 13px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; color: var(--ink);
+  background: linear-gradient(180deg, #faf9f6, #d9d7d1);
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.16), 0 3px 0 rgba(0,0,0,.20), 0 9px 12px -8px rgba(0,0,0,.45);
+  transition: transform 70ms ease-out, box-shadow 70ms ease-out;
+}
+.key:active { transform: translateY(2px); box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(0,0,0,.08), 0 0 0 1px rgba(0,0,0,.2), 0 1px 0 rgba(0,0,0,.2), 0 3px 6px -4px rgba(0,0,0,.4); }
+.key.primary {
+  color: var(--cer-ink); font-size: 15px;
+  background: linear-gradient(180deg, var(--cer-hi), var(--cer));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.28), inset 0 -1px 0 rgba(0,0,0,.25), 0 0 0 1px rgba(0,0,0,.35), 0 3px 0 rgba(0,0,0,.34), 0 10px 14px -8px rgba(0,0,0,.55);
+}
+.key.primary:active { box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 0 0 1px rgba(0,0,0,.4), 0 1px 0 rgba(0,0,0,.3), 0 3px 6px -4px rgba(0,0,0,.5); }
+.key small { font-size: 11px; font-weight: 600; letter-spacing: .06em; opacity: .78; text-transform: none; }
+
+/* needles: one div, turned by the browser (rotate), pivot at its own origin */
+.needle { position: absolute; left: 50%; top: 50%; background: var(--hand); border-radius: 2px; will-change: rotate; transition: rotate 1100ms var(--spring-needle); box-shadow: 0 1px 2px rgba(0,0,0,.35); }
+.hub { position: absolute; left: 50%; top: 50%; translate: -50% -50%; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,.45), inset 0 0 0 1px rgba(0,0,0,.18); }
+.hub::after { content: ""; position: absolute; inset: 34%; border-radius: 50%; background: #2a2b2d; }
+
+/* ---------- selector switch (the only navigation) ---------- */
+.selector {
+  position: relative; display: grid; grid-template-columns: repeat(3, 1fr); height: 52px; margin: 0 16px;
+  margin-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  border-radius: 16px; padding: 4px;
+  background: linear-gradient(180deg, #bdbbb5, #cfcdc7);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,.28), inset 0 0 0 1px rgba(0,0,0,.10), 0 1px 0 rgba(255,255,255,.8);
+}
+.selector .thumb {
+  position: absolute; top: 4px; bottom: 4px; left: 4px; width: calc((100% - 8px) / 3); border-radius: 12px;
+  background: linear-gradient(180deg, #fbfaf7, #dddbd5);
+  box-shadow: inset 0 1px 0 #fff, 0 0 0 1px rgba(0,0,0,.14), 0 2px 0 rgba(0,0,0,.16), 0 6px 8px -5px rgba(0,0,0,.45);
+  transform: translateX(calc(var(--i, 0) * 100%)); transition: transform 240ms var(--spring-ui);
+}
+.selector .thumb::after { content: ""; position: absolute; left: 50%; top: 5px; width: 14px; height: 2px; margin-left: -7px; border-radius: 1px; background: var(--hand); }
+.selector button { position: relative; z-index: 1; font-size: 11px; font-weight: 700; letter-spacing: .13em; text-transform: uppercase; color: var(--ink-2); padding-top: 5px; }
+.selector button[aria-current="true"] { color: var(--ink); }
+
+/* ---------- Today ---------- */
+#today { gap: 12px; overflow-y: auto; justify-content: space-between; }
+.t-top { display: flex; align-items: center; justify-content: space-between; min-height: 24px; }
+.t-top .right { display: flex; align-items: center; gap: 6px; }
+.lang { height: 28px; padding: 0 9px; border-radius: 9px; font-size: 10.5px; font-weight: 700; letter-spacing: .12em; color: var(--ink-2); box-shadow: inset 0 1px 2px rgba(0,0,0,.25), 0 1px 0 rgba(255,255,255,.8); background: rgba(0,0,0,.05); }
+.lang b { color: var(--ink); font-weight: 750; }
+.swatches { display: flex; gap: 0; }
+.swatches button { width: 28px; height: 30px; display: grid; place-items: center; }
+.swatches i { width: 16px; height: 16px; border-radius: 50%; background: var(--c); box-shadow: inset 0 1px 1px rgba(255,255,255,.35), 0 0 0 1px rgba(0,0,0,.25); }
+.swatches button[aria-pressed="true"] i { box-shadow: inset 0 1px 1px rgba(255,255,255,.35), 0 0 0 2px var(--plate), 0 0 0 3.5px var(--ink); }
+.coach { font-size: 18px; line-height: 1.3; font-weight: 500; letter-spacing: -.01em; text-wrap: balance; margin: 0; }
+.coach b { font-weight: 700; }
+.coach .label { display: block; margin-bottom: 5px; }
+
+.gauge { position: relative; width: min(100%, 330px); aspect-ratio: 1; margin: 2px auto 0; border-radius: 50%; flex: none; }
+.gauge::before { content: ""; position: absolute; inset: 0; border-radius: 50%; z-index: 0;
+  box-shadow: 0 1px 0 rgba(255,255,255,.9), 0 14px 22px -12px rgba(0,0,0,.5), inset 0 0 0 1px rgba(0,0,0,.2); }
+.gauge .rim { position: absolute; inset: 0; border-radius: 50%; }
+.gauge svg { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.sheen { position: absolute; inset: 0; border-radius: 50%; pointer-events: none;
+  background: conic-gradient(from 28deg, rgba(255,255,255,.26), rgba(255,255,255,0) 15%, rgba(0,0,0,.20) 28%, rgba(255,255,255,0) 42%, rgba(255,255,255,.22) 52%, rgba(255,255,255,0) 66%, rgba(0,0,0,.18) 79%, rgba(255,255,255,0) 92%, rgba(255,255,255,.26));
+  -webkit-mask: radial-gradient(circle closest-side, transparent var(--m0), #000 calc(var(--m0) + .6%), #000 var(--m1), transparent calc(var(--m1) + .6%));
+          mask: radial-gradient(circle closest-side, transparent var(--m0), #000 calc(var(--m0) + .6%), #000 var(--m1), transparent calc(var(--m1) + .6%)); }
+.gauge .sheen { --m0: 72%; --m1: 93.4%; }
+.gauge .needle, .sub .needle, .arc .needle { filter: drop-shadow(0 1.5px 1.5px rgba(0,0,0,.3)); }
+.gauge .needle { width: 6px; clip-path: polygon(40% 0, 60% 0, 100% 100%, 0 100%); border-radius: 0; box-shadow: none; height: 39%; transform-origin: 50% 84%; translate: -50% -84%; rotate: -135deg; }
+.gauge .hub { width: 8%; height: 8%; }
+.g-num { font-size: 66px; fill: var(--ink); }
+.t-cer { fill: var(--cer-ink); font-weight: 650; font-stretch: 108%; font-variant-numeric: tabular-nums; }
+.t-ink { fill: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
+.t-lab { fill: var(--ink-2); font-weight: 650; letter-spacing: .14em; }
+
+.subs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.sub { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 10px 2px 9px; }
+.sub .dialette { position: relative; width: 82px; height: 82px; border-radius: 50%; background: radial-gradient(circle at 50% 35%, var(--face), var(--face-lo));
+  box-shadow: 0 0 0 3px var(--plate-hi), 0 0 0 4px rgba(0,0,0,.22), 0 6px 8px -4px rgba(0,0,0,.4), inset 0 1px 3px rgba(0,0,0,.18); }
+.sub svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.sub .needle { width: 4px; clip-path: polygon(36% 0, 64% 0, 100% 100%, 0 100%); border-radius: 0; box-shadow: none; height: 44%; transform-origin: 50% 82%; translate: -50% -82%; rotate: -120deg; }
+.sub .hub { width: 11%; height: 11%; }
+.sub .val { font-size: 17px; line-height: 1; }
+.sub .val small { font-size: 11px; font-weight: 600; font-stretch: 100%; color: var(--ink-2); letter-spacing: 0; }
+.sub:active { transform: translateY(1px); }
+
+.session { display: flex; align-items: center; gap: 14px; padding: 14px 14px 14px 18px; flex: none; }
+.session .txt { flex: 1; min-width: 0; }
+.session h2 { margin: 3px 0 2px; font-size: 26px; line-height: 1.05; font-weight: 650; font-stretch: 112%; letter-spacing: -.015em; }
+.session p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+.start { flex: none; width: 84px; height: 84px; border-radius: 50%; position: relative; display: grid; place-items: center;
+  box-shadow: 0 0 0 1px rgba(0,0,0,.28), 0 4px 0 rgba(0,0,0,.22), 0 12px 14px -8px rgba(0,0,0,.55); transition: transform 70ms ease-out, box-shadow 70ms ease-out; }
+.start::before { content: ""; position: absolute; inset: 7px; border-radius: 50%; background: linear-gradient(180deg, var(--cer-hi), var(--cer)); box-shadow: inset 0 1px 0 rgba(255,255,255,.3), inset 0 -2px 3px rgba(0,0,0,.35), 0 0 0 1px rgba(0,0,0,.4); }
+.start span { position: relative; font-size: 12px; font-weight: 750; letter-spacing: .14em; text-transform: uppercase; color: var(--cer-ink); }
+.start:active { transform: translateY(3px); box-shadow: 0 0 0 1px rgba(0,0,0,.3), 0 1px 0 rgba(0,0,0,.22), 0 4px 6px -4px rgba(0,0,0,.5); }
+
+/* ---------- Workout ---------- */
+#workout, #test { gap: 11px; }
+.w-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.w-head h1 { margin: 0 0 7px; font-size: 25px; line-height: 1; font-weight: 650; font-stretch: 112%; letter-spacing: -.015em; }
+.lamps { display: flex; align-items: center; gap: 7px; }
+.lamp { width: 12px; height: 12px; border-radius: 50%; background: #c2c0ba; box-shadow: inset 0 1px 2px rgba(0,0,0,.4), 0 1px 0 rgba(255,255,255,.85); }
+.lamp.done { background: radial-gradient(circle at 40% 30%, var(--cer-hi), var(--cer)); box-shadow: inset 0 1px 1px rgba(255,255,255,.35), 0 0 0 1px rgba(0,0,0,.3); }
+.lamp.now { background: radial-gradient(circle at 40% 30%, #ff6a63, var(--hand)); box-shadow: inset 0 1px 1px rgba(255,255,255,.5), 0 0 0 1px rgba(0,0,0,.3), 0 0 0 4px rgba(207,32,39,.16); }
+.lamps .label { margin-left: 5px; }
+.clock { text-align: right; }
+.clock .num { display: block; font-size: 20px; line-height: 1; margin-top: 4px; }
+
+.meter { position: relative; border-radius: 18px; padding: 5px; flex: none;
+  background: linear-gradient(180deg, #b9b7b1, #d6d4ce); box-shadow: inset 0 2px 5px rgba(0,0,0,.4), 0 1px 0 rgba(255,255,255,.9); }
+.meter-in { position: relative; border-radius: 13px; overflow: hidden; background: linear-gradient(180deg, var(--face), var(--face-lo)); box-shadow: inset 0 0 0 1px rgba(0,0,0,.25), inset 0 6px 10px -6px rgba(0,0,0,.35); }
+.arc { position: relative; aspect-ratio: 340 / 96; overflow: hidden; }
+.arc::after { content: ""; position: absolute; inset: 0; pointer-events: none; background: linear-gradient(115deg, rgba(255,255,255,.5), rgba(255,255,255,0) 38%); }
+.arc svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.arc .scale { transition: opacity 200ms ease-out; }
+.arc .scale.off { opacity: 0; }
+.arc .needle { top: auto; bottom: -212.5%; width: 2.6px; height: 275%; transform-origin: 50% 100%; translate: -50% 0; rotate: -25deg; transition-duration: 700ms; box-shadow: none; }
+.m-zone { stroke: var(--hand); }
+.cover { position: relative; height: 78px; display: grid; place-items: center; padding: 0 14px;
+  background: linear-gradient(180deg, #fdfcf8, #f1efe7); box-shadow: 0 -1px 0 rgba(0,0,0,.2), 0 -6px 8px -6px rgba(0,0,0,.25); }
+.cover > div { grid-area: 1 / 1; width: 100%; display: flex; align-items: baseline; justify-content: center; }
+.read-set { gap: 7px; }
+.read-set .num { font-size: 50px; line-height: 1; }
+.read-set .u { font-size: 14px; font-weight: 650; color: var(--ink-2); margin-right: 7px; }
+.read-set .x { font-size: 22px; font-weight: 500; color: var(--tick); margin-right: 7px; }
+.read-rest { justify-content: space-between !important; align-items: center !important; }
+.read-rest .num { line-height: 1; }
+.read-rest .time { font-size: 50px; }
+.read-rest .nx { font-size: 24px; }
+.read-rest .col { display: flex; flex-direction: column; gap: 4px; }
+.read-rest .col:last-child { align-items: flex-end; text-align: right; }
+.read-rec { position: absolute; inset: 0; grid-area: auto !important; flex-direction: column; align-items: center !important; gap: 3px;
+  background: linear-gradient(180deg, var(--cer-hi), var(--cer)); color: var(--cer-ink); opacity: 0; pointer-events: none; transition: opacity 180ms ease-out; }
+.read-rec .label { color: var(--cer-ink); }
+.read-rec .num { font-size: 34px; line-height: 1; }
+.read-rec .rec-time { position: absolute; right: 14px; top: 10px; }
+.read-rec .rec-time .num { font-size: 12px; letter-spacing: .04em; }
+.meter.is-rec .read-rec { opacity: 1; }
+.meter:not(.is-rest) .read-rest, .meter.is-rest .read-set { display: none; }
+
+.hint { display: flex; align-items: center; justify-content: space-between; gap: 10px; min-height: 48px; }
+.hint p { margin: 0; font-size: 14px; line-height: 1.25; color: var(--ink); }
+.hint p .label { margin-right: 7px; }
+.hint p .label.gap { margin-left: 18px; }
+.hint .key { height: 48px; border-radius: 14px; padding: 0 14px; font-size: 12px; flex: none; }
+
+.dial-wrap { flex: 1; min-height: 150px; container-type: size; display: grid; place-items: center; }
+.dial { position: relative; width: min(100cqw, 100cqh, 340px); aspect-ratio: 1; border-radius: 50%; touch-action: none; cursor: grab; }
+.dial::before { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 1px 0 rgba(255,255,255,.9), 0 18px 26px -14px rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.22); }
+.dial .rim, .dial .bezel, .dial .track, .dial .index { position: absolute; inset: 0; border-radius: 50%; }
+.dial svg { width: 100%; height: 100%; display: block; pointer-events: none; }
+.dial .bezel { will-change: transform; }
+.dial .sheen { --m0: 67.5%; --m1: 95%; }
+.dial .shade { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; background: linear-gradient(180deg, transparent 48%, var(--cer) 80%); opacity: .93;
+  -webkit-mask: radial-gradient(circle closest-side, transparent 67.5%, #000 68.1%, #000 91.5%, transparent 92.1%); mask: radial-gradient(circle closest-side, transparent 67.5%, #000 68.1%, #000 91.5%, transparent 92.1%); }
+.dial .knob { position: absolute; inset: 28.1%; border-radius: 50%; box-shadow: 0 0 0 1px rgba(0,0,0,.3), 0 3px 0 rgba(0,0,0,.2), 0 12px 16px -6px rgba(0,0,0,.55); }
+.dial .knob .cap { position: absolute; inset: 0; border-radius: 50%; box-shadow: inset 0 1px 0 rgba(255,255,255,.95), inset 0 -2px 4px rgba(0,0,0,.2); }
+.dial .knob .rot { position: absolute; inset: 0; border-radius: 50%; will-change: transform;
+  background: repeating-conic-gradient(rgba(0,0,0,.34) 0 1.5deg, rgba(255,255,255,.5) 1.5deg 3deg);
+  -webkit-mask: radial-gradient(circle closest-side, transparent 89%, #000 90%); mask: radial-gradient(circle closest-side, transparent 89%, #000 90%); }
+.dial .knob .notch { position: absolute; inset: 0; border-radius: 50%; will-change: transform; }
+.dial .knob .notch::after { content: ""; position: absolute; left: 50%; top: 5%; width: 4px; height: 24%; margin-left: -2px; border-radius: 2px; background: var(--hand); box-shadow: 0 1px 1px rgba(0,0,0,.35); }
+.dial .knob .lab { position: absolute; inset: 0; display: grid; place-items: center; align-content: center; gap: 1px; pointer-events: none; }
+.dial .knob .lab .num { font-size: 30px; line-height: 1; }
+.t-rep { fill: var(--tick); font-weight: 600; font-variant-numeric: tabular-nums; }
+.t-rep.on { fill: var(--ink); font-weight: 750; }
+
+.keys { display: grid; grid-template-columns: 1fr; gap: 10px; flex: none; }
+.keys.is-rest { grid-template-columns: 84px 56px 1fr 56px; gap: 8px; }
+.keys .r { padding: 0; font-size: 12px; letter-spacing: .07em; }
+.keys:not(.is-rest) .r, .keys.is-rest .s { display: none; }
+
+/* ---------- Dial test ---------- */
+.x-head h1 { margin: 0 0 3px; font-size: 25px; line-height: 1; font-weight: 650; font-stretch: 112%; letter-spacing: -.015em; }
+.x-head p { margin: 0; font-size: 13.5px; color: var(--ink-2); }
+.x-board { display: grid; grid-template-columns: 1fr 1fr; padding: 12px 16px; flex: none; }
+.x-board .num { font-size: 30px; line-height: 1.1; display: block; }
+.x-board .num small { font-size: 13px; font-weight: 650; font-stretch: 100%; color: var(--ink-2); }
+.x-board div:last-child { text-align: right; }
+.x-board .hit { color: var(--cer-hi); }
+.x-step { flex: 1; min-height: 200px; display: none; flex-direction: column; justify-content: center; gap: 12px; }
+#test.is-step .x-step { display: flex; }
+#test.is-step .dial-wrap, #test.is-done .dial-wrap, #test.is-done .x-board { display: none; }
+.x-step .row { display: grid; grid-template-columns: 76px 1fr 76px; align-items: center; gap: 10px; }
+.x-step .row .key { height: 64px; font-size: 26px; font-weight: 500; letter-spacing: 0; }
+.x-step .row .num { text-align: center; font-size: 34px; }
+.x-step .row .num small { font-size: 13px; font-weight: 650; font-stretch: 100%; color: var(--ink-2); }
+.x-res { flex: 1; display: none; flex-direction: column; justify-content: flex-start; gap: 12px; padding-top: 6px; }
+#test.is-done .x-res { display: flex; }
+.x-res table { width: 100%; border-collapse: collapse; }
+.x-res th, .x-res td { text-align: right; padding: 10px 16px; border-bottom: 1px solid rgba(0,0,0,.12); }
+.x-res tbody tr:last-child td { border-bottom: 0; }
+.x-res th:first-child, .x-res td:first-child { text-align: left; }
+.x-res td.num { font-size: 22px; }
+.x-res p { margin: 0; padding: 0 2px; font-size: 15px; }
+.x-foot { display: grid; grid-template-columns: 1fr auto; gap: 10px; flex: none; }
+.x-foot .toggle { width: 116px; gap: 5px; font-size: 12px; }
+
+/* ---------- sheet ---------- */
+.scrim { position: absolute; inset: 0; z-index: 20; background: rgba(20,20,20,.38); opacity: 0; pointer-events: none; transition: opacity 220ms ease-out; }
+.sheet { position: absolute; left: 0; right: 0; bottom: 0; z-index: 21; border-radius: 24px 24px 0 0; padding: 10px 20px max(20px, env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, #f3f2ee, #e0ded9);
+  box-shadow: inset 0 1px 0 #fff, 0 -18px 30px -10px rgba(0,0,0,.4);
+  transform: translateY(105%); transition: transform 360ms var(--spring-ui); will-change: transform; }
+.app.has-sheet .scrim { opacity: 1; pointer-events: auto; }
+.app.has-sheet .sheet { transform: none; }
+.sheet .grip { width: 40px; height: 4px; border-radius: 2px; margin: 0 auto 14px; background: rgba(0,0,0,.25); }
+.sheet h2 { margin: 2px 0 2px; font-size: 26px; font-weight: 650; font-stretch: 112%; letter-spacing: -.015em; }
+.sheet p { margin: 0 0 12px; color: var(--ink-2); }
+.sheet dl { margin: 0 0 16px; }
+.sheet dl div { display: flex; justify-content: space-between; align-items: baseline; padding: 11px 0; border-bottom: 1px solid rgba(0,0,0,.12); }
+.sheet dt { color: var(--ink-2); }
+.sheet dd { margin: 0; font-size: 19px; }
+.sheet .key { width: 100%; }
+
+@media (max-height: 730px) {
+  #workout, #test { gap: 8px; }
+  .screen { padding-block: 10px 8px; }
+  .cover { height: 62px; }
+  .read-set .num, .read-rest .time { font-size: 42px; }
+  .hint { min-height: 44px; }
+  .hint .key { height: 44px; }
+  .gauge { width: min(100%, 236px); }
+  .sub .dialette { width: 70px; height: 70px; }
+  .key { height: 52px; }
+  .selector { height: 46px; margin-bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .needle, .selector .thumb, .sheet, .scrim { transition-duration: 1ms !important; }
+}
+</style>
+<!--HEAD-END-->
+</head>
+<body>
+<!--BODY-START-->
+<div class="app" data-theme="green">
+  <div class="screens">
+
+    <section class="screen is-on" id="today" aria-label="Today">
+      <div class="t-top">
+        <span class="label" data-t="date"></span>
+        <div class="right"><button class="lang" id="lang" aria-label="Sprog / Language"><b>EN</b> · DA</button><div class="swatches" role="group" aria-label="Dial colour">
+          <button data-theme="green" aria-pressed="true" aria-label="Green dial" style="--c:#103d2f"><i></i></button>
+          <button data-theme="navy" aria-pressed="false" aria-label="Navy dial" style="--c:#14264f"><i></i></button>
+          <button data-theme="oxblood" aria-pressed="false" aria-label="Oxblood dial" style="--c:#4f1521"><i></i></button>
+          <button data-theme="graphite" aria-pressed="false" aria-label="Graphite dial" style="--c:#26282b"><i></i></button>
+        </div></div>
+      </div>
+      <p class="coach"><span class="label">Coach</span><span data-t="coachLine"></span></p>
+      <div class="gauge" id="ready" role="img" aria-label="Readiness 82 of 100, in the push zone">
+        <div class="rim metal"></div>
+        <svg viewBox="-160 -160 320 320" aria-hidden="true"></svg>
+        <div class="sheen"></div>
+        <div class="needle" data-deg="86.4"></div>
+        <div class="hub metal"></div>
+      </div>
+      <div class="subs">
+        <button class="sub module" data-sheet="sleep"><span class="dialette"><svg viewBox="-50 -50 100 100" data-zone="0.8" aria-hidden="true"></svg><span class="needle" data-deg="64"></span><span class="hub metal"></span></span><span class="num val" data-t="vSleep"></span><span class="label" data-t="sleep"></span></button>
+        <button class="sub module" data-sheet="protein"><span class="dialette"><svg viewBox="-50 -50 100 100" data-zone="0.8" aria-hidden="true"></svg><span class="needle" data-deg="-4.8"></span><span class="hub metal"></span></span><span class="num val">96 <small>g</small></span><span class="label" data-t="protein"></span></button>
+        <button class="sub module" data-sheet="week"><span class="dialette"><svg viewBox="-50 -50 100 100" data-zone="0.8" aria-hidden="true"></svg><span class="needle" data-deg="24"></span><span class="hub metal"></span></span><span class="num val" data-t="vWeek"></span><span class="label" data-t="sessions"></span></button>
+      </div>
+      <div class="session module">
+        <div class="txt">
+          <span class="label" id="sess-when"></span>
+          <h2>Push</h2>
+          <p id="sess-what"></p>
+        </div>
+        <button class="start metal" id="start"><span></span></button>
+      </div>
+    </section>
+
+    <section class="screen" id="workout" aria-label="Workout">
+      <div class="w-head">
+        <div>
+          <h1 id="w-name"></h1>
+          <div class="lamps" id="w-lamps"></div>
+        </div>
+        <div class="clock"><span class="label" data-t="time"></span><span class="num" id="w-clock">24:10</span></div>
+      </div>
+      <div class="meter" id="meter">
+        <div class="meter-in">
+          <div class="arc">
+            <svg viewBox="0 0 340 96" aria-hidden="true"><g class="scale" id="m-kg"></g><g class="scale off" id="m-rest"></g></svg>
+            <div class="needle" id="m-needle"></div>
+          </div>
+          <div class="cover">
+            <div class="read-set" aria-live="polite"><span class="num" id="r-kg">82.5</span><span class="u">kg</span><span class="x">×</span><span class="num" id="r-reps">6</span><span class="u" data-t="reps"></span></div>
+            <div class="read-rest">
+              <div class="col"><span class="label" data-t="rest"></span><span class="num time" id="r-time">2:00</span></div>
+              <div class="col"><span class="label" data-t="nextSet"></span><span class="num nx" id="r-next">82.5 × 5</span></div>
+            </div>
+            <div class="read-rec"><span class="label" data-t="newBest"></span><span class="num" id="r-rec">85 kg × 5</span><span class="label rec-time"><span data-t="rest"></span> <span class="num" id="r-rectime"></span></span></div>
+          </div>
+        </div>
+      </div>
+      <div class="hint"><p id="w-hint"></p><button class="key" id="w-use" data-t="use85" hidden></button></div>
+      <div class="dial-wrap"><div class="dial" id="dial"></div></div>
+      <div class="keys" id="keys">
+        <button class="key primary s" id="log"></button>
+        <button class="key r" id="undo" data-t="undo"></button>
+        <button class="key r" id="minus" aria-label="15 seconds less rest">−15</button>
+        <button class="key r" id="skip" data-t="skip"></button>
+        <button class="key r" id="plus" aria-label="15 seconds more rest">+15</button>
+      </div>
+    </section>
+
+    <section class="screen" id="test" aria-label="Dial test">
+      <div class="x-head"><h1 data-t="navTest"></h1><p id="x-sub"></p></div>
+      <div class="x-board module">
+        <div><span class="label" data-t="target"></span><span class="num" id="x-target">–</span></div>
+        <div><span class="label" data-t="now"></span><span class="num" id="x-now"></span></div>
+      </div>
+      <div class="dial-wrap"><div class="dial" id="dial2"></div></div>
+      <div class="x-step">
+        <div class="row"><button class="key" data-step="kg" data-d="-1" aria-label="2.5 kilos less">−</button><span class="num" id="x-skg"></span><button class="key" data-step="kg" data-d="1" aria-label="2.5 kilos more">+</button></div>
+        <div class="row"><button class="key" data-step="reps" data-d="-1" aria-label="One rep less">−</button><span class="num" id="x-sreps"></span><button class="key" data-step="reps" data-d="1" aria-label="One rep more">+</button></div>
+      </div>
+      <div class="x-res">
+        <table class="module">
+          <thead><tr><th class="label"></th><th class="label" data-t="average"></th><th class="label" data-t="right"></th></tr></thead>
+          <tbody>
+            <tr><td class="label" data-t="dial"></td><td class="num" id="x-dt">–</td><td class="num" id="x-dr">–</td></tr>
+            <tr><td class="label" data-t="buttons"></td><td class="num" id="x-bt">–</td><td class="num" id="x-br">–</td></tr>
+          </tbody>
+        </table>
+        <p id="x-verdict"></p>
+      </div>
+      <div class="x-foot">
+        <button class="key primary" id="x-go"></button>
+        <button class="key toggle" id="x-sound" aria-pressed="true"></button>
+      </div>
+    </section>
+  </div>
+
+  <nav class="selector" aria-label="Screens">
+    <span class="thumb"></span>
+    <button data-go="today" aria-current="true" data-t="navToday"></button>
+    <button data-go="workout" aria-current="false" data-t="navWorkout"></button>
+    <button data-go="test" aria-current="false" data-t="navTest"></button>
+  </nav>
+
+  <div class="scrim" id="scrim"></div>
+  <div class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sh-title">
+    <div class="grip"></div>
+    <span class="label" id="sh-kicker"></span>
+    <h2 id="sh-title"></h2>
+    <p id="sh-text"></p>
+    <dl id="sh-rows"></dl>
+    <button class="key" id="sh-close"></button>
+  </div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const NS = 'http://www.w3.org/2000/svg';
+const svg = (tag, attrs, parent) => { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); if (parent) parent.appendChild(e); return e; };
+const polar = (r, deg) => [+(r * Math.sin(deg * Math.PI / 180)).toFixed(2), +(-r * Math.cos(deg * Math.PI / 180)).toFixed(2)];
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const arc = (r, a0, a1) => { const [x0, y0] = polar(r, a0), [x1, y1] = polar(r, a1); return `M${x0} ${y0}A${r} ${r} 0 ${a1 - a0 > 180 ? 1 : 0} 1 ${x1} ${y1}`; };
+const app = $('.app');
+
+/* Every string, in English and Danish. */
+const L = {
+  en: {
+    date: 'Sun 15 Nov · 15:42', coachLine: 'You slept 7 h 40 and your pulse is low. Good day to try <b>85 kg</b> on bench.',
+    readiness: 'READINESS', pushDay: 'PUSH DAY', vSleep: '7:40 <small>h</small>', vWeek: '3 <small>of 5</small>', sleep: 'Sleep', protein: 'Protein', sessions: 'Sessions',
+    sessWhen: 'Today 17:00', sessWhat: 'Bench press, overhead press · about 25 min', start: 'Start', again: 'Again', startAria: 'Start workout', doneToday: 'Done today',
+    doneWhat: (n, kg, m) => `${n} sets · ${kg} kg lifted · ${m} min`,
+    bench: 'Bench press', ohp: 'Overhead press', kilos: 'KILOS', time: 'Time', setOf: (a, b) => `Set ${a} of ${b}`, reps: 'reps', repsCap: 'Reps', rest: 'Rest', nextSet: 'Next set', newBest: 'New best',
+    turn: 'Turn', turnLine: 'Outer ring for kilos, the knob for reps.', plan: 'Plan', planLine: (n, t) => `${n} sets, rest ${t} between them.`, last: 'Last', best: 'Best',
+    tip: 'That moved fast. Try 85.', use85: 'Use 85', log: (n) => `Log set ${n}`, ifBest: 'new best if you get it', undo: 'Undo', skip: 'Skip rest',
+    navToday: 'Today', navWorkout: 'Workout', navTest: 'Dial test', close: 'Close', back: 'Back to Today',
+    finKicker: 'Workout done', finRec: 'A new best on the bench. That is the day done.', finPlain: 'Every set logged. That is the day done.', fSets: 'Sets', fLifted: 'Lifted', fTime: 'Time', fBests: 'New bests',
+    target: 'Target', now: 'Now', average: 'Average', right: 'Right', dial: 'Dial', buttons: 'Buttons', go: 'Start', set: 'Set', again2: 'Run again', soundOn: 'Sound <b>on</b>', soundOff: 'Sound <b>off</b>',
+    xIdle: 'Set five targets with the dial, then the same five with buttons. It times both.', xDone: 'Lower time wins. Right means both numbers matched when you pressed Set.',
+    xRound: (d, i) => `${d ? 'Dial' : 'Buttons'}, round ${i} of 5. Match the target, then press Set.`,
+    vClose: 'Too close to call: under 0.3 s apart per set.', vWin: (d, s) => `${d ? 'The dial' : 'Buttons'} was ${s} s faster per set.`, ariaKg: 'Weight in kilos', ariaReps: 'Reps',
+    sheets: {
+      sleep: ['Last night', 'Sleep 7 h 40', 'A little under your 8 h target, and better than your week.', [['In bed', '23:35 to 07:20'], ['Target', '8 h 00'], ['7-day average', '7 h 05'], ['Resting pulse', '51']]],
+      protein: ['So far today', 'Protein 96 g', 'You need 64 g more before bed. Dinner and one skyr cover it.', [['Target', '160 g'], ['Energy', '1,640 of 2,700 kcal'], ['Water', '1.4 of 3 L']]],
+      week: ['This week', '3 of 5 sessions', 'Push today and wrestling tomorrow finish the week.', [['Mon', 'Pull'], ['Tue', 'Wrestling'], ['Thu', 'Legs'], ['Today', 'Push, 17:00']]],
+    },
+  },
+  da: {
+    date: 'Søn 15. nov · 15:42', coachLine: 'Du sov 7 t 40, og din puls er lav. God dag til at prøve <b>85 kg</b> i bænkpres.',
+    readiness: 'PARATHED', pushDay: 'PUSH-DAG', vSleep: '7:40 <small>t</small>', vWeek: '3 <small>af 5</small>', sleep: 'Søvn', protein: 'Protein', sessions: 'Træninger',
+    sessWhen: 'I dag 17:00', sessWhat: 'Bænkpres, skulderpres · ca. 25 min', start: 'Start', again: 'Igen', startAria: 'Start træningen', doneToday: 'Færdig i dag',
+    doneWhat: (n, kg, m) => `${n} sæt · ${kg} kg løftet · ${m} min`,
+    bench: 'Bænkpres', ohp: 'Skulderpres', kilos: 'KILO', time: 'Tid', setOf: (a, b) => `Sæt ${a} af ${b}`, reps: 'gent.', repsCap: 'Gent.', rest: 'Pause', nextSet: 'Næste sæt', newBest: 'Ny rekord',
+    turn: 'Drej', turnLine: 'Yderringen for kilo, knappen for gentagelser.', plan: 'Plan', planLine: (n, t) => `${n} sæt, ${t} pause imellem.`, last: 'Sidst', best: 'Bedst',
+    tip: 'Det gik let. Prøv 85.', use85: 'Brug 85', log: (n) => `Log sæt ${n}`, ifBest: 'ny rekord, hvis du tager den', undo: 'Fortryd', skip: 'Spring over',
+    navToday: 'I dag', navWorkout: 'Træning', navTest: 'Drejetest', close: 'Luk', back: 'Tilbage til I dag',
+    finKicker: 'Træning færdig', finRec: 'Ny rekord i bænkpres. Så er dagen klaret.', finPlain: 'Alle sæt er logget. Så er dagen klaret.', fSets: 'Sæt', fLifted: 'Løftet', fTime: 'Tid', fBests: 'Nye rekorder',
+    target: 'Mål', now: 'Nu', average: 'Snit', right: 'Rigtige', dial: 'Drejeknap', buttons: 'Knapper', go: 'Start', set: 'OK', again2: 'Kør igen', soundOn: 'Lyd <b>til</b>', soundOff: 'Lyd <b>fra</b>',
+    xIdle: 'Sæt fem mål med drejeknappen, og så de samme fem med knapper. Den tager tid på begge.', xDone: 'Lavest tid vinder. Rigtige betyder, at begge tal passede, da du trykkede OK.',
+    xRound: (d, i) => `${d ? 'Drejeknap' : 'Knapper'}, runde ${i} af 5. Ram målet, og tryk OK.`,
+    vClose: 'For tæt til at kåre en vinder: under 0,3 s forskel pr. sæt.', vWin: (d, s) => `${d ? 'Drejeknappen' : 'Knapperne'} var ${s} s hurtigere pr. sæt.`, ariaKg: 'Vægt i kilo', ariaReps: 'Gentagelser',
+    sheets: {
+      sleep: ['I nat', 'Søvn 7 t 40', 'Lidt under dit mål på 8 t, og bedre end din uge.', [['I seng', '23:35 til 07:20'], ['Mål', '8 t 00'], ['Snit, 7 dage', '7 t 05'], ['Hvilepuls', '51']]],
+      protein: ['Indtil nu i dag', 'Protein 96 g', 'Du mangler 64 g inden sengetid. Aftensmad og en skyr dækker det.', [['Mål', '160 g'], ['Energi', '1.640 af 2.700 kcal'], ['Vand', '1,4 af 3 L']]],
+      week: ['Denne uge', '3 af 5 træninger', 'Push i dag og brydning i morgen afslutter ugen.', [['Man', 'Pull'], ['Tirs', 'Brydning'], ['Tors', 'Ben'], ['I dag', 'Push, 17:00']]],
+    },
+  },
+};
+let lang = /[?&]lang=da/.test(location.search) ? 'da' : 'en';
+const t = (k, ...a) => { const v = L[lang][k]; return typeof v === 'function' ? v(...a) : v; };
+const num = (n) => lang === 'da' ? String(n).replace('.', ',') : String(n);
+
+/* One shared pair of springs, sampled into linear() so the browser runs them. */
+function spring(zeta, n = 44) {
+  const wd = Math.sqrt(1 - zeta * zeta), T = 7 / zeta, pts = [];
+  for (let i = 0; i <= n; i++) { const t = T * i / n; pts.push(+(1 - Math.exp(-zeta * t) * (Math.cos(wd * t) + zeta / wd * Math.sin(wd * t))).toFixed(4)); }
+  pts[n] = 1; return `linear(${pts.join(',')})`;
+}
+if (CSS.supports('transition-timing-function', 'linear(0, 1)')) {
+  document.documentElement.style.setProperty('--spring-needle', spring(0.6));
+  document.documentElement.style.setProperty('--spring-ui', spring(0.86));
+}
+
+/* Tick: a short buzz and a quiet click on every detent. */
+let sound = true, ac = null;
+function tick(strong) {
+  try { navigator.vibrate && navigator.vibrate(strong ? 14 : 5); } catch (e) {}
+  if (!sound) return;
+  try {
+    ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+    const t = ac.currentTime, o = ac.createOscillator(), g = ac.createGain();
+    o.type = 'square'; o.frequency.setValueAtTime(strong ? 1300 : 2200, t);
+    g.gain.setValueAtTime(strong ? 0.05 : 0.028, t); g.gain.exponentialRampToValueAtTime(0.0001, t + 0.02);
+    o.connect(g).connect(ac.destination); o.start(t); o.stop(t + 0.025);
+  } catch (e) {}
+}
+
+/* ---------- The rotary dial: outer ceramic ring = kg (2.5 a click), inner knob = reps ---------- */
+const STEP_KG = 15, STEP_REP = 24, KG_MAX = 300, REP_MAX = 15;
+const magnet = (s) => { const n = Math.round(s), o = s - n; return n + Math.sign(o) * 0.5 * Math.pow(Math.abs(o) * 2, 2.6); };
+function createDial(host, onChange) {
+  host.innerHTML = '<div class="rim metal"></div><div class="bezel" role="slider" tabindex="0" data-aria="ariaKg" aria-valuemin="0" aria-valuemax="' + KG_MAX + '"><svg viewBox="-160 -160 320 320"></svg></div><div class="shade"></div><div class="sheen"></div>'
+    + '<div class="track"><svg viewBox="-160 -160 320 320"></svg></div><div class="index"><svg viewBox="-160 -160 320 320"><path d="M-7 -159 L7 -159 L0 -145 Z" fill="var(--hand)" stroke="rgba(0,0,0,.35)" stroke-width=".6"/></svg></div>'
+    + '<div class="knob metal" role="slider" tabindex="0" data-aria="ariaReps" aria-valuemin="1" aria-valuemax="' + REP_MAX + '"><div class="rot"></div><div class="cap"></div><div class="notch"></div><div class="lab"><span class="num"></span><span class="label" data-t="repsCap"></span></div></div>';
+  const bezel = $('.bezel', host), knob = $('.knob', host), rot = $('.rot', host), notch = $('.notch', host), repNum = $('.lab .num', host);
+  const bs = $('svg', bezel), ts = $('.track svg', host);
+  svg('circle', { r: 130, fill: 'none', stroke: 'var(--cer)', 'stroke-width': 44 }, bs);
+  const kgT = [];
+  for (let i = 0; i < 24; i++) {            // a tick every 2.5 kg, a number every 5; numbers rise anticlockwise so a clockwise turn adds weight
+    const a = -i * STEP_KG, [x0, y0] = polar(150, a), [x1, y1] = polar(i % 2 ? 146.5 : 141, a);
+    svg('line', { x1: x0, y1: y0, x2: x1, y2: y1, stroke: 'var(--cer-ink)', 'stroke-width': i % 2 ? 1.2 : 2, 'stroke-linecap': 'round', opacity: i % 2 ? .6 : 1 }, bs);
+    if (i % 2 === 0) { const t = svg('text', { class: 't-cer', 'font-size': 16.5, 'text-anchor': 'middle', 'dominant-baseline': 'central', transform: `rotate(${a}) translate(0 -123)` }, bs); kgT.push(t); }
+  }
+  svg('circle', { r: 90, fill: 'none', stroke: 'var(--face)', 'stroke-width': 30 }, ts);
+  svg('circle', { r: 105, fill: 'none', stroke: 'rgba(0,0,0,.28)', 'stroke-width': 1 }, ts);
+  svg('circle', { r: 75, fill: 'none', stroke: 'rgba(0,0,0,.22)', 'stroke-width': 1 }, ts);
+  const repT = [];
+  for (let n = 1; n <= REP_MAX; n++) {
+    const a = (n - 8) * STEP_REP, [x, y] = polar(90, a), [tx0, ty0] = polar(103.5, a), [tx1, ty1] = polar(99.5, a);
+    svg('line', { x1: tx0, y1: ty0, x2: tx1, y2: ty1, stroke: 'var(--ink)', 'stroke-width': 1.3 }, ts);
+    const t = svg('text', { class: 't-rep', x, y, 'font-size': 13, 'text-anchor': 'middle', 'dominant-baseline': 'central' }, ts); t.textContent = n; repT.push(t);
+  }
+  let kgSteps = 33, reps = 6, rawB = 33 * STEP_KG, rawK = (6 - 8) * STEP_REP, drag = null, anim = null, knobEnd = 0, coastT = [];
+  function labels() {
+    const v = kgSteps * 2.5;
+    kgT.forEach((el, j) => { const base = 5 * j, val = base + 60 * Math.round((v - base) / 60), str = val < 0 || val > KG_MAX ? '' : String(val); if (el.textContent !== str) el.textContent = str; });
+    repT.forEach((el, i) => el.classList.toggle('on', i + 1 === reps));
+    repNum.textContent = reps;
+    bezel.setAttribute('aria-valuenow', v); bezel.setAttribute('aria-valuetext', num(v) + ' kg'); knob.setAttribute('aria-valuenow', reps);
+  }
+  function paint(live) {
+    const b = live ? magnet(rawB / STEP_KG) * STEP_KG : kgSteps * STEP_KG, k = live ? magnet(rawK / STEP_REP) * STEP_REP : (reps - 8) * STEP_REP;
+    bezel.style.transform = `rotate(${b.toFixed(2)}deg)`;
+    rot.style.transform = notch.style.transform = `rotate(${k.toFixed(2)}deg)`;
+    labels();
+  }
+  function ease(on) { const t = on ? `transform ${on}ms var(--spring-ui)` : 'none'; bezel.style.transition = rot.style.transition = notch.style.transition = t; }
+  function emit() { onChange && onChange(kgSteps * 2.5, reps); }
+  const KG_DEG = KG_MAX / 2.5 * STEP_KG;
+  const angleOf = (el) => { const m = new DOMMatrixReadOnly(getComputedStyle(el).transform); return Math.atan2(m.b, m.a) * 180 / Math.PI; };
+  /* Where the ring really is while the browser is still turning it, so a finger can catch it mid-turn. */
+  function bezelNow() {
+    if (!anim || performance.now() > anim.t0 + anim.ms) return rawB;
+    const a = angleOf(bezel), lo = Math.min(anim.from, anim.to) - 30, hi = Math.max(anim.from, anim.to) + 30;
+    const p = Math.min(1, (performance.now() - anim.t0) / anim.ms), est = anim.from + (anim.to - anim.from) * (1 - Math.pow(1 - p, 3));
+    let best = null;
+    for (let k = Math.floor((lo - a) / 360); k <= Math.ceil((hi - a) / 360); k++) { const c = a + 360 * k; if (c >= lo && c <= hi && (best === null || Math.abs(c - est) < Math.abs(best - est))) best = c; }
+    return best === null ? anim.to : best;
+  }
+  function catchIt() {
+    const b = clamp(bezelNow(), 0, KG_DEG), k = performance.now() < knobEnd ? clamp(angleOf(rot), -7 * STEP_REP, (REP_MAX - 8) * STEP_REP) : rawK;
+    coastT.forEach(clearTimeout); coastT = []; anim = null; knobEnd = 0; rawB = b; rawK = k;
+    const st = Math.round(rawB / STEP_KG), n = Math.round(rawK / STEP_REP) + 8;
+    if (st !== kgSteps || n !== reps) { kgSteps = st; reps = n; emit(); }
+  }
+  /* A flick carries on through a few clicks: the browser turns the ring, and each click is counted as it passes. */
+  function coast(v) {
+    const target = clamp(Math.round((rawB + clamp(v * 170, -10 * STEP_KG, 10 * STEP_KG)) / STEP_KG), 0, KG_MAX / 2.5), n = target - kgSteps, m = Math.abs(n);
+    if (!m) { rawB = kgSteps * STEP_KG; ease(200); return paint(false); }
+    const ms = 240 + 60 * m;
+    anim = { from: rawB, to: target * STEP_KG, t0: performance.now(), ms }; rawB = target * STEP_KG;
+    ease(200); bezel.style.transition = `transform ${ms}ms cubic-bezier(.12,.72,.28,1)`;
+    bezel.style.transform = `rotate(${rawB}deg)`; rot.style.transform = notch.style.transform = `rotate(${rawK}deg)`;
+    for (let i = 1; i <= m; i++) coastT.push(setTimeout(() => { kgSteps += Math.sign(n); tick(); emit(); labels(); }, ms * 0.85 * (1 - Math.cbrt(1 - (i - 0.5) / m))));
+  }
+  host.addEventListener('pointerdown', (e) => {
+    if (drag) return;
+    const rc = host.getBoundingClientRect(), cx = rc.left + rc.width / 2, cy = rc.top + rc.height / 2;
+    const dx = e.clientX - cx, dy = e.clientY - cy, r = Math.hypot(dx, dy) / (rc.width / 2) * 160;
+    if (r > 172) return;
+    catchIt();
+    drag = { id: e.pointerId, part: r < 101 ? 'knob' : 'bezel', a: Math.atan2(dy, dx) * 180 / Math.PI, cx, cy, half: rc.width / 2, acc: 0, hist: [[e.timeStamp, 0]] };   // the cream ring of rep numbers belongs to the knob
+    try { host.setPointerCapture(e.pointerId); } catch (err) {}
+    ease(0); paint(true); host.style.cursor = 'grabbing'; e.preventDefault();
+  });
+  host.addEventListener('pointermove', (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const dx = e.clientX - drag.cx, dy = e.clientY - drag.cy, a = Math.atan2(dy, dx) * 180 / Math.PI;
+    if (Math.hypot(dx, dy) / drag.half * 160 < 16) { drag.a = a; return; }   // too close to the centre to read an angle
+    const d = ((a - drag.a + 540) % 360) - 180; drag.a = a;
+    drag.acc += d; drag.hist.push([e.timeStamp, drag.acc]); if (drag.hist.length > 8) drag.hist.shift();
+    if (drag.part === 'bezel') {
+      rawB = clamp(rawB + d, 0, KG_DEG);
+      const st = Math.round(rawB / STEP_KG); if (st !== kgSteps) { kgSteps = st; tick(); emit(); }
+    } else {
+      rawK = clamp(rawK + d, (1 - 8) * STEP_REP, (REP_MAX - 8) * STEP_REP);
+      const n = Math.round(rawK / STEP_REP) + 8; if (n !== reps) { reps = n; tick(true); emit(); }
+    }
+    paint(true);
+  });
+  const end = (e) => {
+    if (!drag || e.pointerId !== drag.id) return;
+    const part = drag.part, h = drag.hist, last = h[h.length - 1]; drag = null; host.style.cursor = '';
+    let v = 0;                                              // degrees per millisecond over the last tenth of a second; zero if the finger had stopped
+    if (h.length > 1 && e.timeStamp - last[0] < 60) { const first = h.find((x) => last[0] - x[0] < 110), dt = last[0] - first[0]; if (dt > 8) v = (last[1] - first[1]) / dt; }
+    rawK = (reps - 8) * STEP_REP;
+    if (part === 'bezel' && e.type === 'pointerup' && Math.abs(v) > 0.35) return coast(v);
+    rawB = kgSteps * STEP_KG; ease(200); paint(false);
+  };
+  host.addEventListener('pointerup', end); host.addEventListener('pointercancel', end);
+  const keys = (part) => (e) => {
+    const d = { ArrowUp: 1, ArrowRight: 1, ArrowDown: -1, ArrowLeft: -1 }[e.key]; if (!d) return; e.preventDefault();
+    if (part === 'kg') api.set(clamp(kgSteps * 2.5 + d * 2.5, 0, KG_MAX), reps, 120); else api.set(kgSteps * 2.5, clamp(reps + d, 1, REP_MAX), 120);
+    tick(part !== 'kg'); emit();
+  };
+  bezel.addEventListener('keydown', keys('kg')); knob.addEventListener('keydown', keys('reps'));
+  const api = {
+    get: () => ({ kg: kgSteps * 2.5, reps }),
+    /* Programmatic turn (Coach "Use 85", next exercise). A finger can catch the ring while it turns. */
+    set(kg, r, ms = 0) {
+      const from = bezelNow(); coastT.forEach(clearTimeout); coastT = [];
+      kgSteps = Math.round(clamp(kg, 0, KG_MAX) / 2.5); reps = clamp(r, 1, REP_MAX); rawB = kgSteps * STEP_KG; rawK = (reps - 8) * STEP_REP;
+      anim = ms > 150 ? { from, to: rawB, t0: performance.now(), ms } : null; knobEnd = ms > 150 ? performance.now() + ms : 0;
+      ease(ms); paint(false);
+    },
+  };
+  paint(false);
+  return api;
+}
+
+/* ---------- Today ---------- */
+function drawReady() {
+  const s = $('#ready svg'), at = (v) => -135 + 270 * v / 100;
+  const defs = svg('defs', {}, s);
+  const g = svg('radialGradient', { id: 'fg', cx: '50%', cy: '38%', r: '70%' }, defs);
+  svg('stop', { offset: '0', 'stop-color': 'var(--face)' }, g); svg('stop', { offset: '1', 'stop-color': 'var(--face-lo)' }, g);
+  svg('circle', { r: 132.5, fill: 'none', stroke: 'var(--cer)', 'stroke-width': 35 }, s);
+  svg('circle', { r: 115, fill: 'url(#fg)', stroke: 'rgba(0,0,0,.3)', 'stroke-width': 1 }, s);
+  for (let v = 0; v <= 100; v += 2) {
+    const a = at(v), big = v % 10 === 0, [x0, y0] = polar(110, a), [x1, y1] = polar(big ? 99 : 104.5, a);
+    svg('line', { x1: x0, y1: y0, x2: x1, y2: y1, stroke: big ? 'var(--ink)' : 'var(--tick)', 'stroke-width': big ? 1.8 : 1 }, s);
+    if (big) { const [x, y] = polar(132.5, a); svg('text', { class: 't-cer', x, y, 'font-size': 14.5, 'text-anchor': 'middle', 'dominant-baseline': 'central' }, s).textContent = v; }
+  }
+  svg('circle', { r: 116.5, fill: 'none', stroke: '#d9d8d4', 'stroke-width': 2.4 }, s);
+  svg('path', { d: arc(92, at(0), at(69)), fill: 'none', stroke: 'var(--tick)', 'stroke-width': 1.2 }, s);
+  svg('path', { d: arc(91, at(70.5), at(100)), fill: 'none', stroke: 'var(--cer-hi)', 'stroke-width': 4.5 }, s);
+  svg('text', { class: 't-lab', x: 0, y: -44, 'font-size': 9.5, 'text-anchor': 'middle', 'data-t': 'readiness' }, s);
+  svg('text', { class: 't-ink num g-num', x: 0, y: 78, 'text-anchor': 'middle' }, s).textContent = '82';
+  svg('text', { class: 't-lab', x: 0, y: 97, 'font-size': 8.5, 'text-anchor': 'middle', 'data-t': 'pushDay' }, s);
+}
+function drawSubs() {
+  $$('.sub svg').forEach((s) => {
+    for (let i = 0; i <= 10; i++) { const a = -120 + 24 * i, [x0, y0] = polar(44, a), [x1, y1] = polar(i % 5 ? 41 : 38.5, a); svg('line', { x1: x0, y1: y0, x2: x1, y2: y1, stroke: i % 5 ? 'var(--tick)' : 'var(--ink)', 'stroke-width': i % 5 ? .9 : 1.6 }, s); }
+    svg('path', { d: arc(35.5, -120 + 240 * +s.dataset.zone, 120), fill: 'none', stroke: 'var(--cer-hi)', 'stroke-width': 3 }, s);
+  });
+}
+function sweep(scope) {            // ignition: needles rest at zero, then swing to their reading
+  $$('.needle[data-deg]', scope).forEach((n) => { n.style.transition = 'none'; n.style.rotate = ''; void n.offsetWidth; n.style.transition = ''; n.style.rotate = n.dataset.deg + 'deg'; });
+}
+function openSheet([kicker, title, text, rows], closeLabel, onClose) {
+  $('#sh-kicker').textContent = kicker; $('#sh-title').textContent = title; $('#sh-text').textContent = text;
+  $('#sh-rows').innerHTML = rows.map(([a, b]) => `<div><dt>${a}</dt><dd class="num">${b}</dd></div>`).join('');
+  $('#sh-close').textContent = closeLabel || t('close'); sheetDone = onClose || null; app.classList.add('has-sheet');
+}
+let sheetDone = null;
+function closeSheet() { app.classList.remove('has-sheet'); const f = sheetDone; sheetDone = null; f && f(); }
+$('#sh-close').addEventListener('click', closeSheet); $('#scrim').addEventListener('click', closeSheet);
+$$('.sub').forEach((b) => b.addEventListener('click', () => openSheet(t('sheets')[b.dataset.sheet])));
+$$('.swatches button').forEach((b) => b.addEventListener('click', () => { app.dataset.theme = b.dataset.theme; $$('.swatches button').forEach((x) => x.setAttribute('aria-pressed', x === b)); }));
+
+/* ---------- navigation ---------- */
+const ORDER = ['today', 'workout', 'test'];
+function go(id) {
+  $$('.screen').forEach((s) => s.classList.toggle('is-on', s.id === id));
+  $$('.selector button').forEach((b) => b.setAttribute('aria-current', b.dataset.go === id));
+  $('.selector').style.setProperty('--i', ORDER.indexOf(id));
+  if (id === 'today') sweep($('#today'));
+  if (id === 'workout') meterShow(true);
+}
+$$('.selector button').forEach((b) => b.addEventListener('click', () => go(b.dataset.go)));
+
+/* ---------- Workout ---------- */
+const PLAN = [
+  { name: 'bench', rest: 120, best: { kg: 82.5, reps: 6 }, last: '80 × 6', sets: [{ kg: 77.5, reps: 6, done: 1 }, { kg: 80, reps: 6, done: 1 }, { kg: 82.5, reps: 6 }, { kg: 82.5, reps: 5 }] },
+  { name: 'ohp', rest: 90, best: { kg: 52.5, reps: 6 }, last: '47.5 × 8', sets: [{ kg: 47.5, reps: 8 }, { kg: 50, reps: 8 }, { kg: 50, reps: 6 }] },
+];
+const fresh = () => ({ plan: JSON.parse(JSON.stringify(PLAN)), ex: 0, set: 2, restEnd: 0, hist: [], t0: Date.now() - 1450e3, done: false, guard: 0, records: 0, turned: false });
+let W = fresh();
+const A = 25, needle = $('#m-needle'), meter = $('#meter');
+let run = null, runT = 0, scale = { min: 60, max: 90 };
+const kgDeg = (v) => clamp(-A + 2 * A * (v - scale.min) / (scale.max - scale.min), -A - 3, A + 3);
+const restDeg = (s) => clamp(-A + 2 * A * s / 150, -A, A);
+const marc = (r, a0, a1) => { const [x0, y0] = mp(r, a0), [x1, y1] = mp(r, a1); return `M${x0} ${y0}A${r} ${r} 0 0 1 ${x1} ${y1}`; };
+const mp = (r, deg) => { const [x, y] = polar(r, deg); return [x + 170, y + 300]; };       // meter pivot sits below the window
+function meterScale(ex) {
+  const g = $('#m-kg'); g.textContent = '';
+  const min = Math.floor((ex.best.kg - 22.5) / 10) * 10, max = min + 30; scale = { min, max };
+  svg('path', { d: marc(262, -A, A), fill: 'none', stroke: 'var(--ink)', 'stroke-width': 1 }, g);
+  svg('path', { class: 'm-zone', d: marc(258.5, kgDeg(ex.best.kg + 0.5), A), fill: 'none', 'stroke-width': 7 }, g);
+  for (let v = min; v <= max; v += 2.5) {
+    const big = v % 10 === 0, a = kgDeg(v), [x0, y0] = mp(262, a), [x1, y1] = mp(big ? 246 : 253, a);
+    svg('line', { x1: x0, y1: y0, x2: x1, y2: y1, stroke: 'var(--ink)', 'stroke-width': big ? 1.8 : 1 }, g);
+    if (big) { const [x, y] = mp(276, a); svg('text', { class: 't-ink', x, y, 'font-size': 12.5, 'text-anchor': 'middle', 'dominant-baseline': 'central' }, g).textContent = v; }
+  }
+  svg('text', { class: 't-lab', x: 16, y: 87, 'font-size': 8.5 }, g).textContent = t('kilos');
+}
+(function restScale() {
+  const g = $('#m-rest');
+  svg('path', { d: marc(262, -A, A), fill: 'none', stroke: 'var(--ink)', 'stroke-width': 1 }, g);
+  for (let s = 0; s <= 150; s += 5) {
+    const big = s % 30 === 0, a = restDeg(s), [x0, y0] = mp(262, a), [x1, y1] = mp(big ? 246 : 254, a);
+    svg('line', { x1: x0, y1: y0, x2: x1, y2: y1, stroke: 'var(--ink)', 'stroke-width': big ? 1.8 : .9 }, g);
+    if (big) { const [x, y] = mp(276, a); svg('text', { class: 't-ink', x, y, 'font-size': 12.5, 'text-anchor': 'middle', 'dominant-baseline': 'central' }, g).textContent = s ? Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') : '0'; }
+  }
+})();
+const resting = () => W.restEnd > 0;
+function stopRun() {
+  clearTimeout(runT);
+  if (run) { const cur = getComputedStyle(needle).rotate; needle.style.transition = 'none'; needle.style.rotate = cur; run.cancel(); run = null; void needle.offsetWidth; }
+}
+function needleTo(deg, ms) { stopRun(); needle.style.transition = `rotate ${ms}ms var(--spring-needle)`; needle.style.rotate = deg.toFixed(2) + 'deg'; }
+function peg() {                   // a record: the needle hits the stop and trembles
+  stopRun(); const from = getComputedStyle(needle).rotate, a = A + 3, d = (x) => ({ rotate: (a - x) + 'deg' });
+  needle.style.transition = 'none'; needle.style.rotate = a + 'deg';
+  run = needle.animate([{ rotate: from === 'none' ? '0deg' : from }, { ...d(0), offset: .22 }, { ...d(2.4), offset: .36 }, { ...d(0), offset: .5 }, { ...d(1.2), offset: .64 }, { ...d(0), offset: .78 }, { ...d(.5), offset: .89 }, d(0)], { duration: 900, easing: 'ease-out' });
+}
+function restRun() {               // swing to the time left, then let the browser run the needle down to zero
+  if (!resting()) return;
+  const left = Math.max(0, W.restEnd - Date.now());
+  needleTo(restDeg(left / 1000), 520);
+  runT = setTimeout(() => {
+    const ms = Math.max(0, W.restEnd - Date.now()); if (ms < 50) return;
+    needle.style.transition = 'none'; needle.style.rotate = -A + 'deg';
+    run = needle.animate([{ rotate: restDeg(ms / 1000) + 'deg' }, { rotate: -A + 'deg' }], { duration: ms, easing: 'linear' });
+  }, 540);
+}
+const cur = () => W.plan[W.ex];
+function meterShow(swing) {
+  const ex = cur(), d = dial.get();
+  $('#r-kg').textContent = num(d.kg); $('#r-reps').textContent = d.reps;
+  $('#r-next').textContent = num(d.kg) + ' × ' + d.reps;
+  if (!resting()) { if (swing) { stopRun(); needle.style.transition = 'none'; needle.style.rotate = ''; void needle.offsetWidth; } needleTo(kgDeg(d.kg), swing ? 900 : 420); }
+  const over = d.kg > ex.best.kg;
+  $('#log').innerHTML = t('log', W.set + 1) + (over ? ` <small>${t('ifBest')}</small>` : '');
+}
+function paintWorkout() {
+  const ex = cur(), rest = resting();
+  $('#w-name').textContent = t(ex.name);
+  $('#w-lamps').innerHTML = ex.sets.map((s, i) => `<i class="lamp${s.done ? ' done' : i === W.set ? ' now' : ''}"></i>`).join('') + `<span class="label">${t('setOf', W.set + 1, ex.sets.length)}</span>`;
+  meter.classList.toggle('is-rest', rest); $('#keys').classList.toggle('is-rest', rest);
+  $('#m-kg').classList.toggle('off', rest); $('#m-rest').classList.toggle('off', !rest);
+  const tip = W.ex === 0 && W.set === 3 && dial.get().kg < 85;
+  $('#w-use').hidden = !tip;
+  $('#w-hint').innerHTML = tip ? `<span class="label">Coach</span>${t('tip')}`
+    : !W.turned ? `<span class="label">${t('turn')}</span>${t('turnLine')}`
+    : W.set === 0 ? `<span class="label">${t('plan')}</span>${t('planLine', ex.sets.length, Math.floor(ex.rest / 60) + ':' + String(ex.rest % 60).padStart(2, '0'))}`
+    : `<span class="label">${t('last')}</span>${num(ex.last)}<span class="label gap">${t('best')}</span>${num(ex.best.kg)} × ${ex.best.reps}`;
+}
+const dial = createDial($('#dial'), () => { meterShow(false); if (!W.turned || (!$('#w-use').hidden && dial.get().kg >= 85)) { W.turned = true; paintWorkout(); } });
+function log() {
+  if (W.done || resting() || Date.now() < W.guard) return;
+  const ex = cur(), d = dial.get(), s = ex.sets[W.set];
+  W.hist.push(JSON.stringify({ plan: W.plan, ex: W.ex, set: W.set, records: W.records }));
+  Object.assign(s, { kg: d.kg, reps: d.reps, done: 1 });
+  const rec = d.kg > ex.best.kg || (d.kg === ex.best.kg && d.reps > ex.best.reps);
+  if (rec) { ex.best = { kg: d.kg, reps: d.reps }; W.records++; $('#r-rec').textContent = num(d.kg) + ' kg × ' + d.reps; meter.classList.add('is-rec'); setTimeout(() => meter.classList.remove('is-rec'), 2400); tick(true); setTimeout(() => tick(true), 140); peg(); }
+  else tick(true);
+  W.guard = Date.now() + 500;                       // the key under the thumb changes role, so it sleeps for half a second
+  const lastSet = W.set === ex.sets.length - 1;
+  if (lastSet && W.ex === W.plan.length - 1) return finish();
+  W.restEnd = Date.now() + ex.rest * 1000;
+  if (lastSet) { W.ex++; W.set = 0; meterScale(cur()); } else { W.set++; if (rec) meterScale(ex); }   // a new best moves the red zone
+  const nx = cur().sets[W.set]; dial.set(nx.kg, nx.reps, 700);
+  paintWorkout(); meterShow(false); clockTick();
+  if (rec) runT = setTimeout(restRun, 950); else restRun();
+}
+function endRest(buzz) {
+  if (!resting() || Date.now() < W.guard) return;
+  W.restEnd = 0; W.guard = Date.now() + 400; paintWorkout(); meterShow(false);
+  if (buzz) { try { navigator.vibrate && navigator.vibrate([70, 50, 70]); } catch (e) {} }
+}
+function addRest(sec) {
+  if (!resting()) return;
+  W.restEnd = clamp(W.restEnd + sec * 1000, Date.now() + 1000, Date.now() + 150e3);
+  restRun(); clockTick();
+}
+function undo() {
+  if (Date.now() < W.guard) return;
+  const h = W.hist.pop(); if (!h) return;
+  const o = JSON.parse(h); Object.assign(W, { plan: o.plan, ex: o.ex, set: o.set, records: o.records, restEnd: 0, done: false });
+  const s = cur().sets[W.set]; dial.set(s.kg, s.reps, 500); meterScale(cur()); meter.classList.remove('is-rec'); paintWorkout(); meterShow(false);
+}
+function finish() {
+  W.done = true; stopRun();
+  const sets = W.plan.flatMap((e) => e.sets.filter((s) => s.done)), kg = sets.reduce((a, s) => a + s.kg * s.reps, 0);
+  const mins = Math.round((Date.now() - W.t0) / 60000);
+  const loc = () => Math.round(kg).toLocaleString(lang === 'da' ? 'da' : 'en');
+  paintWorkout();
+  openSheet([t('finKicker'), 'Push', t(W.records ? 'finRec' : 'finPlain'), [[t('fSets'), sets.length], [t('fLifted'), loc() + ' kg'], [t('fTime'), mins + ' min'], [t('fBests'), W.records]]], t('back'), () => {
+    sessDone = () => t('doneWhat', sets.length, loc(), mins); paintToday(); go('today');
+  });
+}
+let sessDone = null;
+function paintToday() {
+  $('#sess-when').textContent = t(sessDone ? 'doneToday' : 'sessWhen'); $('#sess-what').textContent = sessDone ? sessDone() : t('sessWhat');
+  $('#start span').textContent = t(sessDone ? 'again' : 'start'); $('#start').setAttribute('aria-label', t('startAria'));
+}
+function clockTick() {
+  if (!W.done) { const s = Math.floor((Date.now() - W.t0) / 1000), t = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); if ($('#w-clock').textContent !== t) $('#w-clock').textContent = t; }
+  if (resting()) {
+    const left = Math.ceil((W.restEnd - Date.now()) / 1000);
+    if (left <= 0) return endRest(true);
+    const t = Math.floor(left / 60) + ':' + String(left % 60).padStart(2, '0'); if ($('#r-time').textContent !== t) $('#r-time').textContent = $('#r-rectime').textContent = t;
+  }
+}
+setInterval(clockTick, 250);
+/* Times are wall-clock, so a locked phone does not stretch the rest. On waking, the needle is put back on the real time left. */
+document.addEventListener('visibilitychange', () => { if (document.hidden || !resting()) return; clockTick(); if (resting()) restRun(); });
+$('#log').addEventListener('click', log);
+$('#skip').addEventListener('click', () => endRest(false));
+$('#minus').addEventListener('click', () => addRest(-15)); $('#plus').addEventListener('click', () => addRest(15));
+$('#undo').addEventListener('click', undo);
+$('#w-use').addEventListener('click', () => { dial.set(85, 5, 600); tick(true); paintWorkout(); meterShow(false); });
+$('#start').addEventListener('click', () => {
+  if (W.done) { W = fresh(); const s = cur().sets[W.set]; dial.set(s.kg, s.reps); meterScale(cur()); paintWorkout(); meterShow(false); sessDone = null; paintToday(); }
+  go('workout');
+});
+
+/* ---------- Dial test: the same five targets by dial and by − / + buttons, timed ---------- */
+const TARGETS = [[85, 5], [100, 3], [60, 10], [77.5, 8], [92.5, 6]], START = [82.5, 6];
+const X = { phase: 'idle', i: 0, t0: 0, v: [...START], res: { dial: [], step: [] } };
+const dial2 = createDial($('#dial2'), (kg, reps) => { X.v = [kg, reps]; xPaint(); });
+const pair = ([kg, r]) => `${num(kg)} <small>kg ×</small> ${r}`;
+function xPaint() {
+  const tg = TARGETS[X.i], live = X.phase === 'dial' || X.phase === 'step', hit = live && tg[0] === X.v[0] && tg[1] === X.v[1];
+  $('#x-target').innerHTML = live ? pair(tg) : '–';
+  $('#x-now').innerHTML = pair(X.v); $('#x-now').classList.toggle('hit', hit);
+  $('#x-skg').innerHTML = num(X.v[0]) + ' <small>kg</small>'; $('#x-sreps').innerHTML = X.v[1] + ` <small>${t('reps')}</small>`;
+  $('#test').classList.toggle('is-step', X.phase === 'step'); $('#test').classList.toggle('is-done', X.phase === 'done');
+  $('#x-go').textContent = t(X.phase === 'idle' ? 'go' : X.phase === 'done' ? 'again2' : 'set');
+  $('#x-sound').innerHTML = t(sound ? 'soundOn' : 'soundOff');
+  if (X.phase === 'done') xVerdict();
+  $('#x-sub').textContent = X.phase === 'idle' ? t('xIdle') : X.phase === 'done' ? t('xDone') : t('xRound', X.phase === 'dial', X.i + 1);
+}
+function xRound() { X.v = [...START]; dial2.set(START[0], START[1]); X.t0 = performance.now(); xPaint(); }
+$('#x-go').addEventListener('click', () => {
+  if (X.phase === 'idle' || X.phase === 'done') { X.phase = 'dial'; X.i = 0; X.res = { dial: [], step: [] }; return xRound(); }
+  const t = TARGETS[X.i];
+  X.res[X.phase].push({ ms: performance.now() - X.t0, ok: t[0] === X.v[0] && t[1] === X.v[1] });
+  if (++X.i < 5) return xRound();
+  X.i = 0;
+  if (X.phase === 'dial') { X.phase = 'step'; return xRound(); }
+  X.phase = 'done'; xPaint();
+});
+function xVerdict() {
+  const avg = (a) => a.reduce((s, r) => s + r.ms, 0) / a.length / 1000, ok = (a) => a.filter((r) => r.ok).length;
+  const d = avg(X.res.dial), b = avg(X.res.step), diff = Math.abs(d - b);
+  $('#x-dt').textContent = num(d.toFixed(1)) + ' s'; $('#x-bt').textContent = num(b.toFixed(1)) + ' s';
+  $('#x-dr').textContent = ok(X.res.dial) + ' / 5'; $('#x-br').textContent = ok(X.res.step) + ' / 5';
+  $('#x-verdict').textContent = diff < 0.3 ? t('vClose') : t('vWin', d < b, num(diff.toFixed(1)));
+}
+$$('[data-step]').forEach((b) => b.addEventListener('click', () => {
+  if (X.phase !== 'step') return;
+  if (b.dataset.step === 'kg') X.v[0] = clamp(X.v[0] + 2.5 * +b.dataset.d, 0, KG_MAX); else X.v[1] = clamp(X.v[1] + +b.dataset.d, 1, REP_MAX);
+  tick(b.dataset.step !== 'kg'); xPaint();
+}));
+$('#x-sound').addEventListener('click', (e) => { sound = !sound; e.currentTarget.setAttribute('aria-pressed', sound); xPaint(); if (sound) tick(); });
+
+/* ---------- start ---------- */
+function applyLang() {
+  document.documentElement.lang = lang;
+  $$('[data-t]').forEach((e) => { if (e.namespaceURI === NS) e.textContent = t(e.dataset.t); else e.innerHTML = t(e.dataset.t); });
+  $$('[data-aria]').forEach((e) => e.setAttribute('aria-label', t(e.dataset.aria)));
+  $('#lang').innerHTML = lang === 'da' ? 'EN · <b>DA</b>' : '<b>EN</b> · DA';
+  meterScale(cur()); paintToday(); paintWorkout(); meterShow(false); xPaint();
+}
+$('#lang').addEventListener('click', () => { lang = lang === 'da' ? 'en' : 'da'; applyLang(); });
+drawReady(); drawSubs(); applyLang();
+requestAnimationFrame(() => requestAnimationFrame(() => sweep($('#today'))));
+})();
+</script>
+<!--PAGE-END-->
+</body>
+</html>
