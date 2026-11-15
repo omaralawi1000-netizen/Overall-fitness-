@@ -57,6 +57,22 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: ten-style round, style 9 "White gallery", monochrome gallery (/_prototypes/gallery/)
+Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." This thread was given a white gallery with black-and-white athletic photographs, one colour only for progress, and one experiment, "progress as a portrait".
+Reading of the log before building: plain flat screens were always rejected, he wants one richly made picture with a quiet UI around it, the picture has to mean something ("make it make sense"), and a judge's 8 has not predicted his yes. So the picture here is the progress itself, and white is carried by a real photograph, not by flat colour.
+Built (Today, the live workout and a Print page, clickable, English and Danish): a white wall, framed black-and-white photographs with real shadows, Jost capitals like a wall label, black bars for the one action, and one blue that only means progress. No glass, no glow.
+- **The experiment:** the 12-week block is one photograph, 48 strips wide, one strip per session. It develops from left to right, the face first and the arm last; the paper ahead of the edge is blank. Today shows it at 52 %.
+- **Workout:** a test strip of the same photograph starts blank and develops one slice per logged set; the next slice is washed pale blue. The set is one line of big numbers ("85 × 6") with two plus-and-minus boxes. Rest is a black panel with the clock, +30 s, Skip and Undo; a best set is named there with a blue dot.
+- **Finish:** "Hang it" goes to the Print page, where today's strip shows in blue for a moment and then settles into the photograph.
+- **Print:** "Look ahead" is a slider that shows the photograph in the weeks to come and returns to today on release; under it the twelve weeks as a grid (done, missed, to go) and the two earlier prints.
+Judges (five fresh design-judges, Sonnet): 7, 7.5, 7.5, 7.5, 7.5. Never 8, so it is under his bar of 8. What changed between them: the workout strip is cut from the same photograph (it was a second photo), the big numbers became one line, one session's gain was made visible (the print used to darken all over, so it looked finished from the start; it now develops strip by strip), the paper ahead of the edge became blank (a faint ghost of the photo read as a glitch), and the photo was mirrored so the face comes first. The last judge's biggest weakness: "the live Workout screen is just a set stepper with a small, cropped test strip on top". All five said the idea reads in about three seconds and would motivate; Look ahead at week 11 was called the best moment.
+- The judges contradicted each other again: too washed (judge 1), too finished (judge 3), the ghost is a glitch (judge 4), the developed half is a black void (judge 5). Five rounds was two too many; the score did not move after round two.
+My own score: 7.5 as a look for Omar (white and quiet is the furthest of the ten from what he has liked, and the workout screen is plain next to Today), 8.5 for the developing photograph as an idea. It would work in any style, with his own photo.
+Needs his phone: grain and banding in the blacks and at the developing edge, how the strip fades in when a set is logged, the blue settling on the Print page, the drag and snap-back of Look ahead.
+Artifact: https://claude.ai/artifact/FRQCTCUeuK3SFxYvewyeVG
+Shown at 7.5, under his bar of 8: the project coordinator decided to show it, on Omar's standing "just decide", because a judge's score has not predicted his yes.
+Verdict: waiting for Omar.
+
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.
