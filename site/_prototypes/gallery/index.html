@@ -490,7 +490,8 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; background: var
   const fresh = () => ({ exI: 0, setI: 0, kg: 85, reps: 6, logged: [], best: PLAN.map((e) => e.best.slice()), started: 0, ended: 0, rest: null, finished: false, hung: false });
   let S = fresh();
   const e1rm = (kg, reps) => kg * (1 + reps / 30);
-  const progress = () => (BASE_DONE + (S.hung ? S.logged.length / TOTAL : 0)) / PLANNED;
+  /* A hung session is one strip, however many of its sets were logged: the print and the session count stay in step. */
+  const progress = () => (BASE_DONE + (S.hung ? 1 : 0)) / PLANNED;
   const pct = (p) => Math.round(p * 100);
 
   /* ---------- the print: a photograph that develops ---------- */
@@ -745,7 +746,7 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; background: var
       canv.classList.add('gain');
       setTimeout(() => { canv.classList.add('dev2'); drawPrint(); drawToday(); tick($('printPct')); paint($('heroCanvas'), after); }, 900);
       setTimeout(() => { canv.classList.remove('gain'); }, 2700);
-      setTimeout(() => { paint($('printA'), after); canv.classList.remove('dev2'); }, 5000);
+      setTimeout(() => { paint($('printA'), after); canv.classList.remove('dev2'); drawPrint(); }, 5000);
     }, 420);
   }
   function reset() {
@@ -771,14 +772,20 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; background: var
   $('kgM').addEventListener('click', stepKg(-1)); $('kgP').addEventListener('click', stepKg(1));
   $('repsM').addEventListener('click', bump('reps', -1, 1, $('reps'))); $('repsP').addEventListener('click', bump('reps', 1, 1, $('reps')));
   const ahead = $('ahead');
-  ahead.addEventListener('input', () => { if ($('printCanv').classList.contains('dev2')) return; const v = +ahead.value; $('printBar').style.transitionDuration = '.12s'; paint($('printA'), v / PLANNED); drawPrint(v); });
+  let snap = 0;
+  ahead.addEventListener('input', () => {
+    const canv = $('printCanv'), v = +ahead.value;
+    if (canv.classList.contains('dev2')) return;
+    clearTimeout(snap); canv.classList.remove('quick');
+    $('printBar').style.transitionDuration = '.12s'; paint($('printA'), v / PLANNED); drawPrint(v);
+  });
   const back = () => {
     const canv = $('printCanv'), p = progress();
-    if (canv.classList.contains('dev2') || canv.classList.contains('quick')) return;
+    if (canv.classList.contains('dev2')) return;
     $('printBar').style.transitionDuration = '';
     paint($('printB'), p); drawPrint();
-    canv.classList.add('quick');
-    setTimeout(() => { paint($('printA'), p); canv.classList.remove('quick'); }, 560);
+    clearTimeout(snap); canv.classList.add('quick');
+    snap = setTimeout(() => { paint($('printA'), p); canv.classList.remove('quick'); }, 560);
   };
   ahead.addEventListener('change', back);
   setInterval(() => { if (S.started && !S.finished && view === 'work') drawClock(); }, 1000);
