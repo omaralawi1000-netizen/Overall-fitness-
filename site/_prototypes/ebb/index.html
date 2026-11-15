@@ -447,7 +447,7 @@ const sea = (() => {
   const cv = $('sea');
   const gl = cv.getContext('webgl', { antialias: false, alpha: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' });
   const st = { mode: 0, modeFrom: 0, modeTo: 0, modeT: 1, gold: 0, goldTo: 0, speed: 1, speedTo: 1, t: 3.7, rip: [], ok: !!gl };
-  if (!gl) { document.body.style.background = `linear-gradient(${theme.shallow}, ${theme.deep})`; return Object.assign(st, { draw() {}, ripple() {} }); }
+  if (!gl) { document.body.style.background = `linear-gradient(${theme.shallow}, ${theme.deep})`; return Object.assign(st, { draw() {}, ripple() {}, dive() {} }); }
   const vs = 'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
   const fs = `precision highp float;
 uniform vec2 R;uniform float T,M,G;uniform vec3 cS,cW,cD,cA,cB,cL;uniform vec4 P[4];
@@ -582,7 +582,7 @@ const actors = new Set();
 let lastT = performance.now(), seaOn = true;
 function frame(t) {
   const dt = Math.min(0.05, (t - lastT) / 1000); lastT = t;
-  if (Math.abs(tiltTo - tilt) > 0.002) { const d = (tiltTo - tilt) * Math.min(1, dt * 7); tilt += d; if (Math.abs(d) > 0.004) actors.forEach((a) => a.slosh && a.slosh(d * 40)); }
+  if (Math.abs(tiltTo - tilt) > 0.002) { const d = (tiltTo - tilt) * Math.min(1, dt * 7); tilt += d; [glass, rack, clep].forEach((a) => { if (a === clep && W.phase !== 'rest' && W.phase !== 'pr') return; if (Math.abs(d) > 0.004) a.slosh(d * 40); actors.add(a); }); }
   if (seaOn && (!RM || sea.modeT < 1 || colT < 1)) sea.draw(dt);
   for (const a of actors) if (!a.step(dt)) actors.delete(a);
   requestAnimationFrame(frame);
@@ -896,6 +896,7 @@ function undoSet(e, set, idx) {
   if (set.pr) { e.bestE = set.prevBest; e.best = set.prevBestPair; }
   if (W.phase === 'pr') hidePR(true);
   if (W.phase === 'rest' || W.phase === 'pr') endRest(true);
+  if (ex() !== e) { W.i = W.ex.indexOf(e); renderEx(false); return; }
   rack.drain(idx); renderSet();
 }
 function swapView(out, inn) {
@@ -1049,7 +1050,8 @@ let holdT;
 const hold = $('hold');
 hold.addEventListener('pointerdown', (ev) => { ev.preventDefault(); hold.classList.add('held'); haptic(6); holdT = setTimeout(finishWorkout, 1050); });
 ['pointerup', 'pointerleave', 'pointercancel'].forEach((n) => hold.addEventListener(n, () => { if (!W.finished) { clearTimeout(holdT); hold.classList.remove('held'); } }));
-hold.addEventListener('keydown', (ev) => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); hold.classList.add('held'); holdT = setTimeout(finishWorkout, 1050); } });
+hold.addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && !ev.repeat && !W.finished) { ev.preventDefault(); clearTimeout(holdT); hold.classList.add('held'); holdT = setTimeout(finishWorkout, 1050); } });
+hold.addEventListener('keyup', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && !W.finished) { clearTimeout(holdT); hold.classList.remove('held'); } });
 let totalRoll;
 function finishWorkout() {
   W.finished = true; W.endedAt = performance.now(); clearTimeout(restTimer); clep.stop(); W.phase = 'done'; haptic([12, 40, 20]);
