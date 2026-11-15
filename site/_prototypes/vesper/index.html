@@ -779,7 +779,9 @@ $('less').onclick = () => addRest(-15); $('more').onclick = () => addRest(15);
 $('minus').onclick = () => setVal(S[S.field] - fdef().step, true); $('plus').onclick = () => setVal(S[S.field] + fdef().step, true);
 document.querySelectorAll('.field').forEach(f => { f.onclick = () => { S.field = f.dataset.f; workout(); }; });
 $('coachAct').onclick = () => {
-  if (S.coachUsed) { S.w = EX[0].sets[3].w; S.r = EX[0].sets[3].r; S.coachUsed = false; } else { S.field = 'w'; S.w = 85; S.r = 5; S.coachUsed = true; }
+  /* Undo puts back exactly what was set before the Coach's change, edits included */
+  if (S.coachUsed) { const b = S.beforeCoach || EX[0].sets[3]; S.w = b.w; S.r = b.r; S.coachUsed = false; S.beforeCoach = null; }
+  else { S.beforeCoach = { w: S.w, r: S.r }; S.field = 'w'; S.w = 85; S.r = 5; S.coachUsed = true; }
   rAnim = true; workout();
 };
 document.querySelectorAll('[data-m]').forEach(m => { m.onclick = () => openDetail(m.dataset.m); });
