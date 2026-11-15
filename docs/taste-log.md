@@ -57,6 +57,18 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+
+### 15 Nov 2026: style 11 redone on Opus, "Atrium", daylight stained glass (/_prototypes/atrium/)
+Asked (Omar): "also some ones genuinely different, like very beautiful, with frosted glass blur, beautiful elements, organized and everything like that." Then: "Stop all the working threads and start them again on Opus hi." This replaces the Fable attempt "Lagoon" (PR #114), whose judges stalled at 7.5 because white frost over a nature photo is a common look and Today had no hero.
+Reading of the log before building: he wants frost he can see, one richly made thing with real depth and a quiet UI around it, and a picture that means something ("make it make sense"). The risk: his log also says he wants a real place, not an abstract material, and this wall is drawn in code.
+Built (Today, live workout, rest, Coach, finish; English and Danish; two colour sets, Jewel and Sea glass): a sunlit plaster wall with a plant's shadow. The hero is the week as an arched stained-glass window, one pane per day coloured by what was trained (Push rose, Pull blue, Legs green, Wrestling violet, rest clear). The sun throws the window's coloured light down the wall, and the frosted glass (decision A, 4 blurred layers per screen) sits in that light, so the frost always has colour behind it. The wall is painted once and dithered against banding; nothing moves behind the glass.
+- **The unique touch:** today's pane fills strip by strip, one strip of coloured glass per logged set; the rest timer fills the next strip with daylight; a new best makes the strip gold. Finishing pours colour into Sunday's pane and the light on the wall changes with it.
+- **Alive:** rolling digits, a band of light that crosses the card on every set, a gold toast with a glinting gem for a record, hold to finish, sheets you can drag, the Coach changing the plan with Undo.
+Judge (one fresh design-judge, Sonnet): 7 (Today 8, Workout 6.5, Rest 7.5, record toast 6). Its list was fixed afterwards and not re-judged: dead space in the workout header, a garish record toast, a muddy scrim, finish copy, a hatched today pane that read as loading, misaligned tiles, Danish "reps", the plain black button (now deep glass in the session colour).
+My own score: 7.5. Biggest weakness: the wall is drawn, not photographed, and the projected stripes could read as candy rather than sunlight on his screen.
+Needs his phone: the blur over the coloured light, banding in the soft stripes, smoothness of the sheet drag and screen slide, whether the wall reads as a real sunlit room.
+Artifact: https://claude.ai/artifact/L5ujHh6aJYpmjYRBpk7NXn
+Verdict: waiting for Omar.
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.
