@@ -706,7 +706,7 @@ function logLabel(instant) {
   morph(el, txt);
 }
 function nudge(which, d) {
-  if (S.resting) return;
+  if (S.resting || busy) return; // no edits while a set is flying into its row
   if (which === 'kg') { const v = Math.max(0, Math.round((S.kg + d) * 10) / 10); if (v === S.kg) return; S.kg = v; R.kg.set(fmt(v), d > 0 ? 1 : -1); }
   else { const v = Math.max(1, S.reps + d); if (v === S.reps) return; S.reps = v; R.reps.set(String(v), d > 0 ? 1 : -1); }
   S.sets[S.ex][S.set].kg = S.kg; S.sets[S.ex][S.set].reps = S.reps;
