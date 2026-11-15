@@ -1,0 +1,783 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aven Gallery</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Jost:wght@300..700&display=swap">
+<style>
+/* Layout: one phone screen. A white wall, framed black-and-white prints with real shadows, the wall label beside
+   the work, black bars for the one action, and one blue that only ever means progress. Single look by choice. */
+:root {
+  --wall: #F2F1ED;
+  --room: #E2E0DA;
+  --paper: #FBFAF6;
+  --ink: #0C0C0D;
+  --ink-2: #5C5C60;
+  --ink-3: #A3A29E;
+  --ink-4: #6C6C70;
+  --line: #D8D6CF;
+  --blue: #1A36F0;
+  --blue-on-ink: #4A66FF;
+  --type: "Jost", "Futura", "Century Gothic", "Helvetica Neue", Arial, sans-serif;
+  --ease: cubic-bezier(.2, .8, .2, 1);
+}
+* { box-sizing: border-box; margin: 0; }
+html, body { height: 100%; }
+body { background: var(--wall); color: var(--ink); font-family: var(--type); font-size: 15px; line-height: 1.4;
+  -webkit-font-smoothing: antialiased; overscroll-behavior: none; -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none; user-select: none; touch-action: manipulation; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; touch-action: manipulation; border-radius: 0; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; }
+.stage { height: 100%; display: grid; place-items: center; }
+.app { position: relative; width: 100%; height: 100%; max-width: 480px; overflow: hidden; background: var(--wall); }
+@media (min-width: 600px) and (min-height: 860px) {
+  body { background: var(--room); }
+  .app { width: 384px; height: 832px; box-shadow: 0 0 0 1px var(--line), 0 40px 80px -40px rgba(12, 12, 13, .4); }
+}
+.pad { padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
+
+/* ---------- type ---------- */
+.lbl { font-size: 10.5px; line-height: 1.3; letter-spacing: .18em; text-transform: uppercase; font-weight: 500; color: var(--ink-2); }
+.mark { font-size: 13px; letter-spacing: .38em; font-weight: 600; text-transform: uppercase; }
+h1 { font-size: 27px; line-height: 1.12; font-weight: 400; letter-spacing: -.012em; text-wrap: balance; }
+h2 { font-size: 30px; line-height: 1.05; font-weight: 500; letter-spacing: -.012em; }
+.meta { font-size: 13.5px; line-height: 1.35; color: var(--ink-2); }
+.dg { display: inline-block; width: .6em; text-align: center; }
+
+/* ---------- views ---------- */
+.view { position: absolute; inset: 0; display: flex; flex-direction: column; opacity: 0; transform: translateY(10px);
+  visibility: hidden; transition: opacity .22s var(--ease), transform .22s var(--ease), visibility 0s .22s; }
+.view.on { opacity: 1; transform: none; visibility: visible; transition-delay: 0s; }
+.scroll { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding-bottom: 84px; scrollbar-width: none; }
+.scroll::-webkit-scrollbar { display: none; }
+.top { display: flex; align-items: center; justify-content: space-between; height: 56px; flex: none; }
+.txtbtn { height: 44px; min-width: 44px; display: inline-flex; align-items: center; font-size: 10.5px; letter-spacing: .18em;
+  text-transform: uppercase; font-weight: 500; transition: opacity .1s; }
+.txtbtn:active { opacity: .45; }
+.lang { display: flex; align-items: center; gap: 2px; color: var(--ink-4); font-size: 10.5px; letter-spacing: .18em; }
+.lang button { height: 44px; min-width: 30px; font-weight: 500; letter-spacing: .18em; color: var(--ink-4); }
+.lang button.on { color: var(--ink); }
+
+/* ---------- the framed print ---------- */
+.frame { display: block; background: var(--ink); padding: 3px; width: 100%;
+  box-shadow: 0 1px 0 rgba(12, 12, 13, .2), 0 14px 22px -10px rgba(12, 12, 13, .38), 0 36px 50px -28px rgba(12, 12, 13, .34); }
+.mat { display: block; background: var(--paper); padding: 13px; }
+.canv { display: block; position: relative; box-shadow: 0 0 0 1px rgba(12, 12, 13, .1); background: #F6F4EF; }
+.canv canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; }
+.canv canvas + canvas { position: absolute; inset: 0; opacity: 0; }
+/* A session is hung: its strip shows in the progress blue, the new tones come up under it, then the blue settles. */
+.canv.dev2 #printC { opacity: 1; transition: opacity 1.8s cubic-bezier(.4, 0, .2, 1); }
+.canv.quick #printB { opacity: 1; transition: opacity .5s var(--ease); }
+/* What today's session developed, shown in the progress blue for a moment, then it settles into the print. */
+#printD { transition: opacity 2.2s cubic-bezier(.4, 0, .2, 1); }
+.canv.gain #printD { opacity: 1; transition: opacity .5s var(--ease); }
+#heroCanvas { opacity: 0; transition: opacity 1.6s cubic-bezier(.3, 0, .2, 1); }
+.ready #heroCanvas { opacity: 1; }
+button.frame { transition: transform .14s var(--ease); }
+button.frame:active { transform: scale(.985); }
+
+.bar { height: 3px; background: var(--line); }
+.bar i { display: block; height: 100%; background: var(--blue); transform-origin: left; transform: scaleX(0); transition: transform 1.8s var(--ease); }
+.big { font-size: 54px; font-weight: 500; line-height: .95; letter-spacing: -.035em; }
+.big i { font-style: normal; font-size: .38em; letter-spacing: 0; margin-left: 3px; }
+
+/* ---------- today ---------- */
+.intro { padding-top: 6px; padding-bottom: 22px; display: grid; gap: 8px; }
+#heroFrame { width: 304px; max-width: 100%; margin: 0 auto; }
+#v-today .pp { margin-top: 24px; }
+#v-today .block { margin-top: 24px; }
+.pl-med { font-size: 12.5px; line-height: 1.35; color: var(--ink-2); }
+#v-today .scroll { padding-bottom: 148px; }
+.begin { position: absolute; left: 0; right: 0; bottom: 60px; z-index: 4; }
+.begin .cta { height: 64px; padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px)); }
+.begin .cta small { font-size: 10.5px; letter-spacing: .18em; color: #B9B9BD; margin-left: auto; margin-right: 14px; }
+.block { margin-top: 30px; border-top: 1px solid var(--ink); padding-top: 14px; }
+.sess-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-top: 6px; }
+.coach { font-size: 14.5px; line-height: 1.4; margin-top: 12px; color: var(--ink); max-width: 34ch; }
+.coach b { font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; font-weight: 500; color: var(--ink-2); margin-right: 8px; }
+.cta { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 60px; padding: 0 22px; background: var(--ink);
+  color: var(--paper); font-size: 12.5px; letter-spacing: .2em; text-transform: uppercase; font-weight: 500;
+  transition: transform .12s var(--ease), background-color .12s; }
+.cta:active { transform: scale(.985); background: #2B2B2E; }
+.facts { margin-top: 26px; display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+.fact { border-top: 1px solid var(--line); padding-top: 12px; }
+.fact p + p { font-size: 19px; font-weight: 500; letter-spacing: -.01em; margin-top: 3px; }
+.fact p + p small { font-size: 13px; font-weight: 400; color: var(--ink-2); letter-spacing: 0; }
+.fact .bar { height: 2px; margin-top: 9px; }
+.foot { margin-top: 22px; display: grid; gap: 4px; }
+.credit { font-size: 11.5px; line-height: 1.4; color: var(--ink-2); }
+.foot .txtbtn { justify-self: start; text-decoration: underline; text-underline-offset: 4px; }
+
+/* ---------- tabs ---------- */
+.tabs { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; height: 60px; display: grid; grid-template-columns: repeat(3, 1fr);
+  background: var(--wall); border-top: 1px solid var(--line); transition: transform .24s var(--ease); will-change: transform; }
+.tabs button { position: relative; font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; font-weight: 500; color: var(--ink-4); }
+.tabs button.on { color: var(--ink); }
+.tabs button.on::before { content: ""; position: absolute; bottom: 13px; left: 50%; width: 16px; height: 1px; margin-left: -9px; background: var(--ink); }
+.app.in-session .tabs { transform: translateY(100%); }
+
+/* ---------- live workout ---------- */
+.strip-frame { background: var(--ink); padding: 2px; box-shadow: 0 10px 18px -10px rgba(12, 12, 13, .36), 0 26px 36px -24px rgba(12, 12, 13, .3); }
+.strip-mat { background: var(--paper); padding: 8px; }
+.strip { position: relative; height: clamp(96px, 20vh, 168px); overflow: hidden; background: #F6F4EF; }
+/* The test strip: a band of the same print. Under every strip lies the finished photograph; on top lies the print as it
+   stands today, still pale. Logging a set fades that strip's top layer away, so the finished tones come up strip by strip. */
+.strip .full, .cell { position: absolute; inset: 0; background-size: cover; background-position: 50% 37%; }
+.strip .full { background-image: url(img/portrait.jpg); }
+.cell { background-color: #F6F4EF; background-image: var(--stage, none); transition: opacity 1.4s cubic-bezier(.3, .1, .2, 1); }
+.cell.dev { opacity: 0; }
+.cut { position: absolute; top: 0; bottom: 0; width: 1px; margin-left: -.5px; background: var(--paper); }
+.ruler { position: relative; height: 14px; margin: 7px 10px 0; }
+.tk { position: absolute; top: 0; width: 1px; height: 6px; margin-left: -.5px; background: var(--ink-3); }
+.tk.done { width: 2px; height: 9px; margin-left: -1px; background: var(--ink); }
+.tk.cur { width: 2px; height: 14px; margin-left: -1px; background: var(--blue); }
+.strip-cap { margin-top: 5px; }
+.below { position: relative; flex: 1; min-height: 0; }
+.live, .summary { position: absolute; inset: 0; display: flex; flex-direction: column; transition: opacity .3s var(--ease), visibility 0s .3s; }
+.live { padding-top: 20px; padding-bottom: 86px; justify-content: space-between; }
+.summary { opacity: 0; visibility: hidden; padding-top: 24px; }
+.finished .live { opacity: 0; visibility: hidden; }
+.finished .summary { opacity: 1; visibility: visible; transition-delay: .5s, .5s; }
+.ex h2 { margin-top: 5px; }
+.ex .meta { margin-top: 6px; }
+.sets { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 8px; margin-top: 14px; }
+.chip { border-top: 2px solid var(--line); padding-top: 6px; min-height: 44px; }
+.chip.done { border-color: var(--ink); }
+.chip.cur { border-color: var(--blue); }
+.chip b { display: block; font-size: 10.5px; letter-spacing: .14em; font-weight: 500; color: var(--ink-2); }
+.chip span { font-size: 14px; color: var(--ink-2); }
+.chip.done span { color: var(--ink); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--blue); margin-left: 6px; animation: pop .5s var(--ease) both; }
+@keyframes pop { 0% { transform: scale(0); } 60% { transform: scale(1.35); } 100% { transform: scale(1); } }
+.lift { display: flex; align-items: flex-end; height: calc(var(--d) * .86); margin: 0 0 16px -3px; }
+.x { font-size: calc(var(--d) * .4); font-weight: 300; line-height: 1; margin: 0 .34em .12em .4em; color: var(--ink-2); }
+.steps { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.nums { --d: clamp(52px, calc(30vh - 138px), 112px); }
+.digits { font-size: var(--d); font-weight: 500; line-height: .74; letter-spacing: -.045em; white-space: nowrap; }
+.digits.long { font-size: calc(var(--d) * .8); }
+.step { display: grid; grid-template-columns: 52px minmax(0, 1fr) 52px; align-items: center; height: 54px; border: 1px solid var(--ink); }
+.step .lbl { text-align: center; }
+.step button { height: 100%; font-size: 28px; font-weight: 400; line-height: 1; display: grid; place-items: center;
+  transition: background-color .08s, color .08s; }
+.step button:active { background: var(--ink); color: var(--paper); }
+.live .coach { margin-top: 0; max-width: none; }
+.dock { position: absolute; left: 0; right: 0; bottom: 0; z-index: 4; }
+.dock .cta { height: 72px; justify-content: center; gap: 14px; font-size: 13.5px; }
+.rest { position: absolute; left: 0; right: 0; bottom: 0; height: 162px; background: var(--ink); color: var(--paper); transform: translateY(101%);
+  transition: transform .34s var(--ease); will-change: transform; padding-top: 8px; display: flex; flex-direction: column; justify-content: space-between; padding-bottom: 18px; }
+.resting .rest { transform: none; }
+.restline { position: absolute; top: 0; left: 0; right: 0; height: 3px; background: var(--blue-on-ink); transform-origin: left; }
+.rest .lbl { color: #A9A9AD; }
+.rest-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.rest-top .lbl { display: flex; align-items: center; gap: 9px; white-space: nowrap; }
+.rest-top .lbl.rec { color: var(--paper); }
+.rest-top .lbl i { flex: none; width: 8px; height: 8px; border-radius: 50%; background: var(--blue-on-ink); animation: pop .5s .25s var(--ease) both; }
+.rest-top .txtbtn { text-decoration: underline; text-underline-offset: 4px; white-space: nowrap; color: #C9C9CC; }
+.rest-main { display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; }
+.rest-time { font-size: 76px; font-weight: 400; line-height: .8; letter-spacing: -.03em; white-space: nowrap; }
+.rest-btns { display: flex; gap: 8px; }
+.rest-btns button { height: 48px; min-width: 76px; padding: 0 14px; white-space: nowrap; border: 1px solid rgba(251, 250, 246, .6); font-size: 11.5px; letter-spacing: .16em;
+  text-transform: uppercase; font-weight: 500; transition: background-color .08s, color .08s; }
+.rest-btns button:active { background: var(--paper); color: var(--ink); }
+.rest.lock button { pointer-events: none; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 22px; border-top: 1px solid var(--ink); padding-top: 12px; }
+.stats p:last-child { font-size: 26px; font-weight: 500; letter-spacing: -.02em; line-height: 1.1; margin-top: 4px; }
+.stats small { font-size: .5em; letter-spacing: 0; margin-left: 3px; font-weight: 500; }
+.stats .dot { animation: none; width: 9px; height: 9px; margin-left: 7px; vertical-align: .16em; }
+.sumlist { margin-top: 18px; }
+.sumlist div { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; border-top: 1px solid var(--line); padding: 9px 0 8px; }
+.sumlist p:first-child { font-size: 14.5px; }
+.sumlist p:last-child { font-size: 13.5px; color: var(--ink-2); text-align: right; }
+.sumlist .dot { animation: none; margin: 0 1px 0 4px; }
+.summary .note { margin-top: 14px; font-size: 14.5px; max-width: 34ch; }
+.finished #endBtn { visibility: hidden; }
+@media (max-height: 670px) { .live .coach { display: none; } .live { padding-top: 14px; } }
+@media (max-height: 760px) { .rest { height: 132px; } .rest-time { font-size: 56px; } }
+
+/* ---------- the print ---------- */
+.print-hang { padding-top: 8px; }
+.pp { margin-top: 30px; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 18px; align-items: end; }
+.pp .bar { grid-column: 1 / -1; margin-top: 10px; }
+.pp-text { display: grid; gap: 3px; padding-bottom: 3px; }
+.sheet { display: grid; grid-template-columns: repeat(12, 1fr); grid-template-rows: auto repeat(4, 14px); grid-auto-flow: column; gap: 7px 0; margin: 14px 0 12px; justify-items: center; align-items: center; }
+.sheet b { font-size: 10px; font-weight: 500; color: var(--ink-2); letter-spacing: .04em; }
+.gc { width: 14px; height: 14px; }
+.gc.done { background: var(--ink); }
+.gc.miss { border: 1px solid var(--ink-3); }
+.gc.now { border: 2px solid var(--blue); }
+.gc.now.done { background: var(--blue); animation: pop .5s var(--ease) both; }
+.gc.next { width: 4px; height: 4px; background: var(--ink-3); border-radius: 50%; }
+.slider { position: relative; margin-top: 6px; }
+.slider i { position: absolute; top: 14px; width: 2px; height: 16px; margin-left: -1px; background: var(--blue); pointer-events: none; }
+input[type=range] { -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 44px; background: transparent; margin: 0; touch-action: pan-y; cursor: pointer; }
+input[type=range]::-webkit-slider-runnable-track { height: 1px; background: var(--ink); }
+input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 26px; height: 26px; background: var(--ink); margin-top: -13px; border-radius: 0; }
+input[type=range]::-moz-range-track { height: 1px; background: var(--ink); }
+input[type=range]::-moz-range-thumb { width: 26px; height: 26px; background: var(--ink); border: 0; border-radius: 0; }
+.ends { display: flex; justify-content: space-between; margin-top: -4px; }
+.earlier { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 14px; }
+.earlier .frame { padding: 2px; }
+.earlier .mat { padding: 7px; }
+.earlier img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; }
+.earlier .under img { filter: contrast(.86) brightness(1.12); }
+.earlier figcaption { margin-top: 12px; display: grid; gap: 2px; }
+.earlier figcaption p:first-child { font-size: 14px; font-weight: 500; }
+
+@media (prefers-reduced-motion: reduce) {
+  .view, .tabs, .rest, .live, .summary { transition-duration: .01s; }
+  .cell, .canv canvas, .bar i { transition-duration: .3s !important; }
+  .dot, .rest-top .lbl i, .gc.now.done { animation: none; }
+}
+</style>
+</head>
+<body>
+<div class="stage">
+<div class="app" id="app">
+
+  <!-- ================= TODAY ================= -->
+  <section class="view on" id="v-today">
+    <div class="scroll">
+      <header class="top pad">
+        <span class="mark">Aven</span>
+        <div class="lang" role="group" aria-label="Language">
+          <button type="button" data-lang="en" class="on">EN</button><span aria-hidden="true">/</span><button type="button" data-lang="da">DA</button>
+        </div>
+      </header>
+      <div class="pad intro">
+        <p class="lbl" data-t="date"></p>
+        <h1 id="todayHead"></h1>
+      </div>
+      <div class="pad">
+        <button type="button" class="frame" id="heroFrame" data-go="print" data-ta="openPrint">
+          <span class="mat"><span class="canv"><canvas id="heroCanvas" width="800" height="1000"></canvas></span></span>
+        </button>
+        <div class="pp">
+          <p class="big"><span id="heroPct"></span><i>%</i></p>
+          <div class="pp-text"><p class="lbl" data-t="plateBlock"></p><p class="pl-med" data-t="medium"></p><p class="pl-med" id="heroCount"></p></div>
+          <div class="bar"><i id="heroBar"></i></div>
+        </div>
+      </div>
+      <div class="pad today-session">
+        <div class="block">
+          <p class="lbl" data-t="todayLbl"></p>
+          <div class="sess-row"><h2>Push</h2><p class="meta" data-t="sessMeta"></p></div>
+          <p class="coach"><b>Coach</b><span data-t="coachToday"></span></p>
+        </div>
+      </div>
+      <div class="pad facts">
+        <div class="fact"><p class="lbl" data-t="food"></p><p id="fFood"></p><div class="bar"><i style="transform:scaleX(.708)"></i></div></div>
+        <div class="fact"><p class="lbl">Protein</p><p id="fProt"></p><div class="bar"><i style="transform:scaleX(.7)"></i></div></div>
+      </div>
+      <div class="pad foot">
+        <button type="button" class="txtbtn" id="resetBtn" data-t="reset"></button>
+      </div>
+    </div>
+    <div class="begin"><button type="button" class="cta" id="beginBtn"><span id="beginTxt"></span><small id="beginSub"></small><span aria-hidden="true">&rarr;</span></button></div>
+  </section>
+
+  <!-- ================= LIVE WORKOUT ================= -->
+  <section class="view" id="v-work">
+    <header class="top pad">
+      <button type="button" class="txtbtn" data-go="today">&larr;&nbsp;<span data-t="today"></span></button>
+      <span class="lbl" id="elapsed" style="color:var(--ink)"></span>
+      <button type="button" class="txtbtn" id="endBtn" data-t="end" style="justify-content:flex-end"></button>
+    </header>
+    <div class="pad">
+      <div class="strip-frame"><div class="strip-mat"><div class="strip">
+        <div class="full"></div>
+        <div id="cells"></div>
+      </div></div></div>
+      <div class="ruler" id="ruler" aria-hidden="true"></div>
+      <p class="lbl strip-cap" id="stripCap"></p>
+    </div>
+    <div class="below">
+      <div class="live">
+        <div class="pad ex" id="exBlock">
+          <p class="lbl" id="exNo"></p>
+          <h2 id="exName"></h2>
+          <p class="meta" id="exMeta"></p>
+          <div class="sets" id="sets"></div>
+        </div>
+        <div class="pad nums">
+          <div class="lift"><p class="digits" id="kg"></p><span class="x" aria-hidden="true">&times;</span><p class="digits" id="reps"></p></div>
+          <div class="steps">
+            <div class="step"><button type="button" id="kgM" data-ta="less">&minus;</button><span class="lbl">Kg</span><button type="button" id="kgP" data-ta="more">+</button></div>
+            <div class="step"><button type="button" id="repsM" data-ta="less">&minus;</button><span class="lbl">Reps</span><button type="button" id="repsP" data-ta="more">+</button></div>
+          </div>
+        </div>
+        <p class="pad coach"><b>Coach</b><span id="wCoach"></span></p>
+        <div class="dock">
+          <button type="button" class="cta" id="logBtn"></button>
+          <div class="rest pad" id="rest">
+            <i class="restline" id="restLine"></i>
+            <div class="rest-top"><p class="lbl" id="restLbl"></p><button type="button" class="txtbtn" id="undoBtn"></button></div>
+            <div class="rest-main">
+              <p class="rest-time" id="restTime"></p>
+              <div class="rest-btns">
+                <button type="button" id="plusBtn">+30 s</button>
+                <button type="button" id="skipBtn" data-t="skip"></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="summary">
+        <div class="pad">
+          <p class="lbl" data-t="sumLbl"></p>
+          <h1 id="sumTitle" style="margin-top:8px"></h1>
+          <div class="stats">
+            <div><p class="lbl" data-t="time"></p><p id="sumTime"></p></div>
+            <div><p class="lbl" data-t="volume"></p><p id="sumVol"></p></div>
+            <div><p class="lbl" data-t="bests"></p><p id="sumBests"></p></div>
+          </div>
+          <div class="sumlist" id="sumList"></div>
+          <p class="note" data-t="sumNote"></p>
+        </div>
+        <div class="dock"><button type="button" class="cta" id="hangBtn"><span data-t="hang"></span><span aria-hidden="true">&rarr;</span></button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ================= THE PRINT ================= -->
+  <section class="view" id="v-print">
+    <div class="scroll">
+      <header class="top pad">
+        <span class="mark" data-t="plate"></span>
+        <span class="lbl" data-t="blockLong"></span>
+      </header>
+      <div class="pad print-hang">
+        <div class="frame"><span class="mat"><span class="canv" id="printCanv">
+          <canvas id="printA" width="800" height="1000"></canvas><canvas id="printB" width="800" height="1000"></canvas><canvas id="printC" width="800" height="1000"></canvas><canvas id="printD" width="800" height="1000"></canvas>
+        </span></span></div>
+      </div>
+      <div class="pad">
+        <div class="pp">
+          <p class="big"><span id="printPct"></span><i>%</i></p>
+          <div class="pp-text"><p class="lbl" id="printState"></p><p class="pl-med" id="printCount"></p></div>
+          <div class="bar"><i id="printBar"></i></div>
+        </div>
+      </div>
+      <div class="pad">
+        <div class="block">
+          <p class="lbl" data-t="ahead"></p>
+          <div class="slider"><input type="range" id="ahead" min="0" max="48" step="1" value="25" data-ta="ahead"><i id="nowMark"></i></div>
+          <div class="ends"><span class="lbl" data-t="start"></span><span class="lbl" data-t="week12"></span></div>
+          <p class="meta" style="margin-top:10px" data-t="aheadCap"></p>
+        </div>
+      </div>
+      <div class="pad">
+        <div class="block">
+          <p class="lbl" data-t="twelve"></p>
+          <div class="sheet" id="sheet"></div>
+          <p class="meta" id="sheetCap"></p>
+          <p class="meta" style="margin-top:10px;max-width:38ch" data-t="how"></p>
+        </div>
+      </div>
+      <div class="pad">
+        <div class="block">
+          <p class="lbl" data-t="earlier"></p>
+          <div class="earlier">
+            <figure class="under"><div class="frame"><span class="mat"><img src="img/plate-1.jpg" alt=""></span></div>
+              <figcaption><p data-t="p1"></p><p class="pl-med" data-t="p1m"></p></figcaption></figure>
+            <figure><div class="frame"><span class="mat"><img src="img/plate-2.jpg" alt=""></span></div>
+              <figcaption><p data-t="p2"></p><p class="pl-med" data-t="p2m"></p></figcaption></figure>
+          </div>
+        </div>
+      </div>
+      <div class="pad foot"><p class="credit" data-t="credit"></p></div>
+    </div>
+  </section>
+
+  <nav class="tabs" id="tabs">
+    <button type="button" data-go="today" class="on" data-t="today"></button>
+    <button type="button" data-go="work" data-t="session"></button>
+    <button type="button" data-go="print">Print</button>
+  </nav>
+</div>
+</div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (id) => document.getElementById(id);
+  const app = $('app');
+
+  /* ---------- words (English and Danish) ---------- */
+  const T = {
+    en: {
+      date: 'Sunday 15 November · Week 7 of 12', headGo: 'Session 26 develops today.', headOn: 'Session 26 is running.', headDone: 'Session 26 is on the wall.',
+      plate: 'Plate III', plateBlock: 'Plate III · Winter block', blockLong: 'Winter block · 12 weeks', medium: 'Silver print, developed by training',
+      count: (n) => `${n} of 48 sessions`, todayLbl: 'Today · Session 26', sessMeta: '4 exercises · 12 sets · 45 min',
+      coachToday: 'You pressed 85 kg for 6 twice. Go for 7 on your second set.',
+      begin: 'Begin session', resume: 'Resume session', seeWall: 'See it on the wall', openPrint: 'Open the print',
+      food: 'Food', of: 'of',
+      credit: 'Photographs by Mike Jones, Shiva Kumar Reddy and Ardit Mbrati, from Pexels.', reset: 'Run the demo again',
+      today: 'Today', session: 'Session', end: 'End', exNo: (i, n) => `Exercise ${i} of ${n}`, last: 'Last time', best: 'Best',
+      log: (n) => `Log set ${n}`, rest: 'Rest', skip: 'Skip', undo: (n) => `Undo set ${n}`, less: 'Less', more: 'More',
+      rec: (a) => `New best · ${a}`,
+      stripCap: (n) => `Test strip · ${n} of 12 developed`, beginSub: 'Push · 45 min',
+      sumLbl: 'Session 26 · Push', sumFull: 'Fully developed.', sumPart: (n) => `${n} of 12 strips developed.`,
+      time: 'Time', volume: 'Volume', bests: 'New bests', sumNote: 'Hang it, and Plate III gains one more strip.', hang: 'Hang it',
+      developed: 'developed', gained: (n) => `developed · +${n} % today`, preview: (w) => `Week ${w}, preview`,
+      how: 'One session develops one more strip, from left to right. In each strip the shadows come first and the highlights last.',
+      twelve: 'Twelve weeks', sheetCap: (d, m, t) => `${d} done · ${m} missed · ${t} to go`,
+      ahead: 'Look ahead', start: 'Start', week12: 'Week 12', aheadCap: 'Drag to see the print in the weeks to come. Let go and it returns to today.',
+      earlier: 'Earlier prints', p1: 'Plate I', p1m: 'Spring block · 46 of 48', p2: 'Plate II', p2m: 'Summer block · 48 of 48',
+      ex: {
+        bench: ['Bench press', 'Barbell', 'Open with 6, as last time. Then go for 7: you have had 6 twice.'],
+        incline: ['Incline dumbbell press', 'Dumbbells', 'Last time the third set dropped to 8. Hold 10 if you can.'],
+        dips: ['Weighted dips', 'Belt', 'Stay at 10 kg until all three sets reach 8.'],
+        push: ['Triceps pushdown', 'Cable', 'Two clean sets of 12 and the strip is done.'],
+      },
+    },
+    da: {
+      date: 'Søndag 15. november · Uge 7 af 12', headGo: 'Pas 26 fremkaldes i dag.', headOn: 'Pas 26 er i gang.', headDone: 'Pas 26 hænger på væggen.',
+      plate: 'Plade III', plateBlock: 'Plade III · Vinterblok', blockLong: 'Vinterblok · 12 uger', medium: 'Sølvprint, fremkaldt af træning',
+      count: (n) => `${n} af 48 pas`, todayLbl: 'I dag · Pas 26', sessMeta: '4 øvelser · 12 sæt · 45 min',
+      coachToday: 'Du har taget 85 kg i 6 to gange. Gå efter 7 i dit andet sæt.',
+      begin: 'Start passet', resume: 'Fortsæt passet', seeWall: 'Se det på væggen', openPrint: 'Åbn printet',
+      food: 'Mad', of: 'af',
+      credit: 'Fotos af Mike Jones, Shiva Kumar Reddy og Ardit Mbrati, fra Pexels.', reset: 'Kør demoen igen',
+      today: 'I dag', session: 'Pas', end: 'Afslut', exNo: (i, n) => `Øvelse ${i} af ${n}`, last: 'Sidst', best: 'Bedst',
+      log: (n) => `Log sæt ${n}`, rest: 'Pause', skip: 'Videre', undo: (n) => `Fortryd sæt ${n}`, less: 'Mindre', more: 'Mere',
+      rec: (a) => `Ny rekord · ${a}`,
+      stripCap: (n) => `Prøvestrimmel · ${n} af 12 fremkaldt`, beginSub: 'Push · 45 min',
+      sumLbl: 'Pas 26 · Push', sumFull: 'Helt fremkaldt.', sumPart: (n) => `${n} af 12 strimler fremkaldt.`,
+      time: 'Tid', volume: 'Volumen', bests: 'Rekorder', sumNote: 'Hæng den op, så får Plade III én strimmel mere.', hang: 'Hæng den op',
+      developed: 'fremkaldt', gained: (n) => `fremkaldt · +${n} % i dag`, preview: (w) => `Uge ${w}, forhåndsvisning`,
+      how: 'Ét pas fremkalder én strimmel mere, fra venstre mod højre. I hver strimmel kommer skyggerne først og højlysene til sidst.',
+      twelve: 'Tolv uger', sheetCap: (d, m, t) => `${d} gennemført · ${m} sprunget over · ${t} tilbage`,
+      ahead: 'Kig frem', start: 'Start', week12: 'Uge 12', aheadCap: 'Træk for at se printet i de kommende uger. Slip, og det vender tilbage til i dag.',
+      earlier: 'Tidligere print', p1: 'Plade I', p1m: 'Forårsblok · 46 af 48', p2: 'Plade II', p2m: 'Sommerblok · 48 af 48',
+      ex: {
+        bench: ['Bænkpres', 'Stang', 'Start med 6 som sidst. Gå så efter 7: du har haft 6 to gange.'],
+        incline: ['Skrå håndvægtspres', 'Håndvægte', 'Sidst faldt tredje sæt til 8. Hold 10, hvis du kan.'],
+        dips: ['Dips med vægt', 'Bælte', 'Bliv på 10 kg, til alle tre sæt når 8.'],
+        push: ['Triceps pushdown', 'Kabel', 'To rene sæt på 12, så er strimlen færdig.'],
+      },
+    },
+  };
+  let lang = 'en';
+  const t = (k, ...a) => { const v = T[lang][k]; return typeof v === 'function' ? v(...a) : v; };
+  const num = (n) => n.toLocaleString(lang === 'da' ? 'da-DK' : 'en-GB');
+  const lift = (kg, reps) => `${num(kg)} kg × ${reps}`;
+  const digits = (s) => [...s].map((c) => (/\d/.test(c) ? `<span class="dg">${c}</span>` : c)).join('');
+  const clock = (sec) => `${Math.floor(sec / 60)}:${String(sec % 60).padStart(2, '0')}`;
+
+  /* ---------- the session ---------- */
+  const PLAN = [
+    { id: 'bench', step: 2.5, rest: 120, last: [85, [6, 6, 6, 5]], best: [85, 6], sets: [[85, 6], [85, 7], [85, 6], [85, 6]] },
+    { id: 'incline', step: 2, rest: 90, last: [30, [10, 9, 8]], best: [30, 10], sets: [[30, 10], [30, 10], [30, 10]] },
+    { id: 'dips', step: 2.5, rest: 90, last: [10, [8, 8, 7]], best: [12.5, 6], sets: [[10, 8], [10, 8], [10, 8]] },
+    { id: 'push', step: 2.5, rest: 60, last: [32.5, [12, 11]], best: [32.5, 12], sets: [[32.5, 12], [32.5, 12]] },
+  ];
+  const TOTAL = PLAN.reduce((n, e) => n + e.sets.length, 0);
+  const BASE_DONE = 25, PLANNED = 48, TODAY_SLOT = 27, MISSED = [9, 18];
+  const fresh = () => ({ exI: 0, setI: 0, kg: 85, reps: 6, logged: [], best: PLAN.map((e) => e.best.slice()), started: 0, ended: 0, rest: null, finished: false, hung: false });
+  let S = fresh();
+  const e1rm = (kg, reps) => kg * (1 + reps / 30);
+  const progress = () => (BASE_DONE + (S.hung ? S.logged.length / TOTAL : 0)) / PLANNED;
+  const pct = (p) => Math.round(p * 100);
+
+  /* ---------- the print: a photograph that develops ---------- */
+  const W = 800, H = 1000;
+  let dens = null, grain = null;
+  const frames = new WeakMap();
+  /* How dark one point of the paper is at progress p: the darkest tones cross the threshold first. */
+  function density(i, lo, gain) {
+    const D = dens[i];
+    let a = (D + grain[i] * 0.04 - lo) / 0.4;
+    a = a < 0 ? 0 : a > 1 ? 1 : a;
+    a = a * a * (3 - 2 * a);
+    const d = D * a * gain, latent = D * 0.05;
+    return d < latent ? latent : d;
+  }
+  /* The print is 48 strips, one per session, developed from left to right. A strip takes six sessions to reach
+     full tone, so the leading edge is a stepped band, like a real test strip. `flat` paints every strip alike. */
+  const STRIPS = 48, RAMP = 6, lo = new Float32Array(STRIPS), gn = new Float32Array(STRIPS);
+  function levels(p, flat) {
+    const front = p * (STRIPS + RAMP);
+    for (let k = 0; k < STRIPS; k++) {
+      let L = flat ? p : (front - k) / RAMP;
+      L = L < 0 ? 0 : L > 1 ? 1 : L;
+      lo[k] = 0.88 - 1.3 * L; gn[k] = 0.86 + 0.14 * L;
+    }
+  }
+  function frameOf(cv) {
+    const ctx = cv.getContext('2d');
+    let img = frames.get(cv);
+    if (!img) { img = ctx.createImageData(W, H); frames.set(cv, img); }
+    return [ctx, img];
+  }
+  function paint(cv, p, flat) {
+    if (!dens) return;
+    const [ctx, img] = frameOf(cv), o = img.data;
+    levels(p, flat);
+    for (let y = 0, i = 0, j = 0; y < H; y++) {
+      for (let x = 0; x < W; x++, i++, j += 4) {
+        const k = (x * STRIPS / W) | 0, d = density(i, lo[k], gn[k]) + grain[i] * 0.014;
+        o[j] = 246 - 233 * d; o[j + 1] = 244 - 231 * d; o[j + 2] = 239 - 225 * d; o[j + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  /* Only what changed between two states of the print, in the progress blue. */
+  function paintGain(cv, p0, p1) {
+    if (!dens) return;
+    const [ctx, img] = frameOf(cv), o = img.data;
+    levels(p0); const lo0 = lo.slice(), gn0 = gn.slice();
+    levels(p1);
+    for (let y = 0, i = 0, j = 0; y < H; y++) {
+      for (let x = 0; x < W; x++, i++, j += 4) {
+        const k = (x * STRIPS / W) | 0;
+        let a = (density(i, lo[k], gn[k]) - density(i, lo0[k], gn0[k])) * 7;
+        a = a < 0 ? 0 : a > 0.86 ? 0.86 : a;
+        o[j] = 26; o[j + 1] = 54; o[j + 2] = 240; o[j + 3] = a * 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  function loadPrint() {
+    const im = new Image();
+    im.onload = () => {
+      const c = document.createElement('canvas'); c.width = W; c.height = H;
+      const x = c.getContext('2d', { willReadFrequently: true });
+      x.drawImage(im, 0, 0, W, H);
+      const d = x.getImageData(0, 0, W, H).data;
+      dens = new Float32Array(W * H); grain = new Float32Array(W * H);
+      for (let i = 0; i < dens.length; i++) { dens[i] = 1 - d[i * 4] / 255; grain[i] = Math.random() * 2 - 1; }
+      paintNow();
+      const st = document.createElement('canvas'); st.width = W; st.height = H; paint(st, 0.4, true);
+      const sx = st.getContext('2d'); sx.globalAlpha = 0.62; sx.fillStyle = '#F6F4EF'; sx.fillRect(0, 0, W, H);
+      document.querySelector('.strip').style.setProperty('--stage', `url(${st.toDataURL('image/jpeg', 0.9)})`);
+      requestAnimationFrame(() => requestAnimationFrame(() => app.classList.add('ready')));
+    };
+    im.src = 'img/portrait.jpg';
+  }
+  function paintNow() { const p = progress(); paint($('heroCanvas'), p); paint($('printA'), p); }
+
+  /* ---------- drawing the screens ---------- */
+  function words() {
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = t(el.dataset.t); });
+    document.querySelectorAll('[data-ta]').forEach((el) => { el.setAttribute('aria-label', t(el.dataset.ta)); });
+    document.querySelectorAll('[data-lang]').forEach((b) => b.classList.toggle('on', b.dataset.lang === lang));
+    $('fFood').innerHTML = `${num(1840)} <small>${t('of')} ${num(2600)} kcal</small>`;
+    $('fProt').innerHTML = `112 <small>${t('of')} 160 g</small>`;
+    drawToday(); drawPrint(); drawWork(); drawSummary();
+  }
+  function drawToday() {
+    const p = progress(), on = S.started && !S.hung;
+    $('todayHead').textContent = t(S.hung ? 'headDone' : on ? 'headOn' : 'headGo');
+    $('beginTxt').textContent = t(S.hung ? 'seeWall' : on ? 'resume' : 'begin');
+    $('beginSub').textContent = S.hung ? '' : t('beginSub');
+    $('heroPct').textContent = pct(p);
+    $('heroBar').style.transform = `scaleX(${p})`;
+    $('heroCount').textContent = t('count', BASE_DONE + (S.hung ? 1 : 0));
+  }
+  function drawPrint(preview) {
+    const p = preview == null ? progress() : preview / PLANNED;
+    $('printPct').textContent = pct(p);
+    $('printBar').style.transform = `scaleX(${p})`;
+    const gain = S.hung ? pct(progress()) - pct(BASE_DONE / PLANNED) : 0;
+    $('printState').textContent = preview != null ? t('preview', Math.min(12, Math.ceil(preview / 4))) : gain ? t('gained', gain) : t('developed');
+    $('printCount').textContent = t('count', preview == null ? BASE_DONE + (S.hung ? 1 : 0) : preview);
+    const done = BASE_DONE + (S.hung ? 1 : 0);
+    $('sheetCap').textContent = t('sheetCap', done, MISSED.length, PLANNED - done - MISSED.length);
+    const sheet = $('sheet');
+    if (!sheet.firstChild) {
+      for (let w = 0; w < 12; w++) {
+        sheet.insertAdjacentHTML('beforeend', `<b>${w + 1}</b>`);
+        for (let r = 0; r < 4; r++) sheet.insertAdjacentHTML('beforeend', '<span class="gc"></span>');
+      }
+    }
+    sheet.querySelectorAll('.gc').forEach((c, s) => {
+      c.className = 'gc ' + (s === TODAY_SLOT ? (S.hung ? 'now done' : 'now') : MISSED.includes(s) ? 'miss' : s < TODAY_SLOT ? 'done' : 'next');
+    });
+    const cur = BASE_DONE + (S.hung ? 1 : 0);
+    $('nowMark').style.left = `calc(13px + (100% - 26px) * ${cur / PLANNED})`;
+    if (preview == null) $('ahead').value = cur;
+  }
+  function slotOf(exI, setI) { let n = 0; for (let i = 0; i < exI; i++) n += PLAN[i].sets.length; return n + setI; }
+  function buildStrip() {
+    let cells = '', cuts = '', ticks = '', k = 0;
+    PLAN.forEach((e, i) => e.sets.forEach((_, s) => {
+      const a = (k / TOTAL) * 100, b = ((k + 1) / TOTAL) * 100;
+      cells += `<div class="cell" style="clip-path:inset(0 ${(100 - b).toFixed(3)}% 0 ${a.toFixed(3)}%)"></div>`;
+      if (k) cuts += `<i class="cut" style="left:${a.toFixed(3)}%"></i>`;
+      ticks += `<i class="tk" style="left:${((a + b) / 2).toFixed(3)}%"></i>`;
+      k++;
+    }));
+    $('cells').innerHTML = cells + cuts; $('ruler').innerHTML = ticks;
+  }
+  function drawWork() {
+    const n = S.logged.length, ex = PLAN[Math.min(S.exI, PLAN.length - 1)], names = T[lang].ex[ex.id], i = PLAN.indexOf(ex);
+    $('cells').querySelectorAll('.cell').forEach((c, k) => c.classList.toggle('dev', k < n));
+    [...$('ruler').children].forEach((c, k) => {
+      c.className = 'tk' + (k < n ? ' done' : k === n && !S.finished ? ' cur' : '');
+    });
+    $('stripCap').textContent = t('stripCap', n);
+    $('exNo').textContent = t('exNo', i + 1, PLAN.length);
+    $('exName').textContent = names[0];
+    $('exMeta').textContent = `${names[1]} · ${t('last')} ${num(ex.last[0])} × ${ex.last[1].join(', ')} · ${t('best')} ${num(ex.best[0])} × ${ex.best[1]}`;
+    $('sets').innerHTML = ex.sets.map((_, s) => {
+      const l = S.logged.find((x) => x.ex === i && x.set === s);
+      const cls = l ? 'done' : s === S.setI && !S.finished ? 'cur' : '';
+      const v = l ? [l.kg, l.reps] : cls ? [S.kg, S.reps] : [s > S.setI ? S.kg : ex.sets[s][0], ex.sets[s][1]];
+      return `<div class="chip ${cls}"><b>${s + 1}</b><span>${num(v[0])} × ${v[1]}</span>${l && l.rec ? '<i class="dot"></i>' : ''}</div>`;
+    }).join('');
+    $('kg').textContent = num(S.kg); $('reps').textContent = S.reps;
+    $('kg').classList.toggle('long', num(S.kg).length > 2);
+    $('wCoach').textContent = names[2];
+    $('logBtn').textContent = t('log', S.setI + 1);
+    drawClock();
+  }
+  function drawClock() {
+    const sec = S.started ? Math.floor(((S.ended || Date.now()) - S.started) / 1000) : 0;
+    $('elapsed').innerHTML = digits(clock(sec));
+  }
+  function drawSummary() {
+    const n = S.logged.length, sec = S.started ? Math.floor(((S.ended || Date.now()) - S.started) / 1000) : 0;
+    $('sumTitle').textContent = n === TOTAL ? t('sumFull') : t('sumPart', n);
+    $('sumTime').textContent = clock(sec);
+    $('sumVol').innerHTML = `${num(Math.round(S.logged.reduce((v, l) => v + l.kg * l.reps, 0)))}<small>kg</small>`;
+    const nb = S.logged.filter((l) => l.rec).length;
+    $('sumBests').innerHTML = nb ? `${nb}<i class="dot"></i>` : '0';
+    $('sumList').innerHTML = PLAN.map((e, i) => {
+      const sets = S.logged.filter((l) => l.ex === i);
+      return sets.length ? `<div><p>${T[lang].ex[e.id][0]}</p><p>${sets.map((l) => `${num(l.kg)} × ${l.reps}${l.rec ? '<i class="dot"></i>' : ''}`).join(' · ')}</p></div>` : '';
+    }).join('');
+  }
+
+  /* ---------- moving between screens ---------- */
+  let view = 'today';
+  function go(v) {
+    if (v === 'work' && S.hung) v = 'print';
+    if (v === 'work' && !S.started) { S.started = Date.now(); drawToday(); }
+    view = v;
+    document.querySelectorAll('.view').forEach((el) => el.classList.toggle('on', el.id === 'v-' + v));
+    document.querySelectorAll('.tabs button').forEach((b) => b.classList.toggle('on', b.dataset.go === v));
+    app.classList.toggle('in-session', v === 'work');
+    const sc = document.querySelector('#v-' + v + ' .scroll'); if (sc) sc.scrollTop = 0;
+    drawClock();
+  }
+  const buzz = (ms) => { try { if (navigator.vibrate) navigator.vibrate(ms); } catch (e) { /* not available */ } };
+  const tick = (el) => { if (el.animate) el.animate([{ transform: 'translateY(.1em)', opacity: .35 }, { transform: 'none', opacity: 1 }], { duration: 150, easing: 'cubic-bezier(.2,.8,.2,1)' }); };
+
+  /* ---------- logging, rest, undo, finish ---------- */
+  let lineAnim = null, restTimer = 0;
+  function drawRest() {
+    const left = Math.max(0, Math.ceil((S.rest.end - Date.now()) / 1000));
+    $('restTime').innerHTML = digits(clock(left));
+    if (left <= 0) { buzz(120); endRest(); }
+  }
+  function runLine() {
+    if (lineAnim) lineAnim.cancel();
+    const left = Math.max(0, S.rest.end - Date.now());
+    lineAnim = $('restLine').animate([{ transform: `scaleX(${left / (S.rest.total * 1000)})` }, { transform: 'scaleX(0)' }], { duration: left, easing: 'linear', fill: 'forwards' });
+  }
+  function startRest(sec, afterSet, rec) {
+    S.rest = { end: Date.now() + sec * 1000, total: sec };
+    $('restLbl').classList.toggle('rec', !!rec);
+    $('restLbl').innerHTML = rec ? `<i></i>${rec}` : t('rest');
+    $('undoBtn').textContent = t('undo', afterSet);
+    const r = $('rest'); r.classList.add('lock'); setTimeout(() => r.classList.remove('lock'), 450);
+    app.classList.add('resting');
+    runLine(); drawRest();
+    clearInterval(restTimer); restTimer = setInterval(drawRest, 200);
+  }
+  function endRest() {
+    clearInterval(restTimer); S.rest = null;
+    if (lineAnim) { lineAnim.cancel(); lineAnim = null; }
+    app.classList.remove('resting');
+  }
+  function logSet() {
+    if (S.rest || S.finished) return;
+    const i = S.exI, ex = PLAN[i], was = S.best[i].slice();
+    const rec = e1rm(S.kg, S.reps) > e1rm(was[0], was[1]) + 1e-9;
+    S.logged.push({ ex: i, set: S.setI, kg: S.kg, reps: S.reps, rec, was });
+    if (rec) S.best[i] = [S.kg, S.reps];
+    const recTxt = rec ? t('rec', lift(S.kg, S.reps)) : '';
+    const setNo = S.setI + 1, restSec = ex.rest, usedKg = S.kg;
+    S.setI++;
+    const newEx = S.setI >= ex.sets.length;
+    if (newEx) { S.exI++; S.setI = 0; }
+    buzz(15);
+    if (S.exI >= PLAN.length) { S.exI = PLAN.length - 1; S.setI = ex.sets.length; finish(); return; }
+    const next = PLAN[S.exI].sets[S.setI];
+    S.kg = newEx ? next[0] : usedKg; S.reps = next[1];
+    drawWork();
+    if (newEx) tick($('exBlock'));
+    startRest(restSec, setNo, recTxt);
+  }
+  function undo() {
+    const l = S.logged.pop(); if (!l) return;
+    endRest();
+    S.best[l.ex] = l.was; S.exI = l.ex; S.setI = l.set; S.kg = l.kg; S.reps = l.reps;
+    drawWork();
+  }
+  function finish() {
+    endRest();
+    if (!S.logged.length) { S.started = 0; go('today'); drawToday(); return; }
+    S.finished = true; S.ended = Date.now();
+    drawWork(); drawSummary();
+    $('v-work').classList.add('finished');
+  }
+  function hang() {
+    const before = progress();
+    S.hung = true;
+    const after = progress(), canv = $('printCanv');
+    S.hung = false; drawPrint(); S.hung = true;
+    paint($('printA'), before);
+    go('print');
+    setTimeout(() => {
+      paint($('printC'), after); paintGain($('printD'), before, after);
+      canv.classList.add('gain');
+      setTimeout(() => { canv.classList.add('dev2'); drawPrint(); drawToday(); tick($('printPct')); paint($('heroCanvas'), after); }, 900);
+      setTimeout(() => { canv.classList.remove('gain'); }, 2700);
+      setTimeout(() => { paint($('printA'), after); canv.classList.remove('dev2'); }, 5000);
+    }, 420);
+  }
+  function reset() {
+    endRest(); S = fresh();
+    $('v-work').classList.remove('finished');
+    drawWork(); drawSummary(); drawToday(); drawPrint(); paintNow();
+    document.querySelector('#v-today .scroll').scrollTop = 0;
+  }
+
+  /* ---------- wiring ---------- */
+  document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => go(b.dataset.go)));
+  document.querySelectorAll('[data-lang]').forEach((b) => b.addEventListener('click', () => { lang = b.dataset.lang; words(); }));
+  $('beginBtn').addEventListener('click', () => go(S.hung ? 'print' : 'work'));
+  $('resetBtn').addEventListener('click', reset);
+  $('endBtn').addEventListener('click', finish);
+  $('logBtn').addEventListener('click', logSet);
+  $('skipBtn').addEventListener('click', endRest);
+  $('undoBtn').addEventListener('click', undo);
+  $('plusBtn').addEventListener('click', () => { if (!S.rest) return; S.rest.end += 30000; S.rest.total += 30; runLine(); drawRest(); });
+  $('hangBtn').addEventListener('click', hang);
+  const bump = (key, by, min, el) => () => { const v = Math.max(min, +(S[key] + by).toFixed(2)); if (v === S[key]) return; S[key] = v; drawWork(); tick(el); };
+  const stepKg = (dir) => () => bump('kg', dir * PLAN[S.exI].step, 0, $('kg'))();
+  $('kgM').addEventListener('click', stepKg(-1)); $('kgP').addEventListener('click', stepKg(1));
+  $('repsM').addEventListener('click', bump('reps', -1, 1, $('reps'))); $('repsP').addEventListener('click', bump('reps', 1, 1, $('reps')));
+  const ahead = $('ahead');
+  ahead.addEventListener('input', () => { if ($('printCanv').classList.contains('dev2')) return; const v = +ahead.value; $('printBar').style.transitionDuration = '.12s'; paint($('printA'), v / PLANNED); drawPrint(v); });
+  const back = () => {
+    const canv = $('printCanv'), p = progress();
+    if (canv.classList.contains('dev2') || canv.classList.contains('quick')) return;
+    $('printBar').style.transitionDuration = '';
+    paint($('printB'), p); drawPrint();
+    canv.classList.add('quick');
+    setTimeout(() => { paint($('printA'), p); canv.classList.remove('quick'); }, 560);
+  };
+  ahead.addEventListener('change', back);
+  setInterval(() => { if (S.started && !S.finished && view === 'work') drawClock(); }, 1000);
+
+  buildStrip(); words(); loadPrint();
+})();
+</script>
+</body>
+</html>
