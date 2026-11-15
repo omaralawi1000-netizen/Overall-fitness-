@@ -62,8 +62,8 @@ h2 { font-size: 30px; line-height: 1.05; font-weight: 500; letter-spacing: -.012
 .lang button.on { color: var(--ink); }
 
 /* ---------- the framed print ---------- */
-.frame { display: block; background: var(--ink); padding: 3px; width: 100%;
-  box-shadow: 0 1px 0 rgba(12, 12, 13, .2), 0 14px 22px -10px rgba(12, 12, 13, .38), 0 36px 50px -28px rgba(12, 12, 13, .34); }
+.frame { display: block; background: var(--ink); padding: 2px; width: 100%;
+  box-shadow: 0 12px 20px -10px rgba(12, 12, 13, .3), 0 32px 44px -28px rgba(12, 12, 13, .28); }
 .mat { display: block; background: var(--paper); padding: 13px; }
 .canv { display: block; position: relative; box-shadow: 0 0 0 1px rgba(12, 12, 13, .1); background: #F6F4EF; }
 .canv canvas { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; }
@@ -125,11 +125,12 @@ button.frame:active { transform: scale(.985); }
 .strip { position: relative; height: clamp(96px, 20vh, 168px); overflow: hidden; background: #F6F4EF; }
 /* The test strip: a band of the same print. Under every strip lies the finished photograph; on top lies the print as it
    stands today, still pale. Logging a set fades that strip's top layer away, so the finished tones come up strip by strip. */
-.strip .full, .cell { position: absolute; inset: 0; background-size: cover; background-position: 50% 37%; }
-.strip .full { background-image: url(img/portrait.jpg); }
-.cell { background-color: #F6F4EF; background-image: var(--stage, none); transition: opacity 1.4s cubic-bezier(.3, .1, .2, 1); }
+.strip .full, .cell { position: absolute; inset: 0; }
+.strip .full { background: url(img/portrait.jpg) 50% 37% / cover; }
+.cell { background: #F6F4EF; transition: opacity 1.4s cubic-bezier(.3, .1, .2, 1); }
+.cell.next, .cell.dev { background: #E2E5FA; }
 .cell.dev { opacity: 0; }
-.cut { position: absolute; top: 0; bottom: 0; width: 1px; margin-left: -.5px; background: var(--paper); }
+.cut { position: absolute; top: 0; bottom: 0; width: 1px; margin-left: -.5px; background: rgba(140, 138, 132, .5); }
 .ruler { position: relative; height: 14px; margin: 7px 10px 0; }
 .tk { position: absolute; top: 0; width: 1px; height: 6px; margin-left: -.5px; background: var(--ink-3); }
 .tk.done { width: 2px; height: 9px; margin-left: -1px; background: var(--ink); }
@@ -194,8 +195,18 @@ button.frame:active { transform: scale(.985); }
 .sumlist .dot { animation: none; margin: 0 1px 0 4px; }
 .summary .note { margin-top: 14px; font-size: 14.5px; max-width: 34ch; }
 .finished #endBtn { visibility: hidden; }
-@media (max-height: 670px) { .live .coach { display: none; } .live { padding-top: 14px; } }
 @media (max-height: 760px) { .rest { height: 132px; } .rest-time { font-size: 56px; } }
+@media (max-height: 670px) {
+  .live .coach { display: none; } .live { padding-top: 14px; }
+  /* Short phones: rest is one slim row in place of the Log bar, so the weight and reps stay reachable. */
+  .rest { height: 72px; flex-direction: row; align-items: center; justify-content: flex-start; gap: 10px; padding-top: 3px; padding-bottom: 0; }
+  .rest-top, .rest-main { display: contents; }
+  .rest #restLbl { display: none; }
+  .rest .rest-time { order: 1; margin-right: auto; font-size: 40px; line-height: 1; }
+  .rest .txtbtn { order: 2; }
+  .rest .rest-btns { order: 3; gap: 6px; }
+  .rest .rest-btns button { height: 44px; min-width: 58px; padding: 0 10px; }
+}
 
 /* ---------- the print ---------- */
 .print-hang { padding-top: 8px; }
@@ -219,7 +230,6 @@ input[type=range]::-moz-range-track { height: 1px; background: var(--ink); }
 input[type=range]::-moz-range-thumb { width: 26px; height: 26px; background: var(--ink); border: 0; border-radius: 0; }
 .ends { display: flex; justify-content: space-between; margin-top: -4px; }
 .earlier { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; margin-top: 14px; }
-.earlier .frame { padding: 2px; }
 .earlier .mat { padding: 7px; }
 .earlier img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 5; object-fit: cover; }
 .earlier .under img { filter: contrast(.86) brightness(1.12); }
@@ -486,25 +496,25 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; background: var
   const W = 800, H = 1000;
   let dens = null, grain = null;
   const frames = new WeakMap();
-  /* How dark one point of the paper is at progress p: the darkest tones cross the threshold first. */
-  function density(i, lo, gain) {
+  /* The print is 48 strips wide, one per session, developed from left to right. Behind the leading edge a strip
+     needs four more sessions to reach full tone, so the edge is a soft band; ahead of it the paper is blank. */
+  const STRIPS = 48, RAMP = 4, lev = new Float32Array(W);
+  function levels(p) {
+    const front = p * (STRIPS + RAMP);
+    for (let x = 0; x < W; x++) {
+      const L = (front - x * STRIPS / W) / RAMP;
+      lev[x] = L < 0 ? 0 : L > 1 ? 1 : L;
+    }
+  }
+  /* How dark one point of the paper is at level L (0 blank, 1 full tone): the darkest tones cross the threshold first. */
+  function density(i, L) {
+    if (L <= 0) return 0;
     const D = dens[i];
-    let a = (D + grain[i] * 0.04 - lo) / 0.4;
+    let a = (D + grain[i] * 0.04 - 0.88 + 1.3 * L) / 0.4;
     a = a < 0 ? 0 : a > 1 ? 1 : a;
     a = a * a * (3 - 2 * a);
-    const d = D * a * gain, latent = D * 0.05;
-    return d < latent ? latent : d;
-  }
-  /* The print is 48 strips, one per session, developed from left to right. A strip takes six sessions to reach
-     full tone, so the leading edge is a stepped band, like a real test strip. `flat` paints every strip alike. */
-  const STRIPS = 48, RAMP = 6, lo = new Float32Array(STRIPS), gn = new Float32Array(STRIPS);
-  function levels(p, flat) {
-    const front = p * (STRIPS + RAMP);
-    for (let k = 0; k < STRIPS; k++) {
-      let L = flat ? p : (front - k) / RAMP;
-      L = L < 0 ? 0 : L > 1 ? 1 : L;
-      lo[k] = 0.88 - 1.3 * L; gn[k] = 0.86 + 0.14 * L;
-    }
+    const d = D * a * (0.86 + 0.14 * L), latent = D * 0.05;
+    return ((d < latent ? latent : d) + grain[i] * 0.014) * (L < 0.2 ? L * 5 : 1);
   }
   function frameOf(cv) {
     const ctx = cv.getContext('2d');
@@ -512,13 +522,13 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; background: var
     if (!img) { img = ctx.createImageData(W, H); frames.set(cv, img); }
     return [ctx, img];
   }
-  function paint(cv, p, flat) {
+  function paint(cv, p) {
     if (!dens) return;
     const [ctx, img] = frameOf(cv), o = img.data;
-    levels(p, flat);
+    levels(p);
     for (let y = 0, i = 0, j = 0; y < H; y++) {
       for (let x = 0; x < W; x++, i++, j += 4) {
-        const k = (x * STRIPS / W) | 0, d = density(i, lo[k], gn[k]) + grain[i] * 0.014;
+        const d = density(i, lev[x]);
         o[j] = 246 - 233 * d; o[j + 1] = 244 - 231 * d; o[j + 2] = 239 - 225 * d; o[j + 3] = 255;
       }
     }
@@ -528,12 +538,11 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; background: var
   function paintGain(cv, p0, p1) {
     if (!dens) return;
     const [ctx, img] = frameOf(cv), o = img.data;
-    levels(p0); const lo0 = lo.slice(), gn0 = gn.slice();
+    levels(p0); const lev0 = lev.slice();
     levels(p1);
     for (let y = 0, i = 0, j = 0; y < H; y++) {
       for (let x = 0; x < W; x++, i++, j += 4) {
-        const k = (x * STRIPS / W) | 0;
-        let a = (density(i, lo[k], gn[k]) - density(i, lo0[k], gn0[k])) * 7;
+        let a = (density(i, lev[x]) - density(i, lev0[x])) * 7;
         a = a < 0 ? 0 : a > 0.86 ? 0.86 : a;
         o[j] = 26; o[j + 1] = 54; o[j + 2] = 240; o[j + 3] = a * 255;
       }
@@ -550,9 +559,6 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; background: var
       dens = new Float32Array(W * H); grain = new Float32Array(W * H);
       for (let i = 0; i < dens.length; i++) { dens[i] = 1 - d[i * 4] / 255; grain[i] = Math.random() * 2 - 1; }
       paintNow();
-      const st = document.createElement('canvas'); st.width = W; st.height = H; paint(st, 0.4, true);
-      const sx = st.getContext('2d'); sx.globalAlpha = 0.62; sx.fillStyle = '#F6F4EF'; sx.fillRect(0, 0, W, H);
-      document.querySelector('.strip').style.setProperty('--stage', `url(${st.toDataURL('image/jpeg', 0.9)})`);
       requestAnimationFrame(() => requestAnimationFrame(() => app.classList.add('ready')));
     };
     im.src = 'img/portrait.jpg';
@@ -615,7 +621,7 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; background: var
   }
   function drawWork() {
     const n = S.logged.length, ex = PLAN[Math.min(S.exI, PLAN.length - 1)], names = T[lang].ex[ex.id], i = PLAN.indexOf(ex);
-    $('cells').querySelectorAll('.cell').forEach((c, k) => c.classList.toggle('dev', k < n));
+    $('cells').querySelectorAll('.cell').forEach((c, k) => { c.classList.toggle('dev', k < n); c.classList.toggle('next', k === n && !S.finished); });
     [...$('ruler').children].forEach((c, k) => {
       c.className = 'tk' + (k < n ? ' done' : k === n && !S.finished ? ' cur' : '');
     });
