@@ -57,6 +57,20 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: Claude's taste 9, "Drift", particles and weather (/_prototypes/drift/)
+Asked (Omar, 06:21): "Keep testing options. Have it have its own taste also on the fitness app. Not only my taste ... Be creative, but do not make it ugly." And 06:29: "alive ... instant ... morph animations with pop-ups ... pop-up with morph." This thread was given particles. Rule kept: the workout screen does not copy Today.
+Built (one file, English and Danish): a light porcelain field where the weather is the particle (snow by default; drizzle, pollen and sand follow, each with its own accent). Numbers are crisp type at rest and turn into dots only while they change, which fixes Sand's (blind C) readability problem.
+- **Today:** the morning number forms out of the weather; the Coach suggests moving training before the snow (Move turns into "Moved · Undo" and the time re-forms); + Skyr pours grains into a protein jar; Sleep and the ask bar open pop-ups that morph out of the tile or bar.
+- **Workout:** opens by growing out of the training tile. One big weight, reps, a chip that says how many reps beat your best. Log set dissolves the numbers down into today's dune, which rises with the kilos. Effort speeds up the weather a little; rest calms it.
+- **Rest:** a sphere of dots that sheds its inside as time runs out, so the last ten seconds are a ring (Perplexity's ring-to-sphere, reversed); +15 s brings dots back; at the end the ring condenses into the next set's numbers.
+- **New best:** the dune lifts in a gust and gathers into a medal that turns once, then shrinks into the set chip.
+Library motions used: Perplexity particle orb (reversed for rest, forward for the Coach), watchOS breath countdown (rest collapses to a line/ring), Headspace breathing (sphere breathes), Push "only the changed digit moves", Stride dot-matrix numerals, Any Distance medal turn, Nike "record grows from what you touched" (coin flies into its chip), Days/Family card-to-page (tile to workout, tile to pop-up).
+Judge (one fresh design-judge, Sonnet): 7. Fixed after: flatter thin-ring medal with a bigger number and a shorter sequence, bigger weight, calmer weather while lifting, the tapped element now travels into its pop-up, bigger chips, no particles over the summary. Not re-judged. Its biggest weakness: "the static layouts are plain and the effects carry the design."
+My own score: 7.5. Biggest weakness: still-frames are calm to the point of plain; it lives in motion, so a screenshot undersells it and a phone has to judge it. Headless timing: 60 Hz frames held during every particle moment (one hitch when a new weather texture is drawn).
+Needs his phone: dot smoothness at 120 Hz with ~450 animated dots, frost on the pop-ups over moving weather, clip-path morphs.
+Artifact: https://claude.ai/artifact/NjHd7yeUK4HvkWsQE2o3Fo
+Verdict: waiting for Omar.
+
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.
