@@ -169,7 +169,7 @@ button.item:active{transform:scale(.97);background:rgba(255,255,255,.85)}
 #pr .d{font-size:15px;font-weight:500;color:rgba(255,255,255,.78);margin-top:6px;line-height:1.4}
 #pr .wcta{margin-top:auto}
 /* shorter phones and landscape: a smaller stage, and the workout can scroll so Log is always reachable */
-@media (max-height:760px){#workout{overflow-y:auto}.stage{height:410px}#plateHero{height:240px}.controls{top:240px}.dialwrap{width:250px;height:250px;margin-top:12px}.dial .cap{inset:62px}#todayHero{height:240px}.title{font-size:38px}.wcta{flex:0 0 auto;margin-top:16px}}
+@media (max-height:760px){#workout,#today{overflow-y:auto}.screen>*{flex-shrink:0}.cta{margin-top:16px}.stage{height:410px}#plateHero{height:240px}.controls{top:240px}.dialwrap{width:250px;height:250px;margin-top:12px}.dial .cap{inset:62px}#todayHero{height:240px}.title{font-size:38px}.wcta{flex:0 0 auto;margin-top:16px}}
 @media (prefers-reduced-motion:reduce){*{transition-duration:1ms!important;animation-duration:1ms!important}}
 </style>
 </head>
@@ -704,6 +704,7 @@ const haptic=ms=>{try{navigator.vibrate&&navigator.vibrate(ms)}catch(e){}};
 
 $('#logBtn').onclick=()=>{
   if(S.resting){endRest(true);return}
+  if(S.loading)return; // the rest is ending and the next set is not loaded yet
   const l=S.lifts[S.li];
   if(S.si>=l.sets.length){finish($('#logBtn'));return} // every planned set is in: Log only reopens the summary
   const isPR=e1(S.w,S.r)>e1(l.best[0],l.best[1])+.01;
@@ -769,10 +770,10 @@ function restTick(){
   setTimeout(restTick,1000-(Date.now()%1000)+5);
 }
 function endRest(skipped){
-  if(!S.resting)return; S.resting=false; lastShown='';
+  if(!S.resting)return; S.resting=false; S.loading=true; lastShown='';
   dialAnim&&dialAnim.cancel();
   if(!skipped){haptic([30,60,30]);$('#dial').animate([{transform:'rotateX(14deg) rotate(0)'},{transform:'rotateX(14deg) rotate(7deg)'},{transform:'rotateX(14deg) rotate(-3deg)'},{transform:'rotateX(14deg) rotate(0)'}],{duration:420,easing:'ease-out'})}
-  setTimeout(()=>{$('#stage').classList.remove('resting');$('#workout').classList.remove('resting');loadSet(true);paintWorkout()},skipped?0:300);
+  setTimeout(()=>{$('#stage').classList.remove('resting');$('#workout').classList.remove('resting');loadSet(true);S.loading=false;paintWorkout()},skipped?0:300);
 }
 $('#rMore').onclick=()=>{S.restEnd=Math.min(Date.now()+178000,S.restEnd+15000);spinDial();lastShown='';restTick()};
 $('#rLess').onclick=()=>{S.restEnd-=15000;if(remaining()<=0){endRest(true);return}spinDial();lastShown='';restTick()};
