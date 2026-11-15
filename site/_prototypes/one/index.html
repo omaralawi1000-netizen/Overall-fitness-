@@ -491,7 +491,7 @@ p, h1, h2 { margin: 0; }
 /* ---------------- language ---------------- */
 const STR = {
   en: { today:'Today', train:'Train', food:'Food', health:'Health', sleep:'Sleep', protein:'Protein', weight:'Weight', coach:'Coach', reps:'reps',
-    topSet:'Bench press, today\'s top set', ready:'You\'re ready for it.', readyP:'Slept 7 h 40, and Tuesday\'s 82.5 moved fast.',
+    topSet:'Bench press, today\'s top set', movedLab:'Push, tomorrow 07:30', movedH:'Rest day today.', movedP:'Sleep and protein are the job tonight. The 85 waits for the morning.', anyway:'Train anyway', ready:'You\'re ready for it.', readyP:'Slept 7 h 40, and Tuesday\'s 82.5 moved fast.',
     startPush:'Start Push', startSm:'3 lifts · 45 min', resting:'Resting. Back in a moment.', yourSet:'Your set is waiting.', next:'Next', back:'Back to workout',
     doneLab:'Push, done', doneH:n=>n?`${n} new best today.`:'Solid session.', doneP:p=>`Protein next: ${p} g to go before bed.`, moved:'kg moved',
     skyTitle:'Your sky', skySub:'The wallpaper follows Aarhus: the sun right now, the weather and the season. Drag the sun to see the rest of the day.',
@@ -531,7 +531,7 @@ const STR = {
     w: { warm:'Warm-up. Easy reps, find the bottom.', fast:'80 moved fast on Tuesday. 85 is next: 2.5 kg over your best.', bestIf:'That’s a new best if it goes. Stay tight at the bottom.',
       more:'Got one more in you? 7 reps beats the best.', up:k=>`${k} kg up on Tuesday. Same tempo.`, same:'Same weight, cleaner reps than Tuesday.' } },
   da: { today:'I dag', train:'Træn', food:'Mad', health:'Helbred', sleep:'Søvn', protein:'Protein', weight:'Vægt', coach:'Coach', reps:'gent.',
-    topSet:'Bænkpres, dagens tungeste sæt', ready:'Du er klar til det.', readyP:'Sov 7 t 40, og tirsdagens 82,5 gik let.',
+    topSet:'Bænkpres, dagens tungeste sæt', movedLab:'Push, i morgen kl. 7.30', movedH:'Hviledag i dag.', movedP:'Søvn og protein er opgaven i aften. De 85 venter til i morgen.', anyway:'Træn alligevel', ready:'Du er klar til det.', readyP:'Sov 7 t 40, og tirsdagens 82,5 gik let.',
     startPush:'Start Push', startSm:'3 øvelser · 45 min', resting:'Pause. Snart tilbage.', yourSet:'Dit sæt venter.', next:'Næste', back:'Tilbage til træning',
     doneLab:'Push, færdig', doneH:n=>n?`${n} ny rekord i dag.`:'God træning.', doneP:p=>`Protein nu: ${p} g mangler før sengetid.`, moved:'kg løftet',
     skyTitle:'Din himmel', skySub:'Baggrunden følger Aarhus: solen lige nu, vejret og årstiden. Træk i solen for at se resten af dagen.',
@@ -768,6 +768,10 @@ function renderToday(instant) {
     roll($('heroNum'), nf(S.kg), instant); $('heroU').textContent = 'kg';
     $('heroH').textContent = S.rest ? T('resting') : T('yourSet'); $('heroP').textContent = `${nf(S.kg)} kg × ${S.reps}`;
     $('start').style.display = ''; $('startTx').textContent = T('back'); $('startSm').textContent = '';
+  } else if (S.moved) {
+    $('heroLab').textContent = T('movedLab'); roll($('heroNum'), nf(85), true); $('heroU').textContent = 'kg';
+    $('heroH').textContent = T('movedH'); $('heroP').textContent = T('movedP');
+    $('start').style.display = ''; $('startTx').textContent = T('anyway'); $('startSm').textContent = '';
   } else {
     $('heroLab').textContent = T('topSet'); roll($('heroNum'), nf(85), true); $('heroU').textContent = 'kg';
     $('heroH').textContent = T('ready'); $('heroP').textContent = T('readyP');
@@ -989,8 +993,8 @@ function coachAnswer(q) {
   const t = q.toLowerCase();
   say('me', q);
   if (/skyr/.test(t)) { addFood(20, T('skyr')); say('ai', T('cSkyr').replace('{p}', S.prot)); return; }
-  if (/(move|flyt).*(push|træning)|tomorrow|i morgen/.test(t)) { const was = S.moved; S.moved = true;
-    say('ai', T('cMove')); toast(T('cMove').split('.')[0], () => { S.moved = was; say('ai', lang === 'da' ? 'Fortrudt. Push er tilbage i dag.' : 'Undone. Push is back on today.'); }); return; }
+  if (/(move|flyt).*(push|træning)|tomorrow|i morgen/.test(t)) { const was = S.moved; S.moved = true; renderToday();
+    say('ai', T('cMove')); toast(T('cMove').split('.')[0], () => { S.moved = was; renderToday(); say('ai', lang === 'da' ? 'Fortrudt. Push er tilbage i dag.' : 'Undone. Push is back on today.'); }); return; }
   if (/tired|træt/.test(t)) return say('ai', T('cTired'));
   if (/bench|bænk/.test(t)) return say('ai', T('cBench'));
   say('ai', T('cElse'));
@@ -1187,6 +1191,7 @@ document.addEventListener('pointerdown', (e) => { if (wpopEl && !e.target.closes
 /* one tap logs the set: the numbers fly into a new peak that rises over Tuesday's */
 $('log').addEventListener('click', () => {
   if (holding) return;
+  if ($('log').classList.contains('hold')) { if (S.li < PLAN.length - 1 && !cardOpen) liftDone(); return; }
   if (S.rest) return endRest();
   logSet(S.kg, S.reps);
 });
@@ -1213,8 +1218,8 @@ function logSet(kg, reps, note) {
     if (note) wpop(note, $('mic'));
   }, 380);
   const lastSet = S.si === l.sets.length - 1;
-  if (isBest) { const ob = `${nf(l.best.k)} × ${l.best.r}`; S.bests++; S.flags.push({ li: S.li, si: S.si, prev: l.best }); l.best = { k: kg, r: reps };
-    setTimeout(() => { S.busy = false; record(kg, reps, ob, () => afterLog(lastSet)); }, 1000); }
+  if (isBest) { const ob = `${nf(l.best.k)} × ${l.best.r}`, prevK = l.best.k; S.bests++; S.flags.push({ li: S.li, si: S.si, prev: l.best }); l.best = { k: kg, r: reps };
+    setTimeout(() => { S.busy = false; record(kg, reps, ob, () => afterLog(lastSet), prevK); }, 1000); }
   else setTimeout(() => { S.busy = false; afterLog(lastSet); }, 560);
 }
 function afterLog(lastSet) {
@@ -1283,7 +1288,7 @@ function liftDone() {
 }
 let holding = false;
 (() => { const b = $('log'), f = $('logFill'); let a = null;
-  b.addEventListener('pointerdown', () => { if (!b.classList.contains('hold')) return; holding = true; closeCard();
+  b.addEventListener('pointerdown', () => { if (!b.classList.contains('hold')) return; holding = true;
     if (a) { a.playbackRate = 1; } else { a = f.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 1100, easing: 'cubic-bezier(.3,0,.6,1)', fill: 'both' });
       a.onfinish = () => { if (a.playbackRate > 0) { a = null; b.classList.remove('hold'); vib([10, 40, 30]); finishWorkout(); } else a = null; setTimeout(() => { holding = false; }, 50); }; } vib(5); });
   const up = () => { if (!a || !holding) return; holding = false; a.playbackRate = -2.2; };
@@ -1302,12 +1307,12 @@ function nextLift() {
 }
 
 /* a new best: the dusk falls away to the summit in full sun; the medal turns; Keep going plants a flag */
-function record(kg, reps, prevBest, then) {
+function record(kg, reps, prevBest, then, prevK) {
   const r = $('rec'); r.classList.add('on'); closeWpop(true);
   roll($('medKg'), nf(kg), true); $('medSub').textContent = `kg × ${reps}`;
   $('recP').textContent = T('bestTx', liftName(), nf(kg), reps, prevBest);
   const gap = raceGap();
-  $('recChips').innerHTML = `<span class="g">+${nf(kg - parseFloat(prevBest))} kg</span><span>${T('estMax', Math.round(e1(kg, reps)))}</span>${gap > 2 ? `<span>${T('ahead', fmtGap(gap))} · ${T('vsTue')}</span>` : ''}`;
+  $('recChips').innerHTML = `<span class="g">+${nf(Math.round((kg - prevK) * 100) / 100)} kg</span><span>${T('estMax', Math.round(e1(kg, reps)))}</span>${gap > 2 ? `<span>${T('ahead', fmtGap(gap))} · ${T('vsTue')}</span>` : ''}`;
   anim($('recImg'), [{ transform: 'scale(1.18)' }, { transform: 'scale(1)' }], { duration: 2200, easing: 'cubic-bezier(.2,.7,.2,1)' });
   $('recBlur').animate([{ opacity: 1 }, { opacity: 1, offset: .25 }, { opacity: 0 }], { duration: 1500, easing: 'ease-out', fill: 'both' });
   anim(r, [{ opacity: 0 }, { opacity: 1 }], { duration: 380, easing: 'ease-out' });
