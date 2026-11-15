@@ -439,7 +439,8 @@ function parseSets(x, li) {
   if (parts.length > 3 || parts.some((q) => q === '')) return { err: t('cant') };
   let a = parts[0], b = parts[1];
   // Weight comes first. Swap only when the order is unmistakable: "8x82.5" or "8x80".
-  if (/^\d+$/.test(a) && +a <= 50 && (/^\d+[.,]\d+$/.test(b) || (/^\d+$/.test(b) && +b > 50))) { const c = a; a = b; b = c; }
+  // A comma after the x always separates reps ("40x12,10" is two sets), so only a point counts as a decimal there.
+  if (/^\d+$/.test(a) && +a <= 50 && (/^\d+\.\d+$/.test(b) || (/^\d+$/.test(b) && +b > 50))) { const c = a; a = b; b = c; }
   const kg = num(a), reps = b.split(',').map((v) => (/^\d+$/.test(v) ? +v : NaN));
   if (kg == null || reps.some(Number.isNaN)) return { err: t('cant') };
   let count = 1;
@@ -699,7 +700,11 @@ document.addEventListener('keydown', (e) => {
   if (e.metaKey || e.ctrlKey || e.altKey || S.screen === 'summary') { if (e.key === 'Enter' && S.screen === 'summary') act('back'); return; }
   if (e.key === 'Escape') { if (S.help) S.help = false; else if (S.deck) { S.deck = false; S.buf = ''; } render(); return; }
   if (S.help) return;
-  if (e.key === 'Enter') { e.preventDefault(); if (!S.deck && S.buf === '' && document.activeElement && document.activeElement.dataset.a) return; act('enter'); return; }
+  if (e.key === 'Enter') {
+    // With the keys closed and nothing typed, Enter belongs to the focused button (Start, Log, End).
+    if (!S.deck && S.buf === '' && document.activeElement && document.activeElement.dataset.a) return;
+    e.preventDefault(); act('enter'); return;
+  }
   if (e.key === 'Backspace') { e.preventDefault(); act('key', '⌫'); return; }
   if (e.key.length === 1 && /[a-zæøå0-9 .,x*×?]/i.test(e.key)) {
     if (e.key === ' ' && document.activeElement && document.activeElement.dataset.a && !S.deck) return;
