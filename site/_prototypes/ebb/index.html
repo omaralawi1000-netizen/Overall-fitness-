@@ -1,0 +1,1088 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aven Ebb</title>
+<meta name="theme-color" content="#7fd2cc">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,300..700&display=swap">
+<style>
+/* Ebb: everything you log is water.
+   Today looks down into sunlit shallows (caustic light on sand). The workout dives under the surface:
+   a deeper side view with light shafts, where each set is a glass tube that fills, the rest timer is a
+   water clock (a clepsydra) that drips empty, and a new best turns the water gold and still.
+   One drawn background (WebGL), small 2D canvases for the glass, DOM for everything you read and tap. */
+:root {
+  --ink: #04313a;
+  --ink-2: rgba(4, 49, 58, .78);
+  --ink-3: rgba(4, 49, 58, .48);
+  --frost: rgba(255, 255, 255, .44);
+  --frost-hi: rgba(255, 255, 255, .55);
+  --rim: rgba(255, 255, 255, .78);
+  --press: #053f4c;
+  --on-press: #eafffb;
+  --w-ink: #ffffff;
+  --w-ink-2: rgba(255, 255, 255, .74);
+  --w-ink-3: rgba(255, 255, 255, .54);
+  --w-frost: rgba(255, 255, 255, .13);
+  --w-rim: rgba(255, 255, 255, .34);
+  --liq: #39c6d6;
+  --gold: #f2c45a;
+  --font: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --spring: cubic-bezier(.2, 1.18, .32, 1);
+  --ease: cubic-bezier(.22, .8, .2, 1);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; overflow: hidden; overscroll-behavior: none; }
+body {
+  background: #6fc9c6;
+  font-family: var(--font);
+  font-optical-sizing: auto;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
+  user-select: none; -webkit-user-select: none;
+  touch-action: manipulation;
+}
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; touch-action: manipulation; }
+canvas { display: block; }
+#sea, #fx { position: fixed; inset: 0; width: 100%; height: 100%; }
+#fx { pointer-events: none; z-index: 30; }
+.screen {
+  position: fixed; inset: 0; z-index: 2;
+  display: flex; flex-direction: column;
+  padding: max(18px, env(safe-area-inset-top)) 18px max(16px, env(safe-area-inset-bottom));
+  opacity: 0; transform: translateY(26px); visibility: hidden; pointer-events: none;
+  transition: opacity .42s var(--ease), transform .6s var(--ease), visibility 0s .6s;
+  will-change: transform, opacity;
+}
+.screen.on { opacity: 1; transform: none; visibility: visible; pointer-events: auto; transition: opacity .5s var(--ease) .18s, transform .7s var(--spring) .18s, visibility 0s; }
+.screen.up { transform: translateY(-30px); }
+.num { font-variant-numeric: tabular-nums; font-feature-settings: "tnum"; }
+.pane {
+  background: var(--frost);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  backdrop-filter: blur(22px) saturate(1.5);
+  border-radius: 26px;
+  box-shadow: inset 0 1px 0 var(--rim), inset 0 0 0 1px rgba(255,255,255,.22), 0 10px 30px -18px rgba(0, 40, 50, .45);
+}
+.press { transition: transform .16s var(--ease); }
+.press:active, .press.down { transform: scale(.96); transition-duration: .06s; }
+
+/* ---------- rolling digits ---------- */
+.roll { display: inline-flex; white-space: nowrap; line-height: 1; }
+.roll .s { display: inline-block; height: 1em; overflow: hidden; position: relative; }
+.roll .c { display: block; transition: transform .62s var(--spring); }
+.roll .c span { display: block; height: 1em; text-align: center; }
+.roll .p { display: inline-block; }
+
+/* ---------- Today ---------- */
+#today .top { display: flex; align-items: center; justify-content: space-between; height: 40px; }
+.date { font-size: 15px; font-weight: 500; color: var(--ink-2); letter-spacing: .005em; }
+.themes { display: flex; gap: 6px; }
+.themes button { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; }
+.themes i {
+  width: 16px; height: 19px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+  background: radial-gradient(circle at 36% 30%, rgba(255,255,255,.9) 0 12%, transparent 32%), var(--c);
+  box-shadow: inset 0 -2px 4px rgba(0,0,0,.18), 0 2px 5px -2px rgba(0,30,40,.4);
+  transform: rotate(180deg) scale(.82); transition: transform .4s var(--spring);
+}
+.themes button[aria-checked="true"] i { transform: rotate(180deg) scale(1.08); box-shadow: inset 0 -2px 4px rgba(0,0,0,.18), 0 0 0 2px rgba(255,255,255,.9), 0 2px 6px -2px rgba(0,30,40,.5); }
+.hero { margin-top: clamp(36px, 10vh, 100px); }
+.eyebrow { font-size: 12.5px; font-weight: 600; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-3); }
+.session { font-size: 118px; font-weight: 560; letter-spacing: -.055em; line-height: .86; margin: 10px 0 0 -6px; font-variation-settings: "opsz" 96; }
+.plan { margin-top: 14px; font-size: 17px; font-weight: 450; color: var(--ink-2); line-height: 1.35; }
+.plan b { font-weight: 600; color: var(--ink); }
+.coach {
+  margin-top: 22px; display: flex; gap: 12px; align-items: flex-start; text-align: left;
+  padding: 15px 18px 16px; font-size: 16.5px; line-height: 1.38; font-weight: 450; width: 100%;
+}
+.dot { flex: none; width: 10px; height: 10px; margin-top: 6px; border-radius: 50%; background: var(--press); position: relative; }
+.dot::after { content: ""; position: absolute; inset: -5px; border-radius: 50%; border: 1.5px solid currentColor; opacity: 0; animation: breathe 3.2s var(--ease) infinite; color: var(--press); }
+@keyframes breathe { 0% { transform: scale(.5); opacity: .55; } 70%, 100% { transform: scale(1.5); opacity: 0; } }
+.body { margin-top: 12px; padding: 16px 16px 14px; display: grid; grid-template-columns: 1.15fr 1fr 1fr; gap: 6px 10px; align-items: end; }
+.water { display: flex; align-items: flex-end; gap: 10px; text-align: left; border-radius: 18px; margin: -6px; padding: 6px; }
+#glass { width: 46px; height: 64px; flex: none; }
+.stat b, .water b { white-space: nowrap; display: block; font-size: 25px; font-weight: 560; letter-spacing: -.03em; line-height: 1; }
+.stat small, .water small { font-size: 15px; font-weight: 500; letter-spacing: 0; }
+.lbl { display: block; margin-top: 5px; font-size: 13px; font-weight: 500; color: var(--ink-2); line-height: 1.2; }
+.bar { display: block; margin-top: 7px; height: 6px; border-radius: 4px; background: rgba(4,49,58,.12); overflow: hidden; }
+.bar i { display: block; height: 100%; width: 100%; border-radius: 4px; transform-origin: left; transform: scaleX(var(--v)); background: linear-gradient(90deg, var(--liq), var(--press)); }
+.week { grid-column: 1 / -1; display: flex; justify-content: space-between; margin-top: 14px; padding-top: 12px; border-top: 1px solid rgba(4,49,58,.1); }
+.week div { display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: var(--ink-3); width: 34px; }
+.week i { width: 12px; height: 15px; border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%; transform: rotate(180deg); border: 1.5px solid rgba(4,49,58,.28); }
+.week .done i { border: 0; background: radial-gradient(circle at 40% 70%, rgba(255,255,255,.75) 0 10%, transparent 30%), linear-gradient(0deg, var(--liq), var(--press)); }
+.week .now { color: var(--ink); }
+.week .now i { border-color: var(--press); border-style: dashed; }
+.cta {
+  margin-top: auto; height: 66px; border-radius: 33px; width: 100%;
+  background: var(--press); color: var(--on-press); font-size: 19px; font-weight: 600; letter-spacing: -.01em;
+  position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; gap: 10px;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.25), 0 14px 30px -14px rgba(0, 40, 50, .7);
+}
+.cta::before {
+  content: ""; position: absolute; inset: 0;
+  background: radial-gradient(60% 120% at 50% 130%, rgba(120, 240, 240, .35), transparent 70%);
+}
+.cta .shine { position: absolute; inset: 0; background: linear-gradient(105deg, transparent 35%, rgba(255,255,255,.16) 50%, transparent 65%); transform: translateX(-100%); animation: shine 5.5s var(--ease) 1.2s infinite; }
+@keyframes shine { 0%, 62% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
+.cta span { position: relative; }
+.cta .live { font-weight: 450; opacity: .8; }
+
+/* ---------- Workout ---------- */
+#work { color: var(--w-ink); }
+.wtop { display: flex; align-items: center; justify-content: space-between; height: 44px; }
+.wtop button, .chip { height: 40px; padding: 0 16px; border-radius: 20px; font-size: 15px; font-weight: 550; background: var(--w-frost); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: inset 0 1px 0 var(--w-rim); }
+#clock { font-size: 15px; font-weight: 500; color: var(--w-ink-2); }
+.ex { margin-top: 18px; }
+.ex h2 { font-size: 34px; font-weight: 560; letter-spacing: -.035em; line-height: 1; transition: opacity .25s, filter .25s, transform .4s var(--spring); }
+.ex h2.swap { opacity: 0; filter: blur(6px); transform: translateY(6px); }
+.ex p { margin-top: 8px; font-size: 15.5px; color: var(--w-ink-2); font-weight: 450; }
+.ex p b { color: var(--w-ink); font-weight: 600; }
+.stage { position: relative; flex: 1; min-height: 0; }
+.view { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; opacity: 0; transform: translateY(40px); pointer-events: none; transition: opacity .3s var(--ease), transform .5s var(--ease); }
+.view.on { opacity: 1; transform: none; pointer-events: auto; transition: opacity .45s var(--ease) .12s, transform .7s var(--spring) .12s; }
+.view.gone { transform: translateY(-40px); }
+.big { margin-top: 3.5vh; display: flex; align-items: baseline; justify-content: center; gap: 6px; width: 100%; }
+.big .kg { font-size: 112px; font-weight: 520; letter-spacing: -.05em; }
+.big .unit { font-size: 22px; font-weight: 500; color: var(--w-ink-2); margin-right: 10px; }
+.big .x { font-size: 34px; font-weight: 400; color: var(--w-ink-3); }
+.big .reps { font-size: 64px; font-weight: 520; letter-spacing: -.04em; }
+#rack { width: 100%; height: 168px; margin-top: auto; margin-bottom: 62px; }
+.bubble { position: absolute; top: calc(3.5vh + 124px); left: 0; right: 0; margin: 0 auto; width: max-content; display: flex; gap: 10px; align-items: center; height: 42px; padding: 0 16px 0 14px; border-radius: 21px; font-size: 15px; font-weight: 550; white-space: nowrap; background: rgba(255,255,255,.16); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px); box-shadow: inset 0 1px 0 var(--w-rim); animation: bob 4s ease-in-out infinite; transition: opacity .3s, scale .35s var(--spring); }
+.bubble .dot { margin: 0; width: 8px; height: 8px; background: #fff; }
+.bubble .dot::after { color: #fff; }
+.bubble.hide { opacity: 0; scale: .7; pointer-events: none; }
+@keyframes bob { 0%, 100% { translate: 0 0; } 50% { translate: 0 -4px; } }
+.rest .eyebrow { margin-top: 1.5vh; color: var(--w-ink-3); }
+.countdown { font-size: 92px; font-weight: 500; letter-spacing: -.04em; margin-top: 6px; }
+#clep { width: 170px; height: 300px; margin-top: 4px; }
+.next { margin-top: auto; margin-bottom: 64px; font-size: 16px; color: var(--w-ink-2); font-weight: 450; }
+.next b { color: var(--w-ink); font-weight: 600; }
+.dock { position: relative; padding: 14px; border-radius: 30px; background: var(--w-frost); box-shadow: inset 0 1px 0 var(--w-rim), inset 0 0 0 1px rgba(255,255,255,.08); height: 186px; }
+.ctl { position: absolute; inset: 14px; display: flex; flex-direction: column; gap: 12px; opacity: 0; transform: translateY(14px) scale(.98); pointer-events: none; transition: opacity .2s, transform .3s var(--ease); }
+.ctl.on { opacity: 1; transform: none; pointer-events: auto; transition: opacity .3s .1s, transform .5s var(--spring) .1s; }
+.steppers { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.step { display: flex; align-items: center; justify-content: space-between; height: 66px; border-radius: 22px; background: rgba(255,255,255,.1); padding: 0 4px; }
+.step button { width: 54px; height: 58px; border-radius: 18px; font-size: 28px; font-weight: 400; display: grid; place-items: center; color: var(--w-ink); }
+.step button:active { background: rgba(255,255,255,.14); }
+.step div { text-align: center; }
+.step b { display: block; font-size: 23px; font-weight: 560; letter-spacing: -.02em; }
+.step .u { display: block; font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--w-ink-3); margin-top: 3px; }
+.log { flex: 1; border-radius: 26px; background: #fff; color: var(--press); font-size: 20px; font-weight: 620; letter-spacing: -.01em; position: relative; overflow: hidden; box-shadow: 0 12px 26px -14px rgba(0,0,0,.5); }
+.log span { position: relative; }
+.log::after { content: ""; position: absolute; left: 50%; top: 50%; width: 40px; height: 40px; margin: -20px; border-radius: 50%; background: var(--liq); opacity: 0; transform: scale(0); }
+.log.pour::after { animation: pour .5s var(--ease); }
+@keyframes pour { 0% { opacity: .55; transform: scale(.2); } 100% { opacity: 0; transform: scale(9); } }
+.restbtns { flex-direction: row; align-items: stretch; }
+.restbtns button { border-radius: 26px; font-size: 17px; font-weight: 600; }
+.restbtns .side { width: 88px; background: rgba(255,255,255,.1); }
+.restbtns .log { flex: 1; }
+.resthint { position: absolute; left: 0; right: 0; bottom: -2px; text-align: center; font-size: 13px; color: var(--w-ink-3); }
+
+/* ---------- tray, toast, sheet ---------- */
+.scrim { position: fixed; inset: 0; z-index: 40; background: rgba(0, 30, 40, .28); opacity: 0; pointer-events: none; transition: opacity .35s var(--ease); }
+.scrim.on { opacity: 1; pointer-events: auto; }
+.screen.dim { opacity: .3 !important; transition: opacity .35s var(--ease) !important; }
+.pop {
+  position: fixed; left: 12px; right: 12px; top: 0; z-index: 41; visibility: hidden;
+  padding: 22px 20px 16px; border-radius: 32px; color: var(--ink);
+  background: rgba(255,255,255,.8);
+}
+.pop.on { visibility: visible; }
+.tray .who { display: flex; align-items: center; gap: 10px; font-size: 13px; font-weight: 650; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+.tray .who .dot { margin: 0; }
+.tray p { margin-top: 12px; font-size: 21px; line-height: 1.32; font-weight: 480; letter-spacing: -.012em; }
+.tray p b { font-weight: 620; }
+.tray .row { display: flex; gap: 10px; margin-top: 20px; }
+.tray .row button { height: 58px; border-radius: 29px; font-size: 17px; font-weight: 600; padding: 0 20px; }
+.tray .yes { flex: 1; background: var(--press); color: var(--on-press); }
+.tray .no { background: rgba(4,49,58,.08); }
+.toast {
+  position: fixed; left: 50%; z-index: 35; bottom: calc(max(16px, env(safe-area-inset-bottom)) + 200px);
+  display: flex; align-items: center; gap: 6px; height: 48px; padding: 0 6px 0 18px; border-radius: 24px;
+  font-size: 15px; font-weight: 550; color: #fff; white-space: nowrap;
+  background: rgba(3, 40, 50, .5);
+  transform: translate(-50%, 16px) scale(.94); opacity: 0; pointer-events: none;
+  transition: opacity .25s, transform .35s var(--ease);
+}
+.toast.on { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; transition: opacity .3s, transform .5s var(--spring); }
+.toast.today { bottom: calc(max(16px, env(safe-area-inset-bottom)) + 84px); }
+.toast button { height: 38px; padding: 0 14px; border-radius: 19px; background: rgba(255,255,255,.18); font-weight: 650; }
+.toast button[disabled] { opacity: .5; }
+
+.sheet { padding: 26px 20px 18px; border-radius: 34px; }
+.sheet h3 { font-size: 34px; font-weight: 580; letter-spacing: -.035em; line-height: 1; }
+.sheet .sub { margin-top: 8px; font-size: 16px; color: var(--ink-2); }
+.hold { margin-top: 26px; width: 100%; height: 70px; border-radius: 35px; position: relative; overflow: hidden; background: rgba(4,49,58,.1); font-size: 19px; font-weight: 620; color: var(--ink); }
+.hold .fill { position: absolute; inset: 0; transform-origin: left; transform: scaleX(0); background: linear-gradient(90deg, var(--liq), var(--press)); transition: transform .45s var(--ease); }
+.hold.held .fill { transform: scaleX(1); transition: transform 1.05s cubic-bezier(.4, .1, .6, 1); }
+.hold span { position: relative; transition: color .3s; }
+.hold.held span { color: #fff; transition-delay: .4s; }
+.hold small { display: block; font-size: 13px; font-weight: 500; opacity: .7; }
+.sheet .total { margin-top: 18px; font-size: 76px; font-weight: 540; letter-spacing: -.05em; display: flex; align-items: baseline; gap: 8px; }
+.sheet .total small { font-size: 22px; font-weight: 500; letter-spacing: 0; color: var(--ink-2); }
+.sumrows { margin-top: 10px; display: flex; flex-direction: column; gap: 10px; }
+.sumrow { display: flex; justify-content: space-between; gap: 12px; font-size: 16px; padding: 12px 0; border-top: 1px solid rgba(4,49,58,.1); }
+.sumrow b { font-weight: 600; }
+.sumrow span { color: var(--ink-2); text-align: right; }
+.sumrow .skip { font-style: normal; opacity: .6; }
+.sumrow .star { color: #b07b0d; font-weight: 650; }
+.sheet .done { margin-top: 16px; width: 100%; height: 62px; border-radius: 31px; background: var(--press); color: var(--on-press); font-size: 18px; font-weight: 600; }
+.sheet .cancel { margin-top: 10px; width: 100%; height: 50px; font-size: 16px; font-weight: 550; color: var(--ink-2); }
+.face { transition: opacity .3s var(--ease); }
+.face[hidden] { display: none; }
+
+/* ---------- new best ---------- */
+.pr { position: fixed; inset: 0; z-index: 38; padding-bottom: 140px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #fff; pointer-events: none; }
+.pearl {
+  width: 168px; height: 168px; border-radius: 50%;
+  background:
+    radial-gradient(circle at 34% 28%, rgba(255,255,255,.95) 0 7%, rgba(255,255,255,0) 22%),
+    radial-gradient(circle at 62% 78%, rgba(255,245,210,.55) 0 10%, rgba(255,255,255,0) 36%),
+    radial-gradient(circle at 50% 50%, #ffe6a0 0%, #f2c45a 46%, #c58a1d 100%);
+  box-shadow: inset -10px -16px 30px rgba(120, 70, 0, .35), inset 8px 10px 22px rgba(255,255,255,.35), 0 26px 60px -20px rgba(80, 50, 0, .6);
+  display: grid; place-items: center; color: #5a3a00; font-size: 70px; font-weight: 560; letter-spacing: -.04em;
+  opacity: 0; transform: scale(.1);
+}
+.pr { text-shadow: 0 1px 14px rgba(90, 50, 0, .5); }
+.pr .t1 { margin-top: 30px; font-size: 14px; font-weight: 650; letter-spacing: .16em; text-transform: uppercase; opacity: 0; transform: translateY(12px); }
+.pr .t2 { margin-top: 8px; font-size: 44px; font-weight: 560; letter-spacing: -.035em; opacity: 0; transform: translateY(14px); }
+.pr .t3 { margin-top: 8px; font-size: 16px; font-weight: 500; color: #fff; opacity: 0; transform: translateY(14px); }
+.pr.on { pointer-events: auto; }
+.pr.on .pearl { animation: swell 1.1s var(--spring) forwards, jiggle 2.6s ease-in-out 1.1s infinite; }
+.pr.on .t1, .pr.on .t2, .pr.on .t3 { opacity: 1; transform: none; transition: opacity .5s var(--ease), transform .7s var(--spring); }
+.pr.on .t1 { transition-delay: .45s; } .pr.on .t2 { transition-delay: .55s; } .pr.on .t3 { transition-delay: .65s; }
+.pr.off .pearl { opacity: 1; transform: translate(var(--dx), var(--dy)) scale(.16); transition: transform .62s cubic-bezier(.5, 0, .75, .4), opacity .2s .5s; animation: none; }
+.pr.off .pearl.gone { opacity: 0; }
+.pr.off .t1, .pr.off .t2, .pr.off .t3 { opacity: 0; transition: opacity .2s; }
+@keyframes swell { 0% { opacity: 0; transform: scale(.1); } 30% { opacity: 1; } 100% { opacity: 1; transform: scale(1); } }
+@keyframes jiggle { 0%, 100% { transform: scale(1, 1); } 25% { transform: scale(1.025, .975); } 50% { transform: scale(.985, 1.015); } 75% { transform: scale(1.01, .99); } }
+
+@media (max-height: 760px) {
+  .session { font-size: 96px; }
+  .hero { margin-top: 4vh; }
+  .big .kg { font-size: 92px; }
+  .big .reps { font-size: 54px; }
+  .bubble { top: calc(3.5vh + 104px); }
+  #rack { height: 150px; margin-bottom: 56px; }
+  .countdown { font-size: 76px; }
+  #clep { height: 250px; width: 150px; }
+  .dock { height: 176px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .cta .shine, .dot::after, .bubble { animation: none; }
+  .pr.on .pearl { animation: none; opacity: 1; transform: none; }
+}
+</style>
+</head>
+<body>
+<canvas id="sea" aria-hidden="true"></canvas>
+
+<main id="today" class="screen on" aria-label="Today">
+  <header class="top">
+    <div class="date" id="tDate"></div>
+    <div class="themes" role="radiogroup" id="themes"></div>
+  </header>
+  <section class="hero">
+    <div class="eyebrow" id="tEyebrow"></div>
+    <h1 class="session" id="tSession"></h1>
+    <p class="plan" id="tPlan"></p>
+  </section>
+  <button class="pane coach press" id="tCoach"><span class="dot"></span><span id="tCoachTxt"></span></button>
+  <section class="pane body">
+    <button class="water press" id="water" aria-label="Add water">
+      <canvas id="glass"></canvas>
+      <div><b><span class="num" id="waterNum"></span><small> L</small></b><span class="lbl" id="waterLbl"></span></div>
+    </button>
+    <div class="stat"><b class="num">7<small> h </small>40</b><span class="lbl" id="sleepLbl"></span></div>
+    <div class="stat"><b><span class="num" id="protNum"></span><small> g</small></b><span class="lbl" id="protLbl"></span><i class="bar"><i id="protBar" style="--v:.6"></i></i></div>
+    <div class="week" id="week"></div>
+  </section>
+  <button class="cta press" id="start"><span class="shine"></span><span id="startTxt"></span></button>
+</main>
+
+<main id="work" class="screen" aria-label="Workout">
+  <header class="wtop">
+    <button class="press" id="back"></button>
+    <span class="num" id="clock">0:00</span>
+    <button class="press" id="finish"></button>
+  </header>
+  <section class="ex"><h2 id="exName"></h2><p id="exMeta"></p></section>
+  <div class="stage">
+    <section class="view lift on" id="vLift">
+      <div class="big"><span class="num kg" id="kgBig"></span><span class="unit">kg</span><span class="x">×</span><span class="num reps" id="repsBig"></span></div>
+      <button class="bubble press" id="wCoach"><span class="dot"></span><span id="wCoachTxt"></span></button>
+      <canvas id="rack"></canvas>
+    </section>
+    <section class="view rest" id="vRest">
+      <div class="eyebrow" id="restLbl"></div>
+      <div class="num countdown" id="cd"></div>
+      <canvas id="clep"></canvas>
+      <p class="next" id="nextLine"></p>
+    </section>
+  </div>
+  <footer class="dock">
+    <div class="ctl on" id="cLift">
+      <div class="steppers">
+        <div class="step"><button class="press" data-k="kg" data-d="-1" aria-label="Less weight">−</button><div><b class="num" id="kgS"></b><span class="u">kg</span></div><button class="press" data-k="kg" data-d="1" aria-label="More weight">+</button></div>
+        <div class="step"><button class="press" data-k="reps" data-d="-1" aria-label="Fewer reps">−</button><div><b class="num" id="repsS"></b><span class="u" id="repsU"></span></div><button class="press" data-k="reps" data-d="1" aria-label="More reps">+</button></div>
+      </div>
+      <button class="log press" id="log"><span id="logTxt"></span></button>
+    </div>
+    <div class="ctl restbtns" id="cRest">
+      <button class="side press" id="minus">−15 s</button>
+      <button class="log press" id="skip"><span id="skipTxt"></span></button>
+      <button class="side press" id="plus">+15 s</button>
+    </div>
+  </footer>
+</main>
+
+<div class="pr" id="pr" aria-live="polite"><div class="pearl num" id="pearl"></div><div class="t1" id="prT1"></div><div class="t2 num" id="prT2"></div><div class="t3" id="prT3"></div></div>
+<canvas id="fx" aria-hidden="true"></canvas>
+<div class="toast pane" id="toast" role="status"><span id="toastTxt"></span><button id="undo"></button></div>
+<div class="scrim" id="scrim"></div>
+<div class="pop tray pane" id="tray" role="dialog" aria-modal="true">
+  <div class="who"><span class="dot"></span><span id="trayWho"></span></div>
+  <p id="trayTxt"></p>
+  <div class="row"><button class="no press" id="trayNo"></button><button class="yes press" id="trayYes"></button></div>
+</div>
+<div class="pop sheet pane" id="sheet" role="dialog" aria-modal="true">
+  <div class="face" id="fHold">
+    <h3 id="hTitle"></h3>
+    <p class="sub" id="hSub"></p>
+    <button class="hold" id="hold"><i class="fill"></i><span id="holdTxt"></span></button>
+    <button class="cancel" id="hCancel"></button>
+  </div>
+  <div class="face" id="fSum" hidden>
+    <h3 id="sTitle"></h3>
+    <div class="total"><span class="num" id="sTotal"></span><small>kg</small></div>
+    <p class="sub" id="sSub"></p>
+    <div class="sumrows" id="sRows"></div>
+    <button class="done press" id="sDone"></button>
+  </div>
+</div>
+
+<script>
+'use strict';
+const Q = new URLSearchParams(location.search);
+const LANG = Q.get('lang') === 'da' ? 'da' : 'en';
+const REST = Math.max(3, +Q.get('rest') || 90);
+const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const DPR = Math.min(window.devicePixelRatio || 1, 2.5);
+const $ = (id) => document.getElementById(id);
+document.documentElement.lang = LANG;
+
+/* ---------- words ---------- */
+const S = {
+  en: {
+    eyebrow: "Today's session", push: 'Push', plan: '<b>Bench</b> · Incline press · 2 lifts · about 45 min',
+    coachToday: 'Bench moved fast last week. 82.5 kg is there for you today.',
+    water: 'of 2.5 L water', sleep: 'sleep last night', protein: 'of 160 g protein',
+    days: ['M', 'T', 'W', 'T', 'F', 'S', 'S'], start: 'Start Push', resume: 'Back to workout', seeDone: 'See today’s workout',
+    doneEyebrow: 'Done today', back: '‹ Today', finish: 'Finish',
+    bench: 'Bench press', incline: 'Incline dumbbell press',
+    setOf: (a, b) => `Set ${a} of ${b}`, last: 'Last', best: 'Best',
+    reps: 'reps', log: 'Log set', rest: 'Rest', skip: 'Skip rest', restHint: 'Set', done: 'done',
+    next: 'Next', nextEx: 'Next up', allDone: 'All sets done', finishNow: 'Finish when you’re ready',
+    coachW: 'Coach · 82.5 kg today?', coach: 'Coach',
+    trayW: 'Last week <b>80 × 8</b> moved fast and you slept well. Try <b>82.5 kg</b> for 8 today.',
+    trayT: 'Bench moved fast last week. Start at <b>82.5 kg</b> today and go for 8.',
+    use: 'Use 82.5 kg', startWith: 'Start at 82.5 kg', notNow: 'Not now',
+    setTo: 'Bench set to 82.5 kg', logged: (n) => `Set ${n} logged`, undo: 'Undo', water250: '250 ml added',
+    newBest: 'New best', est: (e, d) => `Estimated max ${e} kg · +${d}`,
+    hTitle: 'Finish Push?', hSub: (a, b, m) => `${a} of ${b} sets done · ${m} min`, hold: 'Hold to finish', keep: 'Keep going',
+    sTitle: 'Push, done.', sSub: (m, s, b) => `${m} min · ${s} set${s === 1 ? '' : 's'}${b ? ` · ${b} new best` : ''}`, toToday: 'Back to Today',
+    skipped: 'not logged', themes: ['Shallows', 'Dusk', 'Fjord'], addWater: 'Add 250 ml water',
+  },
+  da: {
+    eyebrow: 'Dagens træning', push: 'Push', plan: '<b>Bænk</b> · Skråbænk · 2 øvelser · ca. 45 min',
+    coachToday: 'Bænken gik hurtigt i sidste uge. 82,5 kg er klar til dig i dag.',
+    water: 'af 2,5 L vand', sleep: 'søvn i nat', protein: 'af 160 g protein',
+    days: ['M', 'T', 'O', 'T', 'F', 'L', 'S'], start: 'Start Push', resume: 'Tilbage til træningen', seeDone: 'Se dagens træning',
+    doneEyebrow: 'Klaret i dag', back: '‹ I dag', finish: 'Afslut',
+    bench: 'Bænkpres', incline: 'Skråbænk med håndvægte',
+    setOf: (a, b) => `Sæt ${a} af ${b}`, last: 'Sidst', best: 'Bedst',
+    reps: 'gentag.', log: 'Log sæt', rest: 'Pause', skip: 'Spring pausen over', restHint: 'Sæt', done: 'klaret',
+    next: 'Næste', nextEx: 'Næste øvelse', allDone: 'Alle sæt klaret', finishNow: 'Afslut når du er klar',
+    coachW: 'Coach · 82,5 kg i dag?', coach: 'Coach',
+    trayW: 'I sidste uge gik <b>80 × 8</b> hurtigt, og du har sovet godt. Prøv <b>82,5 kg</b> til 8 i dag.',
+    trayT: 'Bænken gik hurtigt i sidste uge. Start på <b>82,5 kg</b> i dag og gå efter 8.',
+    use: 'Brug 82,5 kg', startWith: 'Start på 82,5 kg', notNow: 'Ikke nu',
+    setTo: 'Bænk sat til 82,5 kg', logged: (n) => `Sæt ${n} logget`, undo: 'Fortryd', water250: '250 ml tilføjet',
+    newBest: 'Ny rekord', est: (e, d) => `Anslået max ${e} kg · +${d}`,
+    hTitle: 'Afslut Push?', hSub: (a, b, m) => `${a} af ${b} sæt · ${m} min`, hold: 'Hold for at afslutte', keep: 'Fortsæt',
+    sTitle: 'Push, klaret.', sSub: (m, s, b) => `${m} min · ${s} sæt${b ? ` · ${b} ny rekord` : ''}`, toToday: 'Tilbage til I dag',
+    skipped: 'ikke logget', themes: ['Lavvande', 'Skumring', 'Fjord'], addWater: 'Tilføj 250 ml vand',
+  },
+}[LANG];
+const fmt = (n, d = 1) => {
+  const s = (Math.round(n * 10 ** d) / 10 ** d).toFixed(n % 1 ? d : 0);
+  return LANG === 'da' ? s.replace('.', ',') : s;
+};
+const fmtInt = (n) => Math.round(n).toLocaleString(LANG === 'da' ? 'da-DK' : 'en-GB');
+const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+const haptic = (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch (_) {} };
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const ease = (t) => 1 - Math.pow(1 - t, 3);
+
+/* ---------- themes ---------- */
+const hex = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16) / 255);
+const THEMES = [
+  { key: 'shallows', drop: '#2fb8c8', sand: '#efe0c4', shallow: '#74d6cf', deep: '#0e6d86', wtop: '#2a9cb0', wbot: '#0a4a5e', light: '#fff4d8',
+    css: { '--ink': '#04313a', '--ink-2': 'rgba(4,49,58,.78)', '--ink-3': 'rgba(4,49,58,.48)', '--press': '#053f4c', '--liq': '#39c6d6' },
+    liq: ['#7fe6ec', '#1aa3bb'], bg: '#6fc9c6' },
+  { key: 'dusk', drop: '#9b84e6', sand: '#f1d3c6', shallow: '#d8a6c4', deep: '#5a4a9e', wtop: '#7a67b8', wbot: '#33296e', light: '#ffe9cf',
+    css: { '--ink': '#2b1840', '--ink-2': 'rgba(43,24,64,.78)', '--ink-3': 'rgba(43,24,64,.48)', '--press': '#33204f', '--liq': '#a38ef0' },
+    liq: ['#d9c9ff', '#8a6fe0'], bg: '#d4a8c0' },
+  { key: 'fjord', drop: '#3f9e8a', sand: '#d9e0cf', shallow: '#86c4b0', deep: '#1a5a62', wtop: '#3c8a86', wbot: '#123f48', light: '#f2fff4',
+    css: { '--ink': '#0b2b2c', '--ink-2': 'rgba(11,43,44,.78)', '--ink-3': 'rgba(11,43,44,.48)', '--press': '#0e3a3b', '--liq': '#4fb79f' },
+    liq: ['#b6f0dc', '#2f9a83'], bg: '#86c4b0' },
+];
+let theme = THEMES[Math.max(0, THEMES.findIndex((t) => t.key === Q.get('theme')))];
+const colorsOf = (t) => ({ sand: hex(t.sand), shallow: hex(t.shallow), deep: hex(t.deep), wtop: hex(t.wtop), wbot: hex(t.wbot), light: hex(t.light) });
+let colNow = colorsOf(theme), colFrom = colNow, colTo = colNow, colT = 1;
+
+/* ---------- the sea (WebGL) ---------- */
+const sea = (() => {
+  const cv = $('sea');
+  const gl = cv.getContext('webgl', { antialias: false, alpha: false, preserveDrawingBuffer: false, powerPreference: 'high-performance' });
+  const st = { mode: 0, modeFrom: 0, modeTo: 0, modeT: 1, gold: 0, goldTo: 0, speed: 1, speedTo: 1, t: 3.7, rip: [], ok: !!gl };
+  if (!gl) { document.body.style.background = `linear-gradient(${theme.shallow}, ${theme.deep})`; return Object.assign(st, { draw() {}, ripple() {}, dive() {} }); }
+  const vs = 'attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}';
+  const fs = `precision highp float;
+uniform vec2 R;uniform float T,M,G;uniform vec3 cS,cW,cD,cA,cB,cL;uniform vec4 P[4];
+vec2 h2(vec2 p){p=vec2(dot(p,vec2(127.1,311.7)),dot(p,vec2(269.5,183.3)));return fract(sin(p)*43758.5453);}
+float h1(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
+float vn(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h1(i),h1(i+vec2(1,0)),f.x),mix(h1(i+vec2(0,1)),h1(i+vec2(1,1)),f.x),f.y);}
+float vor(vec2 p,float t){vec2 i=floor(p),f=fract(p);float d1=8.,d2=8.;
+ for(int y=-1;y<=1;y++)for(int x=-1;x<=1;x++){vec2 g=vec2(float(x),float(y));vec2 o=h2(i+g);o=.5+.4*sin(t+6.2831*o);float d=length(g+o-f);
+  if(d<d1){d2=d1;d1=d;}else if(d<d2){d2=d;}}
+ return d2-d1;}
+float caust(vec2 p,float t){
+ vec2 w=vec2(vn(p*.32+t*.06),vn(p*.32+vec2(5.2,1.3)-t*.05));p+=(w-.5)*2.2;
+ float a=vor(p,t*.8),b=vor(p*1.63+3.1,-t*1.05);
+ float ca=1.-smoothstep(0.,.13,a),cb=1.-smoothstep(0.,.1,b);
+ return ca*.62+cb*.36+ca*cb*.9;}
+void main(){
+ vec2 uv=gl_FragCoord.xy/R;uv.y=1.-uv.y;float asp=R.x/R.y;vec2 q=vec2(uv.x*asp,uv.y);
+ float ring=0.;vec2 dsp=vec2(0.);
+ for(int k=0;k<4;k++){vec4 r=P[k];if(r.w>0.){vec2 dv=q-vec2(r.x*asp,r.y);float d=length(dv);float e=exp(-pow((d-r.z*.42)*20.,2.))*exp(-r.z*1.35)*r.w;ring+=e;dsp+=dv/(d+.001)*e*.03;}}
+ vec3 col;
+ if(M<.999){
+  vec2 p=(q+dsp)*4.6;
+  float c=caust(p,T);
+  float dep=smoothstep(.15,.95,vn(q*1.6+2.3)*.7+uv.y*.45);
+  float sr=sin(q.y*46.+q.x*9.+vn(q*4.)*7.)*.5+.5;
+  vec3 sea=mix(cS,cW,.42+.5*dep);sea*=.95+.05*sr;
+  col=sea+cL*c*(.4-.12*dep)+cL*ring*.35;
+  if(M>.001){
+   float y=uv.y;vec3 side=mix(cA,cB,smoothstep(-.1,1.05,y));
+   float sh=pow(vn(vec2(q.x*4.5+y*1.6-T*.05,T*.04)),3.)*(1.-y)*.6;
+   side+=cL*sh*.38+cL*caust(p*.55,T*.6)*.07*(1.-y);
+   col=mix(col,side,smoothstep(0.,1.,M));}
+ }else{
+  float y=uv.y;vec2 p=(q+dsp)*4.6;
+  col=mix(cA,cB,smoothstep(-.1,1.05,y));
+  float sh=pow(vn(vec2(q.x*4.5+y*1.6-T*.05,T*.04)),3.)*(1.-y)*.6;
+  float sh2=pow(vn(vec2(q.x*9.+y*2.4+T*.035,3.+T*.03)),4.)*(1.-y*.8)*.35;
+  col+=cL*(sh*.38+sh2*.3)+cL*caust(p*.55,T*.6)*.07*(1.-y);
+  vec2 bq=q*vec2(11.,11.)+vec2(0.,T*.22+sin(q.y*3.+T*.4)*.0);vec2 bi=floor(bq);vec2 bo=.25+.5*h2(bi);
+  float bd=length(fract(bq)-bo);float on=step(.86,h1(bi+7.1));
+  col+=cL*on*(smoothstep(.06,.035,bd)*.22+smoothstep(.035,.02,bd)*.12)*(1.-y*.5);
+  col+=cL*ring*.45;
+ }
+ float lu=dot(col,vec3(.3,.59,.11));col=mix(col,vec3(lu*1.55+.24,lu*1.12+.12,lu*.5+.02),G*.85);
+ vec2 vg=uv-.5;col*=1.-.16*dot(vg,vg)*1.6;
+ col+=(h1(gl_FragCoord.xy+fract(T*7.))-.5)*(2./255.);
+ gl_FragColor=vec4(col,1.);}`;
+  const sh = (type, src) => { const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s); if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) console.error(gl.getShaderInfoLog(s)); return s; };
+  const pr = gl.createProgram();
+  gl.attachShader(pr, sh(gl.VERTEX_SHADER, vs)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fs)); gl.linkProgram(pr); gl.useProgram(pr);
+  const b = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, b); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+  const al = gl.getAttribLocation(pr, 'a'); gl.enableVertexAttribArray(al); gl.vertexAttribPointer(al, 2, gl.FLOAT, false, 0, 0);
+  const U = {}; ['R', 'T', 'M', 'G', 'cS', 'cW', 'cD', 'cA', 'cB', 'cL', 'P'].forEach((n) => U[n] = gl.getUniformLocation(pr, n));
+  const scale = +Q.get('q') || 0.8;
+  const resize = () => { cv.width = Math.round(innerWidth * scale); cv.height = Math.round(innerHeight * scale); gl.viewport(0, 0, cv.width, cv.height); };
+  resize(); addEventListener('resize', resize);
+  const P = new Float32Array(16);
+  st.ripple = (x, y, s = 1) => { st.rip.push({ x: x / innerWidth, y: y / innerHeight, t0: st.t, s }); if (st.rip.length > 4) st.rip.shift(); };
+  st.draw = (dt) => {
+    st.speed += (st.speedTo - st.speed) * Math.min(1, dt * 2.2);
+    st.t += dt * st.speed * 0.55;
+    st.gold += (st.goldTo - st.gold) * Math.min(1, dt * 2.6);
+    if (st.modeT < 1) { st.modeT = Math.min(1, st.modeT + dt / 1.05); st.mode = st.modeFrom + (st.modeTo - st.modeFrom) * ease(st.modeT); }
+    if (colT < 1) { colT = Math.min(1, colT + dt / 0.7); const k = ease(colT); for (const n in colNow) colNow[n] = colFrom[n].map((v, i) => v + (colTo[n][i] - v) * k); }
+    P.fill(0); st.rip = st.rip.filter((r) => (st.t - r.t0) / 0.55 < 3.2 || RM);
+    st.rip.forEach((r, i) => { P.set([r.x, r.y, (st.t - r.t0) / 0.55 * (st.speed < .5 ? 1 : 1), r.s], i * 4); });
+    gl.uniform2f(U.R, cv.width, cv.height); gl.uniform1f(U.T, st.t); gl.uniform1f(U.M, st.mode); gl.uniform1f(U.G, st.gold);
+    gl.uniform3fv(U.cS, colNow.sand); gl.uniform3fv(U.cW, colNow.shallow); gl.uniform3fv(U.cD, colNow.deep);
+    gl.uniform3fv(U.cA, colNow.wtop); gl.uniform3fv(U.cB, colNow.wbot); gl.uniform3fv(U.cL, colNow.light); gl.uniform4fv(U.P, P);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+  };
+  st.dive = (to) => { st.modeFrom = st.mode; st.modeTo = to; st.modeT = 0; };
+  return st;
+})();
+
+/* ---------- liquid surfaces (a small spring height field per vessel) ---------- */
+class Surf {
+  constructor(n) { this.n = n; this.h = new Float32Array(n); this.v = new Float32Array(n); }
+  kick(x01, amt) { const i = Math.round(clamp(x01, 0, 1) * (this.n - 1)); for (let j = -2; j <= 2; j++) { const k = i + j; if (k >= 0 && k < this.n) this.v[k] += amt * (1 - Math.abs(j) * 0.35); } }
+  slosh(amt) { for (let i = 0; i < this.n; i++) this.v[i] += amt * (i / (this.n - 1) - 0.5) * 2; }
+  step(dt) {
+    const { h, v, n } = this; let e = 0;
+    for (let s = 0; s < 2; s++) {
+      const d = dt / 2;
+      for (let i = 0; i < n; i++) { v[i] += (-90 * h[i] - 5.5 * v[i]) * d; }
+      for (let i = 0; i < n; i++) { const l = h[i - 1] ?? h[i], r = h[i + 1] ?? h[i]; v[i] += (l + r - 2 * h[i]) * 900 * d; }
+      for (let i = 0; i < n; i++) { h[i] += v[i] * d; }
+    }
+    for (let i = 0; i < n; i++) e += Math.abs(h[i]) + Math.abs(v[i]) * 0.05;
+    return e > 0.02;
+  }
+  at(x01) { const f = clamp(x01, 0, 1) * (this.n - 1), i = Math.floor(f), t = f - i; return this.h[i] * (1 - t) + (this.h[Math.min(this.n - 1, i + 1)] || 0) * t; }
+}
+let tilt = 0, tiltTo = 0;
+addEventListener('deviceorientation', (e) => { if (e.gamma == null) return; tiltTo = clamp(-e.gamma * Math.PI / 180, -0.4, 0.4); });
+
+function setupCanvas(cv) {
+  const r = cv.getBoundingClientRect();
+  cv.width = Math.max(1, Math.round(r.width * DPR)); cv.height = Math.max(1, Math.round(r.height * DPR));
+  const ctx = cv.getContext('2d', { willReadFrequently: Q.has('gpu2d') ? false : true }); ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  return { ctx, w: r.width, h: r.height };
+}
+function rr(ctx, x, y, w, h, r) { ctx.beginPath(); ctx.roundRect(x, y, w, h, r); }
+/* Draws glass with liquid inside. path() traces the vessel; top/bot are the inner liquid bounds. */
+function vessel(ctx, path, box, level, surf, cols, opt = {}) {
+  const { x, y, w, h } = box;
+  ctx.save();
+  path(); ctx.fillStyle = opt.glass || 'rgba(255,255,255,.10)'; ctx.fill();
+  if (level > 0.002) {
+    path(); ctx.clip();
+    const sy = y + h * (1 - level), cx = x + w / 2, slope = Math.tan(tilt);
+    ctx.beginPath(); ctx.moveTo(x - 2, y + h + 2);
+    const N = 18;
+    for (let i = 0; i <= N; i++) { const f = i / N, px = x + w * f; ctx.lineTo(px, sy + surf.at(f) + slope * (px - cx)); }
+    ctx.lineTo(x + w + 2, y + h + 2); ctx.closePath();
+    const g = ctx.createLinearGradient(0, sy - 4, 0, y + h); g.addColorStop(0, cols[0]); g.addColorStop(1, cols[1]);
+    ctx.fillStyle = g; ctx.globalAlpha = 0.94; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.beginPath();
+    for (let i = 0; i <= N; i++) { const f = i / N, px = x + w * f, py = sy + surf.at(f) + slope * (px - cx); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); }
+    ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.translate(0, 3); ctx.strokeStyle = 'rgba(255,255,255,.22)'; ctx.lineWidth = 4; ctx.stroke(); ctx.translate(0, -3);
+    ctx.restore(); ctx.save();
+  }
+  path(); ctx.strokeStyle = opt.rim || 'rgba(255,255,255,.62)'; ctx.lineWidth = opt.rimW || 1.3; ctx.stroke();
+  const hl = ctx.createLinearGradient(0, y, 0, y + h); hl.addColorStop(0, 'rgba(255,255,255,0)'); hl.addColorStop(.25, 'rgba(255,255,255,.55)'); hl.addColorStop(.8, 'rgba(255,255,255,.12)'); hl.addColorStop(1, 'rgba(255,255,255,0)');
+  ctx.fillStyle = hl; rr(ctx, x + Math.min(6, w * .14), y + h * .1, 2.5, h * .7, 2); ctx.fill();
+  ctx.restore();
+}
+
+/* ---------- frame loop ---------- */
+const actors = new Set();
+let lastT = performance.now(), seaOn = true;
+function frame(t) {
+  const dt = Math.min(0.05, (t - lastT) / 1000); lastT = t;
+  if (Math.abs(tiltTo - tilt) > 0.002) { const d = (tiltTo - tilt) * Math.min(1, dt * 7); tilt += d; [glass, rack, clep].forEach((a) => { if (a === clep && W.phase !== 'rest' && W.phase !== 'pr') return; if (Math.abs(d) > 0.004) a.slosh(d * 40); actors.add(a); }); }
+  if (seaOn && (!RM || sea.modeT < 1 || colT < 1)) sea.draw(dt);
+  for (const a of actors) if (!a.step(dt)) actors.delete(a);
+  requestAnimationFrame(frame);
+}
+const wake = (a) => actors.add(a);
+document.addEventListener('visibilitychange', () => { seaOn = !document.hidden; lastT = performance.now(); });
+
+/* ---------- rolling digits (NumberFlow-style: each digit is a column that rolls) ---------- */
+function roller(el) {
+  el.classList.add('roll');
+  let shape = '';
+  return (str, instant) => {
+    const sh = str.replace(/\d/g, '0');
+    if (sh !== shape) {
+      const old = [...el.querySelectorAll('.c')].map((c) => +c.dataset.d);
+      el.textContent = ''; shape = sh; let di = 0;
+      for (const ch of str) {
+        if (/\d/.test(ch)) {
+          const s = document.createElement('span'); s.className = 's';
+          const c = document.createElement('span'); c.className = 'c';
+          for (let k = 0; k <= 9; k++) { const d = document.createElement('span'); d.textContent = k; c.appendChild(d); }
+          const start = old[di] ?? 0; c.dataset.d = start; c.style.transition = 'none'; c.style.transform = `translateY(${-start}em)`;
+          s.appendChild(c); el.appendChild(s); di++;
+        } else { const p = document.createElement('span'); p.className = 'p'; p.textContent = ch; el.appendChild(p); }
+      }
+      el.offsetWidth;
+    }
+    let i = 0; const cs = el.querySelectorAll('.c');
+    for (const ch of str) if (/\d/.test(ch)) { const c = cs[i++]; c.style.transition = instant ? 'none' : ''; c.dataset.d = ch; c.style.transform = `translateY(${-ch}em)`; }
+  };
+}
+
+/* ---------- workout data ---------- */
+const e1rm = (kg, r) => kg * (1 + r / 30);
+const W = {
+  ex: [
+    { key: 'bench', sets: 4, kg: 80, reps: 8, step: 2.5, last: [80, 8], best: [82.5, 7], done: [] },
+    { key: 'incline', sets: 3, kg: 30, reps: 10, step: 2, last: [30, 10], best: [32, 9], done: [] },
+  ],
+  i: 0, phase: 'off', started: 0, restEnd: 0, restTotal: REST, finished: false, coachUsed: false, coachSeen: false,
+};
+W.ex.forEach((e) => e.bestE = e1rm(...e.best));
+const ex = () => W.ex[W.i];
+const totalSets = () => W.ex.reduce((a, e) => a + e.sets, 0);
+const doneSets = () => W.ex.reduce((a, e) => a + e.done.length, 0);
+const volume = () => W.ex.reduce((a, e) => a + e.done.reduce((b, s) => b + s.kg * s.reps, 0), 0);
+const prCount = () => W.ex.reduce((a, e) => a + e.done.filter((s) => s.pr).length, 0);
+
+/* ---------- Today ---------- */
+const dateFmt = new Date(2026, 10, 15).toLocaleDateString(LANG === 'da' ? 'da-DK' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+$('tDate').textContent = dateFmt.charAt(0).toUpperCase() + dateFmt.slice(1);
+$('tEyebrow').textContent = S.eyebrow; $('tSession').textContent = S.push; $('tPlan').innerHTML = S.plan;
+$('tCoachTxt').textContent = S.coachToday; $('waterLbl').textContent = S.water; $('sleepLbl').textContent = S.sleep; $('protLbl').textContent = S.protein;
+$('water').setAttribute('aria-label', S.addWater);
+roller($('protNum'))('96');
+$('week').innerHTML = S.days.map((d, i) => `<div class="${[0, 2, 4].includes(i) ? 'done' : ''}${i === 6 ? ' now' : ''}"><i></i>${d}</div>`).join('');
+const themesEl = $('themes');
+THEMES.forEach((t, i) => {
+  const b = document.createElement('button'); b.setAttribute('role', 'radio'); b.setAttribute('aria-label', S.themes[i]);
+  b.innerHTML = `<i style="--c:${t.drop}"></i>`; b.onclick = () => setTheme(t); themesEl.appendChild(b);
+});
+function setTheme(t) {
+  theme = t; colFrom = JSON.parse(JSON.stringify(colNow)); colTo = colorsOf(t); colT = 0;
+  for (const [k, v] of Object.entries(t.css)) document.body.style.setProperty(k, v);
+  document.body.style.background = t.bg;
+  document.querySelector('meta[name=theme-color]').content = t.bg;
+  [...themesEl.children].forEach((b, i) => b.setAttribute('aria-checked', THEMES[i] === t));
+  glass.draw(); rack.draw(); clep.draw();
+  if (RM) sea.draw(0);
+}
+let waterL = 1.25;
+const waterRoll = roller($('waterNum'));
+waterRoll(fmt(waterL, 2));
+const glass = (() => {
+  const o = { surf: new Surf(10), shown: waterL / 2.5, pour: 0 };
+  let c;
+  const path = () => { const { ctx } = c; ctx.beginPath(); ctx.moveTo(4, 4); ctx.lineTo(42, 4); ctx.lineTo(37.5, 60); ctx.quadraticCurveTo(37, 62, 35, 62); ctx.lineTo(11, 62); ctx.quadraticCurveTo(9, 62, 8.5, 60); ctx.closePath(); };
+  o.draw = () => {
+    if (!c) c = setupCanvas($('glass'));
+    const { ctx } = c; ctx.clearRect(0, 0, 46, 64);
+    if (o.pour > 0) { ctx.fillStyle = theme.liq[0]; ctx.globalAlpha = .9; rr(ctx, 21.5, 0, 3, 62 - 58 * o.shown, 1.5); ctx.fill(); ctx.globalAlpha = 1; }
+    vessel(ctx, path, { x: 4, y: 4, w: 38, h: 58 }, o.shown * 0.92, o.surf, theme.liq, { glass: 'rgba(255,255,255,.28)', rim: 'rgba(255,255,255,.95)', rimW: 1.4 });
+  };
+  o.step = (dt) => {
+    const target = waterL / 2.5; let busy = o.surf.step(dt);
+    if (o.pour > 0) { o.pour -= dt; o.surf.kick(0.5, 14 * dt * 8); busy = true; }
+    if (Math.abs(target - o.shown) > 0.001) { o.shown += (target - o.shown) * Math.min(1, dt * 5); busy = true; } else o.shown = target;
+    o.draw(); return busy || o.pour > 0;
+  };
+  o.slosh = (a) => { o.surf.slosh(a); wake(o); };
+  return o;
+})();
+$('water').onclick = () => {
+  if (waterL >= 2.5) return;
+  const prev = waterL; waterL = Math.min(2.5, waterL + 0.25); waterRoll(fmt(waterL, 2));
+  glass.pour = 0.35; wake(glass); haptic(8);
+  const r = $('glass').getBoundingClientRect(); sea.ripple(r.left + r.width / 2, r.top + r.height * .7, .7);
+  toast(S.water250, () => { waterL = prev; waterRoll(fmt(waterL, 2)); wake(glass); }, true);
+};
+
+/* ---------- workout views ---------- */
+const kgBig = roller($('kgBig')), repsBig = roller($('repsBig')), kgS = roller($('kgS')), repsS = roller($('repsS'));
+const cd = roller($('cd'));
+$('back').textContent = S.back; $('finish').textContent = S.finish; $('logTxt').textContent = S.log; $('skipTxt').textContent = S.skip;
+$('repsU').textContent = S.reps; $('restLbl').textContent = S.rest; $('wCoachTxt').textContent = S.coachW;
+function renderSet() {
+  const e = ex(); kgBig(fmt(e.kg)); kgS(fmt(e.kg)); repsBig(String(e.reps)); repsS(String(e.reps));
+  const n = Math.min(e.done.length + 1, e.sets);
+  $('exMeta').innerHTML = e.done.length >= e.sets ? `${S.allDone} · ${S.best} <b>${fmt(e.best[0])} × ${e.best[1]}</b>`
+    : `${S.setOf(n, e.sets)} · ${S.last} <b>${fmt(e.last[0])} × ${e.last[1]}</b> · ${S.best} <b>${fmt(e.best[0])} × ${e.best[1]}</b>`;
+  $('wCoach').classList.toggle('hide', !(W.i === 0 && e.done.length === 0 && !W.coachUsed && e.kg < 82.5));
+}
+function renderEx(animate) {
+  const h = $('exName');
+  const put = () => { h.textContent = S[ex().key]; renderSet(); rack.build(); };
+  if (!animate) return put();
+  h.classList.add('swap'); setTimeout(() => { put(); requestAnimationFrame(() => h.classList.remove('swap')); }, 260);
+}
+document.querySelectorAll('.step button').forEach((b) => b.addEventListener('click', () => {
+  const e = ex(); if (W.phase !== 'lift') return;
+  if (b.dataset.k === 'kg') e.kg = clamp(Math.round((e.kg + e.step * +b.dataset.d) * 10) / 10, 0, 400);
+  else e.reps = clamp(e.reps + +b.dataset.d, 1, 50);
+  haptic(4); renderSet(); rack.preview();
+}));
+
+/* The set rack: one glass tube per set. Logged sets are full of water (gold for a new best). */
+const rack = (() => {
+  const o = { tubes: [] }; let c;
+  const geo = (i, n) => { const tw = 46, th = 112, gap = Math.min(30, (c.w - n * tw) / (n + 1)); const x0 = (c.w - (n * tw + (n - 1) * gap)) / 2; return { x: x0 + i * (tw + gap), y: 10, w: tw, h: th }; };
+  o.build = () => {
+    c = setupCanvas($('rack'));
+    const e = ex();
+    o.tubes = Array.from({ length: e.sets }, (_, i) => { const s = e.done[i]; return { surf: new Surf(8), lv: s ? lvl(s) : 0, to: s ? lvl(s) : 0, gold: s && s.pr, rise: 0 }; });
+    o.tubes.forEach((t, i) => t.rise = -i * 0.07);
+    wake(o);
+  };
+  const lvl = (s) => clamp(s.reps / ex().reps0, 0.25, 1) * 0.84;
+  o.tubePoint = (i) => { const r = $('rack').getBoundingClientRect(); const g = geo(i, o.tubes.length); return { x: r.left + g.x + g.w / 2, y: r.top + g.y + g.h * (1 - (o.tubes[i]?.to || .8)) }; };
+  o.fill = (i, s) => { const t = o.tubes[i]; if (!t) return; t.to = lvl(s); t.gold = s.pr; t.surf.kick(.5, 60); wake(o); };
+  o.drain = (i) => { const t = o.tubes[i]; if (!t) return; t.to = 0; t.surf.slosh(14); wake(o); };
+  o.preview = () => wake(o);
+  o.slosh = (a) => { o.tubes.forEach((t) => t.surf.slosh(a)); wake(o); };
+  o.draw = () => {
+    if (!c) return; const { ctx, w, h } = c; ctx.clearRect(0, 0, w, h);
+    const e = ex(), n = o.tubes.length, cur = e.done.length;
+    ctx.font = `560 13px ${getComputedStyle(document.body).fontFamily}`; ctx.textAlign = 'center';
+    o.tubes.forEach((t, i) => {
+      const g = geo(i, n), k = ease(clamp(t.rise, 0, 1));
+      ctx.save(); ctx.globalAlpha = k; ctx.translate(0, (1 - k) * 18);
+      const path = () => rr(ctx, g.x, g.y, g.w, g.h, 23);
+      if (i === cur && W.phase === 'lift') {
+        ctx.save(); ctx.setLineDash([2, 5]); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.2;
+        const gy = g.y + g.h * (1 - clamp(e.reps / e.reps0, .25, 1) * .84); ctx.beginPath(); ctx.moveTo(g.x + 7, gy); ctx.lineTo(g.x + g.w - 7, gy); ctx.stroke(); ctx.restore();
+      }
+      vessel(ctx, path, g, t.lv, t.surf, t.gold ? ['#ffe7a3', '#d79a22'] : theme.liq,
+        { glass: i === cur && W.phase === 'lift' ? 'rgba(255,255,255,.2)' : 'rgba(255,255,255,.08)', rim: i === cur && W.phase === 'lift' ? 'rgba(255,255,255,.95)' : 'rgba(255,255,255,.45)', rimW: i === cur ? 1.8 : 1.2 });
+      const s = e.done[i];
+      ctx.fillStyle = s ? 'rgba(255,255,255,.92)' : i === cur ? 'rgba(255,255,255,.9)' : 'rgba(255,255,255,.45)';
+      ctx.fillText(s ? `${fmt(s.kg)}×${s.reps}` : i === cur ? `${fmt(e.kg)}×${e.reps}` : String(i + 1), g.x + g.w / 2, g.y + g.h + 24);
+      if (s && s.pr) { ctx.fillStyle = '#ffe08a'; ctx.fillText('★', g.x + g.w / 2, g.y + g.h + 42); }
+      ctx.restore();
+    });
+  };
+  o.step = (dt) => {
+    let busy = false;
+    o.tubes.forEach((t) => {
+      if (t.rise < 1) { t.rise = Math.min(1, t.rise + dt / 0.5); busy = true; }
+      if (t.surf.step(dt)) busy = true;
+      if (Math.abs(t.to - t.lv) > 0.002) { t.lv += (t.to - t.lv) * Math.min(1, dt * 6); busy = true; } else t.lv = t.to;
+    });
+    o.draw(); return busy;
+  };
+  return o;
+})();
+W.ex.forEach((e) => e.reps0 = e.reps);
+
+/* The water clock: the top chamber holds the rest, it drips into the bottom one, a bead swells at the neck. */
+const clep = (() => {
+  const o = { top: new Surf(12), bot: new Surf(12), shown: 0, drops: [], bead: 0, last: false, active: false };
+  let c, G;
+  o.layout = () => {
+    c = setupCanvas($('clep')); const w = c.w, h = c.h;
+    const cw = Math.min(124, w - 30), x = (w - cw) / 2, ch = (h - 60) / 2;
+    G = { top: { x, y: 20, w: cw, h: ch }, neckY: 20 + ch, neckH: 22, bot: { x, y: 20 + ch + 22, w: cw, h: ch + 10 } };
+  };
+  const rem = () => W.phase === 'rest' || W.phase === 'pr' ? clamp((W.restEnd - performance.now()) / (W.restTotal * 1000), 0, 1) : 0;
+  o.draw = () => {
+    if (!c) return; const { ctx, w, h } = c; ctx.clearRect(0, 0, w, h);
+    const T = G.top, B = G.bot, cx = w / 2;
+    const pouring = o.target > o.shown + 0.01;
+    if (pouring) { ctx.fillStyle = theme.liq[0]; ctx.globalAlpha = .9; rr(ctx, cx - 2, 0, 4, T.y + T.h * (1 - o.shown) + 4, 2); ctx.fill(); ctx.globalAlpha = 1; }
+    vessel(ctx, () => { ctx.beginPath(); ctx.roundRect(T.x, T.y, T.w, T.h, [40, 40, 22, 22]); }, T, o.shown * 0.9, o.top, theme.liq, {});
+    ctx.save(); ctx.strokeStyle = 'rgba(255,255,255,.55)'; ctx.lineWidth = 1.3; ctx.beginPath(); ctx.moveTo(cx - 5, G.neckY); ctx.lineTo(cx - 5, G.neckY + G.neckH); ctx.moveTo(cx + 5, G.neckY); ctx.lineTo(cx + 5, G.neckY + G.neckH); ctx.stroke(); ctx.restore();
+    const bl = (1 - o.shown) * (W.phase === 'rest' || W.phase === 'pr' ? 1 : 0);
+    vessel(ctx, () => { ctx.beginPath(); ctx.roundRect(B.x, B.y, B.w, B.h, [22, 22, 40, 40]); }, B, bl * 0.86, o.bot, theme.liq, {});
+    if (o.shown > 0.003 && o.bead > 0) {
+      const r = 1.5 + o.bead * 3.6, by = G.neckY + G.neckH + r * .8;
+      const g = ctx.createRadialGradient(cx - r * .3, by - r * .3, 0, cx, by, r); g.addColorStop(0, '#fff'); g.addColorStop(.35, theme.liq[0]); g.addColorStop(1, theme.liq[1]);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(cx, by, r * .9, r * 1.08, 0, 0, Math.PI * 2); ctx.fill();
+    }
+    o.drops.forEach((d) => {
+      const g = ctx.createRadialGradient(cx - 1, d.y - 1, 0, cx, d.y, 4); g.addColorStop(0, '#fff'); g.addColorStop(.4, theme.liq[0]); g.addColorStop(1, theme.liq[1]);
+      ctx.fillStyle = g; ctx.beginPath(); ctx.ellipse(cx, d.y, 3, 3 + Math.min(4, d.v / 160), 0, 0, Math.PI * 2); ctx.fill();
+    });
+  };
+  o.step = (dt) => {
+    if (!c) o.layout();
+    const r = rem(); o.target = r;
+    const diff = o.target - o.shown;
+    const fast = diff < -0.02;
+    if (Math.abs(diff) > 0.001) o.shown += diff * Math.min(1, dt * (diff > 0 ? 3.2 : 5)); else o.shown = o.target;
+    if (diff > 0.01) o.top.kick(.5, 30 * dt * 6);
+    if (o.shown > 0.003 && (W.phase === 'rest' || W.phase === 'pr')) {
+      o.bead += dt / (fast ? 0.09 : 0.75);
+      if (o.bead >= 1) { o.bead = 0; o.drops.push({ y: G.neckY + G.neckH + 6, v: 90 }); o.top.kick(.5, -10); }
+    }
+    const surfY = G.bot.y + G.bot.h * (1 - (1 - o.shown) * 0.86);
+    o.drops = o.drops.filter((d) => { d.v += 1500 * dt; d.y += d.v * dt; if (d.y >= surfY) { o.bot.kick(.5, -Math.min(70, d.v * .12)); return false; } return true; });
+    o.top.step(dt); o.bot.step(dt);
+    o.draw();
+    return o.active || o.drops.length > 0 || Math.abs(o.target - o.shown) > 0.001;
+  };
+  o.slosh = (a) => { o.top.slosh(a); o.bot.slosh(a); };
+  o.start = () => { o.layout(); o.shown = 0; o.bead = 0; o.drops = []; o.active = true; wake(o); };
+  o.stop = () => { o.active = false; };
+  return o;
+})();
+
+/* ---------- drops that fly (the logged set pours into its tube) ---------- */
+const fx = (() => {
+  const cv = $('fx'); let ctx, w, h, drops = [];
+  const size = () => { cv.width = innerWidth * DPR; cv.height = innerHeight * DPR; ctx = cv.getContext('2d'); ctx.setTransform(DPR, 0, 0, DPR, 0, 0); w = innerWidth; h = innerHeight; };
+  size(); addEventListener('resize', size);
+  const o = {};
+  o.launch = (from, to, cols, done) => {
+    const T = 0.46, g = 2400;
+    drops.push({ x: from.x, y: from.y, vx: (to.x - from.x) / T, vy: (to.y - from.y - 0.5 * g * T * T) / T, g, t: 0, T, cols, done, r: 11 });
+    wake(o);
+  };
+  o.step = (dt) => {
+    ctx.clearRect(0, 0, w, h);
+    drops = drops.filter((d) => {
+      d.t += dt; if (d.t >= d.T) { d.done(); return false; }
+      d.vy += d.g * dt; d.x += d.vx * dt; d.y += d.vy * dt;
+      const sp = Math.hypot(d.vx, d.vy), a = Math.atan2(d.vy, d.vx), st = 1 + Math.min(.6, sp / 3000);
+      const r = d.r * (1 - d.t / d.T * 0.35);
+      ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(a); ctx.scale(st, 1 / st);
+      const gr = ctx.createRadialGradient(-r * .2, -r * .35, 0, 0, 0, r); gr.addColorStop(0, '#fff'); gr.addColorStop(.3, d.cols[0]); gr.addColorStop(1, d.cols[1]);
+      ctx.fillStyle = gr; ctx.beginPath(); ctx.arc(0, 0, r, 0, Math.PI * 2); ctx.fill(); ctx.restore();
+      return true;
+    });
+    return drops.length > 0;
+  };
+  return o;
+})();
+
+/* ---------- toast with Undo ---------- */
+let toastTimer, undoFn;
+function toast(text, undo, onToday) {
+  const t = $('toast'); $('toastTxt').textContent = text; t.classList.toggle('today', !!onToday);
+  const u = $('undo'); u.textContent = S.undo; u.hidden = !undo; undoFn = undo; u.disabled = true;
+  setTimeout(() => u.disabled = false, 420);
+  t.classList.add('on'); clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.remove('on'), 4200);
+}
+$('undo').onclick = () => { const f = undoFn; undoFn = null; $('toast').classList.remove('on'); f && f(); };
+
+/* ---------- moving between Today and the workout ---------- */
+function show(id) {
+  const to = $(id), from = id === 'work' ? $('today') : $('work');
+  from.classList.remove('on'); from.classList.add('up'); to.classList.remove('up'); to.classList.add('on');
+}
+function goWork(fromEl) {
+  const r = fromEl.getBoundingClientRect(); sea.ripple(r.left + r.width / 2, r.top + r.height / 2, 1); haptic(10);
+  if (W.phase === 'off') { W.phase = 'lift'; W.started = performance.now(); renderEx(false); }
+  sea.dive(1); setTimeout(() => show('work'), 120);
+  setTimeout(() => { rack.build(); if (W.phase === 'rest') clep.start(); }, 260);
+}
+function goToday() { sea.dive(0); show('today'); haptic(6); renderToday(); }
+function renderToday() {
+  const live = W.phase !== 'off' && !W.finished;
+  $('startTxt').innerHTML = W.finished ? S.seeDone : live ? `${S.resume} <span class="live">· ${W.phase === 'rest' ? mmss(Math.max(0, (W.restEnd - performance.now()) / 1000)) : S.setOf(Math.min(ex().done.length + 1, ex().sets), ex().sets)}</span>` : S.start;
+  $('tEyebrow').textContent = W.finished ? S.doneEyebrow : S.eyebrow;
+}
+$('start').onclick = () => { if (W.finished) return openSummary(); goWork($('start')); };
+$('back').onclick = goToday;
+
+/* ---------- log, rest, new best ---------- */
+let busy = false;
+$('log').onclick = () => {
+  if (W.phase !== 'lift' || busy) return;
+  const e = ex(); if (e.done.length >= e.sets) return;
+  busy = true;
+  const set = { kg: e.kg, reps: e.reps, prevBest: e.bestE, prevBestPair: e.best };
+  set.pr = e1rm(e.kg, e.reps) > e.bestE + 0.01;
+  if (set.pr) { e.bestE = e1rm(e.kg, e.reps); e.best = [e.kg, e.reps]; }
+  const idx = e.done.length; e.done.push(set);
+  $('log').classList.remove('pour'); $('log').offsetWidth; $('log').classList.add('pour'); haptic(12);
+  $('wCoach').classList.add('hide');
+  const lr = $('log').getBoundingClientRect();
+  const to = rack.tubePoint(idx); to.y = $('rack').getBoundingClientRect().top + 10 + 112 * 0.16 + 6;
+  fx.launch({ x: lr.left + lr.width / 2, y: lr.top + lr.height / 2 }, to, set.pr ? ['#ffe7a3', '#d79a22'] : theme.liq, () => {
+    rack.fill(idx, set); sea.ripple(to.x, to.y + 60, .55); haptic(set.pr ? [14, 50, 22] : 9);
+    renderSet();
+    setTimeout(() => { busy = false; if (W.phase !== 'lift' || e.done[idx] !== set) return; set.pr ? showPR(set, idx) : startRest(); }, 380);
+  });
+  toast(S.logged(idx + 1), () => undoSet(e, set, idx));
+};
+function undoSet(e, set, idx) {
+  if (e.done[idx] !== set) return;
+  e.done.splice(idx, 1);
+  if (set.pr) { e.bestE = set.prevBest; e.best = set.prevBestPair; }
+  if (W.phase === 'pr') hidePR(true);
+  if (W.phase === 'rest' || W.phase === 'pr') endRest(true);
+  if (ex() !== e) { W.i = W.ex.indexOf(e); renderEx(false); return; }
+  rack.drain(idx); renderSet();
+}
+function swapView(out, inn) {
+  out.classList.remove('on'); out.classList.add('gone');
+  inn.style.transition = 'none'; inn.classList.remove('gone', 'on'); inn.offsetWidth; inn.style.transition = ''; inn.classList.add('on');
+}
+function startRest() {
+  W.phase = 'rest'; W.restTotal = REST; W.restEnd = performance.now() + REST * 1000;
+  const e = ex(), s = e.done[e.done.length - 1];
+  $('restLbl').textContent = `${S.rest} · ${S.restHint} ${e.done.length} ${S.done}`;
+  nextLine();
+  cd(mmss(REST), true);
+  swapView($('vLift'), $('vRest')); $('cLift').classList.remove('on'); $('cRest').classList.add('on');
+  clep.start(); tickRest(); rack.draw();
+}
+function nextLine() {
+  const e = ex();
+  if (e.done.length < e.sets) $('nextLine').innerHTML = `${S.next} · <b>${fmt(e.kg)} kg × ${e.reps}</b>`;
+  else if (W.ex[W.i + 1]) { const n = W.ex[W.i + 1]; $('nextLine').innerHTML = `${S.nextEx} · <b>${S[n.key]}</b>`; }
+  else $('nextLine').innerHTML = S.finishNow;
+}
+let restTimer;
+function tickRest() {
+  clearTimeout(restTimer);
+  if (W.phase !== 'rest' && W.phase !== 'pr') return;
+  const left = (W.restEnd - performance.now()) / 1000;
+  if (left <= 0) return endRest();
+  cd(mmss(Math.ceil(left)));
+  if (!$('work').classList.contains('on')) renderToday();
+  restTimer = setTimeout(tickRest, (left % 1) * 1000 + 20);
+}
+function endRest(silent) {
+  clearTimeout(restTimer); clep.stop();
+  W.phase = 'lift';
+  swapView($('vRest'), $('vLift')); $('cRest').classList.remove('on'); $('cLift').classList.add('on');
+  if (silent) return;
+  const r = $('clep').getBoundingClientRect(); sea.ripple(r.left + r.width / 2, r.top + r.height * .8, 1); haptic([10, 40, 10]);
+  const e = ex();
+  if (e.done.length >= e.sets && W.ex[W.i + 1]) { W.i++; renderEx(true); }
+  else { renderSet(); rack.draw(); if (e.done.length >= e.sets && !W.ex[W.i + 1]) setTimeout(openHold, 500); }
+  if (!$('work').classList.contains('on')) renderToday();
+}
+$('plus').onclick = () => { W.restEnd += 15000; W.restTotal += 15; haptic(6); tickRest(); wake(clep); };
+$('minus').onclick = () => { W.restEnd = Math.max(performance.now() + 1000, W.restEnd - 15000); haptic(6); tickRest(); };
+$('skip').onclick = () => { W.restEnd = Math.min(W.restEnd, performance.now() + 650); haptic(6); tickRest(); };
+
+function showPR(set, idx) {
+  W.phase = 'pr'; W.restTotal = REST; W.restEnd = performance.now() + REST * 1000 + 2600;
+  const e = ex(), d = e.bestE - set.prevBest;
+  $('pearl').textContent = set.reps; $('prT1').textContent = S.newBest;
+  $('prT2').textContent = `${fmt(set.kg)} × ${set.reps}`; $('prT3').textContent = S.est(fmt(e.bestE), fmt(d));
+  sea.goldTo = 1; sea.speedTo = 0.12; sea.ripple(innerWidth / 2, innerHeight * .36, .9);
+  const pr = $('pr'); pr.classList.remove('off'); $('pearl').classList.remove('gone'); pr.offsetWidth; pr.classList.add('on');
+  $('work').style.opacity = '.0'; $('work').style.transition = 'opacity .45s';
+  prTimer = setTimeout(() => hidePR(false, idx), 2900);
+}
+let prTimer;
+function hidePR(cancel, idx) {
+  clearTimeout(prTimer);
+  const pr = $('pr'); sea.goldTo = 0; sea.speedTo = 1; $('work').style.opacity = '';
+  if (cancel) { pr.classList.remove('on', 'off'); return; }
+  const p = $('pearl').getBoundingClientRect(), t = rack.tubePoint(idx);
+  pr.style.setProperty('--dx', `${t.x - (p.left + p.width / 2)}px`); pr.style.setProperty('--dy', `${t.y + 20 - (p.top + p.height / 2)}px`);
+  pr.classList.remove('on'); pr.classList.add('off');
+  setTimeout(() => { $('pearl').classList.add('gone'); rack.tubes[idx] && rack.tubes[idx].surf.kick(.5, 50); wake(rack); haptic(8); }, 560);
+  setTimeout(() => { pr.classList.remove('off'); if (W.phase === 'pr') { W.phase = 'lift'; startRest(); } }, 800);
+}
+$('pr').addEventListener('click', () => W.phase === 'pr' && hidePR(false, ex().done.length - 1));
+
+/* ---------- pop-ups that morph out of what you tapped ----------
+   The panel is placed around the element you touched, then its clip grows from that element's exact
+   shape to the full card (no fade-in from nowhere). Closing shrinks it back into the same element. */
+const MORPH_IN = RM ? 1 : 540, MORPH_OUT = RM ? 1 : 360;
+const insetOf = (s, p, r) => `inset(${s.top - p.top}px ${p.right - s.right}px ${p.bottom - s.bottom}px ${s.left - p.left}px round ${r}px)`;
+function placeAt(panel, src) {
+  panel.style.top = '0px'; const h = panel.offsetHeight, s = src.getBoundingClientRect();
+  const top = clamp(s.top + s.height / 2 - h / 2, 14, innerHeight - h - 14);
+  panel.style.top = `${top}px`;
+}
+function morphOpen(panel, src, opt = {}) {
+  panel.getAnimations().forEach((x) => x.cancel());
+  panel.classList.add('on');
+  if (!opt.keepTop) placeAt(panel, src);
+  const p = panel.getBoundingClientRect(), s = opt.fromRect || src.getBoundingClientRect();
+  const sr = opt.fromR ?? (parseFloat(getComputedStyle(src).borderRadius) || 20), R = parseFloat(getComputedStyle(panel).borderRadius) || 32;
+  panel._src = src;
+  panel.animate([{ clipPath: insetOf(s, p, Math.min(sr, s.height / 2)), opacity: opt.fromOp ?? .55 }, { clipPath: `inset(0px 0px 0px 0px round ${R}px)`, opacity: 1 }],
+    { duration: MORPH_IN, easing: 'cubic-bezier(.18,1.08,.3,1)' });
+  panel.querySelectorAll('.face:not([hidden]) > *, .tray > *').forEach((el, i) => el.animate(
+    [{ opacity: 0, transform: 'translateY(10px)' }, { opacity: 1, transform: 'none' }],
+    { duration: RM ? 1 : 380, delay: RM ? 0 : 120 + i * 35, easing: 'cubic-bezier(.2,.9,.3,1)', fill: 'backwards' }));
+  if (src && !opt.keepSrc) src.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 140, fill: 'forwards' });
+  $('scrim').classList.add('on'); document.querySelector('.screen.on')?.classList.add('dim');
+}
+function morphClose(panel, done) {
+  if (!panel.classList.contains('on')) return done && done();
+  const src = panel._src, p = panel.getBoundingClientRect();
+  const visible = src && src.offsetParent !== null && src.getBoundingClientRect().width > 0;
+  const s = visible ? src.getBoundingClientRect() : { top: p.bottom - 60, bottom: p.bottom, left: p.left + 40, right: p.right - 40, height: 60 };
+  const sr = visible ? (parseFloat(getComputedStyle(src).borderRadius) || 20) : 30;
+  panel.getAnimations().forEach((x) => x.cancel());
+  const an = panel.animate([{ clipPath: `inset(0px 0px 0px 0px round 32px)`, opacity: 1 }, { clipPath: insetOf(s, p, Math.min(sr, s.height / 2)), opacity: .4 }],
+    { duration: MORPH_OUT, easing: 'cubic-bezier(.5,0,.2,1)', fill: 'forwards' });
+  if (src) setTimeout(() => { src.getAnimations().forEach((x) => x.cancel()); src.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 160 }); }, MORPH_OUT - 120);
+  $('scrim').classList.remove('on'); document.querySelectorAll('.screen.dim').forEach((x) => x.classList.remove('dim'));
+  an.onfinish = () => { panel.classList.remove('on'); an.cancel(); done && done(); };
+}
+/* Grow an open panel in place when its content changes (hold card -> summary). */
+function morphGrow(panel, change) {
+  const before = panel.getBoundingClientRect(); change();
+  const after = panel.getBoundingClientRect();
+  panel.getAnimations().forEach((x) => x.cancel());
+  panel.animate([{ clipPath: insetOf(before, after, 34) }, { clipPath: 'inset(0px 0px 0px 0px round 34px)' }], { duration: RM ? 1 : 620, easing: 'cubic-bezier(.18,1.06,.3,1)' });
+  panel.querySelectorAll('.face:not([hidden]) > *').forEach((el, i) => el.animate([{ opacity: 0, transform: 'translateY(12px)' }, { opacity: 1, transform: 'none' }],
+    { duration: RM ? 1 : 420, delay: RM ? 0 : 140 + i * 45, easing: 'cubic-bezier(.2,.9,.3,1)', fill: 'backwards' }));
+}
+const anyPop = () => $('tray').classList.contains('on') || $('sheet').classList.contains('on');
+function closePops(done) { if ($('tray').classList.contains('on')) morphClose($('tray'), done); else if ($('sheet').classList.contains('on')) morphClose($('sheet'), done); else done && done(); }
+
+/* ---------- the Coach ---------- */
+let trayMode = '';
+function openTray(mode, src) {
+  trayMode = mode;
+  $('trayWho').textContent = S.coach; $('trayTxt').innerHTML = mode === 'today' ? S.trayT : S.trayW;
+  $('trayYes').textContent = mode === 'today' ? S.startWith : S.use; $('trayNo').textContent = S.notNow;
+  morphOpen($('tray'), src); haptic(5);
+}
+$('tCoach').onclick = () => openTray('today', $('tCoach'));
+$('wCoach').onclick = () => openTray('work', $('wCoach'));
+$('trayNo').onclick = () => morphClose($('tray'), () => { if (trayMode === 'work') { W.coachUsed = true; renderSet(); } });
+$('scrim').onclick = () => { if (!W.finished || !$('sheet').classList.contains('on')) closePops(); else $('sDone').click(); };
+$('trayYes').onclick = () => {
+  const e = W.ex[0], prev = e.kg; e.kg = 82.5; W.coachUsed = true;
+  const apply = () => { renderSet(); rack.preview(); toast(S.setTo, () => { e.kg = prev; W.coachUsed = false; renderSet(); rack.preview(); }); };
+  if (trayMode === 'today') { morphClose($('tray')); goWork($('tCoach')); setTimeout(apply, 700); }
+  else { $('wCoach').classList.add('hide'); morphClose($('tray'), apply); }
+};
+
+/* ---------- finish: hold to commit, then the summary ---------- */
+function openHold() {
+  if (anyPop()) return;
+  $('fHold').hidden = false; $('fSum').hidden = true;
+  const mins = Math.max(1, Math.round((performance.now() - W.started) / 60000));
+  $('hTitle').textContent = S.hTitle; $('hSub').textContent = S.hSub(doneSets(), totalSets(), mins);
+  $('holdTxt').innerHTML = S.hold; $('hCancel').textContent = S.keep;
+  morphOpen($('sheet'), $('finish'));
+}
+$('finish').onclick = openHold;
+$('hCancel').onclick = () => morphClose($('sheet'));
+let holdT;
+const hold = $('hold');
+hold.addEventListener('pointerdown', (ev) => { ev.preventDefault(); hold.classList.add('held'); haptic(6); holdT = setTimeout(finishWorkout, 1050); });
+['pointerup', 'pointerleave', 'pointercancel'].forEach((n) => hold.addEventListener(n, () => { if (!W.finished) { clearTimeout(holdT); hold.classList.remove('held'); } }));
+hold.addEventListener('keydown', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && !ev.repeat && !W.finished) { ev.preventDefault(); clearTimeout(holdT); hold.classList.add('held'); holdT = setTimeout(finishWorkout, 1050); } });
+hold.addEventListener('keyup', (ev) => { if ((ev.key === 'Enter' || ev.key === ' ') && !W.finished) { clearTimeout(holdT); hold.classList.remove('held'); } });
+let totalRoll;
+function finishWorkout() {
+  W.finished = true; W.endedAt = performance.now(); clearTimeout(restTimer); clep.stop(); W.phase = 'done'; haptic([12, 40, 20]);
+  const r = hold.getBoundingClientRect(); sea.ripple(r.left + r.width / 2, r.top, 1.2);
+  setTimeout(() => { morphGrow($('sheet'), () => { hold.classList.remove('held'); fillSummary(); }); rollTotal(380); }, 220);
+}
+function fillSummary() {
+  $('fHold').hidden = true; $('fSum').hidden = false;
+  const mins = Math.max(1, Math.round((W.endedAt - W.started) / 60000));
+  $('sTitle').textContent = S.sTitle; $('sSub').textContent = S.sSub(mins, doneSets(), prCount());
+  $('sRows').innerHTML = W.ex.map((e) => `<div class="sumrow"><b>${S[e.key]}</b><span>${e.done.length ? e.done.map((s) => s.pr ? `<span class="star">${fmt(s.kg)}×${s.reps} ★</span>` : `${fmt(s.kg)}×${s.reps}`).join(' · ') : `<i class="skip">${S.skipped}</i>`}</span></div>`).join('');
+  $('sDone').textContent = S.toToday;
+  if (!totalRoll) totalRoll = roller($('sTotal'));
+  totalRoll(fmtInt(volume()).replace(/\d/g, '0'));
+}
+const rollTotal = (ms) => setTimeout(() => totalRoll(fmtInt(volume())), RM ? 0 : ms);
+function openSummary() { fillSummary(); morphOpen($('sheet'), $('start')); rollTotal(320); }
+$('sDone').onclick = () => morphClose($('sheet'), () => { if ($('work').classList.contains('on')) goToday(); });
+
+/* ---------- workout clock ---------- */
+setInterval(() => { if (W.phase !== 'off' && !W.finished && $('work').classList.contains('on')) $('clock').textContent = mmss((performance.now() - W.started) / 1000); }, 1000);
+
+/* ---------- Back button and keyboard ---------- */
+addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (anyPop()) closePops(); else if ($('work').classList.contains('on')) goToday(); } });
+
+/* ---------- start ---------- */
+setTheme(theme);
+renderToday();
+document.fonts && document.fonts.ready.then(() => { glass.draw(); });
+requestAnimationFrame((t) => { lastT = t; glass.draw(); frame(t); });
+if (Q.get('screen') === 'workout') { W.phase = 'lift'; W.started = performance.now(); renderEx(false); sea.mode = sea.modeTo = 1; sea.modeT = 1; show('work'); setTimeout(() => rack.build(), 50); }
+</script>
+</body>
+</html>
