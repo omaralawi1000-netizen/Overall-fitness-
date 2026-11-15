@@ -734,22 +734,25 @@ input[type=range]::-moz-range-thumb { width: 26px; height: 26px; background: var
     drawWork(); drawSummary();
     $('v-work').classList.add('finished');
   }
+  let hanging = [];
   function hang() {
     const before = progress();
     S.hung = true;
-    const after = progress(), canv = $('printCanv');
+    const after = progress(), canv = $('printCanv'), later = (fn, ms) => hanging.push(setTimeout(fn, ms));
     S.hung = false; drawPrint(); S.hung = true;
     paint($('printA'), before);
     go('print');
-    setTimeout(() => {
+    later(() => {
       paint($('printC'), after); paintGain($('printD'), before, after);
       canv.classList.add('gain');
-      setTimeout(() => { canv.classList.add('dev2'); drawPrint(); drawToday(); tick($('printPct')); paint($('heroCanvas'), after); }, 900);
-      setTimeout(() => { canv.classList.remove('gain'); }, 2700);
-      setTimeout(() => { paint($('printA'), after); canv.classList.remove('dev2'); drawPrint(); }, 5000);
+      later(() => { canv.classList.add('dev2'); drawPrint(); drawToday(); tick($('printPct')); paint($('heroCanvas'), after); }, 900);
+      later(() => { canv.classList.remove('gain'); }, 2700);
+      later(() => { paint($('printA'), after); canv.classList.remove('dev2'); drawPrint(); }, 5000);
     }, 420);
   }
   function reset() {
+    hanging.forEach(clearTimeout); hanging = [];
+    $('printCanv').classList.remove('gain', 'dev2');
     endRest(); S = fresh();
     $('v-work').classList.remove('finished');
     drawWork(); drawSummary(); drawToday(); drawPrint(); paintNow();
