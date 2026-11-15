@@ -1,0 +1,701 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aven Lido</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#D6E8FF">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Red+Hat+Display:wght@500..900&family=Onest:wght@400..700&display=swap">
+<style>
+/* Layout: one phone screen. Morning sky on top, pool water below. The water line is the rest timer,
+   the number floats on it, and every workout control sits under water in the bottom third. */
+:root {
+  color-scheme: light;
+  --ink: #06173A; --ink-2: rgba(6,23,58,.76); --ink-3: rgba(6,23,58,.56); --ink-wash: rgba(6,23,58,.09);
+  --sky: #D6E8FF; --aqua: #3ACEF0; --cobalt: #1E6EF5; --deep: #1C3AD2;
+  --lemon: #FFE94F; --lemon-lo: #FFD426; --white: #fff;
+  --page: #E6ECF4;
+  --num: "Red Hat Display", "Avenir Next", "Segoe UI", system-ui, sans-serif;
+  --txt: "Onest", "Segoe UI", system-ui, sans-serif;
+  --gl: max(16px, env(safe-area-inset-left, 0px)); --gr: max(16px, env(safe-area-inset-right, 0px));
+  --out: cubic-bezier(.22,1,.36,1);
+  --snap: cubic-bezier(.2,.9,.3,1); --t-snap: .5s; /* the shared spring for everything but the water; sampled at start */
+  padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+html, body { height: 100%; box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font-family: var(--txt); -webkit-font-smoothing: antialiased; overflow: hidden; }
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; margin: 0; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+button:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+.press { transition: transform .22s var(--out); }
+.press:active { transform: scale(.955); transition-duration: .05s; }
+
+.stage { height: 100%; display: grid; place-items: center; }
+.screen { position: relative; width: 100%; height: 100%; overflow: hidden; isolation: isolate; background: var(--sky);
+  font-variant-numeric: tabular-nums; -webkit-user-select: none; user-select: none; }
+@media (min-width: 521px) { .screen { width: 384px; height: min(832px, calc(100% - 32px)); border-radius: 44px; box-shadow: 0 30px 80px -30px rgba(6,23,58,.45); } }
+.screen * { box-sizing: border-box; }
+.fill { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+
+.view { transition: opacity .28s var(--out), transform var(--t-snap) var(--snap), visibility 0s; }
+.view:not(.on) { opacity: 0; pointer-events: none; visibility: hidden; transition-delay: 0s, 0s, .5s; }
+/* Views that hold glass move as whole frames and never fade: a fading parent would cut the glass off from the water behind it. */
+.tstack:not(.on), .zone:not(.on) { opacity: 1; transform: translateY(105%); }
+
+/* ---------- materials ---------- */
+/* Glass A: plain live blur, a white tint and an edge highlight. The shadow is blue, like light through water. */
+.glass { background: linear-gradient(180deg, rgba(255,255,255,.62), rgba(255,255,255,.36));
+  -webkit-backdrop-filter: blur(22px) saturate(1.6); backdrop-filter: blur(22px) saturate(1.6);
+  border: 1px solid rgba(255,255,255,.72);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.95), inset 0 -10px 18px -12px rgba(255,255,255,.55), 0 16px 34px -14px rgba(6,36,130,.5); }
+/* Tint only (no blur) for small quiet things. */
+.tint { background: rgba(255,255,255,.26); border: 1px solid rgba(255,255,255,.55); box-shadow: inset 0 1px 0 rgba(255,255,255,.75); }
+/* A clear drop of glass. In Chrome its edge really bends what is behind it (see the lens filter). */
+.drop { border-radius: 50%; border: 1px solid rgba(255,255,255,.85);
+  background: linear-gradient(180deg, rgba(255,255,255,.34), rgba(255,255,255,.14));
+  -webkit-backdrop-filter: blur(7px) saturate(1.6); backdrop-filter: blur(7px) saturate(1.6);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.95), inset 0 0 0 3px rgba(255,255,255,.16), 0 10px 18px -10px rgba(6,36,130,.55); }
+.lens .drop { -webkit-backdrop-filter: url(#lens) saturate(1.6); backdrop-filter: url(#lens) saturate(1.6); }
+
+/* ---------- Today, in the air ---------- */
+.thero { position: absolute; inset: 0; z-index: 1; padding: 18px var(--gr) 0 var(--gl); }
+.thero:not(.on) { transform: translateY(-18px); }
+.trow { display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 600; color: var(--ink-2); }
+.tlabel { position: absolute; left: var(--gl); top: calc(var(--surf) - var(--tnum) * .52 - 26px); font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.tnum { position: absolute; left: calc(var(--gl) - 6px); top: calc(var(--surf) - var(--tnum) * .56); font: 900 var(--tnum)/1 var(--num); letter-spacing: -.055em; }
+.tof { position: absolute; right: var(--gr); top: calc(var(--surf) - 54px); text-align: right; font-size: 14px; font-weight: 600; color: var(--ink-2); line-height: 1.3; }
+.tof b { display: block; font: 800 22px/1.1 var(--num); color: var(--ink); letter-spacing: -.02em; }
+
+/* ---------- Workout header, in the air ---------- */
+.whead { position: absolute; left: 0; right: 0; top: 0; z-index: 1; padding: 18px var(--gr) 0 var(--gl); }
+.whead:not(.on) { transform: translateY(-14px); }
+.whead h1 { font: 800 34px/1.02 var(--num); letter-spacing: -.035em; margin: 12px 0 14px; text-wrap: balance; }
+.board { display: grid; column-gap: 6px; font: 600 14px/1 var(--num); letter-spacing: -.01em; }
+.board span { align-self: center; padding-right: 6px; font: 600 13px/1 var(--txt); letter-spacing: 0; color: var(--ink-2); }
+.board i, .board b { font-style: normal; text-align: center; white-space: nowrap; padding: 8px 0; }
+.board .h { font-size: 12px; font-weight: 700; color: var(--ink-2); padding: 7px 0 2px; border-radius: 14px 14px 0 0; }
+.board .l { color: var(--ink-2); }
+.board .t { font-weight: 800; color: var(--ink); min-height: 31px; border-radius: 0 0 14px 14px; }
+.board .cur { background: rgba(255,255,255,.74); }
+.board .h.cur { color: var(--ink); }
+.board .t u { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--lemon-lo); box-shadow: 0 0 0 2px var(--ink); }
+.board .pop { animation: pop var(--t-snap) var(--snap); }
+@keyframes pop { from { transform: scale(1.18); } to { transform: none; } }
+.wlast { margin: 14px 0 0; font-size: 16px; line-height: 1.4; font-weight: 500; color: var(--ink-2); text-wrap: pretty; transition: opacity .3s var(--out); }
+.wlast.off { opacity: 0; }
+
+/* ---------- the water ---------- */
+.liquid { position: absolute; left: -25%; width: 150%; top: 0; height: 112%; z-index: 2; will-change: transform; pointer-events: none; }
+.tilt { position: absolute; inset: 0; transform-origin: 50% 0; transition: transform .18s linear; will-change: transform; }
+.wave { position: absolute; left: 0; display: block; }
+.wave.back { animation: flow 11s linear infinite reverse; }
+.wave.front { animation: flow 7s linear infinite; }
+@keyframes flow { to { transform: translateX(calc(var(--wl) * -1)); } }
+#water { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+.caustics { position: absolute; inset: 0; overflow: hidden;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0, rgba(0,0,0,.25) 60px, #000 150px, rgba(0,0,0,.75) 60%, transparent 96%); mask-image: linear-gradient(180deg, transparent 0, rgba(0,0,0,.25) 60px, #000 150px, rgba(0,0,0,.75) 60%, transparent 96%); }
+.caustics i { position: absolute; inset: -620px; background-repeat: repeat; }
+.caustics i:nth-child(1) { background-size: 440px; opacity: .62; animation: drift1 64s linear infinite; }
+.caustics i:nth-child(2) { background-size: 620px; opacity: .34; animation: drift2 90s linear infinite; }
+@keyframes drift1 { to { transform: translate(-440px, 440px); } }
+@keyframes drift2 { to { transform: translate(620px, 0); } }
+.inner { position: absolute; left: 16.6667%; width: 66.6667%; top: 0; }
+
+/* What sits just under the surface. */
+.under { position: absolute; left: var(--gl); right: var(--gr); transition: opacity .3s var(--out); }
+.under.off { opacity: 0; }
+.under.today { top: calc(var(--tnum) * .33 + 26px); }
+.under.today small { display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 6px; }
+.under.today small::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--ink); }
+.under.today p { margin: 0; font-size: 18px; line-height: 1.28; font-weight: 600; letter-spacing: -.01em; text-wrap: pretty; }
+.under.rest { top: 20px; text-align: center; font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+
+/* While resting: marks the water sinks past, and the next set, large, right above its steppers. */
+.scale, .nextup { position: absolute; z-index: 3; pointer-events: none; transition: opacity .3s var(--out); }
+.scale.off, .nextup.off { opacity: 0; }
+.scale { right: 0; top: 0; }
+.scale i { position: absolute; right: 0; width: 9px; height: 2px; border-radius: 1px; background: var(--ink-3); }
+.scale i.big { width: 16px; background: var(--ink-2); }
+.scale i span { position: absolute; right: 22px; top: -7px; font: 700 13px/16px var(--num); color: var(--ink-2); font-style: normal; }
+.nextup { left: var(--gl); right: var(--gr); top: calc(var(--work) + 24px); text-align: center; }
+.nextup small { display: block; font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.nextup b { display: block; font: 800 36px/1.1 var(--num); letter-spacing: -.035em; margin-top: 4px; }
+.short .nextup { top: calc(var(--work) + 13px); }
+.short .nextup b { font-size: 27px; margin-top: 1px; }
+
+/* The number that floats on the water. */
+.buoy { position: absolute; left: 50%; bottom: 100%; width: 0; height: 0; animation: bob 5.2s ease-in-out infinite alternate; }
+@keyframes bob { from { transform: translateY(-2px) rotate(-.5deg); } to { transform: translateY(3px) rotate(.6deg); } }
+.face { position: absolute; left: 0; bottom: 14px; transform: translateX(-50%); white-space: nowrap; text-align: center;
+  transition: opacity .26s var(--out), transform var(--t-snap) var(--snap); }
+.face.off { opacity: 0; transform: translateX(-50%) translateY(26px) scale(.94); }
+.b-label { font-size: 14px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); margin-bottom: 6px; }
+.b-w { font: 900 128px/.88 var(--num); letter-spacing: -.055em; }
+.b-w small { font: 700 26px/1 var(--num); letter-spacing: -.01em; color: var(--ink-2); margin-left: 6px; }
+.b-r { font: 700 38px/1.05 var(--num); letter-spacing: -.03em; margin-top: 2px; }
+.b-r em { font-style: normal; color: var(--ink-3); margin-right: 8px; }
+.b-r small { font: 700 20px/1 var(--num); color: var(--ink-2); margin-left: 6px; }
+.b-t { font: 900 104px/.9 var(--num); letter-spacing: -.045em; margin-bottom: -10px; }
+.b-w.b-v { font-size: 92px; }
+.ghost { position: absolute; z-index: 6; margin: 0; pointer-events: none; transform-origin: 50% 50%; left: 0; top: 0; }
+
+/* Rolling digits: the same numbers move, they are never swapped. */
+.roll { display: inline-flex; vertical-align: top; }
+.roll .d { display: inline-block; height: 1em; line-height: 1; overflow: hidden; }
+.roll .col { display: block; transition: transform var(--t-snap) var(--snap); }
+.roll .col i { display: block; height: 1em; font-style: normal; }
+.roll .s { display: inline-block; height: 1em; line-height: 1; }
+
+/* ---------- Today cards, under water ---------- */
+.tstack { position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; padding: 0 var(--gr) 16px var(--gl); display: flex; flex-direction: column; gap: 10px; }
+.pane { border-radius: 30px; padding: 18px; }
+.p-label { font-size: 13px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); }
+.p-title { font: 800 32px/1.05 var(--num); letter-spacing: -.035em; margin-top: 6px; }
+.p-sub { font-size: 15px; font-weight: 500; color: var(--ink-2); margin-top: 6px; line-height: 1.35; }
+.session .log { margin-top: 16px; height: 60px; border-radius: 22px; font-size: 19px; }
+.session.finished .log { display: none; }
+.stats { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; padding: 14px 18px 16px; border-radius: 26px; background: linear-gradient(180deg, rgba(255,255,255,.74), rgba(255,255,255,.52)); }
+.stat b { font: 800 22px/1 var(--num); letter-spacing: -.02em; }
+.stat span { font-size: 14px; font-weight: 500; color: var(--ink-2); margin-left: 5px; }
+.stat .p-label { margin-bottom: 6px; }
+.bar { display: block; height: 6px; border-radius: 3px; background: rgba(6,23,58,.13); margin-top: 10px; overflow: hidden; }
+.bar i { display: block; height: 100%; width: calc(var(--v) * 100%); border-radius: 3px; background: var(--ink); }
+.dock { position: relative; height: 62px; border-radius: 31px; padding: 5px; display: grid; grid-template-columns: repeat(4, 1fr); margin-top: 2px; }
+.dock .sel { position: absolute; left: 5px; top: 5px; bottom: 5px; width: calc((100% - 10px) / 4); border-radius: 26px; background: rgba(255,255,255,.82);
+  box-shadow: inset 0 1px 0 #fff, 0 6px 12px -6px rgba(6,36,130,.5); transition: transform var(--t-snap) var(--snap); }
+.dock button { position: relative; display: grid; place-items: center; align-content: center; gap: 3px; font-size: 12px; font-weight: 600; color: rgba(6,23,58,.88); border-radius: 26px; }
+.dock button.on { color: var(--ink); }
+.dock svg { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+.toast { position: absolute; left: 50%; bottom: 90px; transform: translate(-50%, 8px); opacity: 0; transition: opacity .2s var(--out), transform var(--t-snap) var(--snap);
+  background: var(--ink); color: var(--white); font-size: 14px; font-weight: 600; padding: 11px 16px; border-radius: 16px; width: max-content; max-width: calc(100% - 48px); text-align: center; pointer-events: none; }
+.toast.on { opacity: 1; transform: translate(-50%, 0); }
+
+/* The one coloured thing: the main action. */
+.log { display: block; width: 100%; height: 72px; border-radius: 26px; font: 800 22px/1 var(--num); letter-spacing: -.015em; color: var(--ink);
+  border: 1px solid rgba(255,255,255,.6);
+  background: radial-gradient(120% 95% at 50% -10%, #FFF6B8 0, rgba(255,246,184,0) 62%), linear-gradient(180deg, var(--lemon), var(--lemon-lo));
+  box-shadow: inset 0 1.5px 0 rgba(255,255,255,.95), inset 0 -10px 16px -12px rgba(176,140,0,.45), 0 18px 30px -16px rgba(6,30,110,.7); }
+
+/* ---------- Workout: everything you touch is in the bottom third ---------- */
+.zone { position: absolute; left: 0; right: 0; bottom: 0; height: 33.34%; z-index: 3; padding: 0 var(--gr) 14px var(--gl); display: flex; flex-direction: column; justify-content: flex-end; }
+.rows { display: flex; flex-direction: column; gap: 10px; transition: transform var(--t-snap) var(--snap), visibility 0s; }
+.rows.away, .tray.off { transform: translateY(calc(100% + 40px)); pointer-events: none; visibility: hidden; transition-delay: 0s, .5s; }
+.steps { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 4px; }
+.step { display: grid; grid-template-columns: 54px 1fr 54px; align-items: center; }
+.step .drop { width: 54px; height: 54px; font: 700 30px/1 var(--num); display: grid; place-items: center; padding-bottom: 3px; }
+.slabel { text-align: center; font-size: 13px; font-weight: 600; color: var(--ink-2); line-height: 1.15; }
+.slabel b { display: block; font: 800 21px/1.1 var(--num); color: var(--ink); letter-spacing: -.035em; }
+.main { position: relative; height: 72px; }
+.main > * { position: absolute; inset: 0; transition: transform var(--t-snap) var(--snap), visibility 0s; }
+.main > .off { transform: translateX(-112%); pointer-events: none; visibility: hidden; transition-delay: 0s, .5s; }
+.main > .restbar.off { transform: translateX(112%); }
+.restbar { border-radius: 26px; display: grid; grid-template-columns: 1fr 1.5fr 1fr; overflow: hidden; }
+.restbar button { font: 700 17px/1 var(--num); letter-spacing: -.01em; }
+.restbar button:nth-child(2) { font-weight: 800; font-size: 19px; border-left: 1px solid rgba(6,23,58,.12); border-right: 1px solid rgba(6,23,58,.12); }
+.restbar button:active { background: rgba(255,255,255,.4); }
+.quiet { display: flex; gap: 10px; }
+.chip { flex: 1; height: 48px; border-radius: 24px; font-size: 14px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; padding: 0 14px; }
+.chip.undo { flex: 0 0 auto; transition: opacity .2s var(--out); }
+.chip.undo:disabled { opacity: .55; }
+.tray { position: absolute; left: var(--gl); right: var(--gr); bottom: 14px; border-radius: 30px; padding: 12px 0 12px; display: flex; flex-direction: column; gap: 10px;
+  transition: transform var(--t-snap) var(--snap), visibility 0s; }
+.tray-top { display: flex; justify-content: space-between; align-items: center; padding: 0 8px 0 18px; font-size: 14px; font-weight: 700; }
+.tray-top button { width: 48px; height: 48px; border-radius: 50%; font: 600 26px/1 var(--num); display: grid; place-items: center; padding-bottom: 3px; }
+.cards { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x proximity; padding: 0 44px 0 14px; scroll-padding-left: 14px; scrollbar-width: none;
+  -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent); mask-image: linear-gradient(90deg, #000 calc(100% - 56px), transparent); }
+.cards::-webkit-scrollbar { display: none; }
+.card { flex: 0 0 150px; height: 78px; border-radius: 18px; padding: 10px 12px; text-align: left; scroll-snap-align: start; background: rgba(255,255,255,.42); border: 1px solid rgba(255,255,255,.6); display: flex; flex-direction: column; justify-content: space-between; }
+.card b { font: 800 15px/1.1 var(--num); letter-spacing: -.02em; text-wrap: balance; }
+.card span { font-size: 12px; font-weight: 600; color: var(--ink-2); }
+.card.now { background: var(--white); box-shadow: 0 0 0 2px var(--ink); }
+.card.fin { background: var(--ink); color: var(--white); border-color: transparent; }
+.card.fin span { color: rgba(255,255,255,.7); }
+.hold { position: relative; margin: 0 14px; height: 50px; border-radius: 25px; overflow: hidden; background: rgba(255,255,255,.55); border: 1px solid rgba(255,255,255,.7); font-size: 15px; font-weight: 700; flex: none; }
+.hold i { position: absolute; inset: 0; background: rgba(6,23,58,.26); transform: scaleX(0); transform-origin: 0 50%; transition: transform .25s var(--out); }
+.hold.holding i { transform: scaleX(1); transition: transform .8s linear; }
+.hold span { position: relative; }
+
+/* ---------- Finished ---------- */
+.end { position: absolute; inset: 0; z-index: 3; padding: 18px var(--gr) 14px var(--gl); display: flex; flex-direction: column; }
+.end:not(.on) { opacity: 1; }
+.d-head { transition: opacity .28s var(--out); }
+.end:not(.on) .d-head { opacity: 0; }
+.d-foot { margin-top: auto; transition: transform var(--t-snap) var(--snap); }
+.end:not(.on) .d-foot { transform: translateY(calc(100% + 30px)); }
+.d-title { font: 900 76px/.9 var(--num); letter-spacing: -.05em; margin-top: 46px; }
+.d-sub { font-size: 16px; font-weight: 600; color: var(--ink-2); margin-top: 12px; }
+.d-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: left; border-radius: 26px; padding: 16px 18px; }
+.d-stats b { display: block; font: 800 26px/1 var(--num); letter-spacing: -.03em; margin-top: 6px; }
+.d-stats small { font-size: 13px; font-weight: 600; color: var(--ink-2); }
+.end .log { margin-top: 12px; flex: none; }
+
+/* ---------- test overlays ---------- */
+.reach { position: absolute; inset: 0; z-index: 9; pointer-events: none; }
+.reach::before { content: "look, don't touch"; position: absolute; left: 0; right: 0; top: 0; height: 66.66%; background: repeating-linear-gradient(135deg, rgba(6,23,58,.05) 0 10px, transparent 10px 20px); border-bottom: 2px dashed var(--ink);
+  display: grid; place-items: end center; padding-bottom: 6px; font: 700 12px var(--txt); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
+.reach::after { content: "thumb zone"; position: absolute; left: 0; right: 0; top: 66.66%; padding-top: 4px; text-align: center; font: 700 12px var(--txt); letter-spacing: .08em; text-transform: uppercase; color: var(--ink); }
+.fps { position: absolute; left: 8px; top: 8px; z-index: 9; font: 700 12px/1 var(--txt); background: var(--ink); color: #fff; padding: 5px 7px; border-radius: 8px; }
+
+.short .p-first { display: none; }
+.short .pane.session { padding: 14px 16px; }
+.short .p-title { font-size: 27px; }
+.short .session .log { margin-top: 12px; height: 56px; }
+.short .stats { padding: 12px 16px 13px; }
+.short .whead h1 { font-size: 30px; margin: 8px 0 10px; }
+.short .b-w { font-size: 98px; }
+.short .b-t { font-size: 88px; }
+.short .d-title { margin-top: 24px; font-size: 64px; }
+.short .b-w.b-v { font-size: 80px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .wave, .caustics i, .buoy, .board .pop { animation: none; }
+  .view, .face, .rows, .tray, .main > *, .roll .col, .dock .sel, .press, .toast, .d-foot, .tilt { transition-duration: .01s; }
+}
+</style>
+</head>
+<body>
+<div class="stage">
+<main class="screen" id="screen">
+  <canvas id="air" class="fill" aria-hidden="true"></canvas>
+
+  <section class="thero view on" id="thero">
+    <div class="trow"><span id="tDate"></span></div>
+    <div class="tlabel" data-t="readiness"></div>
+    <div class="tnum" aria-label="82">82</div>
+    <div class="tof"><b data-t="ready"></b><span data-t="of100"></span></div>
+  </section>
+
+  <section class="whead view" id="whead">
+    <div class="trow"><span data-t="day"></span><span id="wClock">0:00</span></div>
+    <h1 id="wName"></h1>
+    <div class="board" id="board"></div>
+    <p class="wlast" id="wLast"></p>
+  </section>
+
+  <div class="liquid" id="liquid">
+    <div class="tilt" id="tilt">
+      <svg class="wave back" id="waveB" aria-hidden="true"></svg>
+      <svg class="wave front" id="waveF" aria-hidden="true"></svg>
+      <canvas id="water" aria-hidden="true"></canvas>
+      <div class="caustics" aria-hidden="true"><i></i><i></i></div>
+      <div class="inner">
+        <div class="under today" id="under"></div>
+      </div>
+      <div class="buoy" id="buoy">
+        <div class="face off" id="faceSet">
+          <div class="b-label" id="bLabel"></div>
+          <div class="b-w"><span class="roll" id="bW"></span><small>kg</small></div>
+          <div class="b-r"><em>×</em><span class="roll" id="bR"></span><small data-t="reps"></small></div>
+        </div>
+        <div class="face off" id="faceTimer"><div class="b-t"><span class="roll" id="bT"></span></div></div>
+        <div class="face off" id="faceDone"><div class="b-label" data-t="volume"></div><div class="b-w b-v"><span class="roll" id="bV"></span><small>kg</small></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="scale off" id="scale" aria-hidden="true"></div>
+  <div class="nextup off" id="nextup"><small id="nextLabel"></small><b id="nextNum"></b></div>
+
+  <section class="tstack view on" id="tstack">
+    <article class="pane glass session" id="session">
+      <div class="p-label" data-t="session"></div>
+      <div class="p-title" data-t="day"></div>
+      <div class="p-sub" id="sSub"></div>
+      <div class="p-sub p-first" id="sFirst"></div>
+      <button class="log press" id="start" data-t="start"></button>
+    </article>
+    <article class="pane glass stats">
+      <div class="stat"><div class="p-label" data-t="food"></div><b id="kcalNow"></b><span data-t="kcal"></span><i class="bar"><i style="--v:.48"></i></i></div>
+      <div class="stat"><div class="p-label" data-t="protein"></div><b>62</b><span data-t="prot"></span><i class="bar"><i style="--v:.41"></i></i></div>
+    </article>
+    <div class="toast" id="toast" role="status"></div>
+    <nav class="dock glass" id="dock">
+      <i class="sel" id="sel"></i>
+      <button class="on" data-tab="0"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.8v2.4M12 18.8v2.4M2.8 12h2.4M18.8 12h2.4M5.5 5.5l1.7 1.7M16.8 16.8l1.7 1.7M5.5 18.5l1.7-1.7M16.8 7.2l1.7-1.7"/></svg><span data-t="tToday"></span></button>
+      <button data-tab="1"><svg viewBox="0 0 24 24"><path d="M3 12h18M6.5 7.5v9M17.5 7.5v9M3.5 9.5v5M20.5 9.5v5"/></svg><span data-t="tTrain"></span></button>
+      <button data-tab="2"><svg viewBox="0 0 24 24"><path d="M4 11h16a8 8 0 0 1-16 0ZM9 7.5c0-1.5 1.5-1.5 1.5-3M13.5 7.5c0-1.5 1.5-1.5 1.5-3"/></svg><span data-t="tFood"></span></button>
+      <button data-tab="3"><svg viewBox="0 0 24 24"><path d="M12 20s-7.5-4.6-7.5-10.2A4.3 4.3 0 0 1 12 7.2a4.3 4.3 0 0 1 7.5 2.6C19.500 15.4 12 20 12 20Z"/></svg><span data-t="tHealth"></span></button>
+    </nav>
+  </section>
+
+  <section class="zone view" id="zone">
+    <div class="rows" id="rows">
+      <div class="steps">
+        <div class="step"><button class="drop press" id="wMinus">−</button><span class="slabel"><b id="sW"></b>kg</span><button class="drop press" id="wPlus">+</button></div>
+        <div class="step"><button class="drop press" id="rMinus">−</button><span class="slabel"><b id="sR"></b><span data-t="reps"></span></span><button class="drop press" id="rPlus">+</button></div>
+      </div>
+      <div class="main">
+        <button class="log press" id="log"></button>
+        <div class="restbar glass off" id="restbar">
+          <button id="less" data-t="less"></button><button id="skip" data-t="skip"></button><button id="more" data-t="more"></button>
+        </div>
+      </div>
+      <div class="quiet">
+        <button class="chip tint press undo" id="undo" data-t="undo" disabled></button>
+        <button class="chip tint press" id="openTray"></button>
+      </div>
+    </div>
+    <div class="tray glass off" id="tray">
+      <div class="tray-top"><span id="trayTitle"></span><button class="press" id="closeTray">×</button></div>
+      <div class="cards" id="cards"></div>
+      <button class="hold" id="hold"><i></i><span data-t="hold"></span></button>
+    </div>
+  </section>
+
+  <section class="end view" id="done">
+    <div class="d-head"><div class="trow"><span data-t="day"></span><span id="dDate"></span></div>
+    <div class="d-title" data-t="doneTitle"></div>
+    <div class="d-sub" id="dSub"></div></div>
+    <div class="d-foot"><div class="d-stats glass"><div><small data-t="time"></small><b id="dTime"></b></div><div><small data-t="sets"></small><b id="dSets"></b></div><div><small data-t="exs"></small><b id="dEx"></b></div></div>
+    <button class="log press" id="back" data-t="back"></button></div>
+  </section>
+
+  <div class="reach" id="reach" hidden></div>
+  <div class="fps" id="fps" hidden></div>
+</main>
+</div>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="lens" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+  <feImage id="lensMap" x="0" y="0" width="54" height="54" preserveAspectRatio="none" result="map"/>
+  <feDisplacementMap in="SourceGraphic" in2="map" scale="34" xChannelSelector="R" yChannelSelector="G"/>
+  <feGaussianBlur stdDeviation="0.6"/>
+</filter></svg>
+
+<script>
+(() => {
+const $ = (id) => document.getElementById(id);
+const flags = (location.search + location.hash).toLowerCase();
+const flag = (name) => new RegExp('[?#&]' + name + '\\b').test(flags);
+const lang = flag('da') || /lang=da/.test(flags) ? 'da' : 'en';
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const REST = +(flags.match(/rest=(\d+)/) || [])[1] || (flag('fast') ? 8 : 90);
+document.documentElement.lang = lang;
+
+/* ---------- words (English and Danish) ---------- */
+const T = {
+  en: { readiness: 'Readiness', ready: 'Ready', of100: 'of 100', day: 'Push day', session: "Today's session", start: 'Start workout',
+    sub: '6 exercises, about 55 min', first: 'Starts with bench press, 85 kg × 8', food: 'Food', protein: 'Protein', kcal: 'of 2,600 kcal', prot: 'of 150 g',
+    tToday: 'Today', tTrain: 'Train', tFood: 'Food', tHealth: 'Health', notBuilt: (n) => `${n} is not built in this prototype yet.`,
+    coach: 'Coach', line: 'You slept 7 h 40. A good day to add a rep on bench.', lineDone: 'Push day is in. 88 g of protein left to eat today.',
+    reps: 'reps', setOf: (a, b) => `Set ${a} of ${b}`, logSet: (a) => `Log set ${a}`, less: '−15 s', more: '+15 s', skip: 'Skip rest', undo: 'Undo',
+    all: (a, b) => `All exercises, ${a} of ${b}`, tray: (n) => `Push day, ${n} exercises`, hold: 'Hold to end workout',
+    now: 'Today', before: 'Last time', cue: ['Four sets of 8 at 85 would be your best bench day yet.', 'Last time the third set dropped to 9. Aim for 10 on all three.', 'Up 2.5 kg from last time. Eight on every set is the goal.', 'Same weight as last time. Get all three sets to 12.', 'One kilo more than last time. Keep the swing out of it.', 'Up 2.5 kg from last time. Twelve clean reps each set.'], rest: 'Rest', thenSet: (a, b) => `Next, set ${a} of ${b}`, then: (n) => `Next, ${n}`,
+    doneTitle: 'Done.', doneSub: (n) => n === 6 ? 'Every exercise finished.' : 'Ended early. What you did is saved.', time: 'Time', sets: 'Sets', exs: 'Exercises', volume: 'Lifted today', back: 'Back to Today',
+    finished: 'Done today', min: 'min', setsDone: (n) => `${n} sets`,
+    aLessW: 'Less weight', aMoreW: 'More weight', aLessR: 'Fewer reps', aMoreR: 'More reps', aClose: 'Close' },
+  da: { readiness: 'Parathed', ready: 'Klar', of100: 'af 100', day: 'Pres-dag', session: 'Dagens træning', start: 'Start træning',
+    sub: '6 øvelser, cirka 55 min', first: 'Starter med bænkpres, 85 kg × 8', food: 'Mad', protein: 'Protein', kcal: 'af 2.600 kcal', prot: 'af 150 g',
+    tToday: 'I dag', tTrain: 'Træn', tFood: 'Mad', tHealth: 'Helbred', notBuilt: (n) => `${n} er ikke bygget i denne prototype endnu.`,
+    coach: 'Coach', line: 'Du sov 7 t 40. En god dag til en ekstra gentagelse i bænkpres.', lineDone: 'Pres-dagen er i hus. Du mangler 88 g protein i dag.',
+    reps: 'gent.', setOf: (a, b) => `Sæt ${a} af ${b}`, logSet: (a) => `Gem sæt ${a}`, less: '−15 s', more: '+15 s', skip: 'Spring over', undo: 'Fortryd',
+    all: (a, b) => `Alle øvelser, ${a} af ${b}`, tray: (n) => `Pres-dag, ${n} øvelser`, hold: 'Hold for at slutte',
+    now: 'I dag', before: 'Sidst', cue: ['Fire sæt af 8 på 85 bliver din bedste bænkdag.', 'Sidst faldt tredje sæt til 9. Gå efter 10 i alle tre.', '2,5 kg mere end sidst. Otte i hvert sæt er målet.', 'Samme vægt som sidst. Få alle tre sæt op på 12.', 'Et kilo mere end sidst. Hold svinget ude.', '2,5 kg mere end sidst. Tolv rene gentagelser i hvert sæt.'], rest: 'Pause', thenSet: (a, b) => `Næste, sæt ${a} af ${b}`, then: (n) => `Næste, ${n}`,
+    doneTitle: 'Færdig.', doneSub: (n) => n === 6 ? 'Alle øvelser gennemført.' : 'Sluttet før tid. Det, du nåede, er gemt.', time: 'Tid', sets: 'Sæt', exs: 'Øvelser', volume: 'Løftet i dag', back: 'Tilbage til I dag',
+    finished: 'Færdig i dag', min: 'min', setsDone: (n) => `${n} sæt`,
+    aLessW: 'Mindre vægt', aMoreW: 'Mere vægt', aLessR: 'Færre gentagelser', aMoreR: 'Flere gentagelser', aClose: 'Luk' },
+}[lang];
+const names = lang === 'da'
+  ? ['Bænkpres', 'Skrå håndvægtpres', 'Skulderpres', 'Kabel-flyes', 'Sideløft', 'Triceps pushdown']
+  : ['Bench press', 'Incline dumbbell press', 'Overhead press', 'Cable fly', 'Lateral raise', 'Triceps pushdown'];
+const num = (n) => String(n).replace('.', lang === 'da' ? ',' : '.');
+document.querySelectorAll('[data-t]').forEach((el) => { el.textContent = T[el.dataset.t]; });
+$('wMinus').ariaLabel = T.aLessW; $('wPlus').ariaLabel = T.aMoreW; $('rMinus').ariaLabel = T.aLessR; $('rPlus').ariaLabel = T.aMoreR; $('closeTray').ariaLabel = T.aClose;
+
+/* ---------- the workout (example data) ---------- */
+const plan = [
+  { sets: 4, w: 85, r: 8, step: 2.5, last: { w: 82.5, r: [8, 8, 8, 7] } },
+  { sets: 3, w: 30, r: 10, step: 2, last: { w: 30, r: [10, 10, 9] } },
+  { sets: 3, w: 52.5, r: 8, step: 2.5, last: { w: 50, r: [8, 8, 7] } },
+  { sets: 3, w: 25, r: 12, step: 2.5, last: { w: 25, r: [12, 11, 10] } },
+  { sets: 3, w: 10, r: 15, step: 1, last: { w: 9, r: [15, 15, 14] } },
+  { sets: 3, w: 35, r: 12, step: 2.5, last: { w: 32.5, r: [12, 12, 11] } },
+].map((e, i) => ({ ...e, name: names[i], done: [] }));
+let ex = 0, phase = 'idle', startedAt = 0, clockTimer = 0;
+const cur = () => plan[ex];
+
+/* ---------- springs: one shared pair, sampled into linear() so the browser runs them ---------- */
+function spring(stiffness, damping, dur) {
+  const pts = []; let x = 0, v = 0; const dt = 1 / 240;
+  for (let i = 0; i <= dur / dt; i++) { v += (-stiffness * (x - 1) - damping * v) * dt; x += v * dt; if (i % 4 === 0) pts.push(x.toFixed(3)); }
+  pts[pts.length - 1] = '1';
+  return `linear(${pts.join(',')})`;
+}
+const SPRING = { soft: spring(120, 14, .9), snap: spring(320, 30, .5) }, D = { soft: reduce ? 0 : 900, snap: reduce ? 0 : 500 }; // soft: the water. snap: everything else
+if (CSS.supports('transition-timing-function', 'linear(0, 1)')) {
+  document.documentElement.style.setProperty('--snap', SPRING.snap);
+} else { SPRING.soft = 'cubic-bezier(.2,.9,.25,1.1)'; SPRING.snap = 'cubic-bezier(.2,.9,.3,1)'; }
+
+/* ---------- the picture: sky and water are painted once, with a little noise so nothing bands ---------- */
+const screen = $('screen'), liquid = $('liquid');
+let W = 384, H = 832, L = {};
+const noise = () => (Math.random() + Math.random() - 1) * 1.6;
+const mix = (a, b, t) => a + (b - a) * t;
+function ramp(stops, t) { // stops: [[pos, r, g, b], ...]
+  let i = 1; while (i < stops.length - 1 && t > stops[i][0]) i++;
+  const a = stops[i - 1], b = stops[i], k = Math.min(1, Math.max(0, (t - a[0]) / (b[0] - a[0]))), s = k * k * (3 - 2 * k);
+  return [mix(a[1], b[1], s), mix(a[2], b[2], s), mix(a[3], b[3], s)];
+}
+function paint(canvas, w, h, px) {
+  const q = 1.5; canvas.width = Math.round(w * q); canvas.height = Math.round(h * q);
+  const g = canvas.getContext('2d'), im = g.createImageData(canvas.width, canvas.height), d = im.data;
+  for (let y = 0, o = 0; y < canvas.height; y++) for (let x = 0; x < canvas.width; x++, o += 4) {
+    const c = px(x / q, y / q), n = noise();
+    d[o] = c[0] + n; d[o + 1] = c[1] + n; d[o + 2] = c[2] + n; d[o + 3] = c[3] === undefined ? 255 : c[3];
+  }
+  g.putImageData(im, 0, 0);
+}
+function paintAir() {
+  const sky = [[0, 196, 222, 255], [.34, 226, 239, 255], [.62, 250, 247, 240], [1, 255, 246, 226]];
+  paint($('air'), W, H, (x, y) => {
+    const c = ramp(sky, y / H), dx = (x - W * .86) / W, dy = (y - H * .1) / W, sun = Math.exp(-(dx * dx + dy * dy) / .16) * .75;
+    return [mix(c[0], 255, sun), mix(c[1], 246, sun), mix(c[2], 206, sun)];
+  });
+}
+function paintWater() {
+  const w = W * 1.5, h = H * 1.12, deep = [[0, 58, 206, 240], [.2, 40, 176, 242], [.5, 56, 150, 247], [1, 70, 134, 240]];
+  paint($('water'), w, h, (x, y) => {
+    const t = y / H, c = ramp(deep, t), u = (x - y * .42) / w;
+    const shaft = (Math.pow(.5 + .5 * Math.sin(u * 11 + .6), 3) * .6 + Math.pow(.5 + .5 * Math.sin(u * 23 + 2.1), 4) * .4) * Math.pow(Math.max(0, 1 - t * 1.25), 2) * 30;
+    const k = Math.min(1, y / 40), a = k * k * (3 - 2 * k) * (.5 + .5 * Math.min(1, y / 230));
+    return [c[0] + shaft, c[1] + shaft, c[2] + shaft * .6, a * 255];
+  });
+}
+function causticTile(n) { // a seamless net of light lines, the kind the sun draws on a pool floor
+  const c = document.createElement('canvas'); c.width = c.height = n;
+  const g = c.getContext('2d'), im = g.createImageData(n, n), d = im.data, TAU = Math.PI * 2, t = 1.3;
+  for (let y = 0, o = 0; y < n; y++) for (let x = 0; x < n; x++, o += 4) {
+    const px = (x / n) * TAU * 2 - 250, py = (y / n) * TAU * 2 - 250; let ix = px, iy = py, cc = 1;
+    for (let k = 0; k < 5; k++) {
+      const tt = t * (1 - 3.5 / (k + 1)), nx = px + Math.cos(tt - ix) + Math.sin(tt + iy), ny = py + Math.sin(tt - iy) + Math.cos(tt + ix);
+      ix = nx; iy = ny; cc += 1 / Math.hypot(px / (Math.sin(ix + tt) / .005), py / (Math.cos(iy + tt) / .005));
+    }
+    cc = 1.17 - Math.pow(cc / 5, 1.4);
+    d[o] = d[o + 1] = d[o + 2] = 255; d[o + 3] = Math.min(1, Math.pow(Math.abs(cc), 9) * 1.5) * 255;
+  }
+  g.putImageData(im, 0, 0); return c.toDataURL();
+}
+function waves() {
+  const make = (svg, wl, amp, fill, stroke, lift) => {
+    const n = Math.ceil((W * 1.5) / wl) + 2, w = wl * n, top = amp + 2, h = top * 2 + 40; let d = `M0 ${h}`;
+    for (let x = 0; x <= w; x += 4) d += `L${x} ${(top - Math.sin((x / wl) * Math.PI * 2) * amp).toFixed(2)}`;
+    const line = d.replace(`M0 ${h}`, '').replace('L', 'M'), id = svg.id + 'g';
+    svg.setAttribute('width', w); svg.setAttribute('height', h); svg.style.setProperty('--wl', wl + 'px'); svg.style.top = -top - lift + 'px';
+    svg.innerHTML = `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="${(top * 2 / h).toFixed(3)}" stop-color="${fill}"/><stop offset="1" stop-color="${fill}" stop-opacity="0"/></linearGradient>`
+      + `<path d="${d}L${w} ${h}Z" fill="url(#${id})"/>` + (stroke ? `<path d="${line}" fill="none" stroke="rgba(255,255,255,.95)" stroke-width="2"/>` : '');
+  };
+  make($('waveB'), 310, 5, 'rgba(120,226,250,.42)', false, 3);
+  make($('waveF'), 236, 4, 'rgba(58,206,240,.5)', true, 0);
+}
+function lensMap(s) { // how much each point of a glass drop bends what is behind it (strongest at the rim)
+  const c = document.createElement('canvas'); c.width = c.height = s;
+  const g = c.getContext('2d'), im = g.createImageData(s, s), d = im.data;
+  for (let y = 0, o = 0; y < s; y++) for (let x = 0; x < s; x++, o += 4) {
+    const dx = (x + .5 - s / 2) / (s / 2), dy = (y + .5 - s / 2) / (s / 2), r = Math.hypot(dx, dy) || 1e-6, f = r < 1 ? Math.pow(r, 3.2) : 0;
+    d[o] = 128 - (dx / r) * f * 127; d[o + 1] = 128 - (dy / r) * f * 127; d[o + 2] = 0; d[o + 3] = 255;
+  }
+  g.putImageData(im, 0, 0); return c.toDataURL();
+}
+
+/* ---------- the water level ---------- */
+let levelAnim = null;
+const levelNow = () => new DOMMatrixReadOnly(getComputedStyle(liquid).transform).m42;
+function setLevel(y, ms = 0, easing = 'linear') {
+  const from = levelNow();
+  if (levelAnim) levelAnim.cancel();
+  liquid.style.transform = `translateY(${y}px)`;
+  if (!ms) return Promise.resolve(true);
+  const a = levelAnim = liquid.animate([{ transform: `translateY(${from}px)` }, { transform: `translateY(${y}px)` }], { duration: ms, easing });
+  return a.finished.then(() => { if (levelAnim === a) levelAnim = null; return true; }, () => false);
+}
+function measure() {
+  const r = screen.getBoundingClientRect(); W = r.width; H = r.height;
+  const short = H < 770; screen.classList.toggle('short', short);
+  L = { today: Math.round(H * (short ? .265 : .285)), work: Math.round(H * .585), rest: Math.max(Math.round(H * .33), short ? 276 : 300), done: Math.round(H * .5) };
+  screen.style.setProperty('--surf', L.today + 'px'); screen.style.setProperty('--work', L.work + 'px'); screen.style.setProperty('--tnum', (short ? 186 : 232) + 'px');
+}
+function build() {
+  measure(); paintAir(); paintWater(); waves();
+  if (rest) resumeRest(); else setLevel(phase === 'idle' ? L.today : phase === 'done' ? L.done : L.work);
+}
+
+/* ---------- small helpers ---------- */
+function roll(el, str, countUp) {
+  const sig = str.replace(/\d/g, '0'), fresh = el.dataset.sig !== sig;
+  if (fresh) {
+    el.dataset.sig = sig;
+    el.innerHTML = [...str].map((c) => /\d/.test(c) ? '<span class="d"><span class="col">' + '0123456789'.replace(/./g, '<i>$&</i>') + '</span></span>' : `<span class="s">${c}</span>`).join('');
+  }
+  el.setAttribute('aria-label', str);
+  const cols = [...el.querySelectorAll('.col')], set = () => { let k = 0; for (const c of str) if (/\d/.test(c)) cols[k++].style.transform = `translateY(${-c * 10}%)`; };
+  if (fresh && !countUp) { cols.forEach((c) => { c.style.transition = 'none'; }); set(); void el.offsetWidth; cols.forEach((c) => { c.style.transition = ''; }); }
+  else { if (fresh) void el.offsetWidth; set(); }
+}
+const show = (el) => el.classList.add('on'), hide = (el) => el.classList.remove('on');
+const buzz = (p) => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) { /* not allowed here */ } };
+const clock = (s) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, '0')}`;
+const cut = (el) => { el.style.transition = 'none'; el.classList.add('off'); void el.offsetWidth; el.style.transition = ''; }; // hide at once, no fade
+
+/* ---------- Today ---------- */
+function today() {
+  const now = new Date();
+  $('tDate').textContent = $('dDate').textContent = new Intl.DateTimeFormat(lang === 'da' ? 'da-DK' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' }).format(now);
+  $('sSub').textContent = T.sub; $('sFirst').textContent = T.first; $('kcalNow').textContent = (1240).toLocaleString(lang === 'da' ? 'da-DK' : 'en-GB');
+  underToday();
+}
+function underToday() { const u = $('under'); u.className = 'under today'; u.innerHTML = `<small>${T.coach}</small><p>${$('session').classList.contains('finished') ? T.lineDone : T.line}</p>`; }
+let toastTimer = 0;
+$('dock').addEventListener('click', (e) => {
+  const b = e.target.closest('button'); if (!b) return; const i = +b.dataset.tab;
+  $('sel').style.transform = `translateX(${i * 100}%)`;
+  clearTimeout(toastTimer); const toast = $('toast');
+  if (!i) { toast.classList.remove('on'); return; }
+  toast.textContent = T.notBuilt(b.textContent.trim()); toast.classList.add('on');
+  toastTimer = setTimeout(() => { toast.classList.remove('on'); $('sel').style.transform = 'translateX(0)'; }, 1900);
+});
+
+/* ---------- Workout ---------- */
+function renderSet() {
+  const e = cur(), n = Math.min(e.done.length + 1, e.sets);
+  $('wName').textContent = e.name; $('wLast').textContent = T.cue[ex] || '';
+  board(); $('bLabel').textContent = T.setOf(n, e.sets); $('log').textContent = T.logSet(n);
+  $('openTray').textContent = T.all(ex + 1, plan.length); sync(); syncUndo();
+}
+function board(pop) { // last time above, today below; the set you are on is the lit column
+  const e = cur(), c = e.done.length, cols = Array.from({ length: e.sets }, (_, i) => i), cl = (i) => (i === c ? ' cur' : '');
+  $('board').style.gridTemplateColumns = `auto repeat(${e.sets}, 1fr)`;
+  $('board').innerHTML = '<span></span>' + cols.map((i) => `<i class="h${cl(i)}">${i + 1}</i>`).join('')
+    + `<span>${T.before}</span>` + cols.map((i) => `<i class="l${cl(i)}">${num(e.last.w)} × ${e.last.r[i]}</i>`).join('')
+    + `<span>${T.now}</span>` + cols.map((i) => { const d = e.done[i]; return `<b class="t${cl(i)}${i === pop ? ' pop' : ''}">${d ? `${num(d.w)} × ${d.r}` : i === c ? '<u></u>' : ''}</b>`; }).join('');
+}
+const target = () => (rest ? plan[rest.next] : cur()); // the set the steppers change: this one, or the next one while resting
+function sync() {
+  const e = target(), line = `${num(e.w)} kg × ${e.r}`;
+  $('sW').textContent = num(e.w); $('sR').textContent = e.r; $('nextNum').textContent = line;
+  if (!rest) { roll($('bW'), num(e.w)); roll($('bR'), String(e.r)); }
+}
+let undoFrom = 0; // Undo wakes up a moment after a set is logged, so a double tap on Log cannot hit it
+function syncUndo() { $('undo').disabled = !cur().done.length || performance.now() < undoFrom; }
+function step(key, by) {
+  const e = target(); e[key] = Math.max(key === 'w' ? 0 : 1, Math.round((e[key] + by) * 100) / 100); sync();
+}
+$('wMinus').onclick = () => step('w', -target().step); $('wPlus').onclick = () => step('w', target().step);
+$('rMinus').onclick = () => step('r', -1); $('rPlus').onclick = () => step('r', 1);
+
+$('start').onclick = () => {
+  if (phase !== 'idle') return; phase = 'work'; startedAt = Date.now();
+  hide($('thero')); hide($('tstack')); $('under').classList.add('off');
+  renderSet(); $('faceSet').classList.remove('off');
+  show($('whead')); show($('zone')); setLevel(L.work, D.soft, SPRING.soft);
+  clockTimer = setInterval(() => { $('wClock').textContent = clock((Date.now() - startedAt) / 1000); }, 1000);
+};
+
+function fly(from, to) { // the logged numbers travel to their place in the row; they are not swapped for a copy
+  const a = from.getBoundingClientRect(), b = to.getBoundingClientRect(), s = screen.getBoundingClientRect();
+  const g = from.cloneNode(true); g.removeAttribute('id'); g.className = 'ghost'; g.style.cssText = `left:${a.left - s.left}px;top:${a.top - s.top}px;width:${a.width}px;text-align:center;white-space:nowrap`;
+  screen.appendChild(g);
+  const k = Math.min(b.width / a.width, b.height / a.height) * .95, dx = b.left + b.width / 2 - a.left - a.width / 2, dy = b.top + b.height / 2 - a.top - a.height / 2;
+  const an = g.animate([{ transform: 'translate(0,0) scale(1)', opacity: 1 }, { opacity: 1, offset: .72 }, { transform: `translate(${dx}px,${dy}px) scale(${k})`, opacity: 0 }], { duration: reduce ? 1 : 480, easing: 'cubic-bezier(.4,0,.15,1)' });
+  return an.finished.then(() => g.remove(), () => g.remove());
+}
+
+let rest = null, restRun = 0;
+async function logSet() {
+  if (phase !== 'work') return; phase = 'rest'; buzz(12);
+  const e = cur(), i = e.done.length; e.done.push({ w: e.w, r: e.r });
+  const lastOfEx = e.done.length >= e.sets, order = plan.map((_, j) => (ex + 1 + j) % plan.length); // the next unfinished exercise, wrapping round
+  const nextEx = lastOfEx ? (order.find((j) => plan[j].done.length < plan[j].sets) ?? -1) : ex, allDone = nextEx < 0;
+  const landed = fly($('faceSet'), $('board').querySelectorAll('.t')[i]).then(() => { if (cur() === e && e.done.length > i) board(i); }); cut($('faceSet'));
+  if (allDone) { await landed; return finish(); }
+  // rest: the water rises, then runs out with the clock
+  rest = { total: REST, end: Date.now() + REST * 1000, next: nextEx }; const run = ++restRun;
+  roll($('bT'), clock(REST)); $('faceTimer').classList.remove('off');
+  const u = $('under'); u.className = 'under rest';
+  u.textContent = T.rest; $('nextLabel').textContent = lastOfEx ? T.then(plan[rest.next].name) : T.thenSet(e.done.length + 1, e.sets);
+  sync(); scale(); $('scale').classList.remove('off'); $('nextup').classList.remove('off');
+  $('log').classList.add('off'); $('restbar').classList.remove('off'); $('wLast').classList.add('off');
+  undoFrom = performance.now() + 450; syncUndo(); setTimeout(syncUndo, 460);
+  rest.timer = setInterval(tick, 200);
+  const ok = await setLevel(L.work - (1 - D.soft / 1000 / REST) * (L.work - L.rest), D.soft, SPRING.soft); // rise to where the clock will be when the rise ends
+  if (ok && run === restRun && rest) drain();
+}
+function scale() { // a mark every 15 s and a time every 30 s (every 2 and 4 s on a short test rest), placed where the water will be at that moment
+  const st = rest.total < 30 ? 2 : 15; let h = '';
+  for (let t = 0; t <= rest.total + .5; t += st) h += `<i class="${t % (st * 2) ? '' : 'big'}" style="top:${(L.work - (t / rest.total) * (L.work - L.rest)).toFixed(1)}px">${t % (st * 2) || !t ? '' : `<span>${clock(t)}</span>`}</i>`;
+  $('scale').innerHTML = h;
+}
+const restY = () => L.work - Math.min(1, Math.max(0, rest.end - Date.now()) / 1000 / rest.total) * (L.work - L.rest); // where the water should be right now
+function drain() { setLevel(L.work, Math.max(0, rest.end - Date.now()), 'linear'); }
+function resumeRest() { scale(); setLevel(restY()); drain(); } // after a resize or a locked phone: the water goes to where the clock says and keeps draining
+function tick() {
+  if (!rest) return; const left = Math.ceil((rest.end - Date.now()) / 1000);
+  if (left <= 0) return endRest(); roll($('bT'), clock(left));
+  $('under').classList.toggle('off', restY() > L.work - 44); // the word under the surface lets go before it reaches the next-set line
+}
+async function addRest(sec) {
+  if (!rest) return; rest.end += sec * 1000; const run = restRun;
+  if (rest.end <= Date.now()) return endRest();
+  rest.total = Math.max(rest.total, (rest.end - Date.now()) / 1000); tick(); scale();
+  const ok = await setLevel(restY(), D.snap, SPRING.snap);
+  if (ok && run === restRun && rest) drain();
+}
+function endRest(undone) {
+  if (!rest) return; clearInterval(rest.timer); const r = rest; rest = null; restRun++;
+  if (undone) cur().done.pop(); else { ex = r.next; buzz([20, 60, 20]); }
+  phase = 'work'; renderSet();
+  $('faceTimer').classList.add('off'); $('faceSet').classList.remove('off'); $('under').classList.add('off'); $('scale').classList.add('off'); $('nextup').classList.add('off');
+  $('restbar').classList.add('off'); $('log').classList.remove('off'); $('wLast').classList.remove('off');
+  setLevel(L.work, D.soft, SPRING.soft);
+}
+$('log').onclick = logSet; $('skip').onclick = () => endRest(); $('less').onclick = () => addRest(-15); $('more').onclick = () => addRest(15);
+$('undo').onclick = () => { if (rest) endRest(true); else if (phase === 'work' && cur().done.length) { cur().done.pop(); renderSet(); } };
+
+/* the whole workout, one tap away, still in the bottom third */
+function tray(open) {
+  const t = $('tray');
+  if (open) {
+    $('trayTitle').textContent = T.tray(plan.length);
+    $('cards').innerHTML = plan.map((p, i) => `<button class="card press ${i === ex ? 'now' : p.done.length >= p.sets ? 'fin' : ''}" data-i="${i}"${p.done.length >= p.sets ? ' disabled' : ''}><b>${p.name}</b><span>${p.done.length} / ${p.sets} · ${num(p.w)} kg</span></button>`).join('');
+    t.classList.remove('off'); $('rows').classList.add('away');
+    const now = $('cards').querySelector('.now'); if (now) $('cards').scrollLeft = now.offsetLeft - 14;
+  } else { t.classList.add('off'); $('rows').classList.remove('away'); }
+}
+$('openTray').onclick = () => tray(true); $('closeTray').onclick = () => tray(false);
+$('cards').onclick = (e) => { const c = e.target.closest('.card'); if (!c) return; if (rest) endRest(); ex = +c.dataset.i; renderSet(); tray(false); };
+let holdTimer = 0; const hold = $('hold');
+const holdEnd = () => { clearTimeout(holdTimer); hold.classList.remove('holding'); };
+hold.addEventListener('pointerdown', () => { hold.classList.add('holding'); holdTimer = setTimeout(() => { holdEnd(); tray(false); finish(); }, reduce ? 300 : 800); });
+['pointerup', 'pointerleave', 'pointercancel'].forEach((n) => hold.addEventListener(n, holdEnd));
+hold.addEventListener('click', (e) => { if (e.detail === 0) { tray(false); finish(); } }); // keyboard
+hold.addEventListener('contextmenu', (e) => e.preventDefault());
+
+function finish() {
+  if (rest) { clearInterval(rest.timer); rest = null; restRun++; }
+  phase = 'done'; $('scale').classList.add('off'); $('nextup').classList.add('off'); clearInterval(clockTimer);
+  const sets = plan.flatMap((p) => p.done), vol = sets.reduce((s, x) => s + x.w * x.r, 0), mins = Math.max(1, Math.round((Date.now() - startedAt) / 60000));
+  $('dTime').textContent = `${mins} ${T.min}`; $('dSets').textContent = sets.length;
+  const total = Math.round(vol).toLocaleString(lang === 'da' ? 'da-DK' : 'en-GB'), full = plan.filter((p) => p.done.length >= p.sets).length;
+  $('dEx').textContent = `${plan.filter((p) => p.done.length).length} / ${plan.length}`; $('dSub').textContent = T.doneSub(full);
+  hide($('whead')); hide($('zone')); $('under').classList.add('off');
+  $('faceSet').classList.add('off'); $('faceTimer').classList.add('off'); $('faceDone').classList.remove('off'); roll($('bV'), total, true);
+  show($('done')); setLevel(L.done, D.soft, SPRING.soft);
+  $('session').classList.add('finished'); $('session').querySelector('.p-label').textContent = T.finished;
+  $('sSub').textContent = `${T.setsDone(sets.length)}, ${total} kg, ${mins} ${T.min}`; $('sFirst').textContent = '';
+}
+$('back').onclick = () => { phase = 'idle'; hide($('done')); $('faceDone').classList.add('off'); show($('thero')); show($('tstack')); underToday(); setLevel(L.today, D.soft, SPRING.soft); };
+
+/* ---------- start ---------- */
+const chromium = !!window.chrome || /Chrome\//.test(navigator.userAgent);
+if (chromium && !flag('nolens')) { $('lensMap').setAttribute('href', lensMap(108)); document.documentElement.classList.add('lens'); }
+const tile = causticTile(512); document.querySelectorAll('.caustics i').forEach((i) => { i.style.backgroundImage = `url(${tile})`; });
+today(); build();
+let rz = 0; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(build, 150); });
+if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (phase !== 'idle') renderSet(); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && rest) resumeRest(); liquid.querySelectorAll('.wave,.caustics i,.buoy').forEach((el) => { el.style.animationPlayState = document.hidden ? 'paused' : 'running'; }); });
+// tilt the phone and the water stays level (works where the browser allows motion sensors)
+let lean = 0; addEventListener('deviceorientation', (e) => { if (e.gamma == null || reduce) return; const a = Math.max(-6, Math.min(6, -e.gamma * .22)); if (Math.abs(a - lean) < .3) return; lean = a; $('tilt').style.transform = `rotate(${a.toFixed(1)}deg)`; });
+if (flag('reach')) $('reach').hidden = false;
+if (flag('fps')) { const f = $('fps'); f.hidden = false; let n = 0, t0 = performance.now(); const loop = (t) => { n++; if (t - t0 >= 1000) { f.textContent = `${Math.round((n * 1000) / (t - t0))} fps`; n = 0; t0 = t; } requestAnimationFrame(loop); }; requestAnimationFrame(loop); }
+})();
+</script>
+</body>
+</html>
