@@ -839,10 +839,13 @@ function openSheet(kind, html) {
 }
 function closeSheet() {
   if (!sheet.classList.contains('on')) return;
+  const leaveFinished = sheetKind === 'finish' && S.finished && S.screen === 'workout';
   sheet.classList.remove('on', 'dragging'); sheet.style.transform = ''; scrim.classList.remove('on'); sheetKind = '';
   $$('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === 'today'));
   const end = () => { if (!sheet.classList.contains('on')) sheet.style.visibility = ''; };
   setTimeout(end, SP.sheet.ms + 40);
+  // however the summary is dismissed, a finished workout goes back to Today
+  if (leaveFinished) goToday(true);
 }
 scrim.addEventListener('click', closeSheet);
 addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
@@ -942,7 +945,7 @@ sbody.addEventListener('click', e => {
   const G = e.target.closest('[data-glass]'); if (G) { setGlass(G.dataset.glass); openSheet('health', healthHTML()); return; }
   const st = e.target.closest('[data-start]'); if (st) { closeSheet(); setTimeout(startWorkout, 120); return; }
   const h = e.target.closest('.hold'); if (h) return;
-  const bt = e.target.closest('[data-back]'); if (bt) { closeSheet(); goToday(true); }
+  const bt = e.target.closest('[data-back]'); if (bt) closeSheet();
 });
 sbody.addEventListener('submit', e => {
   e.preventDefault(); const v = ($('#askIn').value || '').toLowerCase(); $('#askIn').value = '';
@@ -1090,7 +1093,8 @@ function pourToday() {
 /* logging a set: one tap */
 function logSet() {
   const x = cur(), logs = exLogs(S.ex);
-  if (S.rest || logs.length >= x.sets) return;
+  if (S.finished || S.rest || logs.length >= x.sets) return;
+  retireUndo(); // a plan change can't be undone once sets are logged on top of it
   const val = e1(S.w, S.r), best = val > bestOf(x) + .01;
   if (best) x.best = [S.w, S.r];
   logs.push({ w: S.w, r: S.r, best });
@@ -1191,7 +1195,7 @@ $('#rUndo').addEventListener('click', () => {
   endRest(false);
   if (wasNext) S.ex--;
   const l = exLogs(S.ex).pop();
-  if (l) { S.w = l.w; S.r = l.r; if (l.best) { const x = cur(); const orig = EX.find(e => e.id === x.id) || SWAP; x.best = [...orig.best]; } }
+  if (l) { S.w = l.w; S.r = l.r; if (l.best) { const x = cur(); const orig = EX.find(e => e.id === x.id) || SWAP; x.best = exLogs(S.ex).reduce((b, s) => e1(s.w, s.r) > e1(b[0], b[1]) + .01 ? [s.w, s.r] : b, [...orig.best]); } }
   renderExercise(wasNext); renderPane();
   toast(t('undone'), { plain: true, ms: 1200 });
 });
