@@ -447,7 +447,7 @@ svg { display: block; }
           <div class="stp" data-k="r"><button class="minus" aria-label="minus">−</button><div class="val"><span class="big roll" id="vR"></span><span class="unit" data-t="repsU"></span></div><button class="plus" aria-label="plus">+</button></div>
           <button class="cta press" id="logBtn"><span class="pip"></span><span data-t="logSet"></span></button>
         </div>
-        <div class="face away" id="faceRest" aria-hidden="true">
+        <div class="face away" id="faceRest" inert>
           <div class="frow"><span class="eyebrow" data-t="rest"></span><span class="rnext" id="restNext"></span></div>
           <div class="rest-count"><span class="roll" id="restCount"></span></div>
           <div class="rbar"><i id="restFill"></i></div>
@@ -886,8 +886,16 @@ function coachHTML() {
   <div class="list" id="memList">${S.mem.map(i => `<div class="li"><span class="grow">${t('mem')[i]}</span><button class="x" data-mem="${i}" aria-label="Forget">×</button></div>`).join('')}</div>`;
 }
 function openCoach() { openSheet('coach', coachHTML()); }
+let undoId = '';
+function retireUndo() {
+  if (!undoId) return;
+  const old = undoId; undoId = ''; undoStack = null;
+  const el = document.getElementById(old); if (el) { const b = el.querySelector('[data-undo]'); if (b) b.remove(); }
+  coachReplies = coachReplies.map(h => h.includes(`id="${old}"`) ? h.replace(/<button data-undo="[^"]*">[^<]*<\/button>/, '') : h);
+}
 function reply(text, act) {
-  const id = 'r' + Date.now();
+  const id = 'r' + Date.now() + Math.random().toString(36).slice(2, 6);
+  if (act) undoId = id;
   const h = `<div class="reply" id="${id}">${text}${act ? `<div class="act"><span>${t('applied')}</span><button data-undo="${id}">${t('undo')}</button></div>` : ''}</div>`;
   coachReplies.push(h);
   const box = $('#replies'); if (box) { box.insertAdjacentHTML('beforeend', h); $('#' + id).scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
@@ -901,13 +909,13 @@ function chip(i) {
     const keepLogs = []; S.plan.forEach((x, k) => { if (!drop.includes(x)) keepLogs.push(S.logs[k] || []); });
     const beforeLogs = S.plan.map((x, k) => S.logs[k] || []); const beforeEx = S.ex; const curId = cur().id;
     S.plan = S.plan.filter(x => !drop.includes(x)); S.logs = keepLogs; S.ex = S.plan.findIndex(x => x.id === curId);
-    undoStack = () => { S.plan = before; S.logs = beforeLogs; S.ex = beforeEx; };
+    retireUndo(); undoStack = () => { S.plan = before; S.logs = beforeLogs; S.ex = beforeEx; };
     reply(t('rShort').replace('{n}', S.plan.length), true);
   } else if (i === 1) {
     const k = S.plan.findIndex(x => x.id === 'dips');
     if (k < 0 || (S.logs[k] || []).length || k === S.ex && doneCount()) return reply(t('rSwapNo'));
     const old = S.plan[k]; S.plan = S.plan.map((x, j) => j === k ? { ...SWAP } : x);
-    undoStack = () => { S.plan = S.plan.map((x, j) => j === k ? old : x); };
+    retireUndo(); undoStack = () => { S.plan = S.plan.map((x, j) => j === k ? old : x); };
     reply(t('rSwap'), true);
   } else reply(t('rWhy'));
   refreshAll();
@@ -915,7 +923,7 @@ function chip(i) {
 sbody.addEventListener('click', e => {
   const c = e.target.closest('[data-chip]'); if (c) return chip(+c.dataset.chip);
   const u = e.target.closest('[data-undo]');
-  if (u && undoStack) { undoStack(); undoStack = null; u.parentElement.innerHTML = `<span>${t('undoneTx')}</span>`; coachReplies = coachReplies.map(h => h.includes(u.dataset.undo) ? $('#' + u.dataset.undo).outerHTML : h); refreshAll(); return; }
+  if (u && undoStack && u.dataset.undo === undoId) { undoStack(); undoStack = null; undoId = ''; u.parentElement.innerHTML = `<span>${t('undoneTx')}</span>`; coachReplies = coachReplies.map(h => h.includes(u.dataset.undo) ? $('#' + u.dataset.undo).outerHTML : h); refreshAll(); return; }
   const m = e.target.closest('[data-mem]');
   if (m) {
     const idx = +m.dataset.mem; const row = m.closest('.li');
@@ -1082,7 +1090,7 @@ function pourToday() {
 /* logging a set: one tap */
 function logSet() {
   const x = cur(), logs = exLogs(S.ex);
-  if (logs.length >= x.sets) return;
+  if (S.rest || logs.length >= x.sets) return;
   const val = e1(S.w, S.r), best = val > bestOf(x) + .01;
   if (best) x.best = [S.w, S.r];
   logs.push({ w: S.w, r: S.r, best });
@@ -1091,6 +1099,7 @@ function logSet() {
   const row = $(`#setRows .srow[data-k="${logs.length - 1}"]`);
   if (row) {
     row.classList.remove('now'); row.classList.add('done');
+    row.querySelector('.wr').innerHTML = `${fmt(S.w)} × ${S.r}<small>kg</small>`;
     row.querySelector('.st').innerHTML = `<span class="tick draw${best ? ' gold' : ''}"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 7.4l2.6 2.6L11 4.4"/></svg></span>`;
   }
   // a new strip of glass is led into today's pane
@@ -1122,10 +1131,9 @@ function startRest(nextEx) {
   const dur = restScale || x.rest;
   S.rest = { end: Date.now() + dur * 1000, dur, nextEx, anims: [] };
   if (nextEx) {
-    setTimeout(() => { S.ex++; const y = cur(); S.w = y.w; S.r = y.r; renderExercise(true); updateRestText(); startRestAnims(); }, 650);
+    S.advT = setTimeout(() => { S.advT = 0; S.ex++; const y = cur(); S.w = y.w; S.r = y.r; renderExercise(true); updateRestText(); startRestAnims(); }, 650);
   } else { renderSetFace(); }
-  $('#faceLog').classList.add('away'); $('#faceLog').setAttribute('aria-hidden', 'true');
-  $('#faceRest').classList.remove('away'); $('#faceRest').removeAttribute('aria-hidden');
+  showFace('rest');
   updateRestText(true); startRestAnims();
   clearInterval(restTimer); restTimer = setInterval(updateRestText, 200);
 }
@@ -1152,14 +1160,21 @@ function updateRestText(instant) {
   $('#restNext').textContent = S.rest.nextEx && n === 0 ? t('nextEx')(x.n[lang]) : (n === x.sets - 1 && S.ex === S.plan.length - 1 ? t('lastSet') : t('nextSet')(n + 1, fmt(S.w), S.r));
   if (left <= 0) endRest(true);
 }
+function showFace(which) {
+  const on = which === 'rest' ? $('#faceRest') : $('#faceLog'), off = which === 'rest' ? $('#faceLog') : $('#faceRest');
+  const hadFocus = off.contains(document.activeElement);
+  off.classList.add('away'); off.inert = true;
+  on.classList.remove('away'); on.inert = false;
+  if (hadFocus) (which === 'rest' ? $('#rSkip') : $('#logBtn')).focus({ preventScroll: true });
+}
 function endRest(natural) {
   if (!S.rest) return;
   clearInterval(restTimer);
   S.rest.anims.forEach(a => a.cancel());
   const b = nextBand(); if (b) b.style.transform = '';
   S.rest = null;
-  $('#faceRest').classList.add('away'); $('#faceRest').setAttribute('aria-hidden', 'true');
-  $('#faceLog').classList.remove('away'); $('#faceLog').removeAttribute('aria-hidden');
+  showFace('log');
+  $('#setRows').innerHTML = setRowsHTML();
   renderSetFace();
   if (natural) {
     if (navigator.vibrate) try { navigator.vibrate([20, 60, 20]); } catch (_) {}
@@ -1171,7 +1186,8 @@ $('#rPlus').addEventListener('click', () => { if (!S.rest) return; S.rest.end +=
 $('#rMinus').addEventListener('click', () => { if (!S.rest) return; S.rest.end -= 15000; S.rest.dur = Math.max(1, S.rest.dur - 15); startRestAnims(); updateRestText(); });
 $('#rUndo').addEventListener('click', () => {
   if (!S.rest) return;
-  const wasNext = S.rest.nextEx && exLogs(S.ex).length === 0 && S.ex > 0;
+  const pending = !!S.advT; if (pending) { clearTimeout(S.advT); S.advT = 0; }
+  const wasNext = !pending && S.rest.nextEx && exLogs(S.ex).length === 0 && S.ex > 0;
   endRest(false);
   if (wasNext) S.ex--;
   const l = exLogs(S.ex).pop();
@@ -1193,7 +1209,7 @@ function openFinish() {
     <button class="cta done press" id="keepBtn" style="margin-top:10px">${t('keepGoing')}</button>`);
   const hb = $('#holdBtn'); let anim = null;
   const down = e => { e.preventDefault(); anim = hb.querySelector('i').animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 750, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' }); anim.onfinish = commitFinish; };
-  const up = () => { if (anim && anim.playState === 'running') { anim.reverse(); } };
+  const up = () => { if (anim && anim.playState === 'running') { anim.onfinish = null; anim.reverse(); } };
   hb.addEventListener('pointerdown', down); hb.addEventListener('pointerup', up); hb.addEventListener('pointerleave', up); hb.addEventListener('pointercancel', up);
   hb.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); commitFinish(); } });
   $('#keepBtn').addEventListener('click', closeSheet);
