@@ -57,6 +57,19 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: ten-style round, style 11 "Lagoon", daylight frosted glass (/_prototypes/lagoon/)
+Asked (Omar, after the ten styles): "also some ones genuinely different, like very beautiful, with frosted glass blur, beautiful elements, organized and everything like that." This thread was given maximum beauty: rich frosted glass over a beautiful backdrop, in daylight, clearly different from Summit (dark Oura-style wallpaper) and from style 8.
+Reading of the log before building: frosted blur and a real photo are the two things he keeps asking for, "empty" and flat screens were rejected, he wants several colour themes, and a judge's 8 has not predicted his yes.
+Built (Today and the live workout, clickable, English and Danish): one daylight photograph fills the screen and everything you read sits on white frosted glass (plain live blur, decision A) with one radius and one gap. Ink text and the accent take their colour from the photo; the one dark thing on a screen is the button you press. Three scenes to switch between: lagoon (teal), lavender field (violet), poppies (blue).
+- **Today:** greeting on the photo, then the session card (plan, Coach line, Start), the week as seven dots, sleep, readiness and weight in one pane, food in one pane. Four glass layers in all.
+- **Workout:** the picture moves closer, the exercise name sits on the photo, and one glass card at the thumb holds the set: set pills, two big steppers, the Coach line, Log. Rest is a draining ring with +15 s, Skip and Undo. Finish shows kilos lifted, time, sets, new bests and each exercise.
+- **The one unique touch:** every logged set drops a ripple of light from the Log button, rings behind the glass and two thin rings over it. A new best (estimated one-rep max) makes it gold.
+Judges (three fresh design-judges, Sonnet, one after each fix round): 7, 7.5, 7.5. The last one scored Today 7.5, Workout 8, the ripple 6.5 and called it "good enough to show Omar, but not a wow". Fixed along the way: lighter glass, the ripple moved above the glass so it can be seen, no ghost text when the card changes face, cleaner tint on lavender and poppy, bigger and darker small labels. The fixes after the third round were not re-judged. Their shared weakness for the direction: white frosted cards over a nature photo is a common look, so the beauty depends on the photo, and the glass goes dull where the photo is dark or saturated. They disagreed on the scenes (the first wanted lavender cut, the next two called it the strongest), so the scene is a matter of taste.
+My own score: 7.5. The workout screen is the good part; Today is tidy but has no hero moment. It did not reach the bar of 8, so Omar was asked whether he wants to see it anyway.
+Needs his phone: how the blur looks and whether it scrolls smoothly, banding in the skies, whether the ripple reads as light at 120 Hz, the slide between the two screens.
+Artifact: https://claude.ai/artifact/BdGtG1N7us6nUxC9ZXc96G
+Verdict: waiting for Omar.
+
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.
