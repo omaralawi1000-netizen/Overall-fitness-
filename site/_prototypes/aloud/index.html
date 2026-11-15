@@ -424,7 +424,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
     S.kg = lift().kg; S.reps = lift().reps;
     chips.hidden = true; $('#startBtn').hidden = true; live.hidden = false;
     const morning = box('fold', ''), show = document.createElement('button');
-    morning.hidden = true; morning.append(...thread.children);
+    morning.hidden = true; morning.inert = true; morning.append(...thread.children); // this morning's offers are history now, not buttons
     show.className = 'stamp more'; show.textContent = 'Show this morning';
     show.onclick = () => { morning.hidden = !morning.hidden; show.textContent = morning.hidden ? 'Show this morning' : 'Hide this morning'; };
     thread.append(morning, show);
@@ -575,14 +575,18 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
     }
     if (cmd.kind === 'rest') { if (S.rest) { rest(S.rest.end - Date.now() + cmd.sec * 1000); return post([bubble, coach(`${cmd.sec} seconds added.`, 'soft', 0)], [bubble, from]); } return post([bubble, coach('You’re not resting right now.', 'soft', 0)], [bubble, from]); }
     if (cmd.kind === 'skip') { if (S.rest) { endRest(); return post([bubble, coach('Rest skipped.', 'soft', 0)], [bubble, from]); } return post([bubble, coach('To drop a set, tap End or just log what you did.', 'soft', 0)], [bubble, from]); }
-    // a set, "same again" or "done": anything not said is taken from the card
+    // a set, "same again" or "done". Said in the rest after a lift's last set, it belongs to the next lift.
+    if (S.rest && S.si >= lift().sets) endRest();
+    // anything not said is taken from the card; "same again" repeats the last set of this lift
+    const prev = S.log.at(-1), base = cmd.kind === 'same' && prev && prev.li === S.li ? prev : S;
     const said = cmd.kind === 'set' ? { kg: cmd.kg, reps: cmd.reps } : {};
     const fixed = A2.fixMisheard(said, { kg: S.kg, reps: S.reps });
-    const kg = fixed.kg ?? S.kg, reps = fixed.reps ?? S.reps;
-    const odd = fixed.heard ? null : A2.guardSet({ kg: said.kg, reps: said.reps }, { kg: S.kg, reps: S.reps });
+    const kg = fixed.kg ?? base.kg, reps = fixed.reps ?? base.reps;
+    // the guard runs on the numbers after a misheard fix, so a second odd number is still asked about
+    const odd = A2.guardSet({ kg: said.kg === undefined ? undefined : kg, reps: said.reps === undefined ? undefined : reps }, { kg: S.kg, reps: S.reps });
     if (odd) {
       const picks = (odd.kg ?? [kg]).flatMap((k) => (odd.reps ?? [reps]).map((r) => [`${num(k)} kg × ${r}`, () => logOrRest(k, r)]));
-      return post([bubble, coach(`${odd.kg ? `${num(said.kg)} kg` : `${said.reps} reps`} is far from your ${odd.kg ? `${num(S.kg)} kg` : `${S.reps} reps`}. Which one?`), options(picks)], [bubble, from]);
+      return post([bubble, coach(`${odd.kg ? `${num(kg)} kg` : `${reps} reps`} is far from your ${odd.kg ? `${num(S.kg)} kg` : `${S.reps} reps`}. Which one?`), options(picks)], [bubble, from]);
     }
     const note = fixed.heard ? `I heard ${fixed.heard.kg !== undefined ? num(fixed.heard.kg) : fixed.heard.reps} and took it as ${fixed.heard.kg !== undefined ? `${num(kg)} kg` : `${reps} reps`}. Say “undo” if that’s wrong.` : '';
     logOrRest(kg, reps, from, note);
