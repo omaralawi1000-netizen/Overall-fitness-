@@ -57,6 +57,20 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: ten-style round, style 8 "Fold", origami (/_prototypes/fold/)
+Asked (Omar, 06:21): "Keep testing options. Have it have its own taste also on the fitness app. Not only my taste … With the folder's animation styles, it can copy them in reverse … Be creative, but do not make it ugly." And 06:29: "they have to be alive … instant … morph animations with pop-ups." 05:53: "Do not replicate the today screen to the workout screen."
+Reading of the log before building: he likes one richly made thing with a quiet UI around it, mechanics he can picture using (things that transform, numbers that roll), and he rejects plain. So the one thing is paper, and every motion is a real fold.
+Built (Today and the live workout, clickable, English and Danish): origami paper is coloured on one side and white on the other. Today is washi with today's crease pattern (13 creases, one per set), the week as a shelf of folded forms, a zigzag strip of sleep, protein and weight, and a dog-eared Coach note. The workout is the coloured side, one paper colour per exercise, and the room turns like a page when the exercise changes.
+- **Log a set (one tap):** the white square folds in half along its diagonal and flies into a 13-facet form at the top. The finished workout is that form, and it lands on Today and in the week shelf.
+- **Rest:** the next set's square starts closed (corners folded in, coloured side up) and unfolds over the rest; when it lies flat it is your next set. +30 s folds it back a little; "Start the set" finishes the unfold fast. The four corners are the − and + for kg and reps, so they are folded away while you rest.
+- **New best:** the fold shows the paper's other side, gold, with a light sweep; a three-panel gold strip unfolds at the top. The facet in the form stays gold.
+- **Pop-ups:** they unfold out of what you tap (wide first, then tall, like opening a folded note) and can be caught and reversed mid-way. Toasts unfold their Undo half. Finish early is a hold.
+Library motions used: Family approval unfolds (pop-ups unfold from the tapped thing, fold back on close); Days card-to-page, reversed (the finish form flies back onto Today); Any Distance medal (gold edge light on a new best); Monument Valley complete (the finish is the whole form, slowly turning, no confetti); Push and NumberFlow (only the changed digit rolls); Miles blur flip (last three seconds of rest); Alma hold-to-commit (hold to finish); Not Boring gold piece (each set adds one real piece to an object).
+Judge (one fresh design-judge, Sonnet): 8 overall, Today 8.5, Workout 7.5. Fixed after it: digits roll in a slot and faster, the toast no longer covers the Coach strip, softer shading on the unfolding corners, bigger − and +, darker text on gold, Today's empty gap filled by a bigger crease sheet, and the workout Coach is now a strip of the room's own paper so it doesn't read as Today's note. Not re-judged.
+My own score: 7.5. Biggest weakness: the white set square is a plain flat object most of the time; the beauty is in the folds, so a still screenshot undersells it and a phone has to show whether the folds feel instant. Also, 13 kites is a fixed day; a different number of sets changes the form's look.
+Needs phone: smoothness of the folds and the page turn at 120 Hz, banding in the coloured paper gradients, touch feel of the corner controls.
+Artifact: https://claude.ai/artifact/TPVVfBPH7pAh45auQgL6H6
+
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.
