@@ -57,6 +57,17 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: ten-style round, style 12 "Vesper", elegant frosted dusk (/_prototypes/vesper/)
+Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app… Test some unique things on some of them." Then (04:23): "also some ones genuinely different, like very beautiful, with frosted glass blur, beautiful elements, organized and everything like that." This is one of the extra ones: as beautiful and as organised as possible.
+Reading of the log before building: he asks for a picture of a real place, not an abstract material (12 Nov), and every round drawn with flat colour was called plain. Pale glass over a pale room failed (Studio) and so did the stock pink-to-violet pastel with no hero (Tide). The picture has to mean something ("make it make sense"). So: a real photograph, one bold thing in the sky on each screen, one sheet of glass instead of many, and the picture changes with what he does.
+Built (Today and the live workout, clickable, English and Danish): one photograph of a bay just after sunset (twilight blue sky, one rose cloud, sand-coloured light at the horizon) fills the phone. Everything to read or tap sits in a single light frosted sheet at the bottom, so each screen has one blurred layer. One typeface (Jost), white text, one pearl button, and sand for the few things that matter (tonight, the active number, a new best).
+- **Today:** the week as seven stars across the sky, a big readiness number with one Coach sentence, then the sheet: tonight's workout with Start, and sleep, protein and weight side by side, each with a small chart. Tapping a number opens its week as a chart with one Coach line.
+- **Workout:** the exercise name in the sky, and in the sheet the weight and reps in big thin numbers, a ruler to drag with a small gem as the pointer (minus and plus beside it), the Coach's line (on the last bench set it offers "Use 85 kg", with Undo), the sets as a row, and one button that logs the set with one tap. Rest is a ring like a watch bezel that fills with a pearl at its head, with 15 seconds less or more, Skip and Undo set.
+- **The unique thing:** every logged set flies up from the button and becomes a star. Tonight's sets wait in the sky as small rings, one little figure per exercise, so the sky also shows where he is in the workout. A new best is a larger sand-coloured star. The picture gets a little later with every set, from dusk to deep blue. The finished workout is a constellation, and Sunday's star lights up in the week on Today.
+JUDGE_TBD
+Checked in a real browser at 384 px: 35 taps and flows pass (log, rest, Undo, ruler drag, Coach action, finish early and keep going, Danish), one blurred layer per screen (two with a chart open), and no slow frames in the three main motions after a warm-up that paints the workout once behind Today. Frame rate itself is a phone test.
+Needs his phone: how the frost looks over the rose cloud and the water, stripes (banding) in the smooth sky of the night picture, the feel of the ruler under a thumb, the star's flight and the sheets at 120 Hz.
+
 ### 12 Nov 2026, 08:16: Reed and Silk rejected; Oura as the inspiration (/_prototypes/summit/)
 Rejected: Reed and Silk, both of them, about 40 minutes after Silk was published.
 His words: "This is not how I would like it. I wanted to take a look at, make the Aura app as inspiration, like a wallpaper that's very beautiful, like it." ("Aura" is Oura, as on 2 Nov.)
