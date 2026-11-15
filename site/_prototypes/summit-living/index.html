@@ -535,7 +535,7 @@ function applySky(first) {
     app.dataset.scene = c.s;
     if (!first) { const im = wall.querySelector(`img[data-s=${c.s}]`); im.animate([{ transform: 'scale(1.04)' }, { transform: 'scale(1)' }], { duration: 1600, easing: 'cubic-bezier(.2,.7,.2,1)' }); }
   }
-  const tintEl = $('tint'); tintEl.style.setProperty('--tc', c.tint.join(',')); tintEl.style.opacity = c.ta;
+  const tintEl = $('tint'); tintEl.style.setProperty('--tc', c.tint.join(',')); tintEl.style.opacity = S.view === 'workout' ? Math.max(c.ta, .14) : c.ta;
   $('wxfog').classList.toggle('on', c.s === 'fog' && (wx === 'fog' || wx === 'cloudy'));
   $('wxsnow').classList.toggle('on', c.s === 'snow');
   cur = c;
@@ -808,18 +808,20 @@ function startWorkout() {
   const td = $('today'), wk = $('workout'), dock = $('dock');
   wk.hidden = false; wk.getAnimations().forEach((x) => x.cancel());
   anim($('zoom'), [{ transform: 'scale(1)' }, { transform: 'scale(1.1)' }], { s: 'soft', duration: 1100 });
-  anim($('tint'), [{ opacity: getComputedStyle($('tint')).opacity }, { opacity: Math.max(cur.ta, .14) }], { duration: 900, easing: 'ease' });
+  tintTo(Math.max(cur.ta, .14));
   anim(td, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translate3d(0,-24px,0) scale(.98)' }], { duration: 300, easing: 'cubic-bezier(.4,0,1,1)' }).onfinish = () => { td.hidden = true; };
   anim(dock, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translate3d(0,30px,0)' }], { duration: 260, easing: 'cubic-bezier(.4,0,1,1)' });
   dock.style.pointerEvents = 'none';
   [...wk.children].forEach((ch, i) => anim(ch, [{ opacity: 0, transform: 'translate3d(0,28px,0)' }, { opacity: 1, transform: 'none' }], { s: 'pop', delay: 140 + i * 35, fill: 'backwards' }));
   if (S.rest) resumeRestFace();
 }
+/* the tint is a plain inline value eased by its CSS transition, so a later sky change always wins */
+function tintTo(v) { $('tint').style.opacity = v; }
 function goToday() {
   S.view = 'today'; renderToday(true);
   const td = $('today'), wk = $('workout'), dock = $('dock'); td.hidden = false; dock.style.pointerEvents = '';
   anim($('zoom'), [{ transform: 'scale(1.1)' }, { transform: 'scale(1)' }], { s: 'soft', duration: 1000 });
-  anim($('tint'), [{ opacity: getComputedStyle($('tint')).opacity }, { opacity: cur.ta }], { duration: 900, easing: 'ease' }).onfinish = function () { this.cancel(); };
+  tintTo(cur.ta);
   anim(wk, [{ opacity: 1 }, { opacity: 0, transform: 'translate3d(0,30px,0)' }], { duration: 260, easing: 'cubic-bezier(.4,0,1,1)' }).onfinish = function () { wk.hidden = true; this.cancel(); };
   td.getAnimations().forEach((x) => x.cancel()); dock.getAnimations().forEach((x) => x.cancel());
   anim(td, [{ opacity: 0, transform: 'translate3d(0,-20px,0)' }, { opacity: 1, transform: 'none' }], { s: 'pop', delay: 120, fill: 'backwards' });
@@ -835,6 +837,9 @@ document.querySelectorAll('.pm').forEach((b) => b.addEventListener('click', () =
 }));
 $('log').addEventListener('click', () => {
   if (S.rest) return endRest();
+  if (S.busy) return;
+  if (S.logs[S.li][S.si]) { if (S.si === lift().sets.length - 1) afterLog(true); return; }
+  S.busy = true;
   const l = lift(), set = l.sets[S.si], btn = $('log');
   S.logs[S.li][S.si] = [S.kg, S.reps]; S.volume += S.kg * S.reps; if (navigator.vibrate) navigator.vibrate(12);
   const isBest = e1(S.kg, S.reps) > e1(l.best.k, l.best.r) + .01;
@@ -848,8 +853,8 @@ $('log').addEventListener('click', () => {
   const diff = S.kg - prev, chip = isBest ? `${IC.up}${T('best')}` : diff > 0 ? `${IC.up}${T('up', nf(diff))}` : (S.kg === prev && S.reps > prevR) ? `${IC.up}${T('moreReps', S.reps - prevR)}` : T('same');
   setTimeout(() => { renderWorkoutStripOnly(); floatChip(chip, btn, { dy: -6 }); }, 420);
   const lastSet = S.si === l.sets.length - 1;
-  if (isBest) { const ob = `${nf(l.best.k)} × ${l.best.r}`; S.bests++; l.best = { k: S.kg, r: S.reps }; setTimeout(() => record(liftName(), S.logs[S.li][S.si], ob, () => afterLog(lastSet)), 700); }
-  else setTimeout(() => afterLog(lastSet), 500);
+  if (isBest) { const ob = `${nf(l.best.k)} × ${l.best.r}`; S.bests++; l.best = { k: S.kg, r: S.reps }; setTimeout(() => { S.busy = false; record(liftName(), S.logs[S.li][S.si], ob, () => afterLog(lastSet)); }, 700); }
+  else setTimeout(() => { S.busy = false; afterLog(lastSet); }, 500);
 });
 function renderWorkoutStripOnly() {
   const l = lift(), sps = [...$('strip').children].slice(1);
