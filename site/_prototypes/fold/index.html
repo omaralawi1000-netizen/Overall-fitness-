@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aven Fold</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=Instrument+Sans:wght@400..700&display=swap">
+<style>
+/* Fold. Origami paper: coloured on one side, white on the other.
+   Today is a sheet of washi with today's crease pattern on it. The workout is the coloured side:
+   every set is a square of paper you fold, and each fold becomes one facet of the day's form.
+   Motion is paper: hinges, folds and unfolds, never a cross-fade. Everything moves on transform and opacity. */
+:root {
+  --washi: #efe9dd; --washi-hi: #f8f4eb; --washi-lo: #e2dac9;
+  --ink: #1c2240; --ink-2: #565b76; --ink-3: #8b8ea3;
+  --sheet: #f7f3ea; --sheet-lo: #ebe4d6;
+  --gold-hi: #f4e2a2; --gold: #d2ac54; --gold-lo: #94681c;
+  --display: "Bricolage Grotesque", "Instrument Sans", system-ui, sans-serif;
+  --ui: "Instrument Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --S: 300px;
+  --outer: #d9d2c4;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --outer: #15182a; } }
+:root[data-theme="dark"] { --outer: #15182a; }
+* { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; }
+body { background: var(--outer); font-family: var(--ui); color: var(--ink); overflow: hidden;
+  -webkit-user-select: none; user-select: none; overscroll-behavior: none; }
+button { font: inherit; color: inherit; background: none; border: 0; cursor: pointer; touch-action: manipulation; }
+#app { position: relative; width: 100%; max-width: 430px; height: 100%; margin: 0 auto; overflow: hidden; isolation: isolate; }
+
+/* Paper: colour + a fixed grain tile (also breaks up banding in the light fall-off) */
+.paper { background-image: var(--grain), linear-gradient(180deg, var(--p-hi), var(--p) 52%, var(--p-lo)); background-size: 180px 180px, 100% 100%; }
+#room { position: absolute; inset: 0; z-index: 0; }
+#flip { position: absolute; inset: 0; z-index: 1; perspective: 1400px; pointer-events: none; }
+#flipOld, #flipA { position: absolute; left: 0; right: 0; height: 50%; opacity: 0; overflow: hidden; }
+#flipA { overflow: visible; }
+#flipA { transform-style: preserve-3d; }
+#flipA .face { position: absolute; inset: 0; overflow: hidden; }
+#flipA .front { transform: translateZ(.5px); backface-visibility: hidden; }
+#flipA .back { transform: translateZ(-.5px); }
+.half { position: absolute; left: 0; right: 0; height: 200%; }
+.shade { position: absolute; inset: 0; background: #0b0e20; opacity: 0; pointer-events: none; }
+.castshade { position: absolute; inset: 0; opacity: 0; pointer-events: none; }
+
+.screen { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; opacity: 0; pointer-events: none;
+  padding: max(14px, env(safe-area-inset-top)) 20px max(14px, env(safe-area-inset-bottom)); overflow: hidden; }
+.screen.on { opacity: 1; pointer-events: auto; }
+.screen > * { transform-origin: 50% 0; }
+
+/* ---------- Today ---------- */
+#today { color: var(--ink); gap: 14px; }
+.tdate { display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: var(--ink-2); letter-spacing: .01em; }
+.lang { padding: 6px 10px; margin: -6px -10px; font-size: 12px; font-weight: 600; letter-spacing: .08em; color: var(--ink-3); }
+.ttitle h1 { font-family: var(--display); font-weight: 650; font-size: 46px; line-height: .95; letter-spacing: -.035em; font-variation-settings: "opsz" 96; }
+.ttitle p { margin-top: 8px; font-size: 14.5px; color: var(--ink-2); }
+.hero { position: relative; display: grid; place-items: center; flex: 1 1 236px; min-height: 210px; max-height: 300px; }
+.hero .cp { width: min(250px, 92%); aspect-ratio: 1; height: auto; transform: rotate(-5deg); filter: drop-shadow(0 10px 18px rgba(60, 48, 25, .16)) drop-shadow(0 1px 1px rgba(60, 48, 25, .2)); }
+.hero .done { position: absolute; width: 230px; height: 230px; opacity: 0; }
+.legend { display: flex; justify-content: center; gap: 14px; font-size: 12px; color: var(--ink-2); margin-top: -4px; }
+.legend i { display: inline-block; width: 9px; height: 9px; margin-right: 5px; clip-path: polygon(0 0, 100% 100%, 0 100%); vertical-align: -1px; }
+.shelf { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.day { display: grid; justify-items: center; gap: 5px; padding: 6px 0 4px; border-radius: 10px; font-size: 11px; color: var(--ink-3); font-weight: 600; letter-spacing: .04em; }
+.day svg { width: 34px; height: 34px; }
+.day.today { color: var(--ink); }
+.day:active svg { transform: scale(.9); }
+.day svg { transition: transform .12s; }
+.strip { display: grid; grid-template-columns: repeat(3, 1fr); perspective: 700px; height: 74px; }
+.panel { position: relative; padding: 12px 12px 0; text-align: left; background-image: var(--grain), linear-gradient(90deg, var(--sheet), var(--sheet-lo)); background-size: 180px, 100%; }
+.panel:nth-child(1) { transform: rotateY(9deg); transform-origin: 100% 50%; border-radius: 8px 0 0 8px; }
+.panel:nth-child(2) { transform: rotateY(-9deg); transform-origin: 0 50%; background-image: var(--grain), linear-gradient(90deg, var(--sheet-lo), #ddd5c4); }
+.panel:nth-child(3) { transform: rotateY(9deg); transform-origin: 0 50%; border-radius: 0 8px 8px 0; }
+.panel b { display: block; font-size: 11px; font-weight: 600; letter-spacing: .07em; text-transform: uppercase; color: var(--ink-3); }
+.panel .v { display: block; margin-top: 6px; font-family: var(--display); font-weight: 600; font-size: 24px; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.panel .v small { font-family: var(--ui); font-size: 12px; font-weight: 500; color: var(--ink-2); letter-spacing: 0; }
+.panel:active { filter: brightness(.97); }
+.slip { position: relative; display: flex; gap: 10px; align-items: flex-start; text-align: left; padding: 13px 40px 13px 14px; min-height: 62px;
+  background-image: var(--grain), linear-gradient(180deg, #fbf8f1, var(--sheet)); background-size: 180px, 100%;
+  clip-path: polygon(0 0, calc(100% - 22px) 0, 100% 22px, 100% 100%, 0 100%); border-radius: 4px; font-size: 14px; line-height: 1.35; color: var(--ink); }
+.slip::after { content: ""; position: absolute; top: 0; right: 0; width: 22px; height: 22px; background: linear-gradient(225deg, transparent 50%, #d8cfbd 50%, #c9bfab); }
+.slip .dot { flex: none; width: 8px; height: 8px; margin-top: 6px; background: var(--ink); clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.slip:active { filter: brightness(.97); }
+.go { margin-top: auto; height: 60px; border-radius: 14px; background: var(--ink); color: #f6f1e6; font-size: 17px; font-weight: 600; letter-spacing: .01em;
+  display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex: none; }
+.go:active { transform: scale(.98); }
+.go { transition: transform .12s; }
+.go svg { width: 22px; height: 22px; }
+.quiet { margin-top: auto; text-align: center; font-size: 14px; color: var(--ink-2); padding: 20px 0; display: none; }
+
+/* ---------- Workout ---------- */
+#workout { color: #fff; gap: 0; }
+.wbar { display: flex; align-items: center; justify-content: space-between; height: 44px; font-size: 14px; flex: none; }
+.wbar button { height: 44px; padding: 0 12px; margin: 0 -12px; font-weight: 600; color: rgba(255,255,255,.86); }
+.wbar .clock { font-variant-numeric: tabular-nums; color: rgba(255,255,255,.72); letter-spacing: .02em; }
+.hold { position: relative; overflow: hidden; border-radius: 10px; }
+.hold .fill { position: absolute; inset: 8px 4px; border-radius: 8px; background: rgba(255,255,255,.22); transform: scaleX(0); transform-origin: 0 50%; }
+.rwrap { display: grid; place-items: center; height: 136px; flex: none; }
+.rwrap svg { width: 132px; height: 132px; overflow: visible; }
+.whead { text-align: center; height: 86px; flex: none; perspective: 600px; }
+.whead .lab { font-size: 12px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.66); }
+.whead .tt { margin-top: 4px; font-family: var(--display); font-weight: 600; font-size: 30px; letter-spacing: -.025em; line-height: 1.05; font-variant-numeric: tabular-nums; }
+.whead .tt.big { font-size: 40px; font-weight: 500; letter-spacing: -.03em; }
+.whead .sub { margin-top: 5px; font-size: 13.5px; color: rgba(255,255,255,.72); }
+.stage { position: relative; width: var(--S); height: var(--S); margin: 4px auto 0; perspective: 1100px; flex: none; }
+.sheet, .fold { position: absolute; inset: 0; transform-style: preserve-3d; }
+.sshadow { position: absolute; inset: 6px; border-radius: 3px; box-shadow: 0 18px 34px rgba(5, 8, 30, .32), 0 2px 4px rgba(5, 8, 30, .22); }
+.dshadow { position: absolute; opacity: 0; inset: 22%; transform: rotate(45deg); box-shadow: 0 14px 26px rgba(5, 8, 30, .3); border-radius: 2px; }
+.face { position: absolute; inset: 0; }
+.sface { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+.white { background-image: var(--grain), linear-gradient(160deg, #fcfaf5, var(--sheet) 55%, var(--sheet-lo)); background-size: 180px, 100%; color: var(--ink); }
+.flap { position: absolute; inset: 0; transform-style: preserve-3d; pointer-events: none; }
+.nograin { background-image: linear-gradient(160deg, #fbf8f1, #f3eee3); }
+/* corner flaps are painted as triangles with a hard gradient stop, not clip-path: Chrome drops clipped layers once they turn in 3D */
+.flap .in, .flap .bk { position: absolute; width: 50%; height: 50%; }
+.flap[data-c=tl] > div { left: 0; top: 0; } .flap[data-c=tr] > div { right: 0; top: 0; }
+.flap[data-c=br] > div { right: 0; bottom: 0; } .flap[data-c=bl] > div { left: 0; bottom: 0; }
+.flap .in { transform: translateZ(.3px); backface-visibility: hidden; color: var(--ink); }
+.flap .bk { transform: translateZ(-.3px); width: calc(50% + 2px); height: calc(50% + 2px); margin: -2px; }
+.flap[data-c=tl] > .bk, .flap[data-c=bl] > .bk { margin-right: 0; } .flap[data-c=tr] > .bk, .flap[data-c=br] > .bk { margin-left: 0; }
+.flap .shade { background: var(--tri-dark); }
+.flap .in .corner { inset: 0; width: auto; height: auto; }
+.hits { position: absolute; inset: 0; pointer-events: none; }
+.hits button { position: absolute; width: 76px; height: 76px; pointer-events: auto; }
+.hits.off button { pointer-events: none; }
+.creases { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.center { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; }
+.center .nx { font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+.center .w { font-family: var(--display); font-weight: 650; font-size: 64px; letter-spacing: -.045em; line-height: .95; font-variant-numeric: tabular-nums; margin-top: 6px; font-variation-settings: "opsz" 96; }
+.center .w small, .center .r small { font-family: var(--ui); font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--ink-2); margin-left: 3px; }
+.center .r { font-family: var(--display); font-weight: 500; font-size: 30px; letter-spacing: -.02em; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.corner { position: absolute; width: 50%; height: 50%; display: block; }
+.corner span { position: absolute; display: grid; place-items: center; width: 56px; height: 56px; font-size: 36px; font-weight: 300; line-height: 1; color: var(--ink); }
+.corner em { position: absolute; font-style: normal; font-size: 11px; font-weight: 650; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.c-tl { left: 0; top: 0; } .c-tl span { left: 6px; top: 6px; } .c-tl em { left: 18px; top: 58px; }
+.c-tr { right: 0; top: 0; } .c-tr span { right: 6px; top: 6px; } .c-tr em { right: 18px; top: 58px; }
+.c-bl { left: 0; bottom: 0; } .c-bl span { left: 6px; bottom: 6px; } .c-bl em { left: 14px; bottom: 58px; }
+.c-br { right: 0; bottom: 0; } .c-br span { right: 6px; bottom: 6px; } .c-br em { right: 14px; bottom: 58px; }
+.fold { opacity: 0; pointer-events: none; }
+.fold .fbase { clip-path: polygon(0 0, 0 100%, 100% 100%); }
+.fold .fflap { position: absolute; inset: 0; transform-style: preserve-3d; transform-origin: 0 0; }
+.fold .ffront, .fold .fback { position: absolute; inset: 0; clip-path: polygon(0 0, 100% 0, 100% 100%); }
+.fold .ffront { transform: translateZ(.3px); backface-visibility: hidden; }
+.fold .fback { transform: translateZ(-.3px); }
+.sheen { position: absolute; inset: 0; background: linear-gradient(115deg, transparent 35%, rgba(255,255,255,.75) 50%, transparent 65%); transform: translateX(-120%); opacity: 0; pointer-events: none; }
+.actions { position: relative; height: 64px; margin-top: 22px; flex: none; }
+.log, .rb { position: absolute; inset: 0; border-radius: 14px; font-size: 17px; font-weight: 650; letter-spacing: .01em; }
+.log { background-image: var(--grain), linear-gradient(180deg, #fcfaf5, var(--sheet)); background-size: 180px, 100%; color: var(--ink);
+  box-shadow: 0 10px 22px rgba(5, 8, 30, .22); transition: transform .1s; }
+.log:active { transform: scale(.975); }
+.rbs { position: absolute; inset: 0; display: grid; grid-template-columns: 1fr 1.4fr; gap: 10px; opacity: 0; pointer-events: none; }
+.rbs button { position: relative; border-radius: 14px; font-size: 16px; font-weight: 600; background: rgba(255,255,255,.14); color: #fff; transition: transform .1s; }
+.rbs button:active { transform: scale(.97); }
+.rbs button:last-child { background: rgba(255,255,255,.9); color: var(--ink); }
+.wslip { margin-top: auto; flex: none; }
+.wslip .slip { width: 100%; clip-path: none; border-radius: 12px; padding: 12px 14px 12px 46px; min-height: 0; background: rgba(8, 10, 34, .22); color: rgba(255,255,255,.92); font-size: 13.5px; }
+.wslip .slip::after { display: none; }
+.wslip .slip .dot { position: absolute; left: 14px; top: 50%; margin: -10px 0 0; width: 20px; height: 20px; background: linear-gradient(135deg, #fff 50%, rgba(255,255,255,.55) 50%); clip-path: polygon(0 0, 100% 0, 0 100%); }
+
+/* digits */
+.num { display: inline-flex; }
+.ch { position: relative; display: inline-block; }
+.ch .o { position: absolute; left: 0; top: 0; }
+.ch.roll { overflow: hidden; vertical-align: top; }
+
+/* ---------- Pop-ups that morph out of what you tapped ---------- */
+#scrim { position: absolute; inset: 0; z-index: 20; background: #0d1024; opacity: 0; pointer-events: none; }
+#pop { position: absolute; left: 16px; right: 16px; bottom: 96px; z-index: 21; opacity: 0; pointer-events: none; transform-origin: 0 0; }
+#pop .shell { position: relative; border-radius: 6px; padding: 20px 20px 18px; background-image: var(--grain), linear-gradient(170deg, #fdfbf6, var(--sheet) 60%, var(--sheet-lo)); background-size: 180px, 100%;
+  box-shadow: 0 24px 50px rgba(10, 12, 30, .28), 0 2px 4px rgba(10, 12, 30, .16); color: var(--ink); }
+#pop .crease { position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: linear-gradient(90deg, transparent, rgba(40, 30, 10, .22), transparent); opacity: 0; }
+#pop .crease.v { left: 50%; right: auto; top: 0; bottom: 0; width: 1px; height: auto; background: linear-gradient(180deg, transparent, rgba(40, 30, 10, .18), transparent); }
+#pop .body { opacity: 0; }
+#pop h3 { font-family: var(--display); font-size: 24px; font-weight: 600; letter-spacing: -.02em; line-height: 1.1; }
+#pop .k { font-size: 11px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+#pop p { margin-top: 10px; font-size: 15px; line-height: 1.45; color: var(--ink-2); }
+#pop .rows { margin-top: 14px; display: grid; gap: 8px; font-size: 14px; }
+#pop .rows div { display: flex; justify-content: space-between; border-top: 1px dashed rgba(28, 34, 64, .16); padding-top: 8px; }
+#pop .rows b { font-weight: 600; font-variant-numeric: tabular-nums; }
+#pop .btns { display: flex; gap: 10px; margin-top: 18px; }
+#pop .btns button { flex: 1; height: 52px; border-radius: 12px; font-size: 15.5px; font-weight: 600; background: rgba(28, 34, 64, .07); transition: transform .1s; }
+#pop .btns button.p { background: var(--ink); color: #f6f1e6; }
+#pop .btns button:active { transform: scale(.97); }
+
+/* PR banner: three panels that unfold like a strip of paper */
+#banner { position: absolute; top: max(10px, env(safe-area-inset-top)); left: 16px; right: 16px; z-index: 30; perspective: 900px; pointer-events: none; opacity: 0; }
+#banner .bp { position: relative; height: 34px; display: flex; align-items: center; justify-content: center; transform-style: preserve-3d; transform-origin: 50% 0; }
+#banner .bp > .f { position: absolute; inset: 0; backface-visibility: hidden; display: flex; align-items: center; justify-content: center; }
+#banner .bp > .bp { position: absolute; left: 0; right: 0; top: 100%; }
+.foil { background: linear-gradient(115deg, var(--gold-lo), var(--gold) 28%, var(--gold-hi) 46%, var(--gold) 62%, var(--gold-lo)); color: #3a2706; }
+#banner .p1 > .f { border-radius: 8px 8px 0 0; font-size: 11px; font-weight: 700; letter-spacing: .16em; text-transform: uppercase; }
+#banner .p2 > .f { font-family: var(--display); font-size: 19px; font-weight: 650; letter-spacing: -.01em; color: #2b1d00; background: linear-gradient(115deg, #a77b26, #e4c46c 40%, #f6e6b0 55%, #c99d45); }
+#banner .p3 > .f { border-radius: 0 0 8px 8px; font-size: 12.5px; font-weight: 500; background: linear-gradient(115deg, #8f6619, #c9a14c 45%, #e2c47b 60%, #a87e2c); }
+
+/* Toast slip: the Undo half unfolds out of the message half */
+#toast { position: absolute; left: 50%; bottom: max(18px, env(safe-area-inset-bottom)); z-index: 31; display: flex; perspective: 600px; transform: translateX(-50%); opacity: 0; pointer-events: none; }
+#toast .tm, #toast .tu { height: 46px; display: flex; align-items: center; font-size: 14px; font-weight: 600; }
+#toast .tm { padding: 0 16px; background: #1c2240; color: #f6f1e6; border-radius: 10px 0 0 10px; white-space: nowrap; }
+#toast .tu { padding: 0 18px; background: #2c3360; color: #fff; border-radius: 0 10px 10px 0; transform-origin: 0 50%; }
+#toast.solo .tm { border-radius: 10px; }
+
+/* Finish */
+#finish { color: #fff; align-items: center; text-align: center; z-index: 3; }
+#finish .fr { width: 250px; height: 250px; margin-top: 56px; overflow: visible; transform-origin: 0 0; }
+#finish .spin { transform-origin: 0 0; }
+#finish h2 { margin-top: 26px; font-family: var(--display); font-size: 40px; font-weight: 650; letter-spacing: -.035em; line-height: 1; }
+#finish .stats { display: flex; justify-content: center; gap: 22px; margin-top: 14px; font-size: 13px; color: rgba(255,255,255,.72); }
+#finish .stats b { display: block; font-family: var(--display); font-size: 24px; font-weight: 600; color: #fff; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+#finish .exs { width: 100%; margin-top: 24px; display: grid; gap: 0; font-size: 14px; text-align: left; }
+#finish .exs div { display: flex; align-items: center; gap: 10px; padding: 11px 2px; border-top: 1px solid rgba(255,255,255,.14); }
+#finish .exs i { width: 12px; height: 12px; clip-path: polygon(0 0, 100% 100%, 0 100%); flex: none; }
+#finish .exs span { flex: 1; } #finish .exs b { font-weight: 600; font-variant-numeric: tabular-nums; }
+#finish .exs .gold { color: var(--gold-hi); }
+#finish .go { width: 100%; background: rgba(255,255,255,.92); color: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) { .day svg, .go, .log, .rbs button { transition: none; } }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="room" class="paper"></div>
+  <div id="flip">
+    <div id="flipOld" class="face"><div class="half paper"></div><div class="castshade"></div></div>
+    <div id="flipA">
+      <div class="face front"><div class="half paper"></div><div class="shade"></div></div>
+      <div class="face back"><div class="half paper"></div><div class="shade"></div></div>
+    </div>
+  </div>
+
+  <!-- Today -->
+  <section id="today" class="screen on">
+    <div class="tdate"><span id="tDate"></span><button class="lang" id="langBtn"></button></div>
+    <div class="ttitle"><h1 id="tTitle"></h1><p id="tMeta"></p></div>
+    <div class="hero" id="hero"><svg class="cp" id="cp" viewBox="0 0 200 200"></svg><svg class="done" id="heroDone" viewBox="-80 -80 160 160"></svg></div>
+    <div class="legend" id="legend"></div>
+    <div class="shelf" id="shelf"></div>
+    <div class="strip" id="strip"></div>
+    <button class="slip" id="tCoach"><span class="dot"></span><span id="tCoachText"></span></button>
+    <button class="go" id="startBtn"><span id="startLabel"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12h13M13 6l6 6-6 6"/></svg></button>
+    <div class="quiet" id="tQuiet"></div>
+  </section>
+
+  <!-- Live workout -->
+  <section id="workout" class="screen">
+    <div class="wbar"><button id="backBtn"></button><span class="clock" id="clock">0:00</span><button class="hold" id="finBtn"><span class="fill"></span><span id="finLabel" style="position:relative"></span></button></div>
+    <div class="rwrap"><svg id="rosette" viewBox="-80 -80 160 160"></svg></div>
+    <div class="whead" id="whead"><div class="lab" id="wLab"></div><div class="tt" id="wTitle"></div><div class="sub" id="wSub"></div></div>
+    <div class="stage" id="stage">
+      <div class="sshadow" id="sShadow"></div>
+      <div class="dshadow" id="dShadow"></div>
+      <div class="sheet" id="sheet">
+        <div class="face sface white nograin" id="sFace"></div>
+      </div>
+      <div class="fold" id="fold">
+        <div class="face fbase white" id="fBase"></div>
+        <div class="fflap" id="fFlap"><div class="ffront white" id="fFront"></div><div class="fback" id="fBack"><div class="shade"></div><div class="sheen"></div></div></div>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="log" id="logBtn"></button>
+      <div class="rbs" id="rbs"><button id="plusBtn"></button><button id="skipBtn"></button></div>
+    </div>
+    <div class="wslip"><button class="slip" id="wCoach"><span class="dot"></span><span id="wCoachText"></span></button></div>
+  </section>
+
+  <section id="finish" class="screen">
+    <svg class="fr" id="finRos" viewBox="-80 -80 160 160"><g class="spin" id="finSpin"></g></svg>
+    <h2 id="finTitle"></h2>
+    <div class="stats" id="finStats"></div>
+    <div class="exs" id="finExs"></div>
+    <button class="go" id="doneBtn"><span id="doneLabel"></span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M5 12l5 5L19 7"/></svg></button>
+  </section>
+
+  <div id="scrim"></div>
+  <div id="pop"><div class="shell"><div class="crease"></div><div class="crease v"></div><div class="body" id="popBody"></div></div></div>
+  <div id="banner"><div class="bp p1"><div class="f foil" id="b1"></div><div class="bp p2"><div class="f" id="b2"></div><div class="bp p3"><div class="f" id="b3"></div></div></div></div></div>
+  <div id="toast"><div class="tm" id="toastMsg"></div><button class="tu" id="toastUndo"></button></div>
+</div>
+
+<script>
+'use strict';
+const Q = new URLSearchParams(location.search);
+const LANG = Q.get('lang') === 'da' ? 'da' : 'en';
+const REST = Q.get('rest') ? Math.max(3, +Q.get('rest')) * 1000 : 0;
+const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = (id) => document.getElementById(id);
+
+// ---------- strings ----------
+const T = {
+  en: { morning: 'Good morning', afternoon: 'Good afternoon', evening: 'Good evening', push: 'Push day', meta: '4 lifts · 13 sets · about 55 min',
+    start: 'Start Push', resume: 'Resume Push', sleep: 'Sleep', protein: 'Protein', weight: 'Weight', today: 'Today', finish: 'Hold to finish',
+    setOf: 'Set {a} of {b}', last: 'Last time {w} × {r}', rest: 'Rest', then: 'Then {n}, set {a}', next: 'Next · set {a}', log: 'Log set', plus: '+30 s', skip: 'Start the set',
+    kg: 'kg', reps: 'reps', logged: 'Set {a} logged', undo: 'Undo', best: 'New best', was: 'Old best {w} × {r}', done: 'Back to Today', folded: 'Push, folded.',
+    sets: 'sets', lifted: 'kg lifted', min: 'min', foldedTitle: 'Push, folded', foldedMeta: '{s} sets · {v} kg · {m} min', quiet: 'Next: Pull on Tuesday. Protein {p} g to go.',
+    tCoach: 'Protein ended 40 g short yesterday. Add skyr after training?', coachK: 'Coach', skyrT: 'Add 200 g skyr after training', skyrP: 'That closes most of yesterday\'s gap and keeps today on 150 g. Logged as an estimate, you can change it.',
+    add: 'Add it', notNow: 'Not now', added: 'Skyr added · +20 g protein', proteinT: 'Protein today', meals: [['Oats, milk', '24 g'], ['Rye bread, eggs', '31 g'], ['Chicken, rice', '37 g']],
+    sleepT: 'Slept 7 h 40', sleepP: 'Bed 23:20, up 07:00. Your promise was bed by 23:30: kept four nights running.', weightT: '77.4 kg this morning', weightP: 'Steady across the week (77.2 to 77.6). On pace for 77 kg by December.',
+    days: ['M', 'T', 'W', 'T', 'F', 'S', 'S'], dayN: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    pull: 'Pull', legs: 'Legs', wrestling: 'Wrestling', restDay: 'Rest day', pullD: '12 sets · 5,880 kg · 49 min', legsD: '14 sets · 9,420 kg · 61 min', wrD: '90 min mat session, hard', restD: 'No training. 9,100 steps.',
+    todayD: 'Today\'s sheet: 13 creases, one for each set. Each set you log folds one.',
+    c0: 'Bench has gone up three weeks running. 82.5 for 8 on set 2 would be a new best.', c1: 'That moved fast. Want 2.5 kg more on the next set?', cPr: 'New best. Hold this weight for the next set, don\'t chase it.',
+    cNew: 'New lift. First set is the feel set: smooth reps, same weight all three.', load: 'Load {w} kg', keep: 'Keep {w} kg', loaded: 'Loaded {w} kg', ok: 'Got it',
+    coachW: 'Coach' },
+  da: { morning: 'Godmorgen', afternoon: 'God eftermiddag', evening: 'God aften', push: 'Push-dag', meta: '4 øvelser · 13 sæt · cirka 55 min',
+    start: 'Start Push', resume: 'Fortsæt Push', sleep: 'Søvn', protein: 'Protein', weight: 'Vægt', today: 'I dag', finish: 'Hold for at slutte',
+    setOf: 'Sæt {a} af {b}', last: 'Sidst {w} × {r}', rest: 'Pause', then: 'Derefter {n}, sæt {a}', next: 'Næste · sæt {a}', log: 'Log sæt', plus: '+30 s', skip: 'Start sættet',
+    kg: 'kg', reps: 'gent.', logged: 'Sæt {a} logget', undo: 'Fortryd', best: 'Ny rekord', was: 'Gammel rekord {w} × {r}', done: 'Tilbage til I dag', folded: 'Push, foldet.',
+    sets: 'sæt', lifted: 'kg løftet', min: 'min', foldedTitle: 'Push, foldet', foldedMeta: '{s} sæt · {v} kg · {m} min', quiet: 'Næste: Pull på tirsdag. {p} g protein tilbage.',
+    tCoach: 'Protein sluttede 40 g for lavt i går. Skyr efter træning?', coachK: 'Coach', skyrT: 'Tilføj 200 g skyr efter træning', skyrP: 'Det lukker det meste af gårsdagens hul og holder dagen på 150 g. Logget som et skøn, du kan rette det.',
+    add: 'Tilføj', notNow: 'Ikke nu', added: 'Skyr tilføjet · +20 g protein', proteinT: 'Protein i dag', meals: [['Havregryn, mælk', '24 g'], ['Rugbrød, æg', '31 g'], ['Kylling, ris', '37 g']],
+    sleepT: 'Sov 7 t 40', sleepP: 'I seng 23:20, op 07:00. Dit løfte var i seng før 23:30: holdt fire nætter i træk.', weightT: '77,4 kg i morges', weightP: 'Stabil hele ugen (77,2 til 77,6). På vej mod 77 kg i december.',
+    days: ['M', 'T', 'O', 'T', 'F', 'L', 'S'], dayN: ['Mandag', 'Tirsdag', 'Onsdag', 'Torsdag', 'Fredag', 'Lørdag', 'Søndag'],
+    pull: 'Pull', legs: 'Ben', wrestling: 'Brydning', restDay: 'Hviledag', pullD: '12 sæt · 5.880 kg · 49 min', legsD: '14 sæt · 9.420 kg · 61 min', wrD: '90 min på måtten, hårdt', restD: 'Ingen træning. 9.100 skridt.',
+    todayD: 'Dagens ark: 13 folder, én for hvert sæt. Hvert sæt du logger, folder én.',
+    c0: 'Bænkpres er steget tre uger i træk. 82,5 i 8 på sæt 2 er en ny rekord.', c1: 'Det gik hurtigt. Vil du have 2,5 kg mere på næste sæt?', cPr: 'Ny rekord. Hold vægten på næste sæt, jag den ikke.',
+    cNew: 'Ny øvelse. Første sæt er følesættet: rolige gentagelser, samme vægt alle tre.', load: 'Læg {w} kg på', keep: 'Behold {w} kg', loaded: '{w} kg lagt på', ok: 'Forstået',
+    coachW: 'Coach' },
+};
+const t = (k, v = {}) => String(T[LANG][k]).replace(/\{(\w)\}/g, (_, x) => v[x]);
+const fmt = (n) => { const s = Number.isInteger(n) ? String(n) : n.toFixed(1); return LANG === 'da' ? s.replace('.', ',') : s; };
+const thou = (n) => n.toLocaleString(LANG === 'da' ? 'da-DK' : 'en-GB');
+document.documentElement.lang = LANG;
+
+// ---------- the day ----------
+const EX = [
+  { n: { en: 'Bench press', da: 'Bænkpres' }, s: { en: 'Bench', da: 'Bænk' }, p: '#2a3a8e', hi: '#3c50b2', lo: '#1b276a', sets: [[80, 8], [82.5, 8], [82.5, 8], [80, 8]], last: [80, 8], best: [82.5, 7], step: 2.5, rest: 120000 },
+  { n: { en: 'Overhead press', da: 'Skulderpres' }, s: { en: 'Press', da: 'Skulder' }, p: '#116c5a', hi: '#1d8a73', lo: '#0a4f42', sets: [[50, 8], [50, 8], [50, 7]], last: [47.5, 8], best: [52.5, 6], step: 2.5, rest: 120000 },
+  { n: { en: 'Incline dumbbell press', da: 'Skråbænk, håndvægte' }, s: { en: 'Incline', da: 'Skrå' }, p: '#8f2f59', hi: '#ad4572', lo: '#6a1f40', sets: [[30, 10], [30, 10], [30, 9]], last: [28, 10], best: [32, 8], step: 2, rest: 90000 },
+  { n: { en: 'Triceps pushdown', da: 'Triceps pushdown' }, s: { en: 'Triceps', da: 'Triceps' }, p: '#553a98', hi: '#6d52b6', lo: '#3d2873', sets: [[35, 12], [35, 12], [35, 12]], last: [32.5, 12], best: [37.5, 10], step: 2.5, rest: 90000 },
+];
+const WASHI = { p: '#efe9dd', hi: '#f8f4eb', lo: '#e2dac9' };
+const GOLD = { hi: '#f2dc97', lo: '#b4862a' };
+const FACETS = EX.flatMap((e, ei) => e.sets.map((_, si) => ({ ex: ei, set: si })));
+const facetOf = (ex, set) => FACETS.findIndex((f) => f.ex === ex && f.set === set);
+
+const st = { screen: 'today', started: false, ex: 0, set: 0, w: 80, r: 8, log: [], phase: 'set', t0: 0, protein: 92, skyr: false, done: false, restEnd: 0, restAnims: [], plan: EX.map((e) => e.sets.map((s) => s.slice())), best: EX.map((e) => e.best.slice()) };
+
+// ---------- motion: one shared set of springs, sampled into linear() so the compositor runs them ----------
+function spring(k, c, m = 1) {
+  let x = 0, v = 0; const dt = 1 / 240, pts = []; let tt = 0, still = 0;
+  while (tt < 3) { const a = (-k * (x - 1) - c * v) / m; v += a * dt; x += v * dt; tt += dt; pts.push(x);
+    if (Math.abs(x - 1) < 0.001 && Math.abs(v) < 0.01) { if (++still > 12) break; } else still = 0; }
+  const n = 48, out = []; for (let i = 0; i <= n; i++) out.push(+pts[Math.min(pts.length - 1, Math.round(i / n * (pts.length - 1)))].toFixed(4));
+  out[n] = 1; return { easing: `linear(${out.join(',')})`, duration: Math.round(tt * 1000) };
+}
+const SP = { fold: spring(190, 28), settle: spring(240, 21), quick: spring(520, 44) };
+const EASE = 'cubic-bezier(.22,.8,.2,1)';
+function anim(el, kf, o, end = 'clear') {
+  if (REDUCE) o = { ...o, duration: Math.min(o.duration || 200, 160) };
+  const a = el.animate(kf, { fill: 'both', ...o });
+  a.finished.then(() => { if (end === 'keep') { const last = kf[kf.length - 1]; for (const p in last) if (p !== 'offset' && p !== 'easing') el.style[p] = last[p]; } a.cancel(); }).catch(() => {});
+  return a;
+}
+const wait = (ms) => new Promise((r) => setTimeout(r, REDUCE ? Math.min(ms, 120) : ms));
+const buzz = (ms) => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+
+// ---------- grain tile ----------
+const grainSVG = `<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .2  0 0 0 0 .17  0 0 0 0 .12  0 0 0 .075 0'/></filter><rect width='180' height='180' filter='url(%23n)'/></svg>`;
+document.documentElement.style.setProperty('--grain', `url("data:image/svg+xml,${grainSVG.replace(/</g, '%3C').replace(/>/g, '%3E').replace(/"/g, "'")}")`);
+function setPaper(el, c) { el.style.setProperty('--p', c.p); el.style.setProperty('--p-hi', c.hi); el.style.setProperty('--p-lo', c.lo); }
+setPaper($('room'), WASHI);
+
+// ---------- the form: one kite per set, split along its crease into a lit and a shaded half ----------
+function rosette(facets, { r = 74, stroke = 'rgba(255,255,255,.34)', id = '' } = {}) {
+  const n = facets.length, step = Math.PI * 2 / n, ri = r * 0.6, tw = 0.28; let s = '';
+  for (let i = 0; i < n; i++) {
+    const a0 = -Math.PI / 2 + i * step, a1 = a0 + step, am = a0 + step * (0.5 + tw);
+    const P0 = [ri * Math.cos(a0), ri * Math.sin(a0)], P1 = [ri * Math.cos(a1), ri * Math.sin(a1)], Tp = [r * Math.cos(am), r * Math.sin(am)];
+    const f = facets[i], pt = (p) => p[0].toFixed(2) + ',' + p[1].toFixed(2);
+    if (f.on) {
+      s += `<g class="kite" data-i="${i}" style="transform-box:fill-box;transform-origin:center"><polygon points="0,0 ${pt(P0)} ${pt(Tp)}" fill="${f.hi}"/><polygon points="0,0 ${pt(Tp)} ${pt(P1)}" fill="${f.lo}"/><line x1="0" y1="0" x2="${pt(Tp).split(',')[0]}" y2="${pt(Tp).split(',')[1]}" stroke="rgba(255,255,255,.28)" stroke-width=".5"/></g>`;
+    } else {
+      s += `<g class="kite" data-i="${i}"><polygon points="0,0 ${pt(P0)} ${pt(Tp)} ${pt(P1)}" fill="none" stroke="${stroke}" stroke-width=".7" stroke-dasharray="2.2 2.2" stroke-linejoin="round"/><line x1="0" y1="0" x2="${Tp[0].toFixed(2)}" y2="${Tp[1].toFixed(2)}" stroke="${stroke}" stroke-width=".5" stroke-dasharray="1 2.4"/></g>`;
+    }
+  }
+  return s;
+}
+function facetColors(onAll) {
+  return FACETS.map((f, i) => {
+    const L = st.log.find((l) => l.ex === f.ex && l.set === f.set);
+    const on = onAll || !!L; const e = EX[f.ex];
+    return { on, hi: L && L.pr ? GOLD.hi : e.hi, lo: L && L.pr ? GOLD.lo : e.lo };
+  });
+}
+function facetPoint(i, r = 74) { const step = Math.PI * 2 / FACETS.length; const am = -Math.PI / 2 + i * step + step * 0.5; return [Math.cos(am) * r * 0.62, Math.sin(am) * r * 0.62, am]; }
+
+// Today's sheet, unfolded: the same 13 kites as crease lines on a square of washi
+function creasePattern() {
+  const n = FACETS.length, step = Math.PI * 2 / n, r = 84, ri = r * 0.6, tw = 0.28; let wedges = '', lines = '';
+  for (let i = 0; i < n; i++) {
+    const a0 = -Math.PI / 2 + i * step, a1 = a0 + step, am = a0 + step * (0.5 + tw); const e = EX[FACETS[i].ex];
+    const P0 = [100 + ri * Math.cos(a0), 100 + ri * Math.sin(a0)], P1 = [100 + ri * Math.cos(a1), 100 + ri * Math.sin(a1)], Tp = [100 + r * Math.cos(am), 100 + r * Math.sin(am)];
+    const pt = (p) => p[0].toFixed(1) + ',' + p[1].toFixed(1);
+    wedges += `<polygon points="100,100 ${pt(P0)} ${pt(Tp)} ${pt(P1)}" fill="${e.p}" fill-opacity="${i % 2 ? .09 : .14}"/>`;
+    lines += `<line x1="100" y1="100" x2="${pt(Tp).replace(',', '" y2="')}" stroke="${e.p}" stroke-opacity=".55" stroke-width=".7"/>`;
+    lines += `<line x1="100" y1="100" x2="${pt(P0).replace(',', '" y2="')}" stroke="${e.p}" stroke-opacity=".45" stroke-width=".6" stroke-dasharray="3 2.2"/>`;
+    lines += `<polyline points="${pt(P0)} ${pt(Tp)} ${pt(P1)}" fill="none" stroke="${e.p}" stroke-opacity=".38" stroke-width=".6" stroke-dasharray="1 2"/>`;
+  }
+  return `<defs><linearGradient id="wg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fdfbf6"/><stop offset=".6" stop-color="#f6f1e6"/><stop offset="1" stop-color="#ebe3d3"/></linearGradient></defs>
+    <rect width="200" height="200" fill="url(#wg)"/>
+    <g stroke="#1c2240" stroke-opacity=".09" stroke-width=".6" stroke-dasharray="4 3"><line x1="0" y1="0" x2="200" y2="200"/><line x1="200" y1="0" x2="0" y2="200"/><line x1="100" y1="0" x2="100" y2="200"/><line x1="0" y1="100" x2="200" y2="100"/></g>
+    ${wedges}${lines}<circle cx="100" cy="100" r="1.6" fill="#1c2240" fill-opacity=".5"/>`;
+}
+
+// ---------- Today ----------
+const hour = new Date().getHours();
+function renderToday() {
+  const d = new Date(); const di = (d.getDay() + 6) % 7;
+  $('tDate').textContent = d.toLocaleDateString(LANG === 'da' ? 'da-DK' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  $('langBtn').textContent = LANG === 'da' ? 'EN' : 'DA';
+  if (!st.done) { $('tTitle').textContent = t('push'); $('tMeta').textContent = t(hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening') + '. ' + t('meta'); }
+  $('cp').innerHTML = creasePattern();
+  $('legend').innerHTML = EX.map((e) => `<span><i style="background:${e.p}"></i>${e.s[LANG]} ${e.sets.length}</span>`).join('');
+  // the week: days you trained are folded forms, rest days a plain folded square
+  const week = [{ k: 'pull', c: ['#2f6d8c', '#245470'], n: 12 }, { k: 'wrestling' }, { k: 'rest' }, { k: 'legs', c: ['#6c7a2a', '#4f5a1b'], n: 14 }, { k: 'wrestling' }, { k: 'rest' }, { k: 'today' }];
+  $('shelf').innerHTML = week.map((w, i) => {
+    let g;
+    if (w.k === 'today') g = st.done ? `<svg viewBox="-80 -80 160 160">${rosette(facetColors(false))}</svg>` : `<svg viewBox="-80 -80 160 160"><rect x="-56" y="-56" width="112" height="112" fill="none" stroke="#1c2240" stroke-opacity=".45" stroke-width="5" stroke-dasharray="10 9"/></svg>`;
+    else if (w.k === 'rest') g = `<svg viewBox="-80 -80 160 160"><rect x="-44" y="-44" width="88" height="88" transform="rotate(45)" fill="#e4dccb" stroke="#1c2240" stroke-opacity=".12" stroke-width="3"/></svg>`;
+    else if (w.k === 'wrestling') g = `<svg viewBox="-80 -80 160 160"><polygon points="0,-62 62,52 -62,52" fill="#c2563f" fill-opacity="0"/><polygon points="0,-62 0,52 -62,52" fill="#3b4a5e"/><polygon points="0,-62 62,52 0,52" fill="#27344a"/></svg>`;
+    else g = `<svg viewBox="-80 -80 160 160">${rosette(Array.from({ length: w.n }, (_, j) => ({ on: true, hi: w.c[0], lo: w.c[1] })), { r: 74 })}</svg>`;
+    return `<button class="day${i === 6 ? ' today' : ''}" data-d="${i}">${g}<span>${T[LANG].days[i]}</span></button>`;
+  }).join('');
+  $('strip').innerHTML = `<button class="panel" data-m="sleep"><b>${t('sleep')}</b><span class="v">7<small> h </small>40</span></button>
+    <button class="panel" data-m="protein"><b>${t('protein')}</b><span class="v"><span class="num" id="protNum"></span><small> / 150 g</small></span></button>
+    <button class="panel" data-m="weight"><b>${t('weight')}</b><span class="v">${fmt(77.4)}<small> kg</small></span></button>`;
+  setNum($('protNum'), String(st.protein), true);
+  $('tCoachText').textContent = st.skyr ? t('added') : t('tCoach');
+  $('startLabel').textContent = st.started ? t('resume') : t('start');
+  $('tQuiet').textContent = t('quiet', { p: Math.max(0, 150 - st.protein) });
+  void di;
+}
+
+// ---------- digits: only a changed digit moves, the old one leaves as the new one lands ----------
+function setNum(el, str, instant, blur) {
+  const old = el.dataset.v; if (old === str) return; el.dataset.v = str;
+  const chars = [...str];
+  if (instant || old == null || REDUCE) { el.innerHTML = chars.map((c) => `<span class="ch">${c}</span>`).join(''); return; }
+  const oc = [...old]; const off = oc.length - chars.length;
+  el.innerHTML = chars.map((c, i) => { const o = oc[i + off]; return o !== c ? `<span class="ch roll"><span class="n">${c}</span>${o != null ? `<span class="o">${o}</span>` : ''}</span>` : `<span class="ch">${c}</span>`; }).join('');
+  el.querySelectorAll('.roll').forEach((r, k) => {
+    const n = r.querySelector('.n'), o = r.querySelector('.o'); const f = blur ? 'blur(3px)' : 'blur(0px)';
+    anim(n, [{ transform: 'translateY(.55em)', opacity: 0, filter: f }, { transform: 'none', opacity: 1, filter: 'blur(0px)' }], { ...SP.quick, delay: k * 18 });
+    if (o) anim(o, [{ transform: 'none', opacity: 1, filter: 'blur(0px)' }, { transform: 'translateY(-.55em)', opacity: 0, filter: f }], { duration: 160, easing: 'cubic-bezier(.4,0,.6,1)', delay: k * 18 }, 'keep');
+  });
+}
+
+// ---------- the room turns like a page: the top half folds down over the bottom ----------
+let flipping = Promise.resolve();
+function flipRoom(from, to, dir = 'down', dur = 640) {
+  flipping = flipping.then(() => new Promise((res) => {
+    const A = $('flipA'), O = $('flipOld'), top = dir === 'down';
+    setPaper($('room'), to);
+    // the half that stays still: the old colour, until the flap lands on it
+    Object.assign(O.style, { top: top ? '50%' : '0', opacity: 1 });
+    O.firstElementChild.style.top = top ? '-100%' : '0'; setPaper(O.firstElementChild, from);
+    O.lastElementChild.style.background = top ? 'linear-gradient(180deg, rgba(8,10,28,.45), rgba(8,10,28,0) 70%)' : 'linear-gradient(0deg, rgba(8,10,28,.45), rgba(8,10,28,0) 70%)';
+    Object.assign(A.style, { top: top ? '0' : '50%', opacity: 1, transformOrigin: top ? '50% 100%' : '50% 0' });
+    const [fr, bk] = A.children;
+    fr.firstElementChild.style.top = top ? '0' : '-100%'; setPaper(fr.firstElementChild, from); fr.firstElementChild.style.transform = '';
+    // the back is seen from behind, so it is painted upside down and lands the right way up
+    bk.firstElementChild.style.top = top ? '-100%' : '0'; setPaper(bk.firstElementChild, to); bk.firstElementChild.style.transform = 'scaleY(-1)';
+    const end = top ? -180 : 180;
+    const o = { duration: REDUCE ? 1 : dur, easing: 'cubic-bezier(.55,0,.25,1)' };
+    const a = anim(A, [{ transform: 'rotateX(0deg)' }, { transform: `rotateX(${end}deg)` }], o);
+    anim(fr.lastElementChild, [{ opacity: 0 }, { opacity: .38 }], { ...o, duration: o.duration / 2, easing: 'ease-in' });
+    anim(bk.lastElementChild, [{ opacity: .42 }, { opacity: .42, offset: .5 }, { opacity: 0 }], o);
+    anim(O.lastElementChild, [{ opacity: 0 }, { opacity: 0, offset: .45 }, { opacity: 1, offset: .9 }, { opacity: 0 }], o);
+    a.finished.then(() => { A.style.opacity = 0; O.style.opacity = 0; res(); }).catch(res);
+  }));
+  return flipping;
+}
+
+// ---------- screens ----------
+function sections(id) { return [...$(id).children]; }
+async function foldAway(id) {
+  const els = sections(id);
+  els.forEach((el, i) => anim(el, [{ transform: 'perspective(700px) rotateX(0deg)', opacity: 1 }, { transform: 'perspective(700px) rotateX(78deg) translateY(-10px)', opacity: 0 }], { duration: 260, delay: i * 28, easing: 'cubic-bezier(.5,0,.75,0)' }, 'keep'));
+  await wait(260 + els.length * 28);
+  $(id).classList.remove('on'); els.forEach((el) => { el.style.opacity = ''; el.style.transform = ''; });
+}
+function unfoldIn(id, delay = 0) {
+  const s = $(id); s.classList.add('on');
+  sections(id).forEach((el, i) => anim(el, [{ transform: 'perspective(700px) rotateX(-70deg) translateY(14px)', opacity: 0 }, { transform: 'none', opacity: 1 }], { ...SP.settle, delay: delay + i * 45 }));
+}
+const exColors = (i) => ({ p: EX[i].p, hi: EX[i].hi, lo: EX[i].lo });
+
+async function startWorkout() {
+  if (st.screen !== 'today') return;
+  st.screen = 'workout'; buzz(8);
+  if (!st.started) { st.started = true; st.t0 = Date.now(); loadSet(); }
+  renderWorkout(true);
+  const fa = foldAway('today');
+  await wait(140); flipRoom(WASHI, exColors(st.ex), 'down'); await fa;
+  unfoldIn('workout', 120);
+}
+async function backToToday() {
+  if (st.screen !== 'workout' || st.phase === 'busy') return;
+  st.screen = 'today'; renderToday();
+  const fa = foldAway('workout'); await wait(140); flipRoom(exColors(st.ex), WASHI, 'up'); await fa;
+  unfoldIn('today', 120);
+}
+$('startBtn').onclick = startWorkout; $('backBtn').onclick = backToToday;
+$('langBtn').onclick = () => { const u = new URL(location.href); u.searchParams.set('lang', LANG === 'da' ? 'en' : 'da'); location.href = u.toString(); };
+
+// ---------- the set: a square of origami paper, white side up ----------
+const CORNERS = [
+  { c: 'tl', clip: 'polygon(0 0, 50% 0, 0 50%)', org: '50% 0', ax: [-1, 1], o: [.5, 0], p: [0, 0], sym: '−', lab: 'kg', act: () => adjust('w', -1) },
+  { c: 'tr', clip: 'polygon(100% 0, 50% 0, 100% 50%)', org: '50% 0', ax: [1, 1], o: [.5, 0], p: [1, 0], sym: '+', lab: 'kg', act: () => adjust('w', 1) },
+  { c: 'br', clip: 'polygon(100% 100%, 100% 50%, 50% 100%)', org: '100% 50%', ax: [-1, 1], o: [1, .5], p: [1, 1], sym: '+', lab: 'reps', act: () => adjust('r', 1) },
+  { c: 'bl', clip: 'polygon(0 100%, 0 50%, 50% 100%)', org: '0 50%', ax: [1, 1], o: [0, .5], p: [0, 1], sym: '−', lab: 'reps', act: () => adjust('r', -1) },
+];
+// which way round each fold has to turn so the paper comes up towards you, never through the sheet
+function towards(ax, o, p) { const m = new DOMMatrix().translate(o[0] * 100, o[1] * 100).rotateAxisAngle(ax[0], ax[1], 0, 90).translate(-o[0] * 100, -o[1] * 100); return m.transformPoint(new DOMPoint(p[0] * 100, p[1] * 100, 0)).z > 0 ? 1 : -1; }
+CORNERS.forEach((k) => { k.sign = towards(k.ax, k.o, k.p); });
+const flapT = (k, deg) => `translateZ(.6px) rotate3d(${k.ax[0]}, ${k.ax[1]}, 0, ${deg * k.sign}deg)`;
+const DIR = { tl: 'to bottom right', tr: 'to bottom left', br: 'to top left', bl: 'to top right' };
+const TONE = { tl: ['var(--f-hi)', 'var(--f-hi)'], tr: ['var(--f-hi)', 'var(--f)'], br: ['var(--f)', 'var(--f-lo)'], bl: ['var(--f)', 'var(--f)'] };
+const tri = (d, a, b) => `linear-gradient(${d}, ${a} 0%, ${b} 50.6%, transparent 51.2%)`;
+function buildSheet() {
+  const sh = $('sheet'), hits = document.createElement('div'); hits.className = 'hits'; hits.id = 'hits';
+  CORNERS.forEach((k) => {
+    const f = document.createElement('div'); f.className = 'flap'; f.style.transformOrigin = k.org; f.dataset.c = k.c;
+    const d = DIR[k.c];
+    f.innerHTML = `<div class="in" style="background:${tri(d, '#fbf8f1', '#f3eee3')}"><span class="corner c-${k.c}"><span>${k.sym}</span><em>${t(k.lab === 'kg' ? 'kg' : 'reps')}</em></span><div class="shade" style="background:${tri(d, '#0b0e20', '#0b0e20')}"></div></div><div class="bk" style="background:${tri(d, TONE[k.c][0], TONE[k.c][1])}"><div class="shade" style="background:${tri(d, '#0b0e20', '#0b0e20')}"></div></div>`;
+    f.style.transform = flapT(k, 0);
+    sh.appendChild(f); k.el = f;
+    const h = document.createElement('button'); h.setAttribute('aria-label', (k.sym === '+' ? 'more ' : 'less ') + k.lab);
+    h.style[k.c[0] === 't' ? 'top' : 'bottom'] = '0'; h.style[k.c[1] === 'l' ? 'left' : 'right'] = '0';
+    h.addEventListener('click', () => { if (st.phase === 'set') { k.act(); const s = f.querySelector('.corner span'); anim(s, [{ transform: 'scale(.78)' }, { transform: 'none' }], SP.settle); } });
+    hits.appendChild(h);
+  });
+  $('stage').appendChild(hits);
+}
+const creaseSVG = () => `<g stroke="#1c2240" stroke-opacity=".1" stroke-width=".35" vector-effect="non-scaling-stroke" fill="none"><path d="M50 0 L100 50 L50 100 L0 50 Z" stroke-dasharray="3 2.5"/><path d="M0 0 L100 100" stroke-dasharray="1 2.5"/></g>`;
+function faceHTML(withCorners) {
+  const e = EX[st.ex];
+  return `<svg class="creases" viewBox="0 0 100 100" preserveAspectRatio="none">${creaseSVG()}</svg>
+   ${withCorners ? CORNERS.map((k) => `<span class="corner c-${k.c}"><span>${k.sym}</span><em>${t(k.lab === 'kg' ? 'kg' : 'reps')}</em></span>`).join('') : ''}
+   <div class="center"><div class="nx">${st.phase === 'rest' ? t('next', { a: st.set + 1 }) : e.s[LANG] + ' · ' + (st.set + 1)}</div>
+   <div class="w"><span class="num" data-k="w"></span><small>${t('kg')}</small></div><div class="r">× <span class="num" data-k="r"></span><small>${t('reps')}</small></div></div>`;
+}
+function paintFace(el, withCorners) { el.innerHTML = faceHTML(withCorners); el.querySelector('[data-k=w]') && setNum(el.querySelector('[data-k=w]'), fmt(st.w), true); setNum(el.querySelector('[data-k=r]'), String(st.r), true); }
+function setSheetPaper(c) { const s = $('stage'); s.style.setProperty('--f', c.p); s.style.setProperty('--f-hi', c.hi); s.style.setProperty('--f-lo', c.lo); }
+function setFlaps(deg) { CORNERS.forEach((k) => { k.el.style.transform = flapT(k, deg); }); $('sShadow').style.opacity = deg ? 0 : 1; }
+
+function loadSet() { const p = st.plan[st.ex][st.set]; st.w = p[0]; st.r = p[1]; }
+function adjust(k, d) {
+  const e = EX[st.ex];
+  if (k === 'w') st.w = Math.max(0, Math.round((st.w + d * e.step) * 10) / 10); else st.r = Math.max(1, st.r + d);
+  st.plan[st.ex][st.set] = [st.w, st.r]; buzz(4);
+  const face = $('sFace'); setNum(face.querySelector(`[data-k=${k}]`), k === 'w' ? fmt(st.w) : String(st.r));
+}
+
+// ---------- header, rosette, coach line ----------
+function renderHead() {
+  const e = EX[st.ex];
+  if (st.phase === 'rest') {
+    $('wLab').textContent = t('rest');
+    $('wTitle').classList.add('big');
+    $('wSub').textContent = t('then', { n: e.n[LANG], a: st.set + 1 });
+  } else {
+    $('wTitle').classList.remove('big');
+    $('wLab').textContent = t('setOf', { a: st.set + 1, b: e.sets.length });
+    $('wTitle').textContent = e.n[LANG]; delete $('wTitle').dataset.v;
+    $('wSub').textContent = t('last', { w: fmt(e.last[0]), r: e.last[1] });
+  }
+}
+function renderRosette(popIndex) {
+  $('rosette').innerHTML = rosette(facetColors(false));
+  if (popIndex != null) { const g = $('rosette').querySelector(`[data-i="${popIndex}"]`); g && anim(g, [{ transform: 'scale(.35)', opacity: 0 }, { transform: 'none', opacity: 1 }], SP.settle); }
+}
+function coachLine() {
+  const L = st.log[st.log.length - 1];
+  if (!L) return { text: t('c0'), act: null };
+  if (L.pr) return { text: t('cPr'), act: null };
+  if (L.ex !== st.ex || st.set === 0) return { text: t('cNew'), act: null };
+  const nw = Math.round((st.w + EX[st.ex].step) * 10) / 10;
+  return { text: t('c1'), act: { label: t('load', { w: fmt(nw) }), w: nw } };
+}
+function renderCoach() { $('wCoachText').textContent = coachLine().text; }
+function renderWorkout(full) {
+  setPaper($('room'), st.screen === 'workout' ? exColors(st.ex) : WASHI);
+  setSheetPaper(exColors(st.ex));
+  $('backBtn').textContent = '‹ ' + t('today'); $('finLabel').textContent = t('finish');
+  $('logBtn').textContent = t('log'); $('plusBtn').textContent = t('plus'); $('skipBtn').textContent = t('skip');
+  renderHead(); renderRosette(); renderCoach();
+  if (full) { paintFace($('sFace'), false); setFlaps(0); }
+}
+
+// ---------- logging a set: one tap, the square folds in half and becomes a facet ----------
+function beats(w, r, b) { return w > b[0] || (w === b[0] && r > b[1]); }
+async function logSet() {
+  if (st.phase !== 'set' || st.screen !== 'workout') return;
+  st.phase = 'busy'; buzz(12);
+  const e = EX[st.ex], b = st.best[st.ex], pr = beats(st.w, st.r, b);
+  const entry = { ex: st.ex, set: st.set, w: st.w, r: st.r, pr, prev: b.slice() };
+  st.log.push(entry); if (pr) st.best[st.ex] = [st.w, st.r];
+  anim($('logBtn'), [{ transform: 'scale(.975)' }, { transform: 'none' }], SP.settle);
+
+  // the folding copy: the same picture as the sheet, split along its diagonal
+  const fold = $('fold'), flap = $('fFlap');
+  paintFace($('fBase'), true); paintFace($('fFront'), true);
+  $('fBack').style.background = pr ? 'linear-gradient(225deg, var(--gold-lo), var(--gold) 35%, var(--gold-hi) 55%, var(--gold))' : `linear-gradient(225deg, color-mix(in srgb, ${e.hi} 70%, #fff), ${e.hi} 55%, ${e.p})`;
+  fold.style.opacity = 1; $('sheet').style.opacity = 0; $('sShadow').style.opacity = 0;
+  const fsign = towards([1, 1], [0, 0], [1, 0]);
+  const fo = { ...SP.fold, duration: Math.max(460, SP.fold.duration) };
+  anim(flap, [{ transform: 'translateZ(.6px) rotate3d(1,1,0,0deg)' }, { transform: `translateZ(.6px) rotate3d(1,1,0,${180 * fsign}deg)` }], fo, 'keep');
+  anim($('fFront').parentElement.querySelector('.fback .shade'), [{ opacity: .45 }, { opacity: 0 }], fo);
+  await wait(fo.duration * .8);
+
+  if (pr) await prMoment(entry);
+
+  // fly to its facet: shrink, turn so the right angle points at the centre, land
+  const fi = facetOf(entry.ex, entry.set); const [fx, fy, am] = facetPoint(fi);
+  const rr = $('rosette').getBoundingClientRect(), sr = $('stage').getBoundingClientRect();
+  const scl = rr.width / 160; const S = sr.width;
+  const tx = rr.left + rr.width / 2 + fx * scl - (sr.left + S / 3), ty = rr.top + rr.height / 2 + fy * scl - (sr.top + S * 2 / 3);
+  fold.style.transformOrigin = `${S / 3}px ${S * 2 / 3}px`;
+  const rot = am * 180 / Math.PI + 45;
+  const fl = anim(fold, [{ transform: 'none', opacity: 1 }, { transform: `translate(${tx * .7}px, ${ty * .7}px) rotate(${rot * .8}deg) scale(.34)`, opacity: 1, offset: .6 }, { transform: `translate(${tx}px, ${ty}px) rotate(${rot}deg) scale(.12)`, opacity: 0 }], { duration: 560, easing: 'cubic-bezier(.45,.05,.2,1)' }, 'keep');
+  await wait(430);
+  renderRosette(fi); buzz(6);
+  await fl.finished.catch(() => {});
+  fold.style.transform = ''; flap.style.transform = '';
+
+  const nx = nextPos(entry.ex, entry.set);
+  if (!nx) { finishWorkout(); return; }
+  const changed = nx.ex !== st.ex;
+  st.ex = nx.ex; st.set = nx.set; loadSet();
+  if (changed) flipRoom(exColors(entry.ex), exColors(st.ex), 'down', 700);
+  startRest(REST || e.rest);
+  toast(t('logged', { a: entry.set + 1 }), undoSet);
+}
+$('logBtn').onclick = logSet;
+function nextPos(ex, set) { if (set + 1 < EX[ex].sets.length) return { ex, set: set + 1 }; if (ex + 1 < EX.length) return { ex: ex + 1, set: 0 }; return null; }
+
+// ---------- a new best: the paper's other side is gold ----------
+async function prMoment(entry) {
+  buzz([10, 40, 18]);
+  const fold = $('fold'), sheen = $('fBack').querySelector('.sheen');
+  anim(fold, [{ transform: 'rotateY(0deg)' }, { transform: 'rotateY(-24deg) scale(1.04)', offset: .45 }, { transform: 'rotateY(0deg)' }], { duration: 760, easing: 'cubic-bezier(.4,0,.2,1)' });
+  anim(sheen, [{ transform: 'translateX(-120%)', opacity: 1 }, { transform: 'translateX(120%)', opacity: 1 }], { duration: 900, easing: 'cubic-bezier(.4,0,.2,1)', delay: 120 });
+  const e = EX[entry.ex];
+  $('b1').textContent = t('best'); $('b2').textContent = `${e.n[LANG]}  ${fmt(entry.w)} kg × ${entry.r}`; $('b3').textContent = t('was', { w: fmt(entry.prev[0]), r: entry.prev[1] });
+  const B = $('banner'), p2 = B.querySelector('.p2'), p3 = B.querySelector('.p3');
+  B.style.opacity = 1;
+  anim(B.querySelector('.p1'), [{ transform: 'translateY(-60px)' }, { transform: 'none' }], SP.settle);
+  anim(p2, [{ transform: 'rotateX(-180deg)' }, { transform: 'rotateX(-180deg)', offset: .3 }, { transform: 'none' }], { ...SP.fold, duration: 700 });
+  anim(p3, [{ transform: 'rotateX(-180deg)' }, { transform: 'rotateX(-180deg)', offset: .5 }, { transform: 'none' }], { ...SP.fold, duration: 900 });
+  await wait(900);
+  setTimeout(async () => {
+    anim(p3, [{ transform: 'none' }, { transform: 'rotateX(-180deg)' }], { duration: 260, easing: 'ease-in' }, 'keep');
+    anim(p2, [{ transform: 'none' }, { transform: 'rotateX(-180deg)' }], { duration: 300, delay: 160, easing: 'ease-in' }, 'keep');
+    await wait(420);
+    await anim(B.querySelector('.p1'), [{ transform: 'none', opacity: 1 }, { transform: 'translateY(-60px)', opacity: 0 }], { duration: 260, easing: 'ease-in' }).finished.catch(() => {});
+    B.style.opacity = 0; p2.style.transform = ''; p3.style.transform = '';
+  }, 1700);
+}
+
+// ---------- rest: a closed square that slowly unfolds; when it lies flat, it is your next set ----------
+function startRest(ms) {
+  st.phase = 'rest';
+  setSheetPaper(exColors(st.ex));
+  paintFace($('sFace'), false);
+  setFlaps(180);
+  const sh = $('sheet'); sh.style.opacity = 1;
+  anim(sh, [{ transform: 'scale(.5) rotate(-12deg)', opacity: 0 }, { transform: 'none', opacity: 1 }], SP.settle);
+  anim($('dShadow'), [{ opacity: 0 }, { opacity: 1 }], { duration: 300 });
+  renderHead(); renderCoach();
+  setNum($('wTitle'), clockStr(ms), true);
+  anim($('whead'), [{ transform: 'perspective(600px) rotateX(-60deg)', opacity: 0 }, { transform: 'none', opacity: 1 }], SP.settle);
+  swapActions(true);
+  st.restEnd = Date.now() + ms; st.restDur = ms;
+  const o = { duration: ms, easing: 'cubic-bezier(.37,0,.63,1)', delay: 260 };
+  st.restAnims = [];
+  CORNERS.forEach((k) => {
+    st.restAnims.push(anim(k.el, [{ transform: flapT(k, 180) }, { transform: flapT(k, 0) }], o));
+    st.restAnims.push(anim(k.el.querySelector('.bk .shade'), [{ opacity: 0 }, { opacity: .18 }, { opacity: .18 }], o));
+    st.restAnims.push(anim(k.el.querySelector('.in .shade'), [{ opacity: .12 }, { opacity: .12, offset: .5 }, { opacity: 0 }], o));
+  });
+  st.restAnims.push(anim($('sShadow'), [{ opacity: 0 }, { opacity: 0, offset: .5 }, { opacity: 1 }], o));
+  st.restAnims.push(anim($('dShadow'), [{ opacity: 1 }, { opacity: 1, offset: .5 }, { opacity: 0 }], o));
+  const mine = st.restAnims;
+  setFlaps(0); $('sShadow').style.opacity = 1; $('dShadow').style.opacity = 0;
+  Promise.all(mine.map((a) => a.finished)).then(() => { if (st.restAnims === mine && st.phase === 'rest') endRest(); }).catch(() => {});
+}
+const clockStr = (ms) => { const s = Math.max(0, Math.ceil(ms / 1000)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
+function swapActions(rest) {
+  const L = $('logBtn'), R = $('rbs');
+  if (rest) { L.style.pointerEvents = 'none'; R.style.pointerEvents = 'auto';
+    anim(L, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'perspective(500px) rotateX(70deg)' }], { duration: 200, easing: 'ease-in' }, 'keep');
+    anim(R, [{ opacity: 0, transform: 'perspective(500px) rotateX(-70deg)' }, { opacity: 1, transform: 'none' }], { ...SP.settle, delay: 120 }); R.style.opacity = 1;
+  } else { R.style.pointerEvents = 'none'; L.style.pointerEvents = 'auto';
+    anim(R, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'perspective(500px) rotateX(70deg)' }], { duration: 200, easing: 'ease-in' }, 'keep');
+    anim(L, [{ opacity: 0, transform: 'perspective(500px) rotateX(-70deg)' }, { opacity: 1, transform: 'none' }], { ...SP.settle, delay: 120 }); L.style.opacity = 1;
+  }
+}
+function endRest() {
+  st.phase = 'set'; st.restAnims = []; buzz([14, 60, 14]);
+  renderHead(); renderCoach(); paintFace($('sFace'), false);
+  anim($('whead'), [{ transform: 'perspective(600px) rotateX(-60deg)', opacity: 0 }, { transform: 'none', opacity: 1 }], SP.settle);
+  anim($('sheet'), [{ transform: 'none' }, { transform: 'scale(1.035)', offset: .35 }, { transform: 'none' }], { duration: 520, easing: 'cubic-bezier(.3,0,.2,1)' });
+  swapActions(false);
+}
+$('plusBtn').onclick = () => {
+  if (st.phase !== 'rest') return; buzz(6);
+  st.restEnd += 30000;
+  // more time: the paper folds back a little, it never jumps
+  st.restAnims.forEach((a) => { const tm = a.effect.getTiming(); a.effect.updateTiming({ duration: tm.duration + 30000 }); });
+  anim($('plusBtn'), [{ transform: 'scale(.95)' }, { transform: 'none' }], SP.settle);
+};
+$('skipBtn').onclick = () => {
+  if (st.phase !== 'rest') return; buzz(6);
+  st.restEnd = Date.now() + 420;
+  st.restAnims.forEach((a) => { const tm = a.effect.getTiming(); const left = tm.duration + tm.delay - (a.currentTime || 0); if (left > 420) a.updatePlaybackRate(left / 420); });
+};
+setInterval(() => {
+  if (st.started && st.screen === 'workout') { const s = Math.floor((Date.now() - st.t0) / 1000); $('clock').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
+  if (st.phase === 'rest') { const left = st.restEnd - Date.now(); setNum($('wTitle'), clockStr(left), false, left < 3500); }
+}, 200);
+document.addEventListener('visibilitychange', () => {
+  // a locked phone throttles the page: put the paper where the clock says it should be
+  if (document.visibilityState === 'visible' && st.phase === 'rest') { const done = st.restDur - (st.restEnd - Date.now()); st.restAnims.forEach((a) => { a.currentTime = Math.max(0, done + 260); }); }
+});
+
+function undoSet() {
+  const L = st.log[st.log.length - 1]; if (!L || st.phase === 'busy' || st.phase === 'done') return;
+  st.restAnims.forEach((a) => a.cancel()); st.restAnims = [];
+  st.log.pop(); st.best[L.ex] = L.prev;
+  const changed = L.ex !== st.ex; const from = st.ex;
+  st.ex = L.ex; st.set = L.set; st.w = L.w; st.r = L.r; st.phase = 'set';
+  if (changed) flipRoom(exColors(from), exColors(st.ex), 'up', 520);
+  setSheetPaper(exColors(st.ex)); renderHead(); renderRosette(); renderCoach();
+  paintFace($('sFace'), false); setFlaps(0); $('sShadow').style.opacity = 1; $('dShadow').style.opacity = 0;
+  anim($('sheet'), [{ transform: 'scale(.92)', opacity: .4 }, { transform: 'none', opacity: 1 }], SP.settle);
+  swapActions(false);
+}
+
+// ---------- hold to finish early (a big decision is made with the hand) ----------
+let holdA = null;
+const fb = $('finBtn');
+fb.addEventListener('pointerdown', () => {
+  if (st.phase === 'busy' || st.phase === 'done') return; buzz(4);
+  holdA = anim(fb.querySelector('.fill'), [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 700, easing: 'cubic-bezier(.3,0,.4,1)' });
+  holdA.finished.then(() => { if (holdA) { holdA = null; finishWorkout(); } }).catch(() => {});
+});
+const release = () => { if (holdA) { const a = holdA; holdA = null; a.reverse(); } };
+fb.addEventListener('pointerup', release); fb.addEventListener('pointerleave', release); fb.addEventListener('pointercancel', release);
+
+// ---------- finish: the small form lifts off and grows into the day's folded form ----------
+async function finishWorkout() {
+  if (st.phase === 'done') return;
+  st.restAnims.forEach((a) => a.cancel()); st.restAnims = [];
+  st.phase = 'done'; buzz([20, 50, 30]);
+  const mins = Math.max(1, Math.round((Date.now() - st.t0) / 60000));
+  const vol = st.log.reduce((s, l) => s + l.w * l.r, 0);
+  st.sum = { sets: st.log.length, vol, mins };
+  $('finSpin').innerHTML = rosette(facetColors(false));
+  $('finTitle').textContent = t('folded');
+  $('finStats').innerHTML = `<div><b>${st.log.length}</b>${t('sets')}</div><div><b>${thou(vol)}</b>${t('lifted')}</div><div><b>${mins}</b>${t('min')}</div>`;
+  $('finExs').innerHTML = EX.map((e, i) => {
+    const ls = st.log.filter((l) => l.ex === i); if (!ls.length) return '';
+    const top = ls.reduce((a, l) => (l.w * l.r > a.w * a.r ? l : a), ls[0]); const pr = ls.some((l) => l.pr);
+    return `<div><i style="background:${pr ? 'var(--gold)' : e.hi}"></i><span>${e.n[LANG]}</span><b class="${pr ? 'gold' : ''}">${pr ? '★ ' : ''}${ls.length} ${t('sets')} · ${fmt(top.w)} × ${top.r}</b></div>`;
+  }).join('');
+  $('doneLabel').textContent = t('done');
+  const from = $('rosette').getBoundingClientRect();
+  const els = sections('workout');
+  els.forEach((el, i) => { if (!el.classList.contains('rwrap')) anim(el, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'perspective(700px) rotateX(70deg)' }], { duration: 240, delay: i * 24, easing: 'ease-in' }, 'keep'); });
+  $('rosette').style.opacity = 0;
+  const F = $('finish'); F.classList.add('on');
+  const to = $('finRos').getBoundingClientRect();
+  const dx = from.left - to.left, dy = from.top - to.top, s = from.width / to.width;
+  anim($('finRos'), [{ transform: `translate(${dx}px, ${dy}px) scale(${s})` }, { transform: 'none' }], { duration: 900, easing: SP.fold.easing });
+  $('finSpin').animate([{ transform: 'rotate(0deg)' }, { transform: 'rotate(360deg)' }], { duration: 90000, iterations: Infinity });
+  [...F.children].slice(1).forEach((el, i) => anim(el, [{ opacity: 0, transform: 'perspective(700px) rotateX(-70deg) translateY(16px)' }, { opacity: 1, transform: 'none' }], { ...SP.settle, delay: 420 + i * 70 }));
+  // the facets settle in turn, a soft ripple round the form
+  $('finSpin').querySelectorAll('.kite').forEach((g, i) => anim(g, [{ opacity: .55 }, { opacity: 1 }], { duration: 300, delay: 600 + i * 40 }));
+}
+$('doneBtn').onclick = async () => {
+  if (st.screen !== 'workout') return; st.screen = 'today'; st.done = true; buzz(8);
+  const F = $('finish');
+  [...F.children].forEach((el, i) => anim(el, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'perspective(700px) rotateX(70deg)' }], { duration: 240, delay: i * 26, easing: 'ease-in' }, 'keep'));
+  await wait(200);
+  $('workout').classList.remove('on'); sections('workout').forEach((el) => { el.style.opacity = ''; el.style.transform = ''; });
+  await flipRoom(exColors(st.ex), WASHI, 'up');
+  F.classList.remove('on'); [...F.children].forEach((el) => { el.style.opacity = ''; el.style.transform = ''; }); $('finSpin').getAnimations().forEach((a) => a.cancel());
+  // Today now holds the form you folded
+  const sm = st.sum;
+  $('tTitle').textContent = t('foldedTitle'); $('tMeta').textContent = t('foldedMeta', { s: sm.sets, v: thou(sm.vol), m: sm.mins });
+  renderToday();
+  $('heroDone').innerHTML = rosette(facetColors(false), { stroke: 'rgba(28,34,64,.3)' });
+  $('cp').style.opacity = 0; $('heroDone').style.opacity = 1; $('legend').style.visibility = 'hidden';
+  $('startBtn').style.display = 'none'; $('tQuiet').style.display = 'block';
+  unfoldIn('today', 60);
+  anim($('heroDone'), [{ transform: 'scale(.4) rotate(-90deg)', opacity: 0 }, { transform: 'none', opacity: 1 }], { ...SP.settle, delay: 160 });
+};
+
+// ---------- pop-ups that unfold out of the thing you tapped: first wide, then tall, like opening a folded note ----------
+let popA = null, bodyA = null, popFrom = null, popOpen = false;
+function openPop(fromEl, html) {
+  if (popOpen) return; popOpen = true; popFrom = fromEl; buzz(5);
+  const P = $('pop'), body = $('popBody'); body.innerHTML = html;
+  P.style.opacity = 1; P.style.pointerEvents = 'auto'; $('scrim').style.pointerEvents = 'auto';
+  const a = fromEl.getBoundingClientRect(), b = P.getBoundingClientRect(), app = $('app').getBoundingClientRect();
+  const sx = a.width / b.width, sy = a.height / b.height, dx = a.left - b.left, dy = a.top - b.top;
+  const midY = a.top + (a.height - b.height * sy) / 2 - b.top;
+  void app;
+  fromEl.style.opacity = 0;
+  const kf = [
+    { transform: `translate(${dx}px, ${dy}px) scale(${sx}, ${sy})` },
+    { transform: `translate(0px, ${midY + (dy - midY) * .2}px) scale(1, ${Math.max(sy, .16)})`, offset: .42 },
+    { transform: 'none' },
+  ];
+  if (bodyA) bodyA.cancel();
+  popA = anim(P, kf, { duration: REDUCE ? 1 : 520, easing: 'cubic-bezier(.3,.7,.1,1)' });
+  bodyA = body.animate([{ opacity: 0 }, { opacity: 0, offset: .45 }, { opacity: 1 }], { duration: REDUCE ? 1 : 520, fill: 'both' });
+  P.querySelectorAll('.crease').forEach((c, i) => anim(c, [{ opacity: 0 }, { opacity: 1, offset: i ? .3 : .6 }, { opacity: 0 }], { duration: 900 }));
+  anim($('scrim'), [{ opacity: 0 }, { opacity: .32 }], { duration: 300 }, 'keep');
+  body.querySelectorAll('button').forEach((bt) => bt.addEventListener('click', (ev) => { ev.stopPropagation(); const f = bt.dataset.f; closePop(); if (f && ACTS[f]) ACTS[f](); }));
+}
+function closePop() {
+  if (!popOpen) return; popOpen = false;
+  const P = $('pop'), body = $('popBody'), from = popFrom;
+  $('scrim').style.pointerEvents = 'none'; P.style.pointerEvents = 'none';
+  anim($('scrim'), [{ opacity: .32 }, { opacity: 0 }], { duration: 260 }, 'keep');
+  if (popA && popA.playState === 'running') { popA.reverse(); bodyA && bodyA.reverse(); }
+  else {
+    const a = from.getBoundingClientRect(), b = P.getBoundingClientRect();
+    popA = anim(P, [{ transform: 'none' }, { transform: `translate(${a.left - b.left}px, ${a.top - b.top}px) scale(${a.width / b.width}, ${a.height / b.height})` }], { duration: REDUCE ? 1 : 340, easing: 'cubic-bezier(.4,0,.2,1)' }, 'keep');
+    if (bodyA) bodyA.cancel();
+    bodyA = body.animate([{ opacity: 1 }, { opacity: 0, offset: .4 }, { opacity: 0 }], { duration: REDUCE ? 1 : 340, fill: 'both' });
+  }
+  const mine = popA;
+  mine.finished.then(() => { if (!popOpen) { P.style.opacity = 0; P.style.transform = ''; from.style.opacity = ''; } }).catch(() => {});
+}
+$('scrim').onclick = closePop;
+const ACTS = {
+  skyr: () => { const prev = st.protein; st.protein += 20; st.skyr = true; setNum($('protNum'), String(st.protein)); $('tCoachText').textContent = t('added');
+    toast(t('added'), () => { st.protein = prev; st.skyr = false; setNum($('protNum'), String(st.protein)); $('tCoachText').textContent = t('tCoach'); }); },
+  load: () => { const c = coachLine(); if (!c.act || st.phase === 'busy') return; const prev = st.w; st.w = c.act.w; st.plan[st.ex][st.set] = [st.w, st.r];
+    setNum($('sFace').querySelector('[data-k=w]'), fmt(st.w));
+    toast(t('loaded', { w: fmt(st.w) }), () => { st.w = prev; st.plan[st.ex][st.set] = [st.w, st.r]; setNum($('sFace').querySelector('[data-k=w]'), fmt(st.w)); }); },
+};
+const K = (txt) => `<div class="k"><span class="dot" style="width:8px;height:8px;background:var(--ink);clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%)"></span>${txt}</div>`;
+$('tCoach').onclick = () => {
+  if (st.skyr) return openPop($('tCoach'), `${K(t('coachK'))}<h3>${t('added')}</h3><div class="btns"><button>${t('ok')}</button></div>`);
+  openPop($('tCoach'), `${K(t('coachK'))}<h3>${t('skyrT')}</h3><p>${t('skyrP')}</p><div class="rows"><div><span>${t('protein')}</span><b>${st.protein} → ${st.protein + 20} g</b></div></div><div class="btns"><button>${t('notNow')}</button><button class="p" data-f="skyr">${t('add')}</button></div>`);
+};
+$('wCoach').onclick = () => {
+  const c = coachLine();
+  openPop($('wCoach'), `${K(t('coachW'))}<h3>${c.text}</h3><div class="btns">${c.act ? `<button>${t('keep', { w: fmt(st.w) })}</button><button class="p" data-f="load">${c.act.label}</button>` : `<button class="p">${t('ok')}</button>`}</div>`);
+};
+$('strip').addEventListener('click', (ev) => {
+  const p = ev.target.closest('.panel'); if (!p) return; const m = p.dataset.m;
+  if (m === 'protein') openPop(p, `${K(t('protein'))}<h3>${t('proteinT')}: ${st.protein} g</h3><div class="rows">${T[LANG].meals.map((x) => `<div><span>${x[0]}</span><b>${x[1]}</b></div>`).join('')}${st.skyr ? `<div><span>Skyr 200 g</span><b>20 g</b></div>` : ''}</div><div class="btns"><button>${t('ok')}</button></div>`);
+  if (m === 'sleep') openPop(p, `${K(t('sleep'))}<h3>${t('sleepT')}</h3><p>${t('sleepP')}</p><div class="btns"><button>${t('ok')}</button></div>`);
+  if (m === 'weight') openPop(p, `${K(t('weight'))}<h3>${t('weightT')}</h3><p>${t('weightP')}</p><div class="btns"><button>${t('ok')}</button></div>`);
+});
+$('shelf').addEventListener('click', (ev) => {
+  const d = ev.target.closest('.day'); if (!d) return; const i = +d.dataset.d; const svg = d.querySelector('svg');
+  const map = { 0: ['pull', 'pullD'], 1: ['wrestling', 'wrD'], 2: ['restDay', 'restD'], 3: ['legs', 'legsD'], 4: ['wrestling', 'wrD'], 5: ['restDay', 'restD'] };
+  if (i === 6) { const txt = st.done ? t('foldedMeta', { s: st.sum.sets, v: thou(st.sum.vol), m: st.sum.mins }) : t('todayD'); return openPop(svg, `${K(T[LANG].dayN[6])}<h3>${st.done ? t('foldedTitle') : t('push')}</h3><p>${txt}</p><div class="btns"><button>${t('ok')}</button></div>`); }
+  const [n, dd] = map[i];
+  openPop(svg, `${K(T[LANG].dayN[i])}<h3>${t(n)}</h3><p>${t(dd)}</p><div class="btns"><button>${t('ok')}</button></div>`);
+});
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closePop(); });
+
+// ---------- toast slip: the Undo half unfolds out of the message ----------
+let toastTimer = 0, toastUndo = null;
+function toast(msg, undo) {
+  const E = $('toast'), U = $('toastUndo');
+  $('toastMsg').textContent = msg; U.textContent = t('undo'); toastUndo = undo || null;
+  E.classList.toggle('solo', !undo); U.style.display = undo ? '' : 'none';
+  E.style.opacity = 1; E.style.pointerEvents = 'auto'; clearTimeout(toastTimer);
+  anim(E, [{ transform: 'translateX(-50%) translateY(24px)', opacity: 0 }, { transform: 'translateX(-50%)', opacity: 1 }], SP.settle);
+  if (undo) { U.style.pointerEvents = 'none'; anim(U, [{ transform: 'rotateY(-180deg)' }, { transform: 'rotateY(-180deg)', offset: .3 }, { transform: 'none' }], { ...SP.fold, duration: 620 }); setTimeout(() => { U.style.pointerEvents = ''; }, 380); }
+  if (st.screen === 'workout') anim($('wCoach'), [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'perspective(500px) rotateX(80deg)' }], { duration: 180, easing: 'ease-in' }, 'keep');
+  toastTimer = setTimeout(hideToast, 4200);
+}
+function hideToast() { const E = $('toast'); if ($('wCoach').style.opacity === '0') anim($('wCoach'), [{ opacity: 0, transform: 'perspective(500px) rotateX(-80deg)' }, { opacity: 1, transform: 'none' }], { ...SP.settle, delay: 120 }); $('wCoach').style.opacity = ''; $('wCoach').style.transform = ''; E.style.pointerEvents = 'none'; anim(E, [{ opacity: 1, transform: 'translateX(-50%)' }, { opacity: 0, transform: 'translateX(-50%) translateY(16px)' }], { duration: 220, easing: 'ease-in' }, 'keep'); }
+$('toastUndo').onclick = () => { const u = toastUndo; toastUndo = null; clearTimeout(toastTimer); hideToast(); u && u(); };
+
+// ---------- boot ----------
+function size() { const S = Math.round(Math.min(300, innerWidth - 84, Math.max(220, innerHeight - 520))); document.documentElement.style.setProperty('--S', S + 'px'); }
+size(); addEventListener('resize', size);
+buildSheet(); renderToday(); loadSet(); renderWorkout(true);
+// ?log=N starts the workout with N sets already logged (to see the late moments quickly)
+if (+Q.get('log') > 0) { st.started = true; st.t0 = Date.now() - 41 * 60000; for (let i = 0; i < Math.min(+Q.get('log'), FACETS.length - 1); i++) { const f = FACETS[i], [w, r] = st.plan[f.ex][f.set], pr = beats(w, r, st.best[f.ex]); st.log.push({ ex: f.ex, set: f.set, w, r, pr, prev: st.best[f.ex].slice() }); if (pr) st.best[f.ex] = [w, r]; const n = nextPos(f.ex, f.set); st.ex = n.ex; st.set = n.set; } loadSet(); renderToday(); }
+if (Q.get('screen') === 'workout') { st.screen = 'workout'; if (!st.started) { st.started = true; st.t0 = Date.now(); } $('today').classList.remove('on'); $('workout').classList.add('on'); renderWorkout(true); }
+// warm-up: play every kind of 3D turn once, unseen, so the first real fold does not stutter (shader compile)
+requestAnimationFrame(() => { const w = $('fold'); w.style.opacity = .001; anim($('fFlap'), [{ transform: 'rotate3d(1,1,0,0deg)' }, { transform: 'rotate3d(1,1,0,10deg)' }], { duration: 60 }).finished.then(() => { w.style.opacity = 0; }).catch(() => {}); });
+</script>
+</body>
+</html>
