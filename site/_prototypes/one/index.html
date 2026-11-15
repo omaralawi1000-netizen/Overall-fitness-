@@ -903,7 +903,8 @@ function addFood(g, name, fromEl) {
   if (S.done) $('heroP').textContent = T('doneP', Math.max(0, 150 - S.prot));
   if (fromEl) floatChip(`${IC.up}+${g} g`, fromEl);
   vib(8);
-  toast(T('loggedFood', name), () => { S.prot -= g; S.extraMeals.pop(); roll($('vProt'), String(S.prot)); if ($('foodS')) { closeCard(); } });
+  toast(T('loggedFood', name), () => { S.prot -= g; S.extraMeals.pop(); roll($('vProt'), String(S.prot)); spark($('spProt'), [120, 142, 151, 98, 133, 147, S.prot]);
+    if (S.done) $('heroP').textContent = T('doneP', Math.max(0, 150 - S.prot)); if ($('foodS')) { closeCard(); } });
 }
 
 /* ---------------- toast with Undo (every action can be taken back) ---------------- */
@@ -1048,7 +1049,7 @@ function peakPath(w, h, seed) {
     ridge: [[0, h], ...L, top].map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ') };
 }
 const PK_MAX = 270;
-function peakH(kg, reps, l = lift()) { const top = e1(l.best.k, l.best.r) * 1.08, low = e1(l.sets[0][0], l.sets[0][1]) * .78;
+function peakH(kg, reps, l = lift()) { const b = l.best0 || (l.best0 = l.best), top = e1(b.k, b.r) * 1.08, low = e1(l.sets[0][0], l.sets[0][1]) * .78;
   return Math.max(70, Math.min(PK_MAX, 70 + (e1(kg, reps) - low) / (top - low) * (PK_MAX - 70))); }
 function peakX(i, n) { const span = 344, w = Math.min(190, span / n * 1.9); return { cx: 20 + span * (i + .5) / n, w }; }
 function makePeak(kind, i, n, h, seed) {
