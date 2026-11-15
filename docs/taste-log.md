@@ -57,6 +57,20 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: ten-style round, style 8 "Lido", light liquid glass (/_prototypes/lido/)
+Asked: the same ten-style request as the Pitwall entry below. This thread was given light liquid glass (bright, airy, daylight, never dark) and one experiment, the one-thumb workout.
+Reading of the log before building: he rejected abstract material (Reed, Silk) and asked for a real, beautiful place; Today needs one bold hero; pale glass over a pale room looks like a stain, so frost needs colour behind it. So the look is a place, not a material: a morning sky over pool water, with the glass lying in the water where there is colour and moving light behind it.
+Built (Today and the live workout, clickable, English and Danish, one file, everything drawn in code, no photo):
+- **Today:** the readiness number "82" stands half in the water, the Coach's one sentence sits just under the surface, and the session, food and the tab bar are frosted panes in the water. One lemon button starts the workout.
+- **Workout:** the water line is the rest timer. Logging a set makes the water rise; it drains as the rest runs out and the countdown floats on it, with a ruler at the right edge. At the top, a small table shows last time above today, set by set. Under the water, "Next, set 2 of 4, 87.5 kg × 9". The finish screen rolls up the kilos lifted.
+- **The experiment, one-thumb workout:** every control (weight and reps steppers, Log, Skip, −15 s, +15 s, Undo, All exercises, Hold to end) sits in the bottom third; the top two thirds are only for reading. Measured at 832 and 720 px tall: nothing tappable above the line, smallest target 48 px, the farthest button 64 to 67 mm from the thumb's base. Honest finding: the far-side minus is a stretch for a small hand, so a left-hand and right-hand setting would be the next step. The price of the rule is looks: with nothing to touch up there, the top of the workout screen is quiet, and every judge scored it lower than Today for that.
+Judges (four fresh design-judges, Sonnet, the screen changed between rounds): 7.5, 7.5, 7.5, 7.5. Each time Today 8 and Workout 7. All four: the half-sunk "82" is the signature, the look is its own and clearly not Summit or the retired look. Marked down, in order of rounds: an empty top on the workout screen (rebuilt as the last-time table), a thin rest screen (ruler and next-set line added), water too deep a blue for "airy" (lightened), and last: the glass reads as plain frost and not liquid glass, and aqua water with a glossy yellow button risks looking like an old "Aqua" theme. A motion-judge read the code once (5, eleven defects, nine fixed, not re-judged).
+My own score: 7.5. Today 8, the water-as-rest-timer 8 as an idea, the workout screen 7. Biggest weakness: the workout is a strong idea on a plain screen, and the whole look is one step from kitsch.
+Lesson: after four rounds the score did not move while the defects changed every time, so the judge was measuring the direction, not the details. Stop at two rounds next time.
+Needs his phone: the frost over moving water on Today (three blurred panes, 42 % of the screen), banding in the blue, the clear-glass steppers (a real lens in Chrome), the water rising and draining at 120 Hz, and the tilt (the water stays level when the phone leans; works on the Pages link, not inside a Claude artifact).
+Not shown: under his bar of 8. Asked (decision card): see it at 7.5 anyway, or cut it.
+Verdict: waiting for Omar.
+
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.
