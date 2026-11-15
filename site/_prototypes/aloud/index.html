@@ -19,7 +19,7 @@
   --ink-2: rgba(20, 22, 43, .66);
   --ink-3: rgba(20, 22, 43, .44);
   --line: rgba(20, 22, 43, .09);
-  --card: rgba(255, 255, 255, .7);
+  --card: rgba(255, 255, 255, .62);
   --frost: rgba(255, 255, 255, .46);
   --edge: inset 0 0 0 1px rgba(255, 255, 255, .72), 0 10px 30px -18px rgba(20, 22, 43, .35);
   --voice: "Schibsted Grotesk", "Helvetica Neue", Arial, sans-serif;
@@ -44,7 +44,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
 
 /* ---------- the light ---------- */
 .light { position: absolute; inset: 0 0 calc(-1 * env(safe-area-inset-bottom, 0px)) 0; overflow: hidden; z-index: -1; }
-.glow { position: absolute; inset: 0; transform: translate3d(0, 50%, 0); will-change: transform; }
+.glow { position: absolute; inset: 0; transform: translate3d(0, 44%, 0); will-change: transform; }
 /* moods are stacked: the workout's blue fades in over the morning, and a record's gold rises through the blue from
    below instead of fading, because blue and gold mixed on the way would pass through grey */
 .glow canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -64,9 +64,9 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
 .top .sub { font-size: 14px; font-weight: 500; color: var(--ink-2); }
 .top #clock { min-width: 38px; }
 .top .segs { display: flex; gap: 4px; margin-left: 4px; }
-.top .segs i { width: 14px; height: 4px; border-radius: 2px; background: var(--line); }
+.top .segs i { width: 18px; height: 5px; border-radius: 3px; background: rgba(20, 22, 43, .16); }
 .top .segs i.on { background: var(--ink); }
-.top .segs i.now { background: linear-gradient(90deg, var(--ink) var(--p, 50%), var(--line) 0); }
+.top .segs i.now { background: linear-gradient(90deg, var(--ink) var(--p, 50%), rgba(20, 22, 43, .16) 0); }
 .top .sp { flex: 1; }
 .pillbtn { height: 44px; padding: 0 16px; border-radius: 22px; font-size: 14px; font-weight: 650; display: inline-flex; align-items: center; gap: 8px; white-space: nowrap;
   background: var(--card); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .8); transition: transform .12s var(--ease); }
@@ -98,7 +98,13 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
 .row .k { display: block; font-size: 13px; font-weight: 550; color: var(--ink-3); }
 .row .v { display: block; font-size: 16px; font-weight: 600; letter-spacing: -.01em; margin-top: 1px; }
 .row .txt { flex: 1; min-width: 0; }
-.chev { width: 18px; height: 18px; stroke: var(--ink-3); fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.viz { flex: none; width: 52px; height: 26px; display: flex; align-items: flex-end; justify-content: flex-end; gap: 4px; }
+.viz i { display: block; border-radius: 3px; background: rgba(20, 22, 43, .16); }
+.viz i.on { background: var(--ink); }
+.viz.marks i { width: 6px; height: 20px; }
+.viz.week i { width: 4px; }
+.viz.bar { position: relative; height: 6px; border-radius: 3px; background: rgba(20, 22, 43, .16); overflow: hidden; justify-content: flex-start; align-self: center; }
+.viz.bar i { height: 100%; border-radius: 3px; background: var(--ink); }
 .offer { padding: 16px 18px 18px; }
 .offer .k { font-size: 13px; font-weight: 550; color: var(--ink-3); }
 .offer .swap { display: flex; align-items: baseline; gap: 10px; margin: 4px 0 14px; font-size: 26px; font-weight: 700; letter-spacing: -.025em; }
@@ -131,7 +137,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
 .send { color: var(--ink-3); }
 .send.ready { background: rgba(20, 22, 43, .08); color: var(--ink); }
 
-.live { border-radius: 30px; padding: 16px 18px 18px; height: 252px; display: flex; flex-direction: column; }
+.live { border-radius: 30px; padding: 16px 18px 18px; height: 236px; display: flex; flex-direction: column; }
 .live .head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
 .live .name { font-size: 17px; font-weight: 700; letter-spacing: -.012em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .live .where { font-size: 13px; font-weight: 550; color: var(--ink-2); white-space: nowrap; }
@@ -143,7 +149,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
 .num.on { background: rgba(255, 255, 255, .7); }
 .nums .x { font-size: 24px; font-weight: 500; color: var(--ink-3); }
 .clock { font-size: 58px; line-height: 68px; font-weight: 700; letter-spacing: -.04em; padding-left: 6px; }
-.under { height: 44px; margin: 4px 0 12px; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 550; color: var(--ink-2); }
+.under { height: 44px; margin: 0 0 8px; display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 550; color: var(--ink-2); }
 .under .sp, .nums .sp { flex: 1; }
 .under .lab { flex: 1; text-align: center; color: var(--ink); font-weight: 600; }
 .under .pillbtn { min-width: 76px; justify-content: center; }
@@ -208,7 +214,6 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
   const FAST = location.hash === '#fast'; // short rests, for trying the whole workout quickly
   const num = (n) => String(Math.round(n * 100) / 100);
   const CHECK = '<svg viewBox="0 0 24 24"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>';
-  const CHEV = '<svg class="chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>';
   const ARROW = '<svg viewBox="0 0 24 24"><path d="M4 12h15M13 6l6 6-6 6"/></svg>';
 
   /* ---------- the day's facts (a made-up person; the Coach's lines are written, not generated) ---------- */
@@ -226,31 +231,31 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
   const sets = () => plan().reduce((a, l) => a + l.sets, 0);
 
   /* ---------- the light: one dithered field per mood, moved only with transforms ---------- */
+  // each mood is a handful of soft colour pools: [x, y, colour], x and y as parts of the canvas
   const MOODS = {
-    morning: [[255, 247, 190], [176, 236, 196], [70, 198, 170]],
-    work: [[200, 238, 255], [128, 200, 255], [84, 146, 255]],
-    gold: [[255, 244, 184], [255, 214, 102], [244, 176, 40]],
+    morning: [[.1, .3, [255, 240, 168]], [.9, .26, [170, 238, 208]], [.5, .62, [104, 216, 190]], [1.05, .8, [146, 198, 255]], [-.05, .9, [208, 188, 255]]],
+    work: [[.1, .3, [176, 244, 236]], [.9, .26, [190, 228, 255]], [.5, .6, [104, 184, 255]], [1.05, .82, [150, 128, 255]], [-.05, .9, [70, 126, 255]]],
+    gold: [[.1, .3, [255, 247, 196]], [.9, .26, [255, 236, 150]], [.5, .6, [255, 222, 116]], [1.05, .82, [255, 232, 170]], [-.05, .9, [250, 208, 96]]],
   };
   function paint(name) {
-    const cv = $(`canvas[data-m="${name}"]`), W = 300, H = 650;
+    const cv = $(`canvas[data-m="${name}"]`), W = 300, H = 650, pools = MOODS[name];
     cv.width = W; cv.height = H;
-    const ctx = cv.getContext('2d'), img = ctx.createImageData(W, H), d = img.data, [a, b, c] = MOODS[name];
-    const mix = (p, q, t, k) => p[k] + (q[k] - p[k]) * t;
+    const ctx = cv.getContext('2d'), img = ctx.createImageData(W, H), d = img.data;
     for (let y = 0; y < H; y++) {
       for (let x = 0; x < W; x++) {
-        const u = x / W;
-        // the top edge of the light is a slow wave, not a ruler line
-        const edge = H * (.04 + .05 * Math.sin(u * 3.1 + .6) + .03 * Math.sin(u * 7.3 + 2));
-        let t = (y - edge) / (H * .5);
-        t = t < 0 ? 0 : t > 1 ? 1 : t;
-        t = t * t * (3 - 2 * t);
-        const i = (y * W + x) * 4;
-        const deep = t < .5 ? 0 : (t - .5) * 2;
-        for (let k = 0; k < 3; k++) {
-          const tint = mix(a, b, .35 + .65 * u, k);
-          d[i + k] = tint + (mix(b, c, .3 + .7 * (1 - u), k) - tint) * deep + Math.random() - .5; // dither before rounding, so the slow fade shows no rings
+        const u = x / W, v = y / H;
+        let r = 0, g = 0, b = 0, sum = 0;
+        for (const [px, py, c] of pools) {
+          const dx = u - px, dy = (v - py) * 1.7, w = Math.exp(-(dx * dx + dy * dy) / .11);
+          r += c[0] * w; g += c[1] * w; b += c[2] * w; sum += w;
         }
-        d[i + 3] = Math.min(1, t * 2) * 255 + Math.random() - .5; // clear at the top, so the page (or the mood below) shows through
+        // the top edge of the light is a slow wave, not a ruler line
+        const edge = .03 + .045 * Math.sin(u * 3.1 + .6) + .025 * Math.sin(u * 7.3 + 2);
+        let t = (v - edge) / .4;
+        t = t < 0 ? 0 : t > 1 ? 1 : t;
+        const i = (y * W + x) * 4, n = () => Math.random() - .5; // noise before rounding, so the slow fades show no rings
+        d[i] = r / sum + n(); d[i + 1] = g / sum + n(); d[i + 2] = b / sum + n();
+        d[i + 3] = t * t * (3 - 2 * t) * 255 + n(); // clear at the top, so the page (or the mood below) shows through
       }
     }
     ctx.putImageData(img, 0, 0);
@@ -259,7 +264,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
   setTimeout(() => { paint('work'); paint('gold'); }, 60);
 
   const LEVEL = { hear: 38, high: 14 };
-  const low = () => (S.on ? 60 : 50); // where the light rests: lower while the set card is up
+  const low = () => (S.on ? 58 : 44); // where the light rests: lower while the set card is up
   let glowAnim;
   const glowNow = () => { const m = new DOMMatrixReadOnly(getComputedStyle(glow).transform); return (m.m42 / glow.offsetHeight) * 100; };
   function glowTo(pct, ms, easing = SPRING) {
@@ -329,10 +334,12 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
   function drawClock() { const c = $('#clock'); if (c) c.textContent = mmss(Date.now() - S.t0); }
 
   /* ---------- Today ---------- */
+  const WEEK = [6.3, 6.9, 6.5, 7.1, 6.4, 6.8, 7.67]; // hours slept, last night last
+  const liftMarks = () => PUSH.map((_, i) => `<i class="${i < plan().length ? 'on' : ''}"></i>`).join('');
   const dayRows = () => `
-    <button class="row" data-ask="train"><span class="txt"><span class="k">Training</span><span class="v" id="trainV">Push, ${plan().length} lifts, about ${mins()} min</span></span>${CHEV}</button>
-    <button class="row" data-ask="food"><span class="txt"><span class="k">Food so far</span><span class="v">620 of 2,700 kcal, 41 g protein</span></span>${CHEV}</button>
-    <button class="row" data-ask="sleep"><span class="txt"><span class="k">Sleep</span><span class="v">7 h 40, in bed by 23:20</span></span>${CHEV}</button>`;
+    <button class="row" data-ask="train"><span class="txt"><span class="k">Training</span><span class="v" id="trainV">Push, ${plan().length} lifts, about ${mins()} min</span></span><span class="viz marks" id="trainM" aria-hidden="true">${liftMarks()}</span></button>
+    <button class="row" data-ask="food"><span class="txt"><span class="k">Food so far</span><span class="v">620 of 2,700 kcal, 41 g protein</span></span><span class="viz bar" aria-hidden="true"><i style="width:${(620 / 2700) * 100}%"></i></span></button>
+    <button class="row" data-ask="sleep"><span class="txt"><span class="k">Sleep</span><span class="v">7 h 40, in bed by 23:20</span></span><span class="viz week" aria-hidden="true">${WEEK.map((h, i) => `<i class="${i === 6 ? 'on' : ''}" style="height:${Math.round(((h - 5.5) / 2.5) * 26)}px"></i>`).join('')}</span></button>`;
   const ANSWERS = {
     train: ['What’s in Push?', () => `${plan().map((l) => l.name).join(', ')}. ${sets()} sets, about ${mins()} minutes.`],
     food: ['How’s food today?', () => 'Breakfast is in: 620 kcal and 41 g protein. You need about 100 g more protein by tonight. Skyr after training covers 20 of it.'],
@@ -346,7 +353,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
     const open = () => {
       el.innerHTML = `<div class="k">Bench press today</div>
         <div class="swap"><s>80 kg × 8</s>${ARROW}<span>82.5 kg × 6</span></div>
-        <div class="acts"><button class="pillbtn ink" data-a="use">Use 82.5 kg</button><button class="pillbtn" data-a="keep">Keep 80</button></div>`;
+        <div class="acts"><button class="pillbtn" data-a="use">Use 82.5 kg</button><button class="pillbtn" data-a="keep">Keep 80</button></div>`;
       $('[data-a="use"]', el).onclick = () => {
         S.heavy = true;
         el.innerHTML = `<div class="done"><span>Bench press is 82.5 kg × 6 today</span><button class="pillbtn" disabled>Undo</button></div>`;
@@ -367,10 +374,10 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
 
   function shortPlan() {
     const el = box('card offer', `<div class="k">A shorter Push</div><div class="swap"><s>5 lifts</s>${ARROW}<span>3 lifts, 30 min</span></div>
-      <div class="acts"><button class="pillbtn ink" data-a="use">Use the short plan</button><button class="pillbtn" data-a="keep">Keep all 5</button></div>`);
+      <div class="acts"><button class="pillbtn" data-a="use">Use the short plan</button><button class="pillbtn" data-a="keep">Keep all 5</button></div>`);
     const settle = (short) => {
       S.short = short;
-      $('#trainV').textContent = `Push, ${plan().length} lifts, about ${mins()} min`;
+      $('#trainV').textContent = `Push, ${plan().length} lifts, about ${mins()} min`; $('#trainM').innerHTML = liftMarks();
       el.innerHTML = `<div class="done"><span>${short ? 'Push is 3 lifts today' : 'Push stays at 5 lifts'}</span>${short ? '<button class="pillbtn" disabled>Undo</button>' : ''}</div>`;
       const undo = $('button', el);
       if (undo) { setTimeout(() => { undo.disabled = false; }, 600); undo.onclick = () => settle(false); }
@@ -515,8 +522,8 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
 
   function askEnd() {
     const n = S.log.length;
-    post([mine('End workout'), coach(n ? `End Push here? ${n} ${n === 1 ? 'set is' : 'sets are'} logged.` : 'End Push before the first set?'),
-      options([['End workout', finish, true], ['Keep going', () => post([coach('Good. Back to it.', 'soft', 0)])]])]);
+    const said = mine('End workout'), q = coach(n ? `End Push here? ${n} ${n === 1 ? 'set is' : 'sets are'} logged.` : 'End Push before the first set?');
+    post([said, q, options([['End workout', finish, true], ['Keep going', () => { said.remove(); q.remove(); }]])]);
   }
   function finish() {
     clearInterval(tick);
@@ -545,7 +552,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
     const from = sayRect(), cmd = read(text);
     if (!S.on) return hearToday(text, cmd);
     const bubble = mine(text);
-    if (!cmd) return post([bubble, coach('I only log sets in this prototype. Try “80 for 8”, “same again”, “skip” or “undo”.', 'soft')], [bubble, from]);
+    if (!cmd) return post([bubble, coach('I didn’t catch a set in that. Say it like “80 for 8”, or “same again”, “skip”, “undo”.', 'soft')], [bubble, from]);
     if (cmd.kind === 'undo') return undo();
     if (cmd.kind === 'ask') {
       const picks = (cmd.options ?? []).filter((o) => o.kind === 'set').map((o) => [`${num(o.kg ?? S.kg)} kg × ${o.reps ?? S.reps}`, () => logOrRest(o.kg ?? S.kg, o.reps ?? S.reps)]);
@@ -563,7 +570,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
       const picks = (odd.kg ?? [kg]).flatMap((k) => (odd.reps ?? [reps]).map((r) => [`${num(k)} kg × ${r}`, () => logOrRest(k, r)]));
       return post([bubble, coach(`${odd.kg ? `${num(said.kg)} kg` : `${said.reps} reps`} is far from your ${odd.kg ? `${num(S.kg)} kg` : `${S.reps} reps`}. Which one?`), options(picks)], [bubble, from]);
     }
-    const note = fixed.heard ? `Heard ${fixed.heard.kg !== undefined ? num(fixed.heard.kg) : fixed.heard.reps}, logged ${fixed.heard.kg !== undefined ? `${num(kg)} kg` : `${reps} reps`}. Say “undo” if that’s wrong.` : '';
+    const note = fixed.heard ? `I heard ${fixed.heard.kg !== undefined ? num(fixed.heard.kg) : fixed.heard.reps} and took it as ${fixed.heard.kg !== undefined ? `${num(kg)} kg` : `${reps} reps`}. Say “undo” if that’s wrong.` : '';
     logOrRest(kg, reps, from, note);
   }
   function logOrRest(kg, reps, from = say.getBoundingClientRect(), note = '') {
@@ -578,7 +585,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
     if (/\b(short|minutes|time|hurry|late)\b/.test(t) && !S.done) return shortPlan();
     if (/\b(food|protein|eat|kcal|calories)\b/.test(t)) return answer('food');
     if (/\b(sleep|slept|tired)\b/.test(t)) return answer('sleep');
-    post([mine(text), coach(cmd && cmd.kind !== 'ask' ? 'No workout is open. Start Push and say it again.' : 'This is a prototype, so I only know a few answers. Ask about sleep, food, why 82.5 or being short on time, or start Push.', 'soft')]);
+    post([mine(text), coach(cmd && cmd.kind !== 'ask' ? 'No workout is open. Start Push and say it again.' : 'Right now I can talk about sleep, food, the bench weight or a shorter session. Or say “start” and we go.', 'soft')]);
   }
 
   /* ---------- the ask bar ---------- */
@@ -630,7 +637,7 @@ button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outli
     heardText = ''; showHeard('');
     if (dict) { dict.start().catch((err) => ended(err?.code === 'not_granted' ? 'blocked' : err?.code === 'stopped' || err?.code === 'dismissed' ? '' : 'down')); return; }
     if (!SR) { tell('This browser can’t listen', 'Type it instead.'); say.focus(); return; }
-    rec = new SR(); rec.lang = 'en-US'; rec.interimResults = true;
+    rec = new SR(); rec.lang = navigator.language?.startsWith('da') ? 'da-DK' : 'en-US'; rec.interimResults = true; // the parser reads Danish sets too
     let fail = '';
     rec.onresult = (e) => {
       let text = '', final = true;
