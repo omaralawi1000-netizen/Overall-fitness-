@@ -519,7 +519,7 @@ dial.addEventListener('pointerdown', e => {
   const up = () => { dial.removeEventListener('pointermove', move); dial.style.cursor = ''; delete dial.dataset.drag; };
   dial.addEventListener('pointermove', move); dial.addEventListener('pointerup', up, { once: true }); dial.addEventListener('pointercancel', up, { once: true });
 });
-$('dNow').addEventListener('click', () => glideTo(nowHour));
+$('dNow').addEventListener('click', () => { const n = new Date(); nowHour = n.getHours() + n.getMinutes() / 60; glideTo(nowHour); }); // read the clock now, not at load
 
 let leafAnim = null;
 function startLeaves() {
@@ -688,7 +688,8 @@ function logSet() {
   S.logged[S.li][S.si] = { w: S.w, r: S.r, pr: isPr };
   haptic(isPr ? [12, 60, 18] : 10); pearl(); castPillar(S.si, isPr);
   const lastOfLift = S.si === L.sets.length - 1, lastOfAll = lastOfLift && S.li === LIFTS.length - 1;
-  if (isPr) { recordPrs(S.li); showPR(lastOfAll); return; }
+  recordPrs(S.li); // every replacement re-derives the lift's record
+  if (isPr) { showPR(lastOfAll); return; }
   if (lastOfAll) { openSheet($('go')); return; }
   startRest();
 }
