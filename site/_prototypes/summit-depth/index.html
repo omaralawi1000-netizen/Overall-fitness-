@@ -680,7 +680,8 @@ function startRest(n) {
 }
 function sink(fromProgress) {
   const h = document.querySelector(`#sc-${E().scene} .hero`);
-  if (sinkAnim) sinkAnim.cancel();
+  if (sinkAnim) { sinkAnim.cancel(); sinkAnim = null; }
+  if (reduce) return; // reduced motion: the countdown stays put and readable
   const rem = Math.max(0, restEnd - performance.now());
   sinkAnim = h.animate([{ transform: `translateY(${fromProgress * SINK}px)`, opacity: 1 }, { transform: `translateY(${Math.max(fromProgress, .85) * SINK}px)`, opacity: 1, offset: Math.max(0, (.85 - fromProgress) / (1 - fromProgress)) }, { transform: `translateY(${SINK}px)`, opacity: 0 }], { duration: reduce ? 1 : rem, easing: 'linear', fill: 'forwards' });
 }
@@ -710,7 +711,8 @@ $('plus30').onclick = () => {
   restEnd += 30000; restTotal += 30;
   const rem = (restEnd - performance.now()) / 1000;
   const p = Math.max(0, 1 - rem / restTotal);
-  if (sinkAnim) sinkAnim.cancel();
+  if (sinkAnim) { sinkAnim.cancel(); sinkAnim = null; }
+  if (reduce) { tick(); buzz(4); return; }
   // rise back to where the remaining time belongs, then keep sinking
   sinkAnim = h.animate([{ transform: `translateY(${y}px)`, opacity: 1 }, { transform: `translateY(${p * SINK}px)`, opacity: 1, offset: .06 }, { transform: `translateY(${Math.max(p, .85) * SINK}px)`, opacity: 1, offset: Math.max(.07, .06 + .94 * (.85 - p) / Math.max(.01, 1 - p)) }, { transform: `translateY(${SINK}px)`, opacity: 0 }], { duration: rem * 1000 / .94, easing: 'linear', fill: 'forwards' });
   tick(); buzz(4);
@@ -735,6 +737,7 @@ async function enterWorkout() {
   started = true; inWorkout = true;
   hideToast(); if ($('bubble').style.visibility === 'visible') popOut($('bubble'));
   const today = $('today'), work = $('work');
+  [today, work].forEach((el) => el.getAnimations().forEach((a) => a.cancel())); // a newer move wins over one still running
   setHero(E().scene, kgHTML(E().sets[cur][0]));
   renderWork();
   play(today, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'scale(1.06)' }], S.snap, { fill: 'forwards' }).onfinish = (ev) => { today.classList.remove('on'); ev.target.cancel(); };
@@ -749,6 +752,7 @@ async function enterWorkout() {
 async function leaveWorkout() {
   inWorkout = false; renderPlan();
   const today = $('today'), work = $('work');
+  [today, work].forEach((el) => el.getAnimations().forEach((a) => a.cancel()));
   play(work, [{ opacity: 1 }, { opacity: 0 }], S.snap, { fill: 'forwards' }).onfinish = (ev) => { work.classList.remove('on'); ev.target.cancel(); };
   today.classList.add('on');
   play(today, [{ opacity: 0, transform: 'scale(1.04)' }, { opacity: 1, transform: 'none' }], S.soft);
