@@ -515,7 +515,7 @@ function measure() {
 }
 function build() {
   measure(); paintAir(); paintWater(); waves();
-  setLevel(phase === 'idle' ? L.today : phase === 'done' ? L.done : phase === 'rest' ? levelNow() : L.work);
+  if (rest) resumeRest(); else setLevel(phase === 'idle' ? L.today : phase === 'done' ? L.done : L.work);
 }
 
 /* ---------- small helpers ---------- */
@@ -625,6 +625,7 @@ function scale() { // a mark every 15 s and a time every 30 s (every 2 and 4 s o
 }
 const restY = () => L.work - Math.min(1, Math.max(0, rest.end - Date.now()) / 1000 / rest.total) * (L.work - L.rest); // where the water should be right now
 function drain() { setLevel(L.work, Math.max(0, rest.end - Date.now()), 'linear'); }
+function resumeRest() { scale(); setLevel(restY()); drain(); } // after a resize or a locked phone: the water goes to where the clock says and keeps draining
 function tick() {
   if (!rest) return; const left = Math.ceil((rest.end - Date.now()) / 1000);
   if (left <= 0) return endRest(); roll($('bT'), clock(left));
@@ -689,7 +690,7 @@ const tile = causticTile(512); document.querySelectorAll('.caustics i').forEach(
 today(); build();
 let rz = 0; addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(build, 150); });
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { if (phase !== 'idle') renderSet(); });
-document.addEventListener('visibilitychange', () => { liquid.querySelectorAll('.wave,.caustics i,.buoy').forEach((el) => { el.style.animationPlayState = document.hidden ? 'paused' : 'running'; }); });
+document.addEventListener('visibilitychange', () => { if (!document.hidden && rest) resumeRest(); liquid.querySelectorAll('.wave,.caustics i,.buoy').forEach((el) => { el.style.animationPlayState = document.hidden ? 'paused' : 'running'; }); });
 // tilt the phone and the water stays level (works where the browser allows motion sensors)
 let lean = 0; addEventListener('deviceorientation', (e) => { if (e.gamma == null || reduce) return; const a = Math.max(-6, Math.min(6, -e.gamma * .22)); if (Math.abs(a - lean) < .3) return; lean = a; $('tilt').style.transform = `rotate(${a.toFixed(1)}deg)`; });
 if (flag('reach')) $('reach').hidden = false;
