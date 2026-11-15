@@ -481,8 +481,9 @@ function flipRoom(from, to, dir = 'down', dur = 640) {
 function sections(id) { return [...$(id).children]; }
 async function foldAway(id) {
   const els = sections(id);
-  els.forEach((el, i) => anim(el, [{ transform: 'perspective(700px) rotateX(0deg)', opacity: 1 }, { transform: 'perspective(700px) rotateX(78deg) translateY(-10px)', opacity: 0 }], { duration: 260, delay: i * 28, easing: 'cubic-bezier(.5,0,.75,0)' }, 'keep'));
-  await wait(260 + els.length * 28);
+  const as = els.map((el, i) => anim(el, [{ transform: 'perspective(700px) rotateX(0deg)', opacity: 1 }, { transform: 'perspective(700px) rotateX(78deg) translateY(-10px)', opacity: 0 }], { duration: 260, delay: i * 28, easing: 'cubic-bezier(.5,0,.75,0)' }, 'keep'));
+  // wait for the real animations (and their kept end state), never a guessed time
+  await Promise.all(as.map((a) => a.finished.catch(() => {}))); await new Promise((r) => setTimeout(r));
   $(id).classList.remove('on'); els.forEach((el) => { el.style.opacity = ''; el.style.transform = ''; });
 }
 function unfoldIn(id, delay = 0) {
@@ -714,6 +715,7 @@ $('plusBtn').onclick = () => {
   st.restEnd += 30000;
   // more time: the paper folds back a little, it never jumps
   st.restAnims.forEach((a) => { const tm = a.effect.getTiming(); a.effect.updateTiming({ duration: tm.duration + 30000 }); });
+  syncRest();
   anim($('plusBtn'), [{ transform: 'scale(.95)' }, { transform: 'none' }], SP.settle);
 };
 $('skipBtn').onclick = () => {
@@ -721,13 +723,15 @@ $('skipBtn').onclick = () => {
   st.restEnd = Date.now() + 420;
   st.restAnims.forEach((a) => { const tm = a.effect.getTiming(); const left = tm.duration + tm.delay - (a.currentTime || 0); if (left > 420) a.updatePlaybackRate(left / 420); });
 };
+// put the paper where the clock says: normal speed, progress from the deadline (after +30 s, a skip, or a locked phone)
+function syncRest() { const left = Math.max(0, st.restEnd - Date.now()); st.restAnims.forEach((a) => { const tm = a.effect.getTiming(); a.playbackRate = 1; a.currentTime = Math.max(0, tm.duration + tm.delay - left); }); }
 setInterval(() => {
   if (st.started && st.screen === 'workout') { const s = Math.floor((Date.now() - st.t0) / 1000); $('clock').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
   if (st.phase === 'rest') { const left = st.restEnd - Date.now(); setNum($('wTitle'), clockStr(left), false, left < 3500); }
 }, 200);
 document.addEventListener('visibilitychange', () => {
   // a locked phone throttles the page: put the paper where the clock says it should be
-  if (document.visibilityState === 'visible' && st.phase === 'rest') { const left = Math.max(0, st.restEnd - Date.now()); st.restAnims.forEach((a) => { const tm = a.effect.getTiming(); a.updatePlaybackRate(1); a.currentTime = Math.max(0, tm.duration + tm.delay - left); }); }
+  if (document.visibilityState === 'visible' && st.phase === 'rest') syncRest();
 });
 
 function undoSet() {
@@ -823,6 +827,8 @@ function openPop(fromEl, html) {
     { transform: 'none' },
   ];
   if (bodyA) bodyA.cancel();
+  if (popA) popA.cancel();
+  P.style.transform = '';
   popA = anim(P, kf, { duration: REDUCE ? 1 : 520, easing: 'cubic-bezier(.3,.7,.1,1)' });
   bodyA = body.animate([{ opacity: 0 }, { opacity: 0, offset: .45 }, { opacity: 1 }], { duration: REDUCE ? 1 : 520, fill: 'both' });
   P.querySelectorAll('.crease').forEach((c, i) => anim(c, [{ opacity: 0 }, { opacity: 1, offset: i ? .3 : .6 }, { opacity: 0 }], { duration: 900 }));
