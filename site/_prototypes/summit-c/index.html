@@ -603,17 +603,26 @@ const CARDS = {
   pull: { t: 'Pull day', s: 'Mon 17 → Thu 20 Nov', a: 'Move', done: 'Pull day is on Thursday' },
   food: { t: 'Logged to Food', s: 'Skyr 200 g, 2 eggs · 280 kcal, 33 g protein', a: null, done: '' },
 };
+// the Coach's bench card changes the real set 3, and Undo puts back what was there
+function benchTo(m, on) {
+  const set = st.wo ? st.wo.logs[0][2] : EX[0].sets[2];
+  if (st.wo && st.wo.done[0][2]) return;
+  if (on) { m.prev = set[0]; set[0] = 85; } else if (m.prev != null) set[0] = m.prev;
+  if (st.wo && st.wo.ex === 0 && st.wo.set === 2) renderWO();
+}
 function cardHTML(m) {
   const c = CARDS[m.card];
+  if (m.undone) return `<span class="cx">Removed<small>Skyr and eggs are off today's log</small></span>`;
   if (m.applied) return `<span class="chk">${I.check}</span><span class="cx">${c.done || c.t}<small>${c.s}</small></span><button class="mini press" data-undo>Undo</button>`;
   return `<span class="cx">${c.t}<small>${c.s}</small></span>${c.a ? `<button class="mini press" data-apply>${c.a}</button>` : `<button class="mini press" data-undo>Undo</button>`}`;
 }
 function wireCard(d, m) {
   d.addEventListener('click', (e) => {
-    if (e.target.closest('[data-apply]')) { m.applied = true; d.innerHTML = cardHTML(m); const u = d.querySelector('[data-undo]'); u.disabled = true; setTimeout(() => (u.disabled = false), 450);
+    if (e.target.closest('[data-apply]')) { m.applied = true; if (m.card === 'bench') benchTo(m, true); d.innerHTML = cardHTML(m); const u = d.querySelector('[data-undo]'); u.disabled = true; setTimeout(() => (u.disabled = false), 450);
       anim(d.querySelector('.chk'), [{ transform: 'scale(.3)' }, { transform: 'scale(1)' }], SP.pop); }
     else if (e.target.closest('[data-undo]')) {
-      if (m.card === 'food') { addFood('skyr', -1, true); addFood('eggs', -1, true); d.innerHTML = `<span class="cx">Removed<small>Skyr and eggs are off today's log</small></span>`; return; }
+      if (m.card === 'food') { if (m.undone) return; m.undone = true; addFood('skyr', -1, true); addFood('eggs', -1, true); d.innerHTML = cardHTML(m); return; }
+      if (m.card === 'bench') benchTo(m, false);
       m.applied = false; d.innerHTML = cardHTML(m);
     }
   });
@@ -622,11 +631,14 @@ function coachSayIt(text, card) {
   const chat = $('#chat'); if (!chat) return;
   const t = msgEl({ typing: true }); chat.appendChild(t); chat.scrollTop = chat.scrollHeight;
   setTimeout(() => {
-    t.remove(); const m = { ai: true, h: text }; coachLog.push(m); const el = msgEl(m); chat.appendChild(el);
+    t.remove(); const m = { ai: true, h: text }; coachLog.push(m);
+    const cm = card ? { card } : null; if (cm) coachLog.push(cm);
+    const now = sheetOpen && $('#chat'); if (!now) return;          // closed meanwhile: the log shows it on the next open
+    const el = msgEl(m); now.appendChild(el);
     anim(el, [{ transform: 'translateY(12px)', opacity: 0 }, { transform: 'none', opacity: 1 }]);
-    if (card) { const cm = { card }; if (card === 'food') cm.applied = false; coachLog.push(cm); const ce = msgEl(cm); chat.appendChild(ce);
+    if (cm) { const ce = msgEl(cm); now.appendChild(ce);
       anim(ce, [{ transform: 'translateY(16px) scale(.97)', opacity: 0 }, { transform: 'none', opacity: 1 }], SP.pop, { delay: 120 }); }
-    chat.scrollTop = chat.scrollHeight;
+    now.scrollTop = now.scrollHeight;
   }, 900);
 }
 function userSays(text) {
@@ -790,7 +802,7 @@ function wireWorkout() {
 }
 function logSet() {
   const w = st.wo, e = EX[w.ex], cur = w.logs[w.ex][w.set];
-  if (rest.on) return;
+  if (rest.on || w.done[w.ex][w.set]) return;                   // a set is logged once, even if Log is tapped again
   w.done[w.ex][w.set] = true; w.sets++; w.kgTotal += cur[0] * cur[1];
   const isBest = e1(...cur) > e.best; if (isBest) { e.best = e1(...cur); w.records++; }
   const diff = cur[0] - e.last[0];
@@ -799,7 +811,7 @@ function logSet() {
   const pr = rel($('#pane')); pop(diff > 0 ? `+${kgs(diff)} kg on last time` : diff === 0 ? 'Same as last time' : `${kgs(diff)} kg, easy day`, 192, pr.y - 18);
   const lastOfEx = w.set === e.sets.length - 1;
   if (isBest) setTimeout(() => record(e, cur), 380);
-  if (lastOfEx && w.ex === EX.length - 1) { setTimeout(finishSheet, isBest ? 3200 : 700); return; }
+  if (lastOfEx && w.ex === EX.length - 1) { $('#logBtn').textContent = 'All sets logged'; $('#after').textContent = 'Tap the flag to finish'; setTimeout(finishSheet, isBest ? 3200 : 700); return; }
   startRest(restFor(e), isBest ? 3000 : 0);
 }
 /* rest: the Log button turns into the rest bar (frosted from the first frame: revealed by a clip, never faded) */
