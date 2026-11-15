@@ -197,9 +197,9 @@ svg.i.go { width: 18px; height: 18px; color: var(--wall); stroke-width: 3.5; }
 .deck__rest { transform: translateY(calc(100% + 60px)); }
 .workout.is-resting .deck__set { transform: translateY(calc(100% + 60px)); }
 .workout.is-resting .deck__rest { transform: none; transition-delay: 40ms; }
-.rack { display: flex; align-items: center; justify-content: space-between; background: #3323a8; border-radius: 24px; padding: 8px 8px 11px; touch-action: none; }
+.rack { display: flex; align-items: center; justify-content: space-between; gap: 2px; background: #3323a8; border-radius: 24px; padding: 8px 8px 11px; touch-action: none; }
 .rack.is-off, .step.is-off { opacity: .28; pointer-events: none; }
-.disc { flex: none; border: 0; padding: 0; width: var(--d); height: var(--d); border-radius: 50%; background-color: var(--c); color: #fff; cursor: grab;
+.disc { flex: 0 1 var(--d); min-width: 0; aspect-ratio: 1; border: 0; padding: 0; border-radius: 50%; background-color: var(--c); color: #fff; cursor: grab;
   font-family: var(--display); font-weight: 800; font-size: 15px; display: grid; place-items: center; touch-action: none;
   box-shadow: inset 0 0 0 5px rgba(255,255,255,.16), inset 0 0 0 6.5px rgba(0,0,0,.12), inset 0 2px 0 rgba(255,255,255,.3), 0 4px 0 rgba(0,0,0,.34); transition: transform var(--ms-snappy) var(--sp-snappy), opacity var(--ms-snappy) linear; }
 .disc.p15, .disc.p5 { color: var(--ink); }
@@ -554,7 +554,7 @@ KGS.forEach(kg => {
 });
 rack.addEventListener('pointerdown', e => {
   const d = e.target.closest('.disc'); if (!d) return;
-  e.preventDefault();
+  e.preventDefault(); clock();
   const kg = +d.dataset.kg, r = d.getBoundingClientRect(), a = app.getBoundingClientRect();
   const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
   const g = d.cloneNode(true); g.classList.remove('is-held'); g.classList.add('ghost');
@@ -588,6 +588,9 @@ rack.addEventListener('pointerdown', e => {
   };
   d.addEventListener('pointermove', move); d.addEventListener('pointerup', up); d.addEventListener('pointercancel', up);
 });
+stage.addEventListener('pointerdown', () => { if (stack.length && !(W.test && W.test.round === 1)) clock(); });
+/* keyboard and screen-reader activation arrives as a click with no pointer behind it */
+rack.addEventListener('click', e => { const d = e.target.closest('.disc'); if (d && e.detail === 0 && addPlate(+d.dataset.kg)) touch(); });
 stage.addEventListener('click', e => {
   if (!stack.length || (W.test && W.test.round === 1)) return;
   const x = (e.clientX - stage.getBoundingClientRect().left) / K;
@@ -793,7 +796,9 @@ function finish() {
 
 /* ---- the speed test: same four weights, plates only, then plus and minus only ---- */
 const TARGETS = [60, 82.5, 85, 50];
-function touch() { const t = W.test; if (!t) return; if (!t.t0) t.t0 = performance.now(); t.touches++; }
+/* the clock starts when the finger first goes down, in both rounds; touch() counts the changes made */
+function clock() { const t = W.test; if (t && !t.t0) t.t0 = performance.now(); }
+function touch() { const t = W.test; if (!t) return; clock(); t.touches++; }
 function startTest() {
   resetWorkout();
   W.test = { round: 0, i: 0, t0: 0, touches: 0, out: [] };
