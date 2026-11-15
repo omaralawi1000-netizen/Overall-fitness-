@@ -57,6 +57,17 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: Summit take C, the organised whole app (/_prototypes/summit-c/)
+Asked (Omar, 04:56 to 05:05): "Try to make four different versions of my taste. Fill some gaps. I want it to be [Summit]. Like the ones with the wallpaper. It has to be different, but you know, the same style … Make it actually beautiful. Think, be creative, unique." Then: "I wanted to have pop-ups, more pop-ups, alive feelings. I wanted to feel alive, genuine." Then: "Stop all the working threads and start them again on Opus hi." Take C of four was given: organised and complete.
+Reading of the log before building: the wallpaper is the product; the glass must be light and the same on every screen; Summit's Today was the weak screen (6.5 to 7.5); readiness rings were turned down on 3 Nov, so readiness is a number with a week of bars, and rings are kept for food.
+Built (clickable, one file, English only): one mountain panorama (snow peaks over mist, the sky repainted for dawn and blue hour) is the wallpaper of every tab and slides a little when you change tab. Every tab has the same three places: a big number on the picture, one serif line from the Coach, one frosted tray of widgets. Today: readiness 84 and the week, Push day with Start, food ring, sleep, water drops you tap. Train: the week's sessions. Food: four rings, quick-add chips, today's meals. Health: sleep stages, resting heart rate, HRV, weight (log it in a sheet). The Coach is a round button next to the tab bar; its sheet answers, acts with Undo, and takes voice ("200 g skyr og to æg" lands in Food).
+Pop-ups and alive moments: an island that drops from the top (the Coach's morning note, a note the first time you open each tab, Undo after logging), white chips that pop out of what you tapped (+250 ml, +124 kcal, +2.5 kg on last time), digits that roll, the rest timer that grows out of the Log button, a gold medal that flips for a new best, a live pill in the header while a workout is minimised, a Finish sheet, and Today changing to "Push is done".
+Judge (one fresh design-judge, Sonnet): 7.5 (Today 8, Workout 8, Record 8, Train and Health 7.5, Food, Rest and Coach 7). Its defects were fixed after the round, not re-judged: a double status-bar clock in the workout, rest digits that rolled the long way round, kcal eaten vs left shown as if they clashed, sheets too dark to see the picture, a pop chip over Start, a cramped Food tray, underlined units.
+My own score: 7.5. Biggest weakness: it is organised but safe; nothing on it is a "what app is that?" moment yet apart from the panorama and the medal.
+Needs his phone: the frost over the sky, banding in the violet-to-peach sky and the pink dusk band, smoothness of the tab slide and the rolling digits.
+Artifact: https://claude.ai/artifact/Us1PmGKYR7mWPPEoBr4t5A
+Verdict: waiting for Omar.
+
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.
