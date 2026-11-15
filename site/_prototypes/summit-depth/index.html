@@ -332,7 +332,7 @@ const EX = [
 const e1 = (w, r) => w * (1 + r / 30);
 const fmt = (n) => (Math.round(n * 10) / 10).toLocaleString(DA ? 'da-DK' : 'en-GB');
 let clockStart = 0;
-let ex = 0, cur = 2, bestDone = false, resting = false, finished = false, inWorkout = false, started = false;
+let ex = 0, cur = 2, bests = 0, resting = false, finished = false, inWorkout = false, started = false;
 
 /* ---------- time ---------- */
 const now = new Date();
@@ -435,6 +435,8 @@ addEventListener('deviceorientation', (e) => {
   base.b += (e.beta - base.b) * .01; base.g += (e.gamma - base.g) * .01; // slowly re-centre on how the phone is held
   applyTilt();
 });
+// iPhone asks once, from a tap, before it shares tilt
+if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function') addEventListener('click', () => DeviceOrientationEvent.requestPermission().catch(() => {}), { once: true });
 screen.addEventListener('pointermove', (e) => {
   if (e.pointerType !== 'mouse') return;
   const r = screen.getBoundingClientRect();
@@ -470,13 +472,20 @@ function prepRim(el, w, h, r, scale = 26, band = 16) {
 function addRim(el) { if (el.dataset.rim) el.classList.add('rim'); }
 
 /* ---------- scene switching (the camera pushes through the picture) ---------- */
-let lead = null;
+let lead = null, gen = 0;
 async function showScene(id, how = 'cut') {
-  const next = $('sc-' + id), prev = lead && $('sc-' + lead);
+  const g = ++gen, next = $('sc-' + id), prev = lead && $('sc-' + lead);
+  // a newer switch wins: settle any fly-past still running and hide every place that is not part of this one
+  document.querySelectorAll('.scene').forEach((sc) => {
+    sc.style.zIndex = '';
+    if (sc !== next && sc !== prev) sc.classList.remove('on', 'lead');
+    sc.querySelectorAll('.pb, .pf, .ph').forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
+  });
   if (prev === next) return;
   screen.style.setProperty('--tint', SCENES[id].tint);
   next.classList.add('on'); // the layers exist before anything moves
   await Promise.all([...next.querySelectorAll('img')].map((i) => i.decode().catch(() => {})));
+  if (g !== gen) return;
   next.classList.add('lead'); lead = id; applyTilt();
   if (!prev) return;
   prev.classList.remove('lead');
@@ -491,6 +500,7 @@ async function showScene(id, how = 'cut') {
   play(next.querySelector('.pb'), [{ transform: 'scale(.92)' }, { transform: next.querySelector('.pb').style.transform || 'none' }], S.cam);
   play(next.querySelector('.pf'), [{ transform: 'scale(.86) translateY(40px)' }, { transform: next.querySelector('.pf').style.transform || 'none' }], S.cam);
   await out.finished.catch(() => {});
+  if (g !== gen) return;
   prev.classList.remove('on'); prev.style.zIndex = ''; next.style.zIndex = '';
   [pf, pb, ph].forEach((e) => e.getAnimations().forEach((a) => a.cancel()));
 }
@@ -623,6 +633,7 @@ async function goEx(n) {
   ex = n; cur = EX[n].sets.findIndex((s) => !s[2]); if (cur < 0) cur = 0;
   setHero(EX[n].scene, kgHTML(EX[n].sets[cur][0]));
   renderWork();
+  if (!inWorkout) return; // rest ran out on Today: move on quietly, Today keeps its own place
   const sc = $('sc-' + EX[n].scene); sc.querySelector('.ph').getAnimations().forEach((a) => a.cancel());
   const shown = showScene(EX[n].scene, 'push');
   if (!reduce) play(sc.querySelector('.hero'), [{ transform: 'translateY(150px)' }, { transform: 'none' }], S.cam, { delay: 260, fill: 'backwards' });
@@ -637,7 +648,7 @@ $('log').onclick = () => {
   const diff = s[0] - e.last[0];
   renderWork();
   const chip = $('sets').children[cur]; play(chip, [{ transform: 'scale(.82)' }, { transform: 'none' }], S.pop);
-  if (best) { e.best = [s[0], s[1]]; bestDone = true; record(e, s); }
+  if (best) { e.best = [s[0], s[1]]; bests++; record(e, s); }
   else toast(`<span class="ok">${I.check}</span><span>${T('Set', 'Sæt')} ${cur + 1} · <b>${fmt(s[0])} × ${s[1]}</b>${diff > 0 ? ` · +${fmt(diff)} kg ${T('on last time', 'mod sidst')}` : ''}</span>`);
   const left = e.sets.findIndex((x) => !x[2]);
   if (left < 0 && nextEx() < 0) { setTimeout(finish, best ? 2600 : 900); return; }
@@ -710,7 +721,7 @@ function finish() {
   finished = true; stopRest(true); renderPlan();
   const total = EX.reduce((a, e) => a + e.sets.filter((s) => s[2]).reduce((b, s) => b + s[0] * s[1], 0), 0);
   const sets = EX.reduce((a, e) => a + e.sets.filter((s) => s[2]).length, 0);
-  openSheet(`<h2>${T('Upper A, done', 'Upper A, klaret')}</h2><p>${T(`${sets} sets · ${fmt(total / 1000)} t lifted${bestDone ? ' · 1 new best' : ''}`, `${sets} sæt · ${fmt(total / 1000)} t løftet${bestDone ? ' · 1 ny rekord' : ''}`)}</p>
+  openSheet(`<h2>${T('Upper A, done', 'Upper A, klaret')}</h2><p>${T(`${sets} sets · ${fmt(total / 1000)} t lifted${bests ? ` · ${bests} new best${bests > 1 ? 's' : ''}` : ''}`, `${sets} sæt · ${fmt(total / 1000)} t løftet${bests ? ` · ${bests} ${bests > 1 ? 'nye rekorder' : 'ny rekord'}` : ''}`)}</p>
     <ul class="rows">${EX.map((e) => { const d = e.sets.filter((s) => s[2]); const top = d.reduce((a, s) => (!a || e1(s[0], s[1]) > e1(a[0], a[1]) ? s : a), null);
       return `<li><div><span class="thumb" style="${thumb(e.scene)}"></span><div>${e.name}<span>${e.group} · ${d.length ? (d.length === 1 ? T('1 set', '1 sæt') : T(`${d.length} sets`, `${d.length} sæt`)) : T('Skipped', 'Sprunget over')}</span></div></div><em>${top ? `${fmt(top[0])} × ${top[1]}` : ''}</em></li>`; }).join('')}</ul>
     <button class="wide press" id="toToday">${T('Back to Today', 'Tilbage til I dag')}</button>`);
