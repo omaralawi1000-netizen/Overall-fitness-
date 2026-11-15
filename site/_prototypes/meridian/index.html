@@ -1,0 +1,948 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!--page-->
+<title>Aven Meridian</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@200;300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: two rooms of cast concrete lit by the sun. Today is a wall with a window's light falling across it
+   (it follows the clock and can be scrubbed). The workout is a second room: board-formed concrete, one shaft of
+   light from a skylight, the weight standing in it. Rest closes the shaft into a line of light. Logged sets are
+   cast as pillars that throw shadows. Warm light, cool shadow; colour comes only from the light itself.
+   One deliberate daylight look, so no dark theme: every colour is set here explicitly. */
+:root {
+  color-scheme: light;
+  --outer: #6f6d69;
+  --wall: #b9b6b0;
+  --wall-2: #a7a49e;
+  --ink: #1d1f22;
+  --ink-2: rgba(29, 31, 34, .68);
+  --ink-3: rgba(29, 31, 34, .46);
+  --line: rgba(29, 31, 34, .16);
+  --sun: #ffe6bd;
+  --sun-eve: #ffad6b;
+  --gold: #ffcf6e;
+  --shade: rgba(36, 48, 70, .24);
+  --glass: rgba(242, 239, 233, .34);
+  --glass-edge: rgba(255, 255, 255, .55);
+  --paper: #f3f0ea;
+  --display: "Inter Tight", "Helvetica Neue", Arial, sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --ease: cubic-bezier(.22, 1, .36, 1);
+  --spring: cubic-bezier(.34, 1.36, .64, 1);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { height: 100%; margin: 0; background: var(--outer); color: var(--ink); }
+body { font-family: var(--display); overscroll-behavior: none; -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }
+#app { position: relative; height: 100%; max-width: 440px; margin: 0 auto; overflow: hidden; background: var(--wall); contain: strict; }
+.screen { position: absolute; inset: 0; overflow: hidden; }
+.screen[data-off] { visibility: hidden; pointer-events: none; }
+canvas.wall { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.layer { position: absolute; pointer-events: none; will-change: transform, opacity; }
+.layer canvas { display: block; width: 100%; height: 100%; }
+.soft { mix-blend-mode: soft-light; }
+.pad { position: absolute; inset: 0; padding-top: calc(env(safe-area-inset-top, 0px) + 18px); padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 18px);
+  padding-left: max(22px, env(safe-area-inset-left, 0px)); padding-right: max(22px, env(safe-area-inset-right, 0px)); display: flex; flex-direction: column; }
+.label { font-family: var(--mono); font-size: 10.5px; letter-spacing: .14em; text-transform: uppercase; color: var(--ink-2); }
+.num { font-variant-numeric: tabular-nums; }
+.glass { position: relative; border-radius: 22px; isolation: isolate; }
+.glass::before { content: ""; position: absolute; inset: 0; border-radius: inherit; z-index: -1; background: var(--glass);
+  -webkit-backdrop-filter: blur(22px) saturate(1.15); backdrop-filter: blur(22px) saturate(1.15);
+  box-shadow: inset 0 1px 0 var(--glass-edge), inset 0 0 0 1px rgba(255,255,255,.18), 0 10px 30px -18px rgba(30,36,48,.5); }
+.press { transition: transform .12s var(--ease); }
+.press:active { transform: scale(.955); transition-duration: .05s; }
+
+/* ---------- Today ---------- */
+#today .top { display: flex; justify-content: space-between; align-items: baseline; }
+#today .hero { margin-top: 13vh; }
+#today .hero h1 { font-weight: 200; font-size: 108px; line-height: .86; letter-spacing: -.055em; margin: 10px 0 14px -6px; }
+#today .hero .spec { display: flex; gap: 10px; align-items: center; font-size: 15px; color: var(--ink-2); }
+#today .hero .spec i { width: 3px; height: 3px; border-radius: 50%; background: var(--ink-3); }
+#today .hero .done { display: none; margin-top: 10px; font-size: 15px; }
+#today[data-done] .hero .done { display: block; }
+.fill { flex: 1; min-height: 12px; }
+.strip { display: grid; grid-template-columns: repeat(3, 1fr); padding: 14px 4px; }
+.strip > button { padding: 4px 14px; display: flex; flex-direction: column; gap: 5px; text-align: left; border-radius: 14px; }
+.strip > button + button { border-left: 1px solid var(--line); border-radius: 0; }
+.strip b { font-weight: 300; font-size: 27px; letter-spacing: -.03em; line-height: 1; }
+.strip b small { font-size: 13px; letter-spacing: 0; color: var(--ink-2); margin-left: 3px; font-weight: 400; }
+.strip span { font-size: 12.5px; color: var(--ink-2); }
+.coach { margin-top: 10px; padding: 16px 18px; display: grid; gap: 10px; }
+.coach p { margin: 0; font-size: 16px; line-height: 1.38; letter-spacing: -.01em; text-wrap: pretty; }
+.coach .row { display: flex; justify-content: space-between; align-items: center; }
+.chip { height: 36px; padding: 0 16px; border-radius: 18px; background: var(--ink); color: var(--paper); font-size: 14px; font-weight: 500; display: inline-flex; align-items: center; gap: 8px; }
+.chip.ghost { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.dial { margin-top: 18px; position: relative; height: 62px; touch-action: none; cursor: grab; }
+.dial .readout { display: flex; justify-content: space-between; align-items: baseline; }
+.dial .readout b { font-family: var(--mono); font-weight: 500; font-size: 12px; letter-spacing: .06em; }
+.dial .track { position: absolute; left: 0; right: 0; top: 34px; height: 1px; background: var(--ink-3); }
+.dial .day { position: absolute; top: -1px; height: 3px; background: var(--ink); border-radius: 2px; }
+.dial .tick { position: absolute; top: 4px; width: 1px; height: 5px; background: var(--ink-3); }
+.dial .tick span { position: absolute; top: 8px; left: -10px; width: 20px; text-align: center; font-family: var(--mono); font-size: 9px; color: var(--ink-3); }
+.dial .mark { position: absolute; top: -12px; font-family: var(--mono); font-size: 9px; letter-spacing: .08em; color: var(--ink-2); transform: translateX(-50%); white-space: nowrap; }
+.dial .mark::after { content: ""; position: absolute; left: 50%; top: 12px; width: 1px; height: 12px; background: var(--ink-2); }
+.dial .knob { position: absolute; top: -9px; left: 0; width: 19px; height: 19px; margin-left: -9.5px; border-radius: 50%; background: var(--paper);
+  box-shadow: 0 0 0 1px var(--ink), 0 4px 10px -3px rgba(0,0,0,.4); will-change: transform; }
+.dial .knob::before { content: ""; position: absolute; inset: -14px; border-radius: 50%; }
+.dial[data-drag] .mark { opacity: 0; }
+.dial .mark { transition: opacity .2s; }
+.dial .knob::after { content: ""; position: absolute; inset: 5px; border-radius: 50%; background: var(--ink); }
+.dial .now { position: absolute; right: 0; top: -2px; font-family: var(--mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink); padding: 4px 0 4px 12px; opacity: 0; transition: opacity .3s; }
+.dial[data-off-now] .now { opacity: 1; }
+.begin { margin-top: 14px; height: 62px; border-radius: 31px; background: var(--ink); color: var(--paper); display: flex; align-items: center; justify-content: space-between; padding: 0 10px 0 26px; font-size: 18px; font-weight: 500; letter-spacing: -.01em; }
+.begin .arrow { width: 44px; height: 44px; border-radius: 50%; background: rgba(243,240,234,.12); display: grid; place-items: center; }
+
+/* ---------- Workout ---------- */
+#workout { background: var(--wall-2); }
+.whead { display: flex; justify-content: space-between; align-items: flex-start; }
+.whead h2 { margin: 6px 0 0; font-weight: 400; font-size: 25px; letter-spacing: -.03em; line-height: 1.05; }
+.whead .right { text-align: right; display: grid; gap: 8px; justify-items: end; }
+.whead .clock { font-family: var(--mono); font-size: 14px; letter-spacing: .04em; }
+.link { font-size: 14px; font-weight: 500; padding: 8px 0 8px 14px; margin-right: -2px; border-bottom: 1px solid var(--ink-3); padding-bottom: 2px; }
+.lifts { display: flex; gap: 4px; margin-top: 14px; }
+.lifts i { flex: 1; height: 2px; background: var(--ink-3); opacity: .5; border-radius: 1px; }
+.lifts i.on { background: var(--ink); opacity: 1; }
+.lifts i.done { background: var(--ink); opacity: .75; }
+.stage { position: relative; flex: 1; display: grid; place-items: center; min-height: 0; }
+.setpanel, .restpanel, .prpanel, .finpanel { grid-area: 1 / 1; width: 100%; display: flex; flex-direction: column; align-items: center; transition: opacity .35s var(--ease), transform .45s var(--ease); }
+[data-phase="lift"] .restpanel, [data-phase="lift"] .prpanel, [data-phase="lift"] .finpanel,
+[data-phase="rest"] .setpanel, [data-phase="rest"] .prpanel, [data-phase="rest"] .finpanel,
+[data-phase="pr"] .setpanel, [data-phase="pr"] .restpanel, [data-phase="pr"] .finpanel,
+[data-phase="done"] .setpanel, [data-phase="done"] .restpanel, [data-phase="done"] .prpanel { opacity: 0; pointer-events: none; transform: translateY(10px) scale(.985); }
+.big { display: flex; align-items: center; justify-content: center; width: 100%; gap: 6px; }
+.weight { font-weight: 200; font-size: 112px; letter-spacing: -.06em; line-height: .9; display: flex; align-items: baseline; }
+.weight .unit { font-size: 17px; letter-spacing: 0; font-weight: 400; margin-left: 6px; color: var(--ink-2); }
+.reps { font-weight: 300; font-size: 44px; letter-spacing: -.04em; margin-top: 4px; display: flex; align-items: baseline; gap: 8px; }
+.reps .x { font-size: 26px; color: var(--ink-2); }
+.step { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; flex: none; box-shadow: inset 0 0 0 1px rgba(29,31,34,.28); background: rgba(243,240,234,.16); }
+.step svg { width: 18px; height: 18px; }
+.repsrow { display: flex; align-items: center; gap: 22px; margin-top: 10px; }
+.repsrow .step { width: 44px; height: 44px; }
+.roll { display: inline-flex; }
+.roll .ch { display: inline-grid; overflow: hidden; }
+.roll .ch > span { grid-area: 1 / 1; }
+/* the weight scale: an elevation ruler, last time and best marked like a drawing */
+.ruler { position: relative; width: 100%; height: 50px; margin-top: 26px; }
+.ruler .base { position: absolute; left: 0; right: 0; top: 22px; height: 1px; background: var(--ink-2); }
+.ruler .t { position: absolute; top: 17px; width: 1px; height: 5px; background: var(--ink-2); }
+.ruler .t.maj { top: 13px; height: 9px; }
+.ruler .t span { position: absolute; top: 14px; left: -14px; width: 28px; text-align: center; font-family: var(--mono); font-size: 9px; color: var(--ink-3); }
+.ruler .m { position: absolute; top: 0; transform: translateX(-50%); font-family: var(--mono); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-2); white-space: nowrap; }
+.ruler .m::after { content: ""; position: absolute; left: 50%; top: 13px; margin-left: -3.5px; border: 3.5px solid transparent; border-top: 5px solid var(--ink-2); }
+.ruler .needle { position: absolute; top: 14px; left: 0; width: 2px; height: 17px; margin-left: -1px; background: var(--ink); will-change: transform; transition: transform .45s var(--spring); }
+.note { margin-top: 18px; font-size: 14px; color: var(--ink-2); text-align: center; min-height: 20px; }
+.countdown { font-weight: 200; font-size: 128px; letter-spacing: -.06em; line-height: .9; }
+.restpanel .sub { margin-top: 14px; font-size: 18px; color: var(--ink-2); text-align: center; }
+.restpanel .sub b { color: var(--ink); font-weight: 500; }
+.coachnote { width: 100%; margin-top: 22px; padding: 15px 16px 14px; display: grid; gap: 12px; opacity: 0; transform: translateY(14px); transition: opacity .4s var(--ease), transform .55s var(--spring); pointer-events: none; }
+.coachnote[data-show] { opacity: 1; transform: none; pointer-events: auto; }
+.coachnote p { margin: 0; font-size: 15px; line-height: 1.38; text-wrap: pretty; }
+.coachnote .row { display: flex; gap: 8px; justify-content: flex-end; }
+.prpanel .label { color: var(--ink); }
+.prpanel .prbig { font-weight: 200; font-size: 96px; letter-spacing: -.06em; line-height: .95; margin: 14px 0 10px; }
+.prpanel p { margin: 0; font-size: 16px; color: var(--ink-2); text-align: center; }
+.ripple { position: absolute; left: 50%; top: 50%; width: 240px; height: 240px; margin: -120px 0 0 -120px; border-radius: 50%; box-shadow: inset 0 0 0 1px rgba(29,31,34,.5); opacity: 0; pointer-events: none; }
+.finpanel h3 { margin: 12px 0 18px; font-weight: 200; font-size: 76px; letter-spacing: -.055em; line-height: .9; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; padding: 14px 4px; }
+.stats > div { padding: 0 12px; display: grid; gap: 4px; }
+.stats > div + div { border-left: 1px solid var(--line); }
+.stats b { font-weight: 300; font-size: 24px; letter-spacing: -.03em; }
+.stats span { font-size: 12px; color: var(--ink-2); }
+.finpanel .best { margin-top: 14px; font-size: 15px; color: var(--ink-2); text-align: center; min-height: 20px; }
+/* the colonnade: planned sets are drawn as plan outlines, a logged set is cast and throws its shadow */
+.colonnade { padding: 0 12px; display: flex; justify-content: center; align-items: flex-end; gap: 0; height: 96px; margin-top: 6px; }
+.col { position: relative; width: 74px; height: 96px; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; }
+.pillar { position: relative; width: 15px; height: 64px; }
+.pillar .plan { position: absolute; inset: 0; border: 1px dashed rgba(29,31,34,.5); }
+.pillar .cast { position: absolute; inset: 0; background: linear-gradient(90deg, #efebe3 0 46%, #a9a59e 46% 100%); box-shadow: inset 0 1px 0 rgba(255,255,255,.6); opacity: 0; transform: scaleY(.0); transform-origin: bottom; }
+.pillar .sh { position: absolute; left: 15px; bottom: 0; width: 46px; height: 9px; background: var(--shade); transform-origin: 0 100%; transform: skewX(-62deg) scaleX(0); filter: blur(.6px); }
+.col[data-done] .plan { opacity: 0; }
+.col[data-done] .cast { opacity: 1; transform: none; }
+.col[data-done] .sh { transform: skewX(-62deg) scaleX(1); }
+.col[data-pr] .cast { background: linear-gradient(90deg, #fff1c9 0 46%, #c9a768 46% 100%); }
+.col[data-now] .plan { border-style: solid; border-color: var(--ink); animation: breathe 2.8s ease-in-out infinite; }
+@keyframes breathe { 50% { opacity: .45; } }
+.col .cap { margin-top: 10px; font-family: var(--mono); font-size: 9.5px; letter-spacing: .04em; color: var(--ink-2); height: 12px; }
+.col[data-now] .cap { color: var(--ink); }
+.floor { position: absolute; left: 0; right: 0; height: 1px; background: rgba(29,31,34,.25); }
+.actions { display: grid; grid-template-columns: 1fr 88px 1fr; align-items: center; margin-top: 8px; margin-bottom: 22px; }
+.actions .side { font-size: 15px; font-weight: 500; justify-self: start; height: 48px; padding: 0 18px; border-radius: 24px; box-shadow: inset 0 0 0 1px rgba(29,31,34,.28); background: rgba(243,240,234,.16); }
+.actions .side:empty { visibility: hidden; }
+.actions .side.r { justify-self: end; }
+.go { width: 88px; height: 88px; border-radius: 50%; background: var(--ink); color: var(--paper); display: grid; place-items: center; position: relative; }
+.go svg { width: 30px; height: 30px; }
+.go .pearl { position: absolute; inset: 0; border-radius: 50%; background: var(--paper); opacity: 0; transform: scale(.3); pointer-events: none; }
+.go .lbl { position: absolute; top: 96px; left: -20px; right: -20px; text-align: center; font-size: 12.5px; color: var(--ink-2); }
+.dust { position: absolute; width: 2px; height: 2px; border-radius: 50%; background: rgba(255,250,236,.95); opacity: 0; }
+
+/* ---------- toast and sheet ---------- */
+.toast { position: absolute; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 262px); transform: translate(-50%, 16px); opacity: 0; z-index: 30;
+  height: 46px; padding: 0 8px 0 18px; border-radius: 23px; background: var(--ink); color: var(--paper); display: flex; gap: 14px; align-items: center; white-space: nowrap; font-size: 14.5px;
+  transition: opacity .3s var(--ease), transform .45s var(--spring); pointer-events: none; }
+.toast[data-show] { opacity: 1; transform: translate(-50%, 0); pointer-events: auto; }
+.toast.m { transition: opacity .3s var(--ease); }
+[hidden] { display: none !important; }
+.toast button { height: 34px; padding: 0 14px; border-radius: 17px; background: rgba(243,240,234,.14); font-weight: 500; }
+.toast button[disabled] { opacity: .45; }
+.scrim { position: absolute; inset: 0; background: rgba(26, 28, 32, .32); opacity: 0; pointer-events: none; z-index: 40; transition: opacity .35s var(--ease); }
+.scrim[data-show] { opacity: 1; pointer-events: auto; }
+.sheet { position: absolute; left: 8px; right: 8px; bottom: calc(env(safe-area-inset-bottom, 0px) + 8px); z-index: 41; border-radius: 30px; padding: 12px 22px 22px; background: var(--paper);
+  box-shadow: 0 24px 60px -20px rgba(0,0,0,.55); transform: translateY(110%); will-change: transform; touch-action: none; }
+.sheet .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 18px; }
+.sheet h4 { margin: 4px 0 6px; font-weight: 300; font-size: 34px; letter-spacing: -.04em; }
+.sheet p { margin: 0 0 20px; color: var(--ink-2); font-size: 15px; line-height: 1.4; }
+.hold { position: relative; width: 100%; height: 64px; border-radius: 32px; background: var(--ink); color: var(--paper); overflow: hidden; font-size: 17px; font-weight: 500; }
+.hold .bar { position: absolute; inset: 0; background: linear-gradient(90deg, #3b3f46, #5a5f68); transform: scaleX(0); transform-origin: left; }
+.hold span { position: relative; }
+.sheet .keep { width: 100%; height: 52px; margin-top: 8px; font-size: 16px; font-weight: 500; }
+/* morphing pop-ups: each one grows out of the thing you tapped (a clip, so nothing stretches) */
+.pop { position: absolute; left: 12px; right: 12px; top: calc(env(safe-area-inset-top, 0px) + 96px); z-index: 45; border-radius: 28px; background: var(--paper); padding: 20px 22px 22px;
+  box-shadow: 0 24px 60px -24px rgba(0,0,0,.55); will-change: clip-path; }
+.pop .in { display: grid; gap: 14px; }
+.pop .phead { display: flex; justify-content: space-between; align-items: center; }
+.pop .x { width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; margin: -8px -8px 0 0; box-shadow: inset 0 0 0 1px var(--line); }
+.pop h5 { margin: 0; font-weight: 200; font-size: 56px; letter-spacing: -.05em; line-height: .95; }
+.pop h5 small { font-size: 18px; letter-spacing: 0; color: var(--ink-2); font-weight: 400; margin-left: 4px; }
+.pop p { margin: 0; font-size: 15px; line-height: 1.4; color: var(--ink-2); }
+.bars { display: flex; align-items: flex-end; gap: 8px; height: 110px; padding-top: 6px; border-bottom: 1px solid var(--line); }
+.bars div { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; height: 100%; justify-content: flex-end; }
+.bars i { width: 100%; border-radius: 6px 6px 2px 2px; background: #cfcac1; transform-origin: bottom; }
+.bars i.on { background: var(--ink); }
+.bars span { font-family: var(--mono); font-size: 9.5px; color: var(--ink-3); padding-bottom: 4px; }
+.meals { display: grid; gap: 0; }
+.meals div { display: flex; justify-content: space-between; padding: 11px 0; border-top: 1px solid var(--line); font-size: 15px; }
+.meals div span:last-child { font-family: var(--mono); font-size: 13px; }
+.spark { width: 100%; height: 110px; display: block; }
+.veil { position: absolute; inset: 0; z-index: 50; background: var(--wall-2); pointer-events: none; will-change: clip-path, opacity; }
+@media (prefers-reduced-motion: reduce) {
+  .col[data-now] .plan { animation: none; }
+  * { transition-duration: .01s !important; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TODAY: a wall with the sun coming in -->
+  <section id="today" class="screen" aria-label="Today">
+    <canvas class="wall" id="tWall"></canvas>
+    <div class="layer soft" id="tSun"><canvas></canvas></div>
+    <div class="layer" id="tWash"><canvas></canvas></div>
+    <div class="layer" id="tEve"><canvas></canvas></div>
+    <div class="layer" id="tDusk" style="inset:0;background:#26303f;opacity:0"></div>
+    <div class="layer" id="tLamp"><canvas></canvas></div>
+    <div class="layer" id="tLeaves"><canvas></canvas></div>
+    <div class="pad">
+      <div class="top"><span class="label" id="tDate">Sun 15 Nov</span><span class="label">Sun up 07:51 · down 16:08</span></div>
+      <div class="hero">
+        <span class="label">Today’s session</span>
+        <h1>Push</h1>
+        <div class="spec"><span>4 lifts</span><i></i><span>13 sets</span><i></i><span>about 55 min</span></div>
+        <div class="done" id="tDone"></div>
+      </div>
+      <div class="fill"></div>
+      <div class="glass strip">
+        <button class="press" data-pop="sleep"><span>Sleep</span><b class="num">7<small>h</small> 40</b><span>Bed 23:20</span></button>
+        <button class="press" data-pop="protein"><span>Protein</span><b class="num">64<small>g</small></b><span>of 150 g</span></button>
+        <button class="press" data-pop="weight"><span>Weight</span><b class="num">77.4<small>kg</small></b><span>Steady</span></button>
+      </div>
+      <div class="glass coach" id="tCoach">
+        <span class="label">Coach</span>
+        <p id="tCoachText">Bench went up 2.5 kg on Thursday and every rep was clean. If 82.5 moves well today, I’ll offer you 85 on the last set.</p>
+        <div class="row"><span class="label" id="tCoachState">From your last 3 Push days</span><button class="chip press" id="tCoachBtn">Plan it</button></div>
+      </div>
+      <div class="dial" id="dial" aria-label="Scrub the day">
+        <div class="readout"><span><b id="dTime">09:40</b> <span class="label" id="dWord" style="margin-left:6px">Morning light</span></span><button class="now" id="dNow">Now</button></div>
+        <div class="track" id="dTrack"><div class="day" id="dDay"></div><div class="knob" id="dKnob"></div></div>
+      </div>
+      <button class="begin press" id="begin"><span id="beginText">Begin Push</span><span class="arrow"><svg viewBox="0 0 20 20" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 10h11M11 5l5 5-5 5"/></svg></span></button>
+    </div>
+  </section>
+
+  <!-- WORKOUT: a second room, one shaft of light from above -->
+  <section id="workout" class="screen" aria-label="Workout" data-off data-phase="lift">
+    <canvas class="wall" id="wWall"></canvas>
+    <div class="layer soft" id="wShaft"><canvas></canvas></div>
+    <div class="layer" id="wWash"><canvas></canvas></div>
+    <div class="layer" id="wGold"><canvas></canvas></div>
+    <div class="layer" id="wEve"><canvas></canvas></div>
+    <div class="layer" id="wDustBox" style="inset:0"></div>
+    <div class="pad">
+      <div class="whead">
+        <div><span class="label" id="wSetLbl">Set 1 of 4 · Lift 1 of 4</span><h2 id="wName">Bench press</h2></div>
+        <div class="right"><span class="clock num" id="wClock">0:00</span><button class="link" id="wFinish">Finish</button></div>
+      </div>
+      <div class="lifts" id="wLifts"></div>
+      <div class="stage" id="stage">
+        <div class="setpanel">
+          <div class="big">
+            <button class="step press" id="wMinus" aria-label="Less weight"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9h12"/></svg></button>
+            <div class="weight num"><span class="roll" id="wW"></span><span class="unit" id="wUnit">kg</span></div>
+            <button class="step press" id="wPlus" aria-label="More weight"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9h12M9 3v12"/></svg></button>
+          </div>
+          <div class="repsrow">
+            <button class="step press" id="rMinus" aria-label="One rep less"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9h12"/></svg></button>
+            <div class="reps num"><span class="x">×</span><span class="roll" id="wR"></span><span class="x" style="font-size:15px">reps</span></div>
+            <button class="step press" id="rPlus" aria-label="One rep more"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 9h12M9 3v12"/></svg></button>
+          </div>
+          <div class="ruler" id="ruler"></div>
+          <div class="note" id="wNote"></div>
+        </div>
+        <div class="restpanel">
+          <span class="label">Rest</span>
+          <div class="countdown num"><span class="roll" id="rTime"></span></div>
+          <div class="sub" id="rNext"></div>
+          <div class="glass coachnote" id="cNote">
+            <span class="label">Coach</span>
+            <p id="cText"></p>
+            <div class="row" id="cRow"></div>
+          </div>
+        </div>
+        <div class="prpanel">
+          <span class="label">New best</span>
+          <div class="prbig num" id="prBig"></div>
+          <p id="prLine"></p>
+          <div class="ripple" id="ripple"></div>
+        </div>
+        <div class="finpanel">
+          <span class="label">Complete</span>
+          <h3>Push</h3>
+          <div class="glass stats" id="fStats"></div>
+          <div class="best" id="fBest"></div>
+        </div>
+      </div>
+      <div style="position:relative"><div class="floor" style="bottom:22px"></div><div class="colonnade" id="colonnade"></div></div>
+      <div class="actions" id="actions">
+        <button class="side" id="aLeft"></button>
+        <button class="go press" id="go" aria-label="Log set"><span class="pearl" id="pearl"></span><svg id="goIcon" viewBox="0 0 30 30" fill="none" stroke="currentColor" stroke-width="2"><path d="M7 15.5l5.2 5.2L23.5 9.5"/></svg><span class="lbl" id="goLbl">Log set</span></button>
+        <button class="side r" id="aRight"></button>
+      </div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast"><span id="toastText"></span><button id="toastUndo">Undo</button></div>
+  <div class="scrim" id="scrim"></div>
+  <div class="pop" id="pop" role="dialog" hidden><div class="in" id="popIn"></div></div>
+  <div class="veil" id="veil" hidden></div>
+  <div class="sheet" id="sheet" role="dialog" aria-label="Finish workout">
+    <div class="grab"></div>
+    <span class="label">Finish</span>
+    <h4 id="sTitle">Finish Push?</h4>
+    <p id="sText"></p>
+    <button class="hold" id="hold"><span class="bar" id="holdBar"></span><span>Hold to finish</span></button>
+    <button class="keep press" id="keep">Keep going</button>
+  </div>
+</div>
+
+<script>
+(() => {
+const Q = new URLSearchParams(location.search);
+const $ = id => document.getElementById(id);
+const app = $('app');
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const DPR = Math.min(devicePixelRatio || 1, 2);
+const REST = Math.max(3, +(Q.get('rest') || 120));
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const lerp = (a, b, t) => a + (b - a) * t;
+const sstep = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const fmtKg = w => (Math.round(w * 10) / 10).toString();
+const fmtClock = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
+const haptic = ms => { try { navigator.vibrate && navigator.vibrate(ms); } catch (e) {} };
+
+/* ---------- the walls: cast concrete, painted once, dithered with fine noise so no soft area bands ---------- */
+function paintConcrete(cv, w, h, o) {
+  cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  const c = cv.getContext('2d'); const r = rng(o.seed); c.scale(DPR, DPR);
+  c.fillStyle = o.base; c.fillRect(0, 0, w, h);
+  for (let i = 0; i < 70; i++) { // cloudy pour marks
+    const x = r() * w, y = r() * h, rad = 30 + r() * 170, dark = r() < .55;
+    const g = c.createRadialGradient(x, y, 0, x, y, rad);
+    g.addColorStop(0, dark ? `rgba(40,42,48,${.03 + r() * .045})` : `rgba(255,252,246,${.03 + r() * .05})`); g.addColorStop(1, 'rgba(0,0,0,0)');
+    c.fillStyle = g; c.fillRect(x - rad, y - rad, rad * 2, rad * 2);
+  }
+  if (o.mode === 'panels') { // formwork panels and their tie holes
+    const pw = w / 2, ph = pw / 2;
+    for (let y = -ph * .35; y < h + ph; y += ph) for (let x = 0; x < w + 1; x += pw) {
+      c.fillStyle = 'rgba(30,32,38,.10)'; c.fillRect(x, y, w, 1); c.fillRect(x, y, 1, ph);
+      c.fillStyle = 'rgba(255,255,255,.16)'; c.fillRect(x, y + 1, w, 1); c.fillRect(x + 1, y, 1, ph);
+      for (const fx of [1/6, 1/2, 5/6]) for (const fy of [1/4, 3/4]) {
+        const hx = x + pw * fx, hy = y + ph * fy;
+        const g = c.createRadialGradient(hx, hy - .6, 0, hx, hy, 4.4);
+        g.addColorStop(0, 'rgba(28,30,34,.55)'); g.addColorStop(.62, 'rgba(40,42,48,.32)'); g.addColorStop(1, 'rgba(40,42,48,0)');
+        c.fillStyle = g; c.beginPath(); c.arc(hx, hy, 4.4, 0, 7); c.fill();
+        c.fillStyle = 'rgba(255,255,255,.22)'; c.beginPath(); c.arc(hx, hy + 2.1, 2.6, .15 * Math.PI, .85 * Math.PI); c.lineWidth = .8; c.strokeStyle = 'rgba(255,255,255,.28)'; c.stroke();
+      }
+    }
+  } else { // board-formed: vertical planks with a little grain
+    const bw = 23;
+    for (let x = 0; x < w; x += bw) {
+      c.fillStyle = r() < .5 ? `rgba(30,32,38,${r() * .05})` : `rgba(255,252,246,${r() * .05})`; c.fillRect(x, 0, bw, h);
+      c.fillStyle = 'rgba(30,32,38,.09)'; c.fillRect(x, 0, 1, h);
+      for (let k = 0; k < 3; k++) {
+        c.strokeStyle = `rgba(30,32,38,${.02 + r() * .025})`; c.lineWidth = .7; c.beginPath();
+        let gx = x + 3 + r() * (bw - 6); c.moveTo(gx, 0);
+        for (let y = 0; y < h; y += 24) { gx += (r() - .5) * 1.6; c.lineTo(gx, y); }
+        c.stroke();
+      }
+    }
+  }
+  const id = c.getImageData(0, 0, cv.width, cv.height), d = id.data; // grain and dither
+  for (let i = 0; i < d.length; i += 4) { const n = (r() - .5) * o.grain + (r() < .004 ? -26 : 0); d[i] += n; d[i + 1] += n; d[i + 2] += n; }
+  c.putImageData(id, 0, 0);
+}
+
+// A window's light: panes and mullions, drawn crisp then blurred for the penumbra.
+function paintWindow(cv, w, h, color, blur) {
+  cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  const s = document.createElement('canvas'); s.width = cv.width; s.height = cv.height;
+  const sc = s.getContext('2d'); sc.scale(DPR, DPR); sc.fillStyle = color;
+  const cols = 2, rows = 3, m = 11, fw = w - 2 * blur * 2.5, fh = h - 2 * blur * 2.5, ox = blur * 2.5, oy = blur * 2.5;
+  const pw = (fw - m * (cols - 1)) / cols, ph = (fh - m * (rows - 1)) / rows;
+  for (let i = 0; i < cols; i++) for (let j = 0; j < rows; j++) sc.fillRect(ox + i * (pw + m), oy + j * (ph + m), pw, ph);
+  const c = cv.getContext('2d'); c.filter = `blur(${blur * DPR}px)`; c.drawImage(s, 0, 0);
+  dither(c, cv);
+}
+function paintBeam(cv, w, h, color, blur, soft) {
+  cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  const s = document.createElement('canvas'); s.width = cv.width; s.height = cv.height;
+  const sc = s.getContext('2d'); sc.scale(DPR, DPR);
+  const g = sc.createLinearGradient(0, 0, 0, h); g.addColorStop(0, color); g.addColorStop(.75, color); g.addColorStop(1, 'rgba(255,255,255,0)');
+  sc.fillStyle = g; sc.fillRect(blur * 3, 0, w - blur * 6, h);
+  if (soft) { // floor pool at the bottom of the shaft
+    const p = sc.createRadialGradient(w / 2, h * .84, 0, w / 2, h * .84, w * .9); p.addColorStop(0, color); p.addColorStop(1, 'rgba(255,255,255,0)');
+    sc.globalAlpha = .5; sc.fillStyle = p; sc.fillRect(0, h * .6, w, h * .4); sc.globalAlpha = 1;
+  }
+  const c = cv.getContext('2d'); c.filter = `blur(${blur * DPR}px)`; c.drawImage(s, 0, 0);
+  dither(c, cv);
+}
+function paintBlob(cv, w, h, draw) {
+  cv.width = Math.round(w * DPR); cv.height = Math.round(h * DPR);
+  const c = cv.getContext('2d'); c.scale(DPR, DPR); draw(c); dither(c, cv);
+}
+function dither(c, cv) { // break 8-bit steps in soft edges (the phone bands smooth fades)
+  const id = c.getImageData(0, 0, cv.width, cv.height), d = id.data, r = rng(7);
+  for (let i = 3; i < d.length; i += 4) if (d[i] > 0 && d[i] < 255) d[i] = clamp(d[i] + (r() - .5) * 5, 0, 255);
+  c.putImageData(id, 0, 0);
+}
+function place(el, x, y, w, h) { Object.assign(el.style, { left: x + 'px', top: y + 'px', width: w + 'px', height: h + 'px' }); }
+
+let W = 0, H = 0;
+function paintAll() {
+  W = app.clientWidth; H = app.clientHeight;
+  paintConcrete($('tWall'), W, H, { base: '#afaca6', seed: 11, mode: 'panels', grain: 13 });
+  paintConcrete($('wWall'), W, H, { base: '#a6a39d', seed: 23, mode: 'boards', grain: 12 });
+  // Today: the window's light, three tints that cross-fade with the hour
+  const lw = W * .9, lh = H * .58;
+  for (const [id, col, blur] of [['tSun', '#fff6e2', 3.5], ['tWash', 'rgba(255,241,218,1)', 4.5], ['tEve', '#ffd2a6', 5]]) {
+    const el = $(id); place(el, W * .08, H * .1, lw, lh); paintWindow(el.firstChild, lw, lh, col, blur);
+  }
+  const lamp = $('tLamp'); place(lamp, W * .38, H * .34, W * .7, H * .7);
+  paintBlob(lamp.firstChild, W * .7, H * .7, c => { // a wall-washer's scallop after sunset
+    const w = W * .7, h = H * .7; c.filter = 'blur(14px)';
+    const g = c.createLinearGradient(0, h, 0, 0); g.addColorStop(0, '#ffd59a'); g.addColorStop(.85, 'rgba(255,213,154,0)');
+    c.fillStyle = g; c.beginPath(); c.moveTo(w * .5, h); c.quadraticCurveTo(w * .02, h * .25, w * .5, h * .12); c.quadraticCurveTo(w * .98, h * .25, w * .5, h); c.fill();
+  });
+  const lv = $('tLeaves'); place(lv, -W * .18, -H * .05, W * .78, H * .42);
+  paintBlob(lv.firstChild, W * .78, H * .42, c => { // a branch outside the window
+    const r = rng(5), w = W * .78, h = H * .42; c.filter = 'blur(2.6px)'; c.fillStyle = 'rgba(28,38,56,1)';
+    for (let b = 0; b < 4; b++) {
+      let x = r() * w * .3, y = h * (.05 + r() * .25); const ang = .35 + r() * .5;
+      for (let k = 0; k < 34; k++) {
+        x += Math.cos(ang) * 7 + (r() - .5) * 4; y += Math.sin(ang) * 7 + (r() - .5) * 4;
+        if (r() < .75) { c.save(); c.translate(x + (r() - .5) * 26, y + (r() - .5) * 26); c.rotate(r() * 6.3); c.beginPath(); c.ellipse(0, 0, 4 + r() * 5, 2 + r() * 2.4, 0, 0, 7); c.fill(); c.restore(); }
+      }
+    }
+  });
+  // Workout: one shaft from a skylight, plus a gold tint for a new best and an amber one for the finish
+  const sw = Math.min(250, W * .64), sh = H * 1.04;
+  for (const [id, col, blur, soft] of [['wShaft', '#fff1d2', 6, true], ['wWash', 'rgba(255,241,215,1)', 8, true], ['wGold', '#ffc24d', 7, true], ['wEve', '#ffd0a4', 8, true]]) {
+    const el = $(id); place(el, (W - sw) / 2, -H * .02, sw, sh); paintBeam(el.firstChild, sw, sh, col, blur, soft);
+  }
+}
+
+/* ---------- Today: the sun on the wall follows the clock ---------- */
+const RISE = 7 + 51 / 60, SET = 16 + 8 / 60, D0 = 6, D1 = 24;
+const dial = $('dial'), knob = $('dKnob');
+let hour = 0, nowHour = 0;
+function lightParams(h) {
+  const f = clamp((h - RISE) / (SET - RISE), 0, 1);
+  const day = sstep(RISE - .15, RISE + .5, h) * (1 - sstep(SET - .5, SET + .15, h));
+  const low = Math.pow(Math.abs(f - .5) * 2, 1.6); // 0 at noon, 1 at the horizon
+  const x = lerp(-W * .34, W * .30, f), y = lerp(H * .10, -H * .02, 1 - low), sk = lerp(34, -34, f), rot = lerp(-5, 5, f), sy = 1 + low * .22;
+  const night = clamp(1 - sstep(RISE - .9, RISE, h) + sstep(SET, SET + .9, h), 0, 1);
+  return { f, night, t: `translate(${x}px, ${y}px) rotate(${rot}deg) skewX(${sk}deg) scaleY(${sy})`,
+    o: { tSun: day * (1 - low * .45), tWash: day * .48 * (1 - low * .45), tEve: day * low * .34, tDusk: night * .3, tLamp: night * .8, tLeaves: .10 + day * .12 },
+    k: `translateX(${(h - D0) / (D1 - D0) * $('dTrack').clientWidth}px)` };
+}
+const LIT = ['tSun', 'tWash', 'tEve'];
+function readout(h, P) {
+  const hh = Math.floor(h), mm = Math.round((h - hh) * 60) % 60;
+  $('dTime').textContent = String(hh % 24).padStart(2, '0') + ':' + String(mm).padStart(2, '0');
+  $('dWord').textContent = P.night > .5 ? 'After sunset · lamps on' : P.f < .22 ? 'Morning light' : P.f > .78 ? 'Low sun' : 'Midday';
+  dial.toggleAttribute('data-off-now', Math.abs(h - nowHour) > .12);
+}
+function lightAt(h) { // direct finger drag: set the end state (transforms and opacity only)
+  const P = lightParams(h);
+  for (const id of LIT) $(id).style.transform = P.t;
+  for (const id in P.o) $(id).style.opacity = P.o[id].toFixed(3);
+  knob.style.transform = P.k; readout(h, P);
+}
+function buildDial() {
+  const tr = $('dTrack'), w = tr.clientWidth, X = h => (h - D0) / (D1 - D0) * w;
+  tr.querySelectorAll('.tick,.mark').forEach(e => e.remove());
+  const dd = $('dDay'); dd.style.left = X(RISE) + 'px'; dd.style.width = (X(SET) - X(RISE)) + 'px';
+  for (let h = 8; h <= 22; h += 2) { const t = document.createElement('div'); t.className = 'tick'; t.style.left = X(h) + 'px'; t.innerHTML = `<span>${String(h).padStart(2, '0')}</span>`; tr.insertBefore(t, knob); }
+  for (const [h, l] of [[17.5, 'Train 17:30']]) { const m = document.createElement('div'); m.className = 'mark'; m.style.left = X(h) + 'px'; m.textContent = l; tr.insertBefore(m, knob); }
+}
+let glides = [];
+function glideTo(h1) { // one browser-driven animation per layer, so the glide runs on the compositor at 120 Hz
+  glides.forEach(a => a.cancel()); glides = [];
+  const A = lightParams(hour), B = lightParams(h1), o = { duration: reduce ? 1 : 900, easing: 'cubic-bezier(.22,1,.36,1)' };
+  hour = h1; lightAt(h1);
+  for (const id of LIT) glides.push($(id).animate([{ transform: A.t, opacity: A.o[id] }, { transform: B.t, opacity: B.o[id] }], o));
+  for (const id of ['tDusk', 'tLamp']) glides.push($(id).animate([{ opacity: A.o[id] }, { opacity: B.o[id] }], o));
+  glides.push(knob.animate([{ transform: A.k }, { transform: B.k }], o));
+}
+dial.addEventListener('pointerdown', e => {
+  if (e.target.closest('.now')) return;
+  glides.forEach(a => a.cancel()); glides = []; dial.setPointerCapture(e.pointerId); dial.style.cursor = 'grabbing'; dial.dataset.drag = '';
+  const tr = $('dTrack').getBoundingClientRect();
+  let pending = false;
+  const move = ev => { hour = clamp(D0 + (ev.clientX - tr.left) / tr.width * (D1 - D0), D0, D1 - .01); if (!pending) { pending = true; requestAnimationFrame(() => { pending = false; lightAt(hour); }); } };
+  move(e);
+  const up = () => { dial.removeEventListener('pointermove', move); dial.style.cursor = ''; delete dial.dataset.drag; };
+  dial.addEventListener('pointermove', move); dial.addEventListener('pointerup', up, { once: true }); dial.addEventListener('pointercancel', up, { once: true });
+});
+$('dNow').addEventListener('click', () => glideTo(nowHour));
+
+let leafAnim = null;
+function startLeaves() {
+  if (reduce) return;
+  leafAnim = $('tLeaves').animate([{ transform: 'translate(0,0) rotate(-1.2deg)' }, { transform: 'translate(5px,3px) rotate(1.3deg)' }],
+    { duration: 7800, iterations: Infinity, direction: 'alternate', easing: 'ease-in-out' });
+}
+
+let coachPlanned = false, coachUndoReady = 0;
+$('tCoachBtn').addEventListener('click', () => {
+  coachPlanned = !coachPlanned;
+  $('tCoachBtn').textContent = coachPlanned ? 'Undo' : 'Plan it';
+  $('tCoachBtn').classList.toggle('ghost', coachPlanned);
+  $('tCoachState').textContent = coachPlanned ? 'Planned: 85 kg offered on set 4' : 'From your last 3 Push days';
+  if (coachPlanned) { $('tCoachBtn').disabled = true; setTimeout(() => { $('tCoachBtn').disabled = false; }, 450); }
+});
+
+/* ---------- the session ---------- */
+const LIFTS = [
+  { name: 'Bench press', unit: 'kg', step: 2.5, sets: [[80, 5], [82.5, 5], [82.5, 5], [82.5, 5]], last: [80, 5], best: [82.5, 5], scale: [70, 95] },
+  { name: 'Incline dumbbell press', unit: 'kg each', step: 2, sets: [[28, 8], [30, 8], [30, 8]], last: [28, 8], best: [30, 8], scale: [20, 40] },
+  { name: 'Overhead press', unit: 'kg', step: 2.5, sets: [[47.5, 6], [50, 6], [50, 6]], last: [47.5, 6], best: [50, 6], scale: [40, 60] },
+  { name: 'Cable fly', unit: 'kg', step: 2.5, sets: [[15, 12], [17.5, 12], [17.5, 12]], last: [15, 12], best: [17.5, 12], scale: [10, 25] },
+];
+const TOTAL = LIFTS.reduce((a, l) => a + l.sets.length, 0);
+const e1rm = (w, r) => w * (1 + r / 30);
+const S = { li: 0, si: 0, w: 0, r: 0, logged: LIFTS.map(() => []), phase: 'lift', startAt: 0, restEnd: 0, restLeft: REST, prs: [], done: false };
+const wk = $('workout');
+
+// rolling digits (NumberFlow): only the characters that change roll; nothing else moves
+function roll(el, text, dir = 1) {
+  const old = el.dataset.v; el.dataset.v = text;
+  if (old === undefined || reduce) { el.innerHTML = [...text].map(ch => `<span class="ch"><span>${ch}</span></span>`).join(''); return; }
+  if (old === text) return;
+  const slots = [...el.children];
+  if (old.length !== text.length) { // a different shape: roll the whole number as one
+    el.innerHTML = [...text].map(ch => `<span class="ch"><span>${ch}</span></span>`).join('');
+    el.animate([{ transform: `translateY(${dir * 28}%)`, opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }], { duration: 380, easing: 'cubic-bezier(.22,1,.36,1)' });
+    return;
+  }
+  [...text].forEach((ch, i) => {
+    if (old[i] === ch) return;
+    const slot = slots[i], prev = slot.lastElementChild, nu = document.createElement('span'); nu.textContent = ch; slot.appendChild(nu);
+    const o = { duration: 420, easing: 'cubic-bezier(.22,1,.36,1)', delay: (text.length - 1 - i) * 18 };
+    nu.animate([{ transform: `translateY(${dir * 70}%)`, opacity: 0 }, { transform: 'translateY(0)', opacity: 1 }], { ...o, fill: 'backwards' });
+    prev.animate([{ transform: 'translateY(0)', opacity: 1 }, { transform: `translateY(${-dir * 70}%)`, opacity: 0 }], { ...o, fill: 'forwards' }).onfinish = () => prev.remove();
+  });
+}
+
+function buildRuler() {
+  const L = LIFTS[S.li], [a, b] = L.scale, ru = $('ruler'), X = v => ((v - a) / (b - a) * 100) + '%';
+  let html = '<div class="base"></div>';
+  for (let v = a; v <= b + .01; v += L.step) { const maj = Math.abs((v - a) % (L.step * 2)) < .01; html += `<div class="t ${maj ? 'maj' : ''}" style="left:${X(v)}">${maj ? `<span>${fmtKg(v)}</span>` : ''}</div>`; }
+  html += `<div class="m" style="left:${X(L.last[0])}">Last</div>`;
+  html += `<div class="m" style="left:${X(L.best[0])};top:-13px">Best</div>`;
+  html += '<div class="needle" id="needle"></div>';
+  ru.innerHTML = html;
+}
+function needle() {
+  const L = LIFTS[S.li], [a, b] = L.scale, n = $('needle'); if (!n) return;
+  n.style.transform = `translateX(${clamp((S.w - a) / (b - a), 0, 1) * $('ruler').clientWidth}px)`;
+}
+function buildColonnade(all) {
+  const box = $('colonnade'); box.innerHTML = '';
+  const list = all ? LIFTS.flatMap((L, li) => S.logged[li].map(x => ({ ...x, li }))) : LIFTS[S.li].sets.map((p, si) => ({ ...(S.logged[S.li][si] || { w: p[0], r: p[1] }), done: !!S.logged[S.li][si], si }));
+  box.style.gap = all ? '0' : '0';
+  list.forEach((x, i) => {
+    const c = document.createElement('div'); c.className = 'col';
+    if (all) { c.style.width = Math.min(26, (W - 60) / list.length) + 'px'; c.dataset.done = ''; }
+    else if (x.done) c.dataset.done = '';
+    if (x.pr) c.dataset.pr = '';
+    c.innerHTML = `<div class="pillar"><div class="plan"></div><div class="cast"></div><div class="sh"></div></div><div class="cap num">${all ? '' : fmtKg(x.w) + '×' + x.r}</div>`;
+    box.appendChild(c);
+  });
+  if (all) box.querySelectorAll('.sh').forEach(s => s.style.width = '30px');
+  markNow();
+}
+function markNow() { [...$('colonnade').children].forEach((c, i) => c.toggleAttribute('data-now', S.phase === 'lift' && i === S.si && !S.done)); }
+function liftsBar() { $('wLifts').innerHTML = LIFTS.map((_, i) => `<i class="${i < S.li ? 'done' : i === S.li ? 'on' : ''}"></i>`).join(''); }
+function header() {
+  const L = LIFTS[S.li];
+  $('wName').textContent = L.name; $('wUnit').textContent = L.unit;
+  $('wSetLbl').textContent = `Set ${Math.min(S.si + 1, L.sets.length)} of ${L.sets.length} · Lift ${S.li + 1} of ${LIFTS.length}`;
+}
+function noteLine() {
+  const L = LIFTS[S.li], e = e1rm(S.w, S.r), best = e1rm(...L.best);
+  $('wNote').textContent = e > best + .01 ? `That beats your best ${fmtKg(L.best[0])} × ${L.best[1]}` : `Last time ${fmtKg(L.last[0])} × ${L.last[1]} · best ${fmtKg(L.best[0])} × ${L.best[1]}`;
+}
+function loadSet(dir = 1) {
+  const L = LIFTS[S.li], p = L.sets[S.si]; S.w = S.override ?? p[0]; S.r = p[1]; S.override = null;
+  roll($('wW'), fmtKg(S.w), dir); roll($('wR'), String(S.r), dir); header(); needle(); noteLine(); markNow();
+}
+function setW(v) { const d = v > S.w ? 1 : -1; S.w = clamp(Math.round(v * 10) / 10, 0, 500); roll($('wW'), fmtKg(S.w), d); needle(); noteLine(); }
+function setR(v) { const d = v > S.r ? 1 : -1; S.r = clamp(v, 1, 50); roll($('wR'), String(S.r), d); noteLine(); }
+$('wMinus').onclick = () => setW(S.w - LIFTS[S.li].step);
+$('wPlus').onclick = () => setW(S.w + LIFTS[S.li].step);
+$('rMinus').onclick = () => setR(S.r - 1);
+$('rPlus').onclick = () => setR(S.r + 1);
+
+/* the shaft of light: rest closes it into a line, the end of rest opens it again */
+const SHAFT = ['wShaft', 'wWash', 'wGold', 'wEve'].map($);
+let shaftAnims = [];
+function shaft(frames, opt) { shaftAnims.forEach(a => a.cancel()); shaftAnims = SHAFT.map(el => el.animate(frames, opt)); return shaftAnims[0]; }
+function shaftScale() { const a = shaftAnims[0]; if (!a) return 1; const t = getComputedStyle(SHAFT[0]).transform; if (!t || t === 'none') return 1; return +t.split('(')[1].split(',')[0]; }
+const SKEW = 'skewX(-5deg)';
+function shaftClose(left) {
+  const from = shaftScale(), end = performance.now() + left * 1000; S.restEnd = end;
+  shaft([{ transform: `${SKEW} scaleX(${from})` }, { transform: `${SKEW} scaleX(.035)` }], { duration: left * 1000, easing: 'linear', fill: 'forwards' });
+}
+function shaftOpen(over = 1) {
+  const from = shaftScale();
+  return shaft([{ transform: `${SKEW} scaleX(${from})` }, { transform: `${SKEW} scaleX(${over * 1.07})`, offset: .55 }, { transform: `${SKEW} scaleX(${over})` }],
+    { duration: reduce ? 1 : 900, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
+}
+function tint(el, to, dur = 900) { const from = +getComputedStyle(el).opacity; el.getAnimations().forEach(a => a.cancel()); el.style.opacity = to; el.animate([{ opacity: from }, { opacity: to }], { duration: reduce ? 1 : dur, easing: 'ease-in-out' }); }
+
+// dust drifting in the light
+let dust = [];
+function startDust() {
+  if (reduce || dust.length) return;
+  const box = $('wDustBox');
+  for (let i = 0; i < 14; i++) {
+    const d = document.createElement('i'); d.className = 'dust'; box.appendChild(d);
+    const x = W / 2 + (Math.random() - .5) * Math.min(200, W * .5), y = H * (.2 + Math.random() * .6), dx = (Math.random() - .5) * 30;
+    d.style.left = x + 'px'; d.style.top = y + 'px';
+    dust.push(d.animate([{ transform: 'translate(0,0)', opacity: 0 }, { opacity: .8, offset: .3 }, { opacity: .6, offset: .7 }, { transform: `translate(${dx}px,-${60 + Math.random() * 60}px)`, opacity: 0 }],
+      { duration: 9000 + Math.random() * 7000, delay: -Math.random() * 9000, iterations: Infinity, easing: 'linear' }));
+  }
+}
+function pauseLoops(onToday) {
+  if (leafAnim) onToday ? leafAnim.play() : leafAnim.pause();
+  dust.forEach(a => onToday ? a.pause() : a.play());
+}
+document.addEventListener('visibilitychange', () => { const h = document.hidden; if (leafAnim) h ? leafAnim.pause() : (wk.dataset.off !== undefined && leafAnim.play()); dust.forEach(a => h ? a.pause() : (wk.dataset.off === undefined && a.play())); });
+
+function phase(p) { S.phase = p; wk.dataset.phase = p; markNow(); actions(); }
+function actions() {
+  const l = $('aLeft'), r = $('aRight'), go = $('go'), lbl = $('goLbl'), icon = $('goIcon');
+  if (S.phase === 'lift') { l.textContent = ''; r.textContent = ''; lbl.textContent = 'Log set'; icon.innerHTML = '<path d="M7 15.5l5.2 5.2L23.5 9.5"/>'; go.setAttribute('aria-label', 'Log set'); }
+  if (S.phase === 'rest') { l.textContent = '+30 s'; r.textContent = 'Undo set'; lbl.textContent = 'Skip rest'; icon.innerHTML = '<path d="M9 8l7 7-7 7M17 8l7 7-7 7" transform="translate(-2 0)"/>'; go.setAttribute('aria-label', 'Skip rest'); }
+  if (S.phase === 'pr') { l.textContent = ''; r.textContent = ''; lbl.textContent = 'Continue'; icon.innerHTML = '<path d="M7 15h16M17 9l6 6-6 6"/>'; go.setAttribute('aria-label', 'Continue'); }
+  if (S.phase === 'done') { l.textContent = ''; r.textContent = ''; lbl.textContent = 'Back to Today'; icon.innerHTML = '<path d="M23 15H7M13 9l-6 6 6 6"/>'; go.setAttribute('aria-label', 'Back to Today'); }
+}
+
+function pearl() { // Not Boring's swell, without the hold: the tap itself is the tick
+  if (reduce) return;
+  $('pearl').animate([{ transform: 'scale(.3)', opacity: .0 }, { transform: 'scale(.9)', opacity: .9, offset: .35 }, { transform: 'scale(1.35)', opacity: 0 }], { duration: 560, easing: 'cubic-bezier(.22,1,.36,1)' });
+}
+function castPillar(i, pr) {
+  const c = $('colonnade').children[i]; if (!c) return;
+  if (pr) c.dataset.pr = '';
+  c.dataset.done = ''; c.removeAttribute('data-now');
+  if (reduce) return;
+  const cast = c.querySelector('.cast'), sh = c.querySelector('.sh');
+  cast.animate([{ transform: 'scaleY(0)', opacity: 1 }, { transform: 'scaleY(1.04)', opacity: 1, offset: .7 }, { transform: 'scaleY(1)', opacity: 1 }], { duration: 520, easing: 'cubic-bezier(.22,1,.36,1)' });
+  sh.animate([{ transform: 'skewX(-62deg) scaleX(0)' }, { transform: 'skewX(-62deg) scaleX(1)' }], { duration: 900, delay: 260, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards' });
+}
+
+let restTimer = 0;
+function logSet() {
+  const L = LIFTS[S.li], best = e1rm(...L.best), e = e1rm(S.w, S.r);
+  const isPr = e > best + .01 && !S.logged[S.li].some(x => x.pr);
+  S.logged[S.li][S.si] = { w: S.w, r: S.r, pr: isPr };
+  haptic(isPr ? [12, 60, 18] : 10); pearl(); castPillar(S.si, isPr);
+  const lastOfLift = S.si === L.sets.length - 1, lastOfAll = lastOfLift && S.li === LIFTS.length - 1;
+  if (isPr) { S.prs.push({ li: S.li, w: S.w, r: S.r, was: L.best }); showPR(lastOfAll); return; }
+  if (lastOfAll) { openSheet($('go')); return; }
+  startRest();
+}
+function showPR(thenFinish) {
+  const L = LIFTS[S.li];
+  $('prBig').textContent = `${fmtKg(S.w)} × ${S.r}`;
+  const kg = S.w - L.best[0];
+  $('prLine').textContent = kg > 0 ? `${L.name}. ${fmtKg(kg)} kg over your best.` : `${L.name}. ${S.r - L.best[1]} more ${S.r - L.best[1] === 1 ? 'rep' : 'reps'} than your best.`;
+  phase('pr'); S.prThenFinish = thenFinish;
+  // the light floods the room for a moment (Ultrahuman's flood, reversed: the shadow is what leaves), then a ripple (Monument Valley)
+  shaft([{ transform: `${SKEW} scaleX(${shaftScale()})` }, { transform: `${SKEW} scaleX(1.9)` }], { duration: reduce ? 1 : 1100, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
+  tint($('wGold'), .42, 700);
+  if (!reduce) $('ripple').animate([{ transform: 'scale(.5)', opacity: .9 }, { transform: 'scale(1.9)', opacity: 0 }], { duration: 1600, delay: 250, easing: 'cubic-bezier(.22,1,.36,1)' });
+  document.querySelectorAll('#workout .glass').forEach(g => g.classList.add('clear'));
+}
+function leavePR() {
+  tint($('wGold'), 0, 900);
+  if (S.prThenFinish) { shaftOpen(); openSheet($('go')); phase('lift'); return; }
+  startRest(true);
+}
+function startRest(fromPr) {
+  phase('rest');
+  S.restLeft = REST; const L = LIFTS[S.li];
+  const nextLift = S.si === L.sets.length - 1;
+  const nL = nextLift ? LIFTS[S.li + 1] : L, nS = nextLift ? nL.sets[0] : L.sets[S.si + 1];
+  $('rNext').innerHTML = nextLift ? `Next: <b>${nL.name}</b>, ${fmtKg(nS[0])} × ${nS[1]}` : `Next: set ${S.si + 2}, <b>${fmtKg(nS[0])} × ${nS[1]}</b>`;
+  roll($('rTime'), fmtClock(REST));
+  shaftClose(REST);
+  coach(nextLift);
+  toast(`Set ${S.si + 1} logged`, null, $('go'));
+  clearInterval(restTimer);
+  restTimer = setInterval(restTick, 250);
+}
+function restTick() {
+  const left = Math.max(0, (S.restEnd - performance.now()) / 1000), s = Math.ceil(left);
+  roll($('rTime'), fmtClock(s), -1);
+  if (left <= 0) endRest();
+}
+function endRest() {
+  clearInterval(restTimer); hideCoach(); hideToast();
+  haptic([8, 40, 8]);
+  // the line of light flashes, then the shaft opens again
+  if (!reduce) SHAFT[1].animate([{ opacity: +getComputedStyle(SHAFT[1]).opacity }, { opacity: .9, offset: .2 }, { opacity: getComputedStyle(SHAFT[1]).opacity }], { duration: 700 });
+  shaftOpen();
+  const L = LIFTS[S.li];
+  if (S.si === L.sets.length - 1) { S.li++; S.si = 0; liftsBar(); buildRuler(); buildColonnade(); }
+  else S.si++;
+  phase('lift'); loadSet();
+}
+function undoSet() {
+  if (S.phase !== 'rest') return;
+  clearInterval(restTimer); hideCoach(); hideToast();
+  S.logged[S.li][S.si] = undefined; S.logged[S.li].length = S.si;
+  const c = $('colonnade').children[S.si]; if (c) { c.removeAttribute('data-done'); c.removeAttribute('data-pr'); }
+  shaftOpen(); phase('lift'); loadSet(-1);
+}
+
+/* coach notes: one sentence at the right moment, each action with its own Undo */
+function coach(nextLift) {
+  const L = LIFTS[S.li], row = $('cRow'); row.innerHTML = ''; let text = '';
+  if (S.li === 0 && S.si === 2 && !S.prs.length) {
+    text = '82.5 moved fast on all three. Your last set could be 85 kg. That would be a new best.';
+    const yes = btn('Load 85 kg', 'chip press'), no = btn('Keep 82.5', 'chip ghost press');
+    yes.onclick = () => { S.override = 85; hideCoach(); const nx = $('rNext'); nx.innerHTML = 'Next: set 4, <b>85 × 5</b>'; toast('85 kg on set 4', () => { S.override = null; nx.innerHTML = 'Next: set 4, <b>82.5 × 5</b>'; }, yes); };
+    no.onclick = hideCoach; row.append(no, yes);
+  } else if (nextLift && S.li === 1) {
+    text = 'Overhead press next. It has sat at 47.5 for three weeks; 50 is planned today, so take the full rest.';
+    const ok = btn('Got it', 'chip ghost press'); ok.onclick = hideCoach; row.append(ok);
+  } else return;
+  $('cText').textContent = text; setTimeout(() => $('cNote').setAttribute('data-show', ''), 700);
+}
+function btn(t, c) { const b = document.createElement('button'); b.className = c; b.textContent = t; return b; }
+function hideCoach() { $('cNote').removeAttribute('data-show'); }
+let toastT = 0, toastUndo = null;
+function toast(text, undo, src) {
+  const t = $('toast'); $('toastText').textContent = text; toastUndo = undo; const u = $('toastUndo'); u.hidden = !undo; u.disabled = true;
+  setTimeout(() => { u.disabled = false; }, 450); // never tappable the moment it appears
+  if (t._m) { t._m.cancel(); t._m = null; }
+  if (src) { t.classList.add('m'); t.setAttribute('data-show', ''); morphOpen(t, src, 23); } // the button you tapped becomes the toast
+  else { t.classList.remove('m'); t.setAttribute('data-show', ''); }
+  clearTimeout(toastT); toastT = setTimeout(hideToast, 4200);
+}
+function hideToast() { const t = $('toast'); t.classList.remove('m'); t.removeAttribute('data-show'); if (t._m) { const a = t._m; t._m = null; setTimeout(() => a.cancel(), 320); } }
+$('toastUndo').onclick = () => { const u = toastUndo; hideToast(); u && u(); };
+
+$('go').onclick = () => {
+  if (S.phase === 'lift') logSet();
+  else if (S.phase === 'rest') endRest();
+  else if (S.phase === 'pr') leavePR();
+  else if (S.phase === 'done') goToday();
+};
+$('aLeft').onclick = () => { if (S.phase !== 'rest') return; const left = (S.restEnd - performance.now()) / 1000 + 30; shaftOpen(Math.min(1, left / REST)).onfinish = () => shaftClose(left - .9); S.restEnd = performance.now() + left * 1000; roll($('rTime'), fmtClock(Math.ceil(left))); };
+$('aRight').onclick = () => { if (S.phase === 'rest') undoSet(); };
+$('stage').addEventListener('click', e => { if (S.phase === 'pr' && !e.target.closest('button')) leavePR(); });
+
+/* morph: a pop-up grows out of the element you tapped and shrinks back into it. It is a clip on a solid card,
+   so nothing stretches; it can be caught and turned round mid-way (the same animation is reversed). */
+function rectIn(el) { const a = app.getBoundingClientRect(), r = el.getBoundingClientRect(); return { t: r.top - a.top, l: r.left - a.left, b: r.bottom - a.top, r: r.right - a.left }; }
+function morphOpen(el, src, radius = 28) {
+  el.hidden = false;
+  if (el._m && el._m.playbackRate < 0) { el._m.reverse(); return el._m; } // caught while closing: turn round
+  if (el._m) el._m.cancel();
+  const f = rectIn(el), s = rectIn(src), sr = parseFloat(getComputedStyle(src).borderRadius) || 18;
+  const from = `inset(${s.t - f.t}px ${f.r - s.r}px ${f.b - s.b}px ${s.l - f.l}px round ${sr}px)`, to = `inset(0px 0px 0px 0px round ${radius}px)`;
+  const a = el.animate([{ clipPath: from }, { clipPath: to }], { duration: reduce ? 1 : 470, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'both' });
+  el._m = a; a.onfinish = () => { if (a.playbackRate < 0) { el.hidden = true; a.cancel(); el._m = null; el.dispatchEvent(new Event('closed')); } };
+  const inner = el.querySelector('.in') || el;
+  if (!reduce && inner !== el) inner.animate([{ opacity: 0, transform: 'translateY(8px)' }, { opacity: 0, offset: .25 }, { opacity: 1, transform: 'none' }], { duration: 420, easing: 'cubic-bezier(.22,1,.36,1)' });
+  return a;
+}
+function morphClose(el) {
+  const a = el._m; if (!a) { el.hidden = true; return; }
+  if (a.playbackRate > 0) a.reverse();
+}
+const scrim = $('scrim');
+let openPop = null;
+function showScrim(on) { on ? scrim.setAttribute('data-show', '') : scrim.removeAttribute('data-show'); }
+
+/* Today's three numbers each open into their detail (example data) */
+const POPS = {
+  sleep: () => `<div class="phead"><span class="label">Sleep · last 7 nights</span><button class="x press" data-close aria-label="Close"><svg width="14" height="14" viewBox="0 0 14 14" stroke="currentColor" stroke-width="1.5"><path d="M2 2l10 10M12 2L2 12"/></svg></button></div>
+    <h5 class="num">7<small>h</small> 40<small>min</small></h5>
+    <div class="bars">${[[6.6,'M'],[7.2,'T'],[6.4,'W'],[7.9,'T'],[7.1,'F'],[8.3,'S'],[7.7,'S']].map(([h, d], i) => `<div><i class="${i === 6 ? 'on' : ''}" style="height:${(h - 5) / 4 * 100}%"></i><span>${d}</span></div>`).join('')}</div>
+    <p>In bed 23:20, up 07:00. Two nights under 7 hours this week, both before a Push day.</p>`,
+  protein: () => `<div class="phead"><span class="label">Protein today</span><button class="x press" data-close aria-label="Close"><svg width="14" height="14" viewBox="0 0 14 14" stroke="currentColor" stroke-width="1.5"><path d="M2 2l10 10M12 2L2 12"/></svg></button></div>
+    <h5 class="num">64<small>of 150 g</small></h5>
+    <div class="meals"><div><span>Skyr, 200 g</span><span>22 g</span></div><div><span>Two eggs</span><span>12 g</span></div><div><span>Oats with milk</span><span>14 g</span></div><div><span>Rye bread, chicken</span><span>16 g</span></div></div>
+    <p>About 86 g still to go. A normal dinner and a shake gets there.</p>`,
+  weight: () => { const pts = [77.7,77.5,77.6,77.3,77.4,77.6,77.2,77.4,77.5,77.3,77.2,77.4,77.5,77.4], mn = 76.9, mx = 77.9, X = i => 4 + i / 13 * 312, Y = v => 100 - (v - mn) / (mx - mn) * 90;
+    return `<div class="phead"><span class="label">Weight · 14 days</span><button class="x press" data-close aria-label="Close"><svg width="14" height="14" viewBox="0 0 14 14" stroke="currentColor" stroke-width="1.5"><path d="M2 2l10 10M12 2L2 12"/></svg></button></div>
+    <h5 class="num">77.4<small>kg</small></h5>
+    <svg class="spark" viewBox="0 0 320 110" preserveAspectRatio="none"><line x1="0" x2="320" y1="${Y(77.4)}" y2="${Y(77.4)}" stroke="rgba(29,31,34,.18)" stroke-dasharray="3 4"/><polyline fill="none" stroke="#1d1f22" stroke-width="1.6" stroke-linejoin="round" points="${pts.map((v, i) => X(i) + ',' + Y(v)).join(' ')}"/><circle cx="${X(13)}" cy="${Y(77.4)}" r="4" fill="#1d1f22"/></svg>
+    <p>Steady: within 0.5 kg for two weeks.</p>`; },
+};
+document.querySelectorAll('[data-pop]').forEach(b => b.addEventListener('click', () => {
+  $('popIn').innerHTML = POPS[b.dataset.pop](); openPop = { el: $('pop'), src: b }; showScrim(true); morphOpen($('pop'), b);
+  if (!reduce) $('popIn').querySelectorAll('.bars i').forEach((i, k) => i.animate([{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], { duration: 600, delay: 160 + k * 35, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards' }));
+}));
+$('pop').addEventListener('click', e => { if (e.target.closest('[data-close]')) closePop(); });
+function closePop() { if (!openPop) return; showScrim(false); morphClose(openPop.el); openPop = null; }
+
+/* finish: the sheet grows out of whatever opened it, a hold, then the sun goes down in the shaft */
+const sheet = $('sheet');
+let sheetY = 0, sheetSrc = null;
+function openSheet(src) {
+  const n = S.logged.reduce((a, l) => a + l.filter(Boolean).length, 0);
+  $('sText').textContent = n === TOTAL ? `All ${TOTAL} sets logged in ${Math.max(1, Math.round((Date.now() - S.startAt) / 60000))} min.` : `${n} of ${TOTAL} sets logged. The rest stay unlogged.`;
+  sheetSrc = src || $('wFinish');
+  showScrim(true); sheet.getAnimations().forEach(a => { if (a !== sheet._m) a.cancel(); });
+  sheetY = 0; sheet.style.transform = 'translateY(0)'; morphOpen(sheet, sheetSrc, 30);
+}
+function closeSheet() {
+  showScrim(false);
+  if (sheet._m && sheetY === 0) { morphClose(sheet); return; }
+  if (sheet._m) { sheet._m.cancel(); sheet._m = null; }
+  sheetTo(sheet.offsetHeight + 40);
+}
+sheet.hidden = true;
+function sheetTo(y) {
+  const from = sheetY; sheetY = y; sheet.getAnimations().forEach(a => a.cancel());
+  sheet.style.transform = `translateY(${y}px)`;
+  sheet.animate([{ transform: `translateY(${from}px)` }, { transform: `translateY(${y}px)` }], { duration: reduce ? 1 : 520, easing: 'cubic-bezier(.22,1,.36,1)' });
+}
+sheet.addEventListener('pointerdown', e => {
+  if (e.target.closest('button')) return;
+  if (sheet._m && sheet._m.playbackRate < 0) return; // already shrinking home
+  if (sheet._m) { sheet.style.clipPath = 'none'; sheet._m.cancel(); sheet._m = null; }
+  const y0 = e.clientY, base = sheetY; sheet.getAnimations().forEach(a => a.cancel()); sheet.setPointerCapture(e.pointerId);
+  let last = y0, lt = performance.now(), v = 0;
+  const mv = ev => { const dy = Math.max(-20, ev.clientY - y0); const now = performance.now(); v = (ev.clientY - last) / Math.max(1, now - lt); last = ev.clientY; lt = now; sheetY = base + (dy < 0 ? dy * .3 : dy); sheet.style.transform = `translateY(${sheetY}px)`; };
+  const up = () => { sheet.removeEventListener('pointermove', mv); (sheetY > 90 || v > .6) ? closeSheet() : sheetTo(0); };
+  sheet.addEventListener('pointermove', mv); sheet.addEventListener('pointerup', up, { once: true }); sheet.addEventListener('pointercancel', up, { once: true });
+});
+scrim.onclick = () => openPop ? closePop() : closeSheet(); $('keep').onclick = closeSheet;
+$('wFinish').onclick = () => openSheet($('wFinish'));
+let holdA = null;
+const hold = $('hold');
+hold.addEventListener('pointerdown', () => {
+  holdA = $('holdBar').animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 900, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' });
+  holdA.onfinish = () => { haptic([10, 50, 20]); finish(); };
+});
+const release = () => { if (holdA && holdA.playState === 'running') { const p = holdA.currentTime / 900; holdA.cancel(); $('holdBar').animate([{ transform: `scaleX(${p})` }, { transform: 'scaleX(0)' }], { duration: 300, easing: 'ease-out' }); } };
+hold.addEventListener('pointerup', release); hold.addEventListener('pointerleave', release); hold.addEventListener('pointercancel', release);
+
+function finish() {
+  closeSheet(); clearInterval(restTimer); hideCoach(); hideToast();
+  S.done = true; S.mins = Math.max(1, Math.round((Date.now() - S.startAt) / 60000));
+  const sets = S.logged.flat().filter(Boolean), vol = sets.reduce((a, x) => a + x.w * x.r, 0);
+  $('fStats').innerHTML = `<div><span>Sets</span><b class="num">${sets.length}</b></div><div><span>Volume</span><b class="num">${Math.round(vol).toLocaleString('en-GB')}<small style="font-size:12px"> kg</small></b></div><div><span>Time</span><b class="num">${S.mins}<small style="font-size:12px"> min</small></b></div>`;
+  $('fBest').textContent = S.prs.length ? S.prs.map(p => `New best: ${LIFTS[p.li].name} ${fmtKg(p.w)} × ${p.r}`).join(' · ') : 'Every set as planned.';
+  phase('done'); $('wSetLbl').textContent = 'Push · done'; $('wName').textContent = ''; $('wFinish').hidden = true;
+  $('wLifts').innerHTML = LIFTS.map(() => '<i class="done"></i>').join('');
+  buildColonnade(true);
+  // Monument Valley's calm pull-back: the shaft leans and turns amber like late sun, no confetti
+  shaft([{ transform: `${SKEW} scaleX(${shaftScale()})` }, { transform: 'skewX(-24deg) scaleX(1.25)' }], { duration: reduce ? 1 : 2200, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
+  tint($('wEve'), .3, 2200); tint($('wGold'), 0, 600);
+  if (!reduce) [...$('colonnade').children].forEach((c, i) => c.querySelector('.sh').animate([{ transform: 'skewX(-62deg) scaleX(0)' }, { transform: 'skewX(-62deg) scaleX(1)' }], { duration: 1200, delay: 300 + i * 70, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards' }));
+  const sec = Math.round((Date.now() - S.startAt) / 1000); $('wClock').textContent = fmtClock(sec);
+}
+
+/* moving between the two rooms */
+let clockT = 0;
+// Begin morphs into the workout room: the pill grows to fill the screen and turns to stone, then the room shows through.
+function veilGrow(src, then) {
+  const v = $('veil'); v.style.opacity = 1;
+  const a = morphOpen(v, src, 0);
+  if (!reduce) v.animate([{ backgroundColor: '#1d1f22' }, { backgroundColor: '#1d1f22', offset: .15 }, { backgroundColor: '#a7a49e' }], { duration: 470, easing: 'ease-in-out' });
+  a.onfinish = () => { then(); v.animate([{ opacity: 1 }, { opacity: 0 }], { duration: reduce ? 1 : 280, easing: 'ease-out', fill: 'forwards' }).onfinish = f => { v.hidden = true; f.target.cancel(); a.cancel(); v._m = null; }; };
+}
+function veilShrink(target, mid) {
+  const v = $('veil'); v.hidden = false;
+  v.animate([{ opacity: 0 }, { opacity: 1 }], { duration: reduce ? 1 : 170, easing: 'ease-out', fill: 'forwards' }).onfinish = f => {
+    mid(); f.target.cancel(); v.style.opacity = 1;
+    const f0 = rectIn(v), t = rectIn(target), sr = parseFloat(getComputedStyle(target).borderRadius) || 18;
+    const a = v.animate([{ clipPath: 'inset(0px 0px 0px 0px round 0px)' }, { clipPath: `inset(${t.t - f0.t}px ${f0.r - t.r}px ${f0.b - t.b}px ${t.l - f0.l}px round ${sr}px)` }],
+      { duration: reduce ? 1 : 470, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'forwards' });
+    a.onfinish = () => { v.hidden = true; a.cancel(); };
+    if (!reduce) v.animate([{ backgroundColor: '#a7a49e' }, { backgroundColor: '#1d1f22' }], { duration: 470, easing: 'ease-in-out' });
+  };
+}
+function enter(screen) { if (!reduce) screen.querySelector('.pad').animate([{ opacity: 0, transform: 'translateY(14px)' }, { opacity: 1, transform: 'none' }], { duration: 520, delay: 60, easing: 'cubic-bezier(.22,1,.36,1)', fill: 'backwards' }); }
+function instant(from, to) { to.removeAttribute('data-off'); from.setAttribute('data-off', ''); to.style.zIndex = 2; from.style.zIndex = 1; }
+function goWorkout() {
+  if (!S.startAt) { S.startAt = Date.now(); liftsBar(); buildRuler(); buildColonnade(); loadSet(); actions(); }
+  veilGrow($('begin'), () => { instant($('today'), wk); enter(wk); requestAnimationFrame(needle); });
+  if (S.done) return;
+  clearInterval(clockT); clockT = setInterval(() => { if (!S.done) $('wClock').textContent = fmtClock((Date.now() - S.startAt) / 1000); }, 1000);
+  startDust(); pauseLoops(false);
+}
+function goToday() {
+  veilShrink($('begin'), () => { instant(wk, $('today')); enter($('today')); }); pauseLoops(true);
+  if (S.done) {
+    $('today').dataset.done = '';
+    $('tDone').textContent = `Done in ${S.mins} min · ${S.logged.flat().filter(Boolean).length} sets${S.prs.length ? ' · 1 new best' : ''}`;
+    $('beginText').textContent = 'See Push';
+    $('tCoachText').textContent = S.prs.length ? 'Bench 85 × 5 is your new best. Protein matters most tonight: about 86 g still to go.' : 'Clean session. About 86 g of protein still to go today.';
+    $('tCoachState').textContent = 'After Push'; $('tCoachBtn').hidden = true;
+  }
+}
+$('begin').onclick = goWorkout;
+
+/* start */
+function boot() {
+  paintAll(); buildDial();
+  const n = new Date(); nowHour = n.getHours() + n.getMinutes() / 60;
+  $('tDate').textContent = n.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+  hour = Q.has('h') ? +Q.get('h') : nowHour; lightAt(hour);
+  SHAFT.forEach(el => el.style.transform = `${SKEW} scaleX(1)`);
+  $('wGold').style.opacity = 0; $('wEve').style.opacity = 0; $('wShaft').style.opacity = .95; $('wWash').style.opacity = .32;
+  startLeaves();
+  if (Q.get('screen') === 'workout') { goWorkout(); if (Q.get('state') === 'rest') logSet(); }
+}
+let rz = 0;
+addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(() => { paintAll(); buildDial(); lightAt(hour); needle(); }, 200); });
+document.fonts && document.fonts.ready.then(() => { buildDial(); lightAt(hour); });
+boot();
+})();
+</script>
+</body>
+</html>
