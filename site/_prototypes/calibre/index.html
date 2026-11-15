@@ -223,7 +223,7 @@ button:focus-visible, [tabindex]:focus-visible { outline: 2px solid var(--hand);
 .hint p .label.gap { margin-left: 18px; }
 .hint .key { height: 48px; border-radius: 14px; padding: 0 14px; font-size: 12px; flex: none; }
 
-.dial-wrap { flex: 1; min-height: 200px; container-type: size; display: grid; place-items: center; }
+.dial-wrap { flex: 1; min-height: 150px; container-type: size; display: grid; place-items: center; }
 .dial { position: relative; width: min(100cqw, 100cqh, 340px); aspect-ratio: 1; border-radius: 50%; touch-action: none; cursor: grab; }
 .dial::before { content: ""; position: absolute; inset: 0; border-radius: 50%; box-shadow: 0 1px 0 rgba(255,255,255,.9), 0 18px 26px -14px rgba(0,0,0,.6), inset 0 0 0 1px rgba(0,0,0,.22); }
 .dial .rim, .dial .bezel, .dial .track, .dial .index { position: absolute; inset: 0; border-radius: 50%; }
@@ -777,7 +777,7 @@ function log() {
   const lastSet = W.set === ex.sets.length - 1;
   if (lastSet && W.ex === W.plan.length - 1) return finish();
   W.restEnd = Date.now() + ex.rest * 1000;
-  if (lastSet) { W.ex++; W.set = 0; meterScale(cur()); } else W.set++;
+  if (lastSet) { W.ex++; W.set = 0; meterScale(cur()); } else { W.set++; if (rec) meterScale(ex); }   // a new best moves the red zone
   const nx = cur().sets[W.set]; dial.set(nx.kg, nx.reps, 700);
   paintWorkout(); meterShow(false); clockTick();
   if (rec) runT = setTimeout(restRun, 950); else restRun();
