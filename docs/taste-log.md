@@ -67,6 +67,7 @@ Built (Today, live workout, rest, Coach, finish; English and Danish; two colour 
 Judge (one fresh design-judge, Sonnet): 7 (Today 8, Workout 6.5, Rest 7.5, record toast 6). Its list was fixed afterwards and not re-judged: dead space in the workout header, a garish record toast, a muddy scrim, finish copy, a hatched today pane that read as loading, misaligned tiles, Danish "reps", the plain black button (now deep glass in the session colour).
 My own score: 7.5. Biggest weakness: the wall is drawn, not photographed, and the projected stripes could read as candy rather than sunlight on his screen.
 Needs his phone: the blur over the coloured light, banding in the soft stripes, smoothness of the sheet drag and screen slide, whether the wall reads as a real sunlit room.
+Artifact: https://claude.ai/artifact/L5ujHh6aJYpmjYRBpk7NXn
 Verdict: waiting for Omar.
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
