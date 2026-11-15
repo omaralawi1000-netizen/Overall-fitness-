@@ -50,6 +50,7 @@ button { font: inherit; color: inherit; background: none; border: 0; cursor: poi
 .screen { position: absolute; inset: 0; z-index: 2; display: flex; flex-direction: column; opacity: 0; pointer-events: none;
   padding: max(14px, env(safe-area-inset-top)) 20px max(14px, env(safe-area-inset-bottom)); overflow: hidden; }
 .screen.on { opacity: 1; pointer-events: auto; }
+.screen:not(.on) * { pointer-events: none !important; } /* a hidden screen never takes a tap */
 .screen > * { transform-origin: 50% 0; }
 
 /* ---------- Today ---------- */
@@ -349,8 +350,10 @@ function spring(k, c, m = 1) {
 const SP = { fold: spring(190, 28), settle: spring(240, 21), quick: spring(520, 44) };
 const EASE = 'cubic-bezier(.22,.8,.2,1)';
 function anim(el, kf, o, end = 'clear') {
-  if (REDUCE) o = { ...o, duration: Math.min(o.duration || 200, 160) };
-  const a = el.animate(kf, { fill: 'both', ...o });
+  // rest timing is real time, never shortened for reduced motion (its end starts the next set)
+  const { keepTime, ...opts } = o;
+  if (REDUCE && !keepTime) opts.duration = Math.min(opts.duration || 200, 160);
+  const a = el.animate(kf, { fill: 'both', ...opts });
   a.finished.then(() => { if (end === 'keep') { const last = kf[kf.length - 1]; for (const p in last) if (p !== 'offset' && p !== 'easing') el.style[p] = last[p]; } a.cancel(); }).catch(() => {});
   return a;
 }
@@ -674,8 +677,8 @@ function startRest(ms) {
   setNum($('wTitle'), clockStr(ms), true);
   anim($('whead'), [{ transform: 'perspective(600px) rotateX(-60deg)', opacity: 0 }, { transform: 'none', opacity: 1 }], SP.settle);
   swapActions(true);
-  st.restEnd = Date.now() + ms; st.restDur = ms;
-  const o = { duration: ms, easing: 'cubic-bezier(.37,0,.63,1)', delay: 260 };
+  st.restEnd = Date.now() + ms;
+  const o = { duration: ms, easing: 'cubic-bezier(.37,0,.63,1)', delay: 260, keepTime: true };
   st.restAnims = [];
   CORNERS.forEach((k) => {
     st.restAnims.push(anim(k.el, [{ transform: flapT(k, 180) }, { transform: flapT(k, 0) }], o));
@@ -724,7 +727,7 @@ setInterval(() => {
 }, 200);
 document.addEventListener('visibilitychange', () => {
   // a locked phone throttles the page: put the paper where the clock says it should be
-  if (document.visibilityState === 'visible' && st.phase === 'rest') { const done = st.restDur - (st.restEnd - Date.now()); st.restAnims.forEach((a) => { a.currentTime = Math.max(0, done + 260); }); }
+  if (document.visibilityState === 'visible' && st.phase === 'rest') { const left = Math.max(0, st.restEnd - Date.now()); st.restAnims.forEach((a) => { const tm = a.effect.getTiming(); a.updatePlaybackRate(1); a.currentTime = Math.max(0, tm.duration + tm.delay - left); }); }
 });
 
 function undoSet() {
@@ -745,8 +748,11 @@ let holdA = null;
 const fb = $('finBtn');
 fb.addEventListener('pointerdown', () => {
   if (st.phase === 'busy' || st.phase === 'done') return; buzz(4);
-  holdA = anim(fb.querySelector('.fill'), [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 700, easing: 'cubic-bezier(.3,0,.4,1)' });
-  holdA.finished.then(() => { if (holdA) { holdA = null; finishWorkout(); } }).catch(() => {});
+  if (holdA) holdA.cancel();
+  const a = anim(fb.querySelector('.fill'), [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 700, easing: 'cubic-bezier(.3,0,.4,1)' });
+  holdA = a;
+  // only the press that is still held, and ran forward to the end, finishes the workout
+  a.finished.then(() => { if (holdA === a && a.playbackRate > 0) { holdA = null; finishWorkout(); } }).catch(() => {});
 });
 const release = () => { if (holdA) { const a = holdA; holdA = null; a.reverse(); } };
 fb.addEventListener('pointerup', release); fb.addEventListener('pointerleave', release); fb.addEventListener('pointercancel', release);
@@ -836,7 +842,10 @@ function closePop() {
     bodyA = body.animate([{ opacity: 1 }, { opacity: 0, offset: .4 }, { opacity: 0 }], { duration: REDUCE ? 1 : 340, fill: 'both' });
   }
   const mine = popA;
-  mine.finished.then(() => { if (!popOpen) { P.style.opacity = 0; P.style.transform = ''; from.style.opacity = ''; } }).catch(() => {});
+  mine.finished.then(() => {
+    if (!(popOpen && popFrom === from)) from.style.opacity = '';
+    if (!popOpen && popA === mine) { P.style.opacity = 0; P.style.transform = ''; }
+  }).catch(() => { if (!(popOpen && popFrom === from)) from.style.opacity = ''; });
 }
 $('scrim').onclick = closePop;
 const ACTS = {
