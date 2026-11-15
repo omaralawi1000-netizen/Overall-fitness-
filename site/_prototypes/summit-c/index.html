@@ -1,0 +1,931 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Summit C</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..700&family=Hanken+Grotesk:wght@400..800&family=Newsreader:opsz,wght@6..72,400..500&display=swap">
+<style>
+/* ===== the page around the phone ===== */
+:root {
+  color-scheme: dark;
+  --page: #101219; --page-fg: #eef0f4; --page-dim: #9298a6;
+  --hk: "Hanken Grotesk", "Helvetica Neue", Arial, sans-serif;
+  --disp: "Bricolage Grotesque", var(--hk);
+  --serif: "Newsreader", Georgia, serif;
+  --z: 1;
+}
+html, body { margin: 0; background: var(--page); color: var(--page-fg); }
+body { font-family: var(--hk); -webkit-font-smoothing: antialiased; -webkit-tap-highlight-color: transparent; }
+.wrap { max-width: 440px; margin: 0 auto; padding: 28px 0 48px; }
+.intro, .try { padding: 0 20px; }
+.intro h1 { margin: 0 0 6px; font: 600 24px/1.2 var(--disp); letter-spacing: -0.02em; }
+.intro p, .try p, .try li { margin: 0; font-size: 15px; line-height: 1.5; color: var(--page-dim); }
+.clock { display: flex; gap: 8px; margin: 14px 0 18px; }
+.clock button { font: 600 14px var(--hk); color: var(--page-fg); background: #1d2130; border: 0; border-radius: 18px; height: 36px; padding: 0 16px; cursor: pointer; }
+.clock button[aria-pressed="true"] { background: #eef0f4; color: #141726; }
+.holder { display: flex; justify-content: center; }
+.frame { width: 384px; height: 832px; zoom: var(--z); flex: none; }
+.try { margin-top: 22px; }
+.try ul { margin: 8px 0 0; padding-left: 18px; }
+.try b { color: var(--page-fg); font-weight: 600; }
+@media (max-width: 420px) { .wrap { padding-top: 18px; } }
+
+/* ===== the phone ===== */
+.screen { position: relative; width: 384px; height: 832px; overflow: clip; border-radius: 40px; isolation: isolate; background: #1b1f45;
+  color: #fff; font-family: var(--hk); font-variant-numeric: lining-nums tabular-nums; -webkit-user-select: none; user-select: none;
+  --ink-2: rgba(255,255,255,.92); --ink-3: rgba(255,255,255,.76); --hair: rgba(255,255,255,.16);
+  --ts: 0 1px 12px rgba(16,12,40,.35);
+  --glass: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.04)), rgba(22,28,64,.30);
+  --edge: inset 0 1px 0 rgba(255,255,255,.30), inset 0 0 0 1px rgba(255,255,255,.08), 0 24px 48px -26px rgba(6,6,24,.75);
+  --tile: rgba(255,255,255,.085); --tile-edge: inset 0 0 0 1px rgba(255,255,255,.07);
+  --deep: #1c2050; }
+.screen * { box-sizing: border-box; }
+:where(.screen) button { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; touch-action: manipulation; -webkit-tap-highlight-color: transparent; }
+.screen .press { transition: transform 90ms ease-out; }
+.screen .press:active { transform: scale(.96); }
+.abs { position: absolute; }
+.screen u { text-decoration: none; }
+.rest .rclock .rs { transition: transform 380ms cubic-bezier(.2,.8,.2,1); }
+.frost { -webkit-backdrop-filter: blur(36px) saturate(1.5) brightness(.94); backdrop-filter: blur(36px) saturate(1.5) brightness(.94); background: var(--glass); box-shadow: var(--edge); }
+.ico { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; display: block; flex: none; }
+
+/* wallpaper: one panorama, the four tabs side by side */
+.wall { position: absolute; top: 0; left: 0; width: 654px; height: 832px; z-index: -2; transform-origin: 192px 430px;
+  transition: transform var(--move-d) var(--move-e); will-change: transform; }
+.wall img { position: absolute; inset: 0; width: 100%; height: 100%; display: block; transition: opacity 900ms ease; }
+.wall img.dusk { opacity: 0; }
+.screen.evening .wall img.dusk { opacity: 1; }
+
+.sb { position: absolute; top: 14px; left: 28px; right: 26px; height: 18px; display: flex; justify-content: space-between; align-items: center; font-size: 14px; font-weight: 650; z-index: 30; text-shadow: var(--ts); }
+.sb svg { height: 12px; width: auto; display: block; }
+
+/* every tab: header, hero (on the picture), tray (glass), same places */
+.head { position: absolute; top: 50px; left: 22px; right: 16px; height: 44px; display: flex; align-items: center; justify-content: space-between; z-index: 5; }
+.head { transition: opacity 200ms ease; }
+.screen.toasting .head { opacity: 0; }
+.head .t { font-size: 15px; font-weight: 650; color: var(--ink-2); text-shadow: var(--ts); }
+.round { width: 44px; height: 44px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,.28); }
+.hero-box { position: absolute; top: 100px; left: 0; right: 0; height: 270px; }
+.tray { position: absolute; left: 12px; right: 12px; top: 462px; height: 266px; border-radius: 34px; overflow: clip; }
+.layer { position: absolute; inset: 0; }
+.hero { padding: 0 24px; text-shadow: var(--ts); }
+.kick { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 650; color: var(--ink-2); height: 20px; }
+.kick i { width: 7px; height: 7px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 4px rgba(255,255,255,.18); }
+.big { font-family: var(--disp); font-weight: 500; letter-spacing: -0.05em; line-height: 1; white-space: nowrap; }
+.big u { text-decoration: none; font-family: var(--hk); font-weight: 650; letter-spacing: 0; color: var(--ink-2); }
+.hero .big { font-size: 104px; margin-top: 6px; height: 108px; display: flex; align-items: flex-end; }
+.hero .big u { font-size: 22px; margin: 0 0 14px 8px; }
+.say { margin: 14px 0 0; font-family: var(--serif); font-size: 30px; line-height: 34px; font-weight: 400; letter-spacing: -0.012em; text-wrap: balance; max-width: 320px; }
+.sub { margin: 8px 0 0; font-size: 15px; line-height: 21px; font-weight: 550; color: var(--ink-2); }
+.coachline { display: inline-flex; align-items: center; gap: 6px; }
+.coachline svg { width: 15px; height: 15px; }
+
+/* rolling digits */
+.roll { display: inline-flex; overflow: clip; height: 1.08em; line-height: 1.08em; }
+.roll .col { display: inline-block; height: 1.08em; overflow: clip; }
+.roll .rs { display: flex; flex-direction: column; transition: transform var(--move-d) var(--move-e); will-change: transform; }
+.roll .rs span, .roll .ch { display: block; height: 1.08em; line-height: 1.08em; text-align: center; }
+
+/* readiness week: seven bars, today lit */
+.week { position: absolute; right: 22px; top: 64px; display: flex; gap: 7px; align-items: flex-end; height: 70px; }
+.week span { display: grid; justify-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--ink-3); }
+.week b { width: 9px; border-radius: 5px; background: rgba(255,255,255,.34); transform-origin: bottom; display: block; }
+.week span.now b { background: #fff; }
+.week span.now { color: #fff; }
+.week span.next b { background: none; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.35); height: 9px !important; }
+
+/* tray content */
+.pad { position: absolute; inset: 12px; display: grid; gap: 10px; }
+.tile { background: var(--tile); box-shadow: var(--tile-edge); border-radius: 24px; position: relative; text-align: left; }
+.lab { font-size: 13px; font-weight: 650; color: var(--ink-3); }
+.val { font-family: var(--disp); font-weight: 600; letter-spacing: -0.03em; }
+.pill { height: 52px; padding: 0 22px; border-radius: 26px; background: #fff; color: var(--deep); font-weight: 750; font-size: 17px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; box-shadow: 0 12px 24px -14px rgba(6,6,24,.9); }
+.upnext { display: flex; align-items: center; justify-content: space-between; padding: 0 12px 0 18px; height: 96px; }
+.upnext .val { font-size: 25px; margin: 3px 0 2px; }
+.upnext .meta { font-size: 14px; font-weight: 550; color: var(--ink-2); }
+.trio { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.trio .tile { height: 136px; padding: 14px 14px 12px; display: flex; flex-direction: column; justify-content: space-between; }
+.trio .val { font-size: 22px; }
+.trio .val u { text-decoration: none; font-family: var(--hk); font-size: 13px; font-weight: 650; color: var(--ink-3); letter-spacing: 0; margin-left: 2px; }
+.ring { width: 46px; height: 46px; transform: rotate(-90deg); display: block; }
+.ring circle { fill: none; stroke-width: 5; }
+.ring .bg { stroke: rgba(255,255,255,.16); }
+.ring .fg { stroke: #fff; stroke-linecap: round; transition: stroke-dashoffset 700ms var(--move-e); }
+.hyp { display: flex; align-items: flex-end; gap: 2px; height: 34px; }
+.hyp i { flex: 1; border-radius: 2px; background: rgba(255,255,255,.7); }
+.drops { display: flex; flex-wrap: wrap; gap: 4px; width: 74px; }
+.drops i { width: 14px; height: 18px; border-radius: 7px 7px 7px 7px / 10px 10px 7px 7px; box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.45); position: relative; overflow: clip; }
+.drops i::after { content: ""; position: absolute; inset: 0; background: #fff; transform: translateY(101%); transition: transform 520ms var(--pop-e); }
+.drops i.on::after { transform: none; }
+
+/* list rows (Train, Food) */
+.rows { display: grid; }
+.rowi { display: flex; align-items: center; height: 46px; padding: 0 6px 0 16px; gap: 12px; font-size: 15px; font-weight: 600; box-shadow: inset 0 -1px 0 var(--hair); }
+.rowi:last-child { box-shadow: none; }
+.rowi .d { width: 34px; font-size: 13px; font-weight: 700; color: var(--ink-3); }
+.rowi .n { flex: 1; }
+.rowi .m { font-size: 14px; color: var(--ink-3); font-weight: 600; }
+.chk { width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,.9); color: var(--deep); display: grid; place-items: center; }
+.chk .ico { width: 15px; height: 15px; stroke-width: 2.6; }
+.mini { height: 36px; padding: 0 16px; border-radius: 18px; background: #fff; color: var(--deep); font-weight: 750; font-size: 14px; display: inline-flex; align-items: center; }
+.rings4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.rings4 .tile { height: 96px; display: grid; justify-items: center; align-content: center; gap: 6px; }
+.rings4 .lab { font-size: 12px; }
+.rings4 b { font-size: 13px; font-weight: 750; }
+.chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 0 12px; touch-action: pan-x; -webkit-mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 22px), transparent); mask-image: linear-gradient(90deg, transparent, #000 12px, #000 calc(100% - 22px), transparent); }
+.chips::-webkit-scrollbar { display: none; }
+.chip { height: 44px; padding: 0 14px; border-radius: 22px; background: var(--tile); box-shadow: var(--tile-edge); font-size: 14px; font-weight: 650; display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; flex: none; }
+.chip .ico { width: 16px; height: 16px; stroke-width: 2.2; }
+.meals .rowi { height: 38px; padding-left: 4px; }
+.duo { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+.duo .tile { height: 112px; padding: 14px; display: flex; flex-direction: column; justify-content: space-between; }
+.stages { padding: 14px 16px; height: 122px; display: flex; flex-direction: column; justify-content: space-between; }
+.stagebar { position: relative; height: 46px; }
+.stagebar i { position: absolute; height: 9px; border-radius: 5px; background: #fff; }
+.stagebar .s0 { top: 0; opacity: .95; } .stagebar .s1 { top: 12px; opacity: .7; } .stagebar .s2 { top: 24px; opacity: .5; } .stagebar .s3 { top: 37px; opacity: .3; }
+.ends { display: flex; justify-content: space-between; font-size: 12px; font-weight: 650; color: var(--ink-3); }
+
+/* dock + Coach button */
+.dock { position: absolute; left: 12px; bottom: 22px; width: 288px; height: 66px; border-radius: 33px; display: grid; grid-template-columns: repeat(4, 1fr); padding: 0 6px; align-items: center; z-index: 10; }
+.dock .tab { position: relative; z-index: 1; height: 54px; display: grid; justify-items: center; align-content: center; gap: 3px; font-size: 11.5px; font-weight: 650; color: rgba(255,255,255,.82); }
+.dock .tab.on { color: #fff; }
+.dock .lit { position: absolute; left: 6px; top: 6px; width: calc((100% - 12px) / 4); height: 54px; border-radius: 27px; background: rgba(255,255,255,.2); box-shadow: inset 0 1px 0 rgba(255,255,255,.25); transition: transform var(--move-d) var(--move-e); }
+.coachbtn { position: absolute; right: 12px; bottom: 22px; width: 66px; height: 66px; border-radius: 50%; display: grid; place-items: center; z-index: 10; }
+.coachbtn .ico { width: 26px; height: 26px; }
+.livepill { position: absolute; left: 12px; right: 68px; top: 48px; height: 48px; border-radius: 24px; z-index: 9; display: flex; align-items: center; gap: 10px; padding: 0 8px 0 18px; font-size: 15px; font-weight: 650; visibility: hidden; }
+.livepill .dot { width: 8px; height: 8px; border-radius: 50%; background: #9ff0c4; box-shadow: 0 0 0 4px rgba(159,240,196,.2); }
+.livepill .n { flex: 1; }
+.livepill .mini { height: 36px; }
+.screen.live #headT { visibility: hidden; }
+
+/* toast: drops from the top like a live island */
+.toast { --glass: linear-gradient(180deg, rgba(255,255,255,.1), rgba(255,255,255,.04)), rgba(24,26,62,.62); position: absolute; top: 10px; left: 12px; right: 12px; min-height: 64px; border-radius: 32px; z-index: 40; display: flex; align-items: center; gap: 12px; padding: 10px 10px 10px 16px; visibility: hidden; transform: translateY(-120px); }
+.toast .ti { width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,.16); display: grid; place-items: center; flex: none; }
+.toast .tx { flex: 1; font-size: 14.5px; line-height: 19px; font-weight: 600; }
+.toast .tx small { display: block; font-size: 13px; font-weight: 550; color: var(--ink-3); }
+.toast .mini { flex: none; }
+
+/* pop chip near a number */
+.popchip { position: absolute; z-index: 25; height: 34px; padding: 0 14px; border-radius: 17px; background: #fff; color: var(--deep); font-size: 14px; font-weight: 750; display: inline-flex; align-items: center; white-space: nowrap; pointer-events: none; }
+
+/* sheet (Coach, details, finish) */
+.scrim { position: absolute; inset: 0; z-index: 30; background: rgba(8,8,26,.22); opacity: 0; visibility: hidden; }
+.sheet { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 31; border-radius: 38px; visibility: hidden; transform: translateY(110%); display: flex; flex-direction: column; overflow: clip;
+  --glass: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03)), rgba(20,24,58,.34); }
+.grab { height: 30px; flex: none; display: grid; place-items: center; touch-action: none; cursor: grab; }
+.grab i { width: 40px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.4); }
+.sh-h { display: flex; align-items: center; justify-content: space-between; padding: 0 16px 0 24px; height: 44px; flex: none; }
+.sh-h b { font: 600 22px var(--disp); letter-spacing: -0.02em; }
+.sh-body { flex: 1; overflow-y: auto; overscroll-behavior: contain; padding: 4px 16px 16px; }
+.msg { max-width: 300px; font-size: 16px; line-height: 23px; font-weight: 500; margin: 10px 0; }
+.msg.me { margin-left: auto; background: rgba(255,255,255,.92); color: var(--deep); padding: 10px 16px; border-radius: 22px 22px 6px 22px; width: fit-content; font-weight: 600; }
+.msg.ai { padding: 0 8px; }
+.msg.ai .who { display: flex; gap: 6px; align-items: center; font-size: 13px; font-weight: 700; color: var(--ink-3); margin-bottom: 4px; }
+.msg.ai .who svg { width: 14px; height: 14px; }
+.card { background: var(--tile); box-shadow: var(--tile-edge); border-radius: 24px; padding: 14px 14px 14px 18px; margin: 10px 0; display: flex; align-items: center; gap: 12px; }
+.card .cx { flex: 1; font-size: 15px; line-height: 21px; font-weight: 600; }
+.card .cx small { display: block; color: var(--ink-3); font-weight: 550; font-size: 13.5px; }
+.card .mini[disabled] { opacity: .5; }
+.dots { display: inline-flex; gap: 5px; padding: 8px; }
+.dots i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.75); animation: blink 1s infinite ease-in-out; }
+.dots i:nth-child(2) { animation-delay: .15s; } .dots i:nth-child(3) { animation-delay: .3s; }
+@keyframes blink { 0%, 100% { opacity: .3; transform: translateY(0); } 50% { opacity: 1; transform: translateY(-3px); } }
+.sugg { display: flex; gap: 8px; flex-wrap: wrap; padding: 6px 16px 10px; flex: none; }
+.ask { flex: none; margin: 0 12px 12px; height: 60px; border-radius: 30px; background: rgba(255,255,255,.12); box-shadow: inset 0 0 0 1px rgba(255,255,255,.18); display: flex; align-items: center; padding: 0 6px 0 20px; gap: 10px; font-size: 16px; font-weight: 550; color: var(--ink-3); }
+.ask .q { flex: 1; white-space: nowrap; overflow: clip; text-overflow: ellipsis; }
+.ask .q.live { color: #fff; }
+.mic { width: 48px; height: 48px; border-radius: 50%; background: #fff; color: var(--deep); display: grid; place-items: center; position: relative; }
+.mic .ico { width: 22px; height: 22px; stroke-width: 2; }
+.wave { display: none; gap: 3px; align-items: center; height: 22px; }
+.ask.listening .wave { display: flex; }
+.ask.listening .q.hint { display: none; }
+.wave i { width: 3px; height: 22px; border-radius: 2px; background: #fff; animation: wv .9s infinite ease-in-out; transform-origin: center; }
+.wave i:nth-child(2) { animation-delay: .1s } .wave i:nth-child(3) { animation-delay: .2s } .wave i:nth-child(4) { animation-delay: .3s } .wave i:nth-child(5) { animation-delay: .4s }
+@keyframes wv { 0%, 100% { transform: scaleY(.25); } 50% { transform: scaleY(1); } }
+.detail .bignum { font-family: var(--disp); font-size: 64px; font-weight: 500; letter-spacing: -0.045em; line-height: 1; padding: 6px 8px 0; }
+.detail .bignum u { text-decoration: none; font: 650 18px var(--hk); color: var(--ink-2); margin-left: 6px; letter-spacing: 0; }
+.detail p { font-size: 16px; line-height: 23px; font-weight: 500; color: var(--ink-2); margin: 10px 8px; }
+.spark { width: 100%; height: 120px; display: block; margin: 8px 0; }
+.stepper { display: flex; align-items: center; justify-content: space-between; margin: 12px 0; }
+.stepper .round { width: 56px; height: 56px; }
+.wide { width: 100%; height: 58px; border-radius: 29px; font-size: 18px; }
+
+/* workout */
+.wo { position: absolute; inset: 0; z-index: 20; visibility: hidden; }
+.wo .segs { position: absolute; top: 46px; left: 22px; right: 22px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; }
+.wo .segs i { height: 3px; border-radius: 2px; background: rgba(255,255,255,.3); overflow: clip; position: relative; }
+.wo .segs i::after { content: ""; position: absolute; inset: 0; background: #fff; transform-origin: left; transform: scaleX(var(--f, 0)); transition: transform var(--move-d) var(--move-e); }
+.wo .name { position: absolute; top: 64px; left: 24px; right: 130px; text-shadow: var(--ts); }
+.wo .name b { display: block; font: 600 32px/37px var(--disp); letter-spacing: -0.035em; white-space: nowrap; }
+.wo .name span { display: block; margin-top: 2px; font-size: 15px; font-weight: 600; color: var(--ink-2); }
+.wo .tr { position: absolute; top: 66px; right: 16px; display: flex; gap: 8px; }
+.wo .tr .round { width: 46px; height: 46px; }
+.wo .pane { position: absolute; top: 150px; left: 12px; right: 12px; height: 286px; border-radius: 36px; }
+.wo .pane small { position: absolute; top: 20px; left: 24px; font-size: 14px; font-weight: 750; }
+.wo .pane em { position: absolute; top: 20px; right: 24px; font-style: normal; font-size: 14px; font-weight: 600; color: var(--ink-2); }
+.wo .kg, .wo .reps { position: absolute; left: 0; right: 0; display: flex; justify-content: center; align-items: flex-end; }
+.wo .kg { top: 46px; font-size: 92px; height: 100px; }
+.wo .kg u { font-size: 21px; margin: 0 0 14px 6px; }
+.wo .reps { top: 156px; font-size: 50px; height: 56px; }
+.wo .reps u { font-size: 17px; margin: 0 0 8px 6px; }
+.pm { position: absolute; width: 54px; height: 54px; border-radius: 50%; display: grid; place-items: center; background: rgba(255,255,255,.15); box-shadow: inset 0 0 0 1px rgba(255,255,255,.34); }
+.pm .ico { width: 20px; height: 20px; stroke-width: 2.3; }
+.wo .line { position: absolute; left: 24px; right: 24px; bottom: 18px; margin: 0; padding-top: 12px; box-shadow: inset 0 1px 0 var(--hair); font-size: 15px; line-height: 21px; font-weight: 500; color: var(--ink-2); display: flex; gap: 8px; }
+.wo .line b { font-weight: 750; color: #fff; flex: none; }
+.wo .sets { position: absolute; top: 450px; left: 12px; right: 12px; height: 68px; border-radius: 34px; display: grid; padding: 0 6px; overflow: clip; }
+.wo .sets span { position: relative; padding: 12px 0 12px 14px; display: flex; flex-direction: column; justify-content: space-between; font-size: 13px; font-weight: 650; color: var(--ink-3); white-space: nowrap; }
+.wo .sets span + span::before { content: ""; position: absolute; left: 0; top: 14px; bottom: 14px; width: 1px; background: rgba(255,255,255,.12); }
+.wo .sets b { font-size: 15px; font-weight: 750; color: #fff; letter-spacing: -0.01em; display: flex; align-items: center; gap: 5px; }
+.wo .sets b .ico { width: 14px; height: 14px; stroke-width: 2.8; }
+.wo .sets .hl { position: absolute; top: 7px; height: 54px; left: 6px; border-radius: 27px; background: linear-gradient(180deg, rgba(255,255,255,.3), rgba(255,255,255,.16)); box-shadow: inset 0 1px 0 rgba(255,255,255,.34); transition: transform var(--move-d) var(--move-e); }
+.wo .sets span.now { color: #fff; }
+.wo .log { position: absolute; left: 20px; right: 20px; top: 640px; height: 74px; border-radius: 37px; background: rgba(255,255,255,.96); color: var(--deep); font-size: 20px; font-weight: 750; letter-spacing: -0.015em; display: grid; place-items: center; box-shadow: 0 22px 40px -20px rgba(4,6,22,.8); }
+.wo .upn { position: absolute; top: 534px; left: 24px; right: 24px; display: flex; justify-content: space-between; font-size: 14.5px; font-weight: 600; color: var(--ink-2); text-shadow: var(--ts); }
+.wo .upn b { color: #fff; font-weight: 700; }
+.wo .after { position: absolute; top: 730px; left: 0; right: 0; text-align: center; font-size: 14.5px; font-weight: 600; color: var(--ink-2); text-shadow: var(--ts); }
+.rest { position: absolute; left: 12px; right: 12px; top: 616px; height: 128px; border-radius: 40px; visibility: hidden; overflow: clip; }
+.rest .fill { position: absolute; left: 0; top: 0; bottom: 0; width: 100%; background: rgba(255,255,255,.12); transform-origin: left; transform: scaleX(1); }
+.rest .lab { position: absolute; top: 18px; left: 24px; color: var(--ink-2); }
+.rest .rclock { position: absolute; top: 38px; left: 22px; font-size: 64px; height: 70px; display: flex; align-items: flex-end; }
+.rest .btns { position: absolute; right: 14px; top: 0; bottom: 0; display: flex; align-items: center; gap: 8px; }
+.rest .btns .round { width: 54px; height: 54px; font-size: 14px; font-weight: 750; }
+.rest .btns .mini { height: 54px; border-radius: 27px; padding: 0 18px; font-size: 15px; }
+
+/* record moment */
+.rec { position: absolute; inset: 0; z-index: 35; visibility: hidden; display: grid; place-items: center; }
+.rec .bg { position: absolute; inset: 0; background: radial-gradient(60% 40% at 50% 46%, rgba(255,214,150,.28), rgba(10,10,30,.55)); opacity: 0; }
+.rec .card2 { position: relative; width: 300px; padding: 34px 24px 22px; border-radius: 40px; text-align: center; transform: scale(.8); opacity: 0; }
+.medal { width: 104px; height: 104px; margin: 0 auto 16px; perspective: 600px; }
+.medal .m { width: 100%; height: 100%; border-radius: 50%; position: relative; overflow: clip; background: radial-gradient(circle at 35% 30%, #fff6dc, #f3c66d 38%, #c88a2c 72%, #a86f1e); box-shadow: inset 0 0 0 4px rgba(255,255,255,.35), 0 16px 34px -12px rgba(120,70,10,.7); display: grid; place-items: center; transform-style: preserve-3d; }
+.medal .m b { font: 700 30px var(--disp); color: #6b3f0a; letter-spacing: -0.03em; }
+.medal .sheen { position: absolute; top: -20%; bottom: -20%; width: 40%; left: -60%; background: linear-gradient(100deg, transparent, rgba(255,255,255,.75), transparent); transform: skewX(-12deg); }
+.rec h3 { margin: 0; font: 600 28px/32px var(--disp); letter-spacing: -0.03em; }
+.rec p { margin: 8px 0 18px; font-size: 15.5px; line-height: 22px; color: var(--ink-2); font-weight: 550; }
+.spark-dot { position: absolute; width: 7px; height: 7px; border-radius: 50%; background: #ffe2a6; left: 50%; top: 46%; opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) { .screen * { transition-duration: 1ms !important; animation-duration: 1ms !important; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="intro">
+    <h1>Summit C: the whole app, organised</h1>
+    <p>One mountain panorama is the wallpaper for every tab. Each tab has the same three places: a big number on the picture, one line from the Coach, and one frosted tray of widgets.</p>
+    <div class="clock" role="group" aria-label="Time of day">
+      <button id="tDawn" aria-pressed="true">Morning</button><button id="tDusk" aria-pressed="false">Evening</button>
+    </div>
+  </header>
+  <div class="holder"><div class="frame"><div class="screen" id="S"></div></div></div>
+  <section class="try">
+    <p><b>Try:</b></p>
+    <ul>
+      <li>Change tabs: the mountain slides with you.</li>
+      <li>Tap the water drops, the food chips, the sleep and weight tiles.</li>
+      <li>Start Push and log a set: watch for the record. Then rest, minimise, come back.</li>
+      <li>Tap the Coach button (bottom right), then the mic.</li>
+    </ul>
+    <p style="margin-top:12px">Photo: Septimiu Lupea on Pexels (free licence), sky repainted for dawn and blue hour. Prototype only: example numbers, English only.</p>
+  </section>
+</div>
+
+<script>
+/* ---------- springs: one shared set, sampled into CSS linear() ---------- */
+function spring(k, c) {
+  const pts = []; let x = 0, v = 0; const dt = 1 / 120; let t = 0;
+  while (t < 3) { const a = -k * (x - 1) - c * v; v += a * dt; x += v * dt; t += dt; pts.push(x);
+    if (t > 0.1 && Math.abs(x - 1) < 0.0008 && Math.abs(v) < 0.01) break; }
+  const step = Math.max(1, Math.round(pts.length / 48)); const out = ['0'];
+  for (let i = step - 1; i < pts.length; i += step) out.push(pts[i].toFixed(4));
+  out[out.length - 1] = '1';
+  return { e: `linear(${out.join(',')})`, d: Math.round(t * 1000) };
+}
+const SP = { move: spring(190, 26), pop: spring(340, 17), soft: spring(110, 21) };
+const R = document.documentElement.style;
+for (const [n, s] of Object.entries(SP)) { R.setProperty(`--${n}-e`, s.e); R.setProperty(`--${n}-d`, s.d + 'ms'); }
+const anim = (el, kf, s = SP.move, o = {}) => el.animate(kf, { duration: s.d, easing: s.e, fill: 'both', ...o });
+
+/* ---------- icons ---------- */
+const ic = (p, cls = 'ico') => `<svg class="${cls}" viewBox="0 0 24 24">${p}</svg>`;
+const I = {
+  today: ic('<circle cx="12" cy="12" r="3.6"/><path d="M12 3.5v2M12 18.5v2M3.5 12h2M18.5 12h2M6 6l1.4 1.4M16.6 16.6L18 18M6 18l1.4-1.4M16.6 7.4L18 6"/>'),
+  train: ic('<path d="M7 12h10M7 7.5v9M17 7.5v9M3.8 9.8v4.4M20.2 9.8v4.4"/>'),
+  food: ic('<path d="M4 11.5h16a8 8 0 0 1-16 0z"/><path d="M9.5 8c0-1.5 1.2-1.5 1.2-3M14 8c0-1.5 1.2-1.5 1.2-3"/>'),
+  health: ic('<path d="M12 19.5s-7-4.3-7-9.4A3.9 3.9 0 0 1 12 7.9a3.9 3.9 0 0 1 7 2.2c0 5.1-7 9.4-7 9.4z"/>'),
+  spark: ic('<path d="M12 3.5l1.9 5.4 5.6 1.9-5.6 1.9L12 18.2l-1.9-5.5-5.6-1.9 5.6-1.9z"/><path d="M18.6 3.6v3.2M17 5.2h3.2"/>'),
+  me: ic('<circle cx="12" cy="8.5" r="3.6"/><path d="M5 19.5c1-3.6 3.8-5.2 7-5.2s6 1.6 7 5.2"/>'),
+  down: ic('<path d="M6.5 9.5l5.5 5.5 5.5-5.5"/>'),
+  check: ic('<path d="M5.5 12.5l4.5 4.5 8.5-9.5"/>'),
+  minus: ic('<path d="M6 12h12"/>'), plus: ic('<path d="M6 12h12M12 6v12"/>'),
+  mic: ic('<rect x="9" y="3.5" width="6" height="11" rx="3"/><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0M12 18v2.5"/>'),
+  close: ic('<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>'),
+  drop: ic('<path d="M12 3.8s6 6.4 6 10.4a6 6 0 0 1-12 0c0-4 6-10.4 6-10.4z"/>'),
+  moon: ic('<path d="M19 14.5A7.5 7.5 0 0 1 9.5 5a7.5 7.5 0 1 0 9.5 9.5z"/>'),
+  flag: ic('<path d="M6 20.5V4.5M6 5h11l-2.5 4L17 13H6"/>'),
+  scale: ic('<rect x="4" y="4" width="16" height="16" rx="5"/><path d="M9 10a3 3 0 0 1 6 0M12 10l1.4-1.6"/>'),
+  heart: ic('<path d="M3.5 12h4l2-4 3 8 2-4h6"/>'),
+};
+const sb = (t) => `<div class="sb"><span>${t}</span><span style="display:flex;gap:6px;align-items:center"><svg viewBox="0 0 18 12"><path d="M1 9.5h2.4V12H1zM5.3 7h2.4v5H5.3zM9.6 4.2H12V12H9.6zM13.9 1h2.4v11h-2.4z" fill="currentColor"/></svg><svg viewBox="0 0 26 12"><rect x=".7" y=".7" width="21.6" height="10.6" rx="3.2" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".5"/><rect x="2.4" y="2.4" width="15.5" height="7.2" rx="1.8" fill="currentColor"/><rect x="23.6" y="4" width="1.8" height="4" rx=".9" fill="currentColor" opacity=".5"/></svg></span></div>`;
+
+/* ---------- rolling digits ---------- */
+function setRoll(el, str, instant) {
+  const chars = String(str).split('');
+  const same = el.dataset.v && el.dataset.v.length === chars.length && [...el.dataset.v].every((c, i) => /\d/.test(c) === /\d/.test(chars[i]));
+  if (!same) {
+    el.innerHTML = chars.map(c => /\d/.test(c)
+      ? `<span class="col"><span class="rs">${'01234567890'.split('').map(d => `<span>${d}</span>`).join('')}</span></span>`
+      : `<span class="ch">${c}</span>`).join('');
+    el.querySelectorAll('.rs').forEach(s => { s.style.transition = 'none'; s.style.transform = 'translateY(0)'; s.dataset.d = '0'; });
+    el.offsetWidth; el.querySelectorAll('.rs').forEach(s => (s.style.transition = ''));
+  }
+  const at = (s, i) => (s.style.transform = `translateY(${-i * 1.08}em)`);
+  const snap = (s, i) => { s.style.transition = 'none'; at(s, i); s.offsetWidth; s.style.transition = ''; };
+  let k = 0; const strips = el.querySelectorAll('.rs');
+  chars.forEach(c => { if (!/\d/.test(c)) return; const s = strips[k++], n = Number(c), p = Number(s.dataset.d || 0); s.dataset.d = n;
+    clearTimeout(s._t);
+    if (instant) return snap(s, n);
+    if (p === 0 && n === 9) { snap(s, 10); at(s, 9); }                 // counting down past zero
+    else if (p === 9 && n === 0) { at(s, 10); s._t = setTimeout(() => snap(s, 0), 900); }  // counting up past nine
+    else at(s, n); });
+  el.dataset.v = chars.join('');
+}
+const rollHTML = (cls = '') => `<span class="roll ${cls}"></span>`;
+const fmt = (n) => n.toLocaleString('en-GB');
+const kgs = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
+
+/* ---------- state ---------- */
+const st = {
+  tab: 0, evening: false, water: 5, waterGoal: 8, weight: 76.4,
+  food: { kcal: 1240, p: 92, c: 140, f: 38 }, goal: { kcal: 2600, p: 160, c: 300, f: 80 },
+  meals: [{ n: 'Oats, milk, banana', m: 'Breakfast', k: 520 }, { n: 'Chicken, rice, salad', m: 'Lunch', k: 720 }],
+  pushDone: false, wo: null,
+};
+const EX = [
+  { n: 'Bench press', sets: [[60, 8], [80, 6], [85, 6], [85, 6]], last: [82.5, 6], best: 99, start: 2, step: 2.5 },
+  { n: 'Incline press', sets: [[26, 10], [26, 10], [26, 9]], last: [24, 10], best: 37, start: 0, step: 2, unit: 'kg each' },
+  { n: 'Shoulder press', sets: [[40, 8], [40, 8], [40, 7]], last: [40, 7], best: 52, start: 0, step: 2.5 },
+  { n: 'Cable fly', sets: [[15, 12], [15, 12], [15, 12]], last: [12.5, 12], best: 22, start: 0, step: 2.5 },
+  { n: 'Triceps pushdown', sets: [[30, 12], [30, 12], [30, 10]], last: [27.5, 12], best: 42, start: 0, step: 2.5 },
+];
+const e1 = (kg, r) => kg * (1 + r / 30);
+
+/* ---------- build the phone ---------- */
+const S = document.getElementById('S');
+S.innerHTML = `
+  <div class="wall" id="wall"><img class="dawn" src="img/dawn.jpg" alt=""><img class="dusk" src="img/dusk.jpg" alt=""></div>
+  <div id="sbx">${sb('07:42')}</div>
+  <div class="head" id="head"><span class="t" id="headT"></span><button class="round press" id="meBtn" aria-label="You">${I.me}</button></div>
+  <div class="hero-box" id="heroBox"></div>
+  <div class="tray frost" id="tray"></div>
+  <button class="livepill frost press" id="live"><i class="dot"></i><span class="n" id="liveT"></span><span class="mini">Open</span></button>
+  <nav class="dock frost" id="dock"><i class="lit" id="lit"></i>
+    ${['Today', 'Train', 'Food', 'Health'].map((t, i) => `<button class="tab press${i ? '' : ' on'}" data-tab="${i}">${I[t.toLowerCase()]}${t}</button>`).join('')}
+  </nav>
+  <button class="coachbtn frost press" id="coachBtn" aria-label="Coach">${I.spark}</button>
+  <div class="wo" id="wo"></div>
+  <div class="rec" id="rec"></div>
+  <div class="scrim" id="scrim"></div>
+  <section class="sheet frost" id="sheet"><div class="grab" id="grab"><i></i></div><div id="sheetIn" style="display:flex;flex-direction:column;flex:1;min-height:0"></div></section>
+  <div class="toast frost" id="toast"><span class="ti" id="toastI"></span><span class="tx" id="toastT"></span><span id="toastA"></span></div>`;
+const $ = (s, r = S) => r.querySelector(s);
+const wall = $('#wall');
+
+/* ---------- the four tabs ---------- */
+const TITLES = ['Saturday 15 November', 'Train', 'Food', 'Health'];
+const coachSay = (t) => `<span class="coachline">${I.spark}${t}</span>`;
+function heroHTML(t) {
+  if (t === 0) {
+    const wk = [71, 78, 66, 80, 74, 79, 84];
+    return `<div class="hero"><div class="kick"><i></i>Readiness</div>
+      <div class="big">${rollHTML('n-ready')}</div>
+      <div class="week">${['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => `<span class="${i === 5 ? 'now' : i === 6 ? 'next' : ''}"><b style="height:${i === 6 ? 9 : Math.round((wk[i] - 50) * 1.4)}px"></b>${d}</span>`).join('')}</div>
+      <p class="say">${st.pushDone ? 'Push is done. Eat well and sleep early.' : 'Rested and ready. Push is on today.'}</p>
+      <p class="sub">${coachSay('Slept 7 h 32, the best night this week')}</p></div>`;
+  }
+  if (t === 1) return `<div class="hero"><div class="kick"><i></i>This week</div>
+      <div class="big">${rollHTML('n-week')}<u>of 4 done</u></div>
+      <p class="say">${st.pushDone ? 'The week is done. Rest tomorrow.' : 'One more session and the week is done.'}</p>
+      <p class="sub">${coachSay('Bench moved fast last week. Try 85 kg.')}</p></div>`;
+  if (t === 2) return `<div class="hero"><div class="kick"><i></i>Left today</div>
+      <div class="big">${rollHTML('n-left')}<u>kcal</u></div>
+      <p class="say">${st.food.p >= 140 ? 'Protein is on track. Nice.' : 'Protein is the one to watch.'}</p>
+      <p class="sub">${coachSay(`${st.goal.p - st.food.p} g protein to go. Skyr gets you 20.`)}</p></div>`;
+  return `<div class="hero"><div class="kick"><i></i>Sleep last night</div>
+      <div class="big">${rollHTML('n-sleep')}<u>h</u><span style="width:6px"></span>${rollHTML('n-sleepm')}<u>min</u></div>
+      <p class="say">Your best sleep this week.</p>
+      <p class="sub">${coachSay('In bed 22:58. Keep that and Monday is easy.')}</p></div>`;
+}
+function ringSVG(frac, size = 46, w = 5) {
+  const r = (size - w) / 2, c = 2 * Math.PI * r;
+  return `<svg class="ring" viewBox="0 0 ${size} ${size}" style="width:${size}px;height:${size}px"><circle class="bg" cx="${size / 2}" cy="${size / 2}" r="${r}" stroke-width="${w}"/><circle class="fg" cx="${size / 2}" cy="${size / 2}" r="${r}" stroke-width="${w}" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${(c * (1 - Math.min(1, frac))).toFixed(1)}" data-c="${c.toFixed(1)}"/></svg>`;
+}
+const hypno = [3, 2, 1, 1, 2, 3, 2, 2, 1, 2, 3, 3, 2, 3, 1, 2, 3, 3, 4, 3, 2, 3, 3, 4];
+function trayHTML(t) {
+  if (t === 0) {
+    const f = st.food;
+    return `<div class="pad" style="grid-template-rows:96px 1fr">
+      <div class="tile upnext">${st.pushDone
+        ? `<div><div class="lab">Done today</div><div class="val">Push day</div><div class="meta">${st.last.min} min · ${st.last.sets} sets · ${st.last.records === 1 ? '1 new best' : st.last.records + ' new bests'}</div></div><span class="chk" style="width:44px;height:44px">${I.check}</span>`
+        : `<div><div class="lab">Today · 17:30</div><div class="val">Push day</div><div class="meta">5 lifts · about 55 min</div></div><button class="pill press" data-go="start">Start</button>`}</div>
+      <div class="trio">
+        <button class="tile press" data-go="food"><span class="lab">Food</span>${ringSVG(f.kcal / st.goal.kcal)}<span class="val">${fmt(st.goal.kcal - f.kcal)}<u>left</u></span></button>
+        <button class="tile press" data-go="sleep"><span class="lab">Sleep</span><span class="hyp">${hypno.map(h => `<i style="height:${h * 8}px"></i>`).join('')}</span><span class="val">7:32<u>h</u></span></button>
+        <button class="tile press" data-go="water" aria-label="Add a glass of water"><span class="lab">Water</span><span class="drops">${Array.from({ length: st.waterGoal }, (_, i) => `<i class="${i < st.water ? 'on' : ''}"></i>`).join('')}</span><span class="val" id="waterV">${(st.water * 0.25).toFixed(2).replace(/0$/, '')}<u>L</u></span></button>
+      </div></div>`;
+  }
+  if (t === 1) {
+    const rows = [['Mon', 'Pull', '48 min', 1], ['Tue', 'Wrestling', '90 min', 1], ['Thu', 'Legs', '61 min', 1], ['Sat', 'Push', st.pushDone ? st.last.min + ' min' : 'Today', st.pushDone ? 1 : 2], ['Sun', 'Rest', '', 0]];
+    return `<div class="pad"><div class="tile rows" style="padding:4px 0">${rows.map(r => `<div class="rowi"><span class="d">${r[0]}</span><span class="n">${r[1]}</span><span class="m">${r[2] === 'Today' ? '' : r[2]}</span>${r[3] === 1 ? `<span class="chk">${I.check}</span>` : r[3] === 2 ? `<button class="mini press" data-go="start">Start</button>` : '<span style="width:24px"></span>'}</div>`).join('')}</div></div>`;
+  }
+  if (t === 2) {
+    const f = st.food, g = st.goal;
+    const ring = (lab, v, gl, u, big) => `<div class="tile">${ringSVG(v / gl, 44, 5)}<span class="lab">${lab}</span><b>${big ? fmt(v) : v}${u}</b></div>`;
+    return `<div class="pad" style="grid-template-rows:96px 44px 1fr">
+      <div class="rings4">${ring('Eaten', f.kcal, g.kcal, '', true)}${ring('Protein', f.p, g.p, ' g')}${ring('Carbs', f.c, g.c, ' g')}${ring('Fat', f.f, g.f, ' g')}</div>
+      <div class="chips">${[['skyr', 'Skyr'], ['eggs', '2 eggs'], ['rye', 'Rugbrød'], ['banana', 'Banana']].map(c => `<button class="chip press" data-food="${c[0]}">${I.plus}${c[1]}</button>`).join('')}</div>
+      <div class="meals rows">${st.meals.slice(-2).map(m => `<div class="rowi"><span class="n">${m.n}</span><span class="m">${m.k} kcal</span></div>`).join('')}</div></div>`;
+  }
+  return `<div class="pad" style="grid-template-rows:122px 1fr">
+    <button class="tile stages press" data-go="sleep"><span class="lab" style="display:flex;justify-content:space-between"><span>Sleep stages</span><span>Deep 1 h 41</span></span>
+      <span class="stagebar">${[[0, 6, 's1'], [6, 16, 's0'], [16, 30, 's1'], [30, 34, 's2'], [34, 46, 's1'], [46, 56, 's0'], [56, 70, 's2'], [70, 78, 's1'], [78, 90, 's2'], [90, 94, 's3'], [94, 100, 's2']].map(s => `<i class="${s[2]}" style="left:${s[0]}%;width:${s[1] - s[0]}%"></i>`).join('')}</span>
+      <span class="ends"><span>22:58</span><span>06:30</span></span></button>
+    <div class="duo">
+      <button class="tile press" data-go="hr"><span class="lab">Resting</span><span class="val" style="font-size:22px">52<u style="font:650 13px var(--hk);color:var(--ink-3);margin-left:3px">bpm</u></span></button>
+      <button class="tile press" data-go="hrv"><span class="lab">HRV</span><span class="val" style="font-size:22px">68<u style="font:650 13px var(--hk);color:var(--ink-3);margin-left:3px">ms</u></span></button>
+      <button class="tile press" data-go="weight"><span class="lab">Weight</span><span class="val" style="font-size:22px" id="wV">${st.weight.toFixed(1)}<u style="font:650 13px var(--hk);color:var(--ink-3);margin-left:3px">kg</u></span></button>
+    </div></div>`;
+}
+function fillHero(t, still) {
+  const vals = t === 0 ? [['n-ready', '84']] : t === 1 ? [['n-week', st.pushDone ? '4' : '3']] : t === 2 ? [['n-left', fmt(st.goal.kcal - st.food.kcal)]] : [['n-sleep', '7'], ['n-sleepm', '32']];
+  vals.forEach(([c, v], i) => { const el = $('#heroBox .layer:not(.old) .' + c); if (!el) return;
+    if (still) return setRoll(el, v, true);
+    setRoll(el, v.replace(/\d/g, '0'), true);
+    setTimeout(() => setRoll(el, v), 140 + i * 60); });
+}
+let tabBusy = null;
+function showTab(t, first, still) {
+  const dir = t > st.tab ? 1 : -1; const prev = st.tab; st.tab = t;
+  $('#headT').textContent = TITLES[t];
+  wall.style.transform = `translateX(${-t * 90}px)` + (st.wo && st.wo.open ? ' scale(1.08)' : '');
+  $('#lit').style.transform = `translateX(${t * 100}%)`;
+  S.querySelectorAll('.dock .tab').forEach((b, i) => b.classList.toggle('on', i === t));
+  const hb = $('#heroBox'), tr = $('#tray');
+  // finish any running swap instantly so quick taps never stack layers
+  if (tabBusy) { tabBusy.forEach(a => a.finish()); }
+  [...hb.children, ...tr.children].filter(c => c.classList.contains('old')).forEach(c => c.remove());
+  const oldT = tr.querySelector('.layer'), oldH = hb.querySelector('.layer');
+  if (oldT) oldT.classList.add('old'); if (oldH) oldH.classList.add('old');
+  const nh = document.createElement('div'); nh.className = 'layer'; nh.innerHTML = heroHTML(t); hb.appendChild(nh);
+  const nt = document.createElement('div'); nt.className = 'layer'; nt.innerHTML = trayHTML(t); tr.appendChild(nt);
+  fillHero(t, still);
+  if (first) return;
+  const anims = [];
+  if (oldT) {
+    const a = anim(oldT, [{ transform: 'translateX(0)', opacity: 1 }, { transform: `translateX(${-dir * 60}px)`, opacity: 0 }], SP.move, { duration: 260 });
+    a.onfinish = () => oldT.remove(); anims.push(a); }
+  if (oldH) {
+    const a = anim(oldH, [{ transform: 'translateX(0)', opacity: 1 }, { transform: `translateX(${-dir * 40}px)`, opacity: 0 }], SP.move, { duration: 220 });
+    a.onfinish = () => oldH.remove(); anims.push(a); }
+  anims.push(anim(nt, [{ transform: `translateX(${dir * 70}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }]));
+  anims.push(anim(nh, [{ transform: `translateX(${dir * 40}px)`, opacity: 0 }, { transform: 'none', opacity: 1 }]));
+  tabBusy = anims; Promise.all(anims.map(a => a.finished)).then(() => { if (tabBusy === anims) tabBusy = null; }).catch(() => {});
+  if (prev !== t) setTimeout(() => tabNote(t), 420);
+}
+const seenTab = new Set([0]);
+function tabNote(t) {
+  if (seenTab.has(t) || st.tab !== t || sheetOpen) return; seenTab.add(t);
+  if (t === 1) toast(I.train, 'Three sessions, 199 minutes', 'Your most consistent week since September.', null);
+  if (t === 2) toast(I.food, 'Lunch was 720 kcal', 'Dinner has room for about 1,000.', null);
+  if (t === 3) toast(I.moon, 'In bed by 23:00 four nights running', 'That is your longest streak this month.', null);
+}
+
+/* ---------- toast: one island that drops from the top ---------- */
+let toastTimer, toastShown = false, toastAnim;
+function toast(icon, title, sub, action) {
+  const T = $('#toast');
+  $('#toastI').innerHTML = icon; $('#toastT').innerHTML = `${title}${sub ? `<small>${sub}</small>` : ''}`;
+  const A = $('#toastA'); A.innerHTML = '';
+  if (action) { const b = document.createElement('button'); b.className = 'mini press'; b.textContent = action.label;
+    b.disabled = true; setTimeout(() => (b.disabled = false), 400);            // never tappable on the frame it appears
+    b.onclick = () => { action.fn(); hideToast(); }; A.appendChild(b); }
+  clearTimeout(toastTimer);
+  T.style.visibility = 'visible';
+  if (toastAnim) toastAnim.cancel();
+  if (toastShown) toastAnim = anim(T, [{ transform: 'translateY(0) scale(.96)' }, { transform: 'translateY(0) scale(1)' }], SP.pop);
+  else toastAnim = anim(T, [{ transform: 'translateY(-120px) scale(.92)' }, { transform: 'translateY(0) scale(1)' }], SP.pop);
+  toastShown = true; S.classList.add('toasting');
+  toastTimer = setTimeout(hideToast, action ? 4600 : 3200);
+}
+function hideToast() {
+  if (!toastShown) return; toastShown = false; clearTimeout(toastTimer); S.classList.remove('toasting');
+  const T = $('#toast'); if (toastAnim) toastAnim.cancel();
+  toastAnim = anim(T, [{ transform: 'translateY(0) scale(1)' }, { transform: 'translateY(-120px) scale(.94)' }], SP.move, { duration: 320 });
+  toastAnim.onfinish = () => { if (!toastShown) T.style.visibility = 'hidden'; };
+}
+$('#toast').addEventListener('pointerdown', (e) => { if (!e.target.closest('button')) hideToast(); });
+
+/* small white chip that pops out of a number */
+function pop(text, x, y) {
+  const c = document.createElement('div'); c.className = 'popchip'; c.textContent = text;
+  c.style.left = '0px'; c.style.top = y + 'px'; S.appendChild(c);
+  const w = c.offsetWidth; c.style.left = Math.max(12, Math.min(372 - w, x - w / 2)) + 'px';
+  anim(c, [{ transform: 'translateY(10px) scale(.6)', opacity: 0 }, { transform: 'translateY(0) scale(1)', opacity: 1 }], SP.pop);
+  setTimeout(() => { const a = anim(c, [{ transform: 'translateY(0)', opacity: 1 }, { transform: 'translateY(-18px)', opacity: 0 }], SP.move, { duration: 420 }); a.onfinish = () => c.remove(); }, 1300);
+}
+const rel = (el) => { const a = el.getBoundingClientRect(), b = S.getBoundingClientRect(), z = b.width / 384; return { x: (a.left - b.left) / z, y: (a.top - b.top) / z, w: a.width / z, h: a.height / z }; };
+
+/* ---------- sheet (frosted from the first frame, drag to close) ---------- */
+let sheetOpen = false, sheetAnim, scrimAnim, sheetH = 0, onSheetClose = null;
+function openSheet(html, h = 700, after) {
+  const sh = $('#sheet'), sc = $('#scrim');
+  $('#sheetIn').innerHTML = html; sh.style.height = h + 'px'; sheetH = h;
+  sh.style.visibility = 'visible'; sc.style.visibility = 'visible';
+  if (sheetAnim) sheetAnim.cancel(); if (scrimAnim) scrimAnim.cancel();
+  const from = sheetOpen ? currentY(sh) : h + 20;
+  sheetAnim = anim(sh, [{ transform: `translateY(${from}px)` }, { transform: 'translateY(0)' }]);
+  scrimAnim = anim(sc, [{ opacity: sheetOpen ? 1 : 0 }, { opacity: 1 }], SP.move, { duration: 300 });
+  sheetOpen = true; hideToast(); after && after();
+}
+function currentY(el) { const m = new DOMMatrixReadOnly(getComputedStyle(el).transform); return m.m42; }
+function closeSheet(v = 0) {
+  if (!sheetOpen) return; sheetOpen = false;
+  const sh = $('#sheet'), sc = $('#scrim'); const y = currentY(sh);
+  if (sheetAnim) sheetAnim.cancel(); if (scrimAnim) scrimAnim.cancel();
+  const d = Math.max(220, SP.move.d * (1 - Math.min(0.5, v)));
+  sheetAnim = anim(sh, [{ transform: `translateY(${y}px)` }, { transform: `translateY(${sheetH + 20}px)` }], SP.move, { duration: d });
+  scrimAnim = anim(sc, [{ opacity: 1 - y / sheetH }, { opacity: 0 }], SP.move, { duration: d * 0.8 });
+  sheetAnim.onfinish = () => { if (!sheetOpen) { sh.style.visibility = 'hidden'; sc.style.visibility = 'hidden'; } };
+  if (onSheetClose) { const f = onSheetClose; onSheetClose = null; f(); }
+}
+$('#scrim').addEventListener('click', () => closeSheet());
+(() => { // drag the handle: follows the finger, then a spring takes over with its speed
+  const g = $('#grab'), sh = $('#sheet'); let y0 = 0, last = 0, lt = 0, v = 0, dragging = false;
+  g.addEventListener('pointerdown', (e) => { if (!sheetOpen) return; dragging = true; g.setPointerCapture(e.pointerId);
+    const cy = currentY(sh); if (sheetAnim) sheetAnim.cancel(); sh.style.transform = `translateY(${cy}px)`; y0 = e.clientY - cy; last = e.clientY; lt = performance.now(); v = 0; });
+  g.addEventListener('pointermove', (e) => { if (!dragging) return; const y = Math.max(0, e.clientY - y0); sh.style.transform = `translateY(${y}px)`;
+    const now = performance.now(); v = (e.clientY - last) / Math.max(1, now - lt); last = e.clientY; lt = now;
+    $('#scrim').style.opacity = 1 - y / sheetH; });
+  const up = () => { if (!dragging) return; dragging = false; const y = currentY(sh); sh.style.transform = ''; $('#scrim').style.opacity = '';
+    if (y > 140 || v > 0.6) closeSheet(v); else { sheetAnim = anim(sh, [{ transform: `translateY(${y}px)` }, { transform: 'translateY(0)' }]); } };
+  g.addEventListener('pointerup', up); g.addEventListener('pointercancel', up);
+})();
+const sheetHead = (t) => `<div class="sh-h"><b>${t}</b><button class="round press" data-x="close" aria-label="Close">${I.close}</button></div>`;
+$('#sheet').addEventListener('click', (e) => { if (e.target.closest('[data-x="close"]')) closeSheet(); });
+
+/* ---------- Coach ---------- */
+const coachLog = [];
+function coachHTML() {
+  return `${sheetHead('Coach')}<div class="sh-body" id="chat"></div>
+    <div class="sugg" id="sugg">${['Why am I tired?', 'Move pull day to Thursday', 'Am I on pace for 75 kg?'].map(s => `<button class="chip press" data-ask="${s}">${s}</button>`).join('')}</div>
+    <div class="ask" id="ask"><span class="q hint">Ask or log anything</span><span class="wave"><i></i><i></i><i></i><i></i><i></i></span><span class="q live" id="askLive"></span><button class="mic press" id="mic" aria-label="Speak">${I.mic}</button></div>`;
+}
+function openCoach() {
+  openSheet(coachHTML(), 724, () => {
+    const chat = $('#chat');
+    if (!coachLog.length) coachLog.push({ ai: true, h: `Morning. You slept 7 h 32 and bench moved fast last week, so I'd go 85 kg on set 3 today.` },
+      { card: 'bench' });
+    coachLog.forEach(m => chat.appendChild(msgEl(m)));
+    chat.scrollTop = chat.scrollHeight;
+  });
+}
+function msgEl(m) {
+  const d = document.createElement('div');
+  if (m.me) { d.className = 'msg me'; d.textContent = m.h; }
+  else if (m.ai) { d.className = 'msg ai'; d.innerHTML = `<div class="who">${I.spark}Coach</div>${m.h}`; }
+  else if (m.typing) { d.className = 'msg ai'; d.innerHTML = `<span class="dots"><i></i><i></i><i></i></span>`; }
+  else if (m.card) { d.className = 'card'; d.innerHTML = cardHTML(m); wireCard(d, m); }
+  return d;
+}
+const CARDS = {
+  bench: { t: 'Bench press, set 3', s: '82.5 kg → 85 kg', a: 'Apply', done: 'Set 3 is now 85 kg' },
+  pull: { t: 'Pull day', s: 'Mon 17 → Thu 20 Nov', a: 'Move', done: 'Pull day is on Thursday' },
+  food: { t: 'Logged to Food', s: 'Skyr 200 g, 2 eggs · 280 kcal, 33 g protein', a: null, done: '' },
+};
+function cardHTML(m) {
+  const c = CARDS[m.card];
+  if (m.applied) return `<span class="chk">${I.check}</span><span class="cx">${c.done || c.t}<small>${c.s}</small></span><button class="mini press" data-undo>Undo</button>`;
+  return `<span class="cx">${c.t}<small>${c.s}</small></span>${c.a ? `<button class="mini press" data-apply>${c.a}</button>` : `<button class="mini press" data-undo>Undo</button>`}`;
+}
+function wireCard(d, m) {
+  d.addEventListener('click', (e) => {
+    if (e.target.closest('[data-apply]')) { m.applied = true; d.innerHTML = cardHTML(m); const u = d.querySelector('[data-undo]'); u.disabled = true; setTimeout(() => (u.disabled = false), 450);
+      anim(d.querySelector('.chk'), [{ transform: 'scale(.3)' }, { transform: 'scale(1)' }], SP.pop); }
+    else if (e.target.closest('[data-undo]')) {
+      if (m.card === 'food') { addFood('skyr', -1, true); addFood('eggs', -1, true); d.innerHTML = `<span class="cx">Removed<small>Skyr and eggs are off today's log</small></span>`; return; }
+      m.applied = false; d.innerHTML = cardHTML(m);
+    }
+  });
+}
+function coachSayIt(text, card) {
+  const chat = $('#chat'); if (!chat) return;
+  const t = msgEl({ typing: true }); chat.appendChild(t); chat.scrollTop = chat.scrollHeight;
+  setTimeout(() => {
+    t.remove(); const m = { ai: true, h: text }; coachLog.push(m); const el = msgEl(m); chat.appendChild(el);
+    anim(el, [{ transform: 'translateY(12px)', opacity: 0 }, { transform: 'none', opacity: 1 }]);
+    if (card) { const cm = { card }; if (card === 'food') cm.applied = false; coachLog.push(cm); const ce = msgEl(cm); chat.appendChild(ce);
+      anim(ce, [{ transform: 'translateY(16px) scale(.97)', opacity: 0 }, { transform: 'none', opacity: 1 }], SP.pop, { delay: 120 }); }
+    chat.scrollTop = chat.scrollHeight;
+  }, 900);
+}
+function userSays(text) {
+  const chat = $('#chat'); const m = { me: true, h: text }; coachLog.push(m); const el = msgEl(m); chat.appendChild(el);
+  anim(el, [{ transform: 'translateY(14px) scale(.96)', opacity: 0 }, { transform: 'none', opacity: 1 }], SP.pop);
+  chat.scrollTop = chat.scrollHeight;
+}
+const ANSWERS = {
+  'Why am I tired?': ['By the numbers you are not: 7 h 32 of sleep and readiness 84. If your legs feel heavy, that is Tuesday\'s wrestling still in them. Keep today\'s push session, skip extra sets.', null],
+  'Move pull day to Thursday': ['Thursday is free next week. Moving it keeps two days between pull and legs.', 'pull'],
+  'Am I on pace for 75 kg?': ['Yes, just. You are 76.4 kg and losing about 0.3 kg a week, so 75 kg lands around 21 December. Your target was the 15th: one less snack a day closes that gap.', null],
+};
+$('#sheet').addEventListener('click', (e) => {
+  const a = e.target.closest('[data-ask]'); if (a) { const q = a.dataset.ask; userSays(q); a.remove(); const [t, c] = ANSWERS[q]; coachSayIt(t, c); }
+  if (e.target.closest('#mic')) listen();
+});
+let listening = false;
+function listen() {
+  if (listening) return; listening = true;
+  const ask = $('#ask'), live = $('#askLive'); ask.classList.add('listening');
+  const said = '200 g skyr og to æg'; let i = 0;
+  setTimeout(function type() { if (!$('#askLive')) { listening = false; return; } live.textContent = said.slice(0, ++i); if (i < said.length) setTimeout(type, 55); else setTimeout(done, 500); }, 700);
+  function done() { if (!$('#ask')) { listening = false; return; } ask.classList.remove('listening'); live.textContent = ''; listening = false;
+    userSays(said); addFood('skyr', 1, true); addFood('eggs', 1, true);
+    coachSayIt(`Got it. Protein is now ${st.food.p} of ${st.goal.p} g, the best it has been by lunch all week.`, 'food'); }
+}
+
+/* ---------- food ---------- */
+const FOODS = { skyr: { n: 'Skyr 200 g', k: 124, p: 20, c: 8, f: 0 }, eggs: { n: '2 eggs', k: 156, p: 13, c: 1, f: 11 }, rye: { n: 'Rugbrød, 1 slice', k: 110, p: 4, c: 18, f: 2 }, banana: { n: 'Banana', k: 105, p: 1, c: 27, f: 0 } };
+function addFood(id, sign = 1, quiet) {
+  const f = FOODS[id];
+  st.food.kcal += sign * f.k; st.food.p += sign * f.p; st.food.c += sign * f.c; st.food.f += sign * f.f;
+  if (sign > 0) st.meals.push({ n: f.n, k: f.k, id }); else { const i = st.meals.map(m => m.id).lastIndexOf(id); if (i >= 0) st.meals.splice(i, 1); }
+  refreshFood();
+  if (!quiet) toast(I.food, `${f.n} · ${f.k} kcal`, `${f.p} g protein. ${st.goal.p - st.food.p > 0 ? `${st.goal.p - st.food.p} g to go.` : 'Protein done for today.'}`, { label: 'Undo', fn: () => addFood(id, -1, true) });
+}
+function refreshFood() {
+  if (st.tab === 2) {
+    const left = $('#heroBox .layer:not(.old) .n-left'); if (left) setRoll(left, fmt(st.goal.kcal - st.food.kcal));
+    const tr = $('#tray .layer:not(.old)'); if (!tr) return;
+    const vals = [[st.food.kcal, st.goal.kcal], [st.food.p, st.goal.p], [st.food.c, st.goal.c], [st.food.f, st.goal.f]];
+    tr.querySelectorAll('.rings4 .tile').forEach((t, i) => { const fg = t.querySelector('.fg'); fg.style.strokeDashoffset = (fg.dataset.c * (1 - Math.min(1, vals[i][0] / vals[i][1]))).toFixed(1); t.querySelector('b').textContent = (i ? vals[i][0] + ' g' : fmt(vals[i][0])); });
+    const ml = tr.querySelector('.meals'); if (ml) ml.innerHTML = st.meals.slice(-2).map(m => `<div class="rowi"><span class="n">${m.n}</span><span class="m">${m.k} kcal</span></div>`).join('');
+    const say = $('#heroBox .layer:not(.old) .say'); if (say) say.textContent = st.food.p >= 140 ? 'Protein is on track. Nice.' : 'Protein is the one to watch.';
+    const sub = $('#heroBox .layer:not(.old) .sub'); if (sub) sub.innerHTML = coachSay(st.goal.p - st.food.p > 0 ? `${st.goal.p - st.food.p} g protein to go. Skyr gets you 20.` : 'Protein done. Anything else is a bonus.');
+  }
+  if (st.tab === 0) { const tile = $('#tray .layer:not(.old) [data-go="food"]'); if (tile) { const fg = tile.querySelector('.fg'); fg.style.strokeDashoffset = (fg.dataset.c * (1 - st.food.kcal / st.goal.kcal)).toFixed(1); tile.querySelector('.val').innerHTML = `${fmt(st.goal.kcal - st.food.kcal)}<u>left</u>`; } }
+}
+
+/* ---------- details (sleep, weight, heart) ---------- */
+function sparkSVG(vals, lo, hi) {
+  const w = 336, h = 120, n = vals.length; const x = (i) => 8 + i * (w - 16) / (n - 1), y = (v) => 10 + (h - 20) * (1 - (v - lo) / (hi - lo));
+  const d = vals.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  return `<svg class="spark" viewBox="0 0 ${w} ${h}"><path d="${d}" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1" class="draw"/><circle cx="${x(n - 1)}" cy="${y(vals[n - 1])}" r="5" fill="#fff"/></svg>`;
+}
+const wHist = [77.4, 77.3, 77.5, 77.1, 77.0, 77.2, 76.9, 76.8, 76.9, 76.7, 76.6, 76.7, 76.5];
+function detail(kind) {
+  let h = ''; wDraft = 0;
+  if (kind === 'sleep') h = `${sheetHead('Sleep')}<div class="sh-body detail"><div class="bignum">7:32<u>h</u></div><p>22:58 to 06:30. Deep sleep 1 h 41, more than any night this week. Two short wakes, both before 02:00.</p>${sparkSVG([6.9, 7.1, 6.4, 7.0, 6.8, 7.2, 7.53], 6, 8)}<p style="color:var(--ink-3);font-size:14px">Last 7 nights</p></div>`;
+  if (kind === 'hr') h = `${sheetHead('Resting heart rate')}<div class="sh-body detail"><div class="bignum">52<u>bpm</u></div><p>Two below your month. Usually a sign you are recovered.</p>${sparkSVG([56, 55, 54, 55, 53, 54, 52], 50, 58)}</div>`;
+  if (kind === 'hrv') h = `${sheetHead('HRV')}<div class="sh-body detail"><div class="bignum">68<u>ms</u></div><p>Up 6 on your week. Heavy sessions land well on days like this.</p>${sparkSVG([58, 61, 57, 63, 62, 64, 68], 54, 70)}</div>`;
+  if (kind === 'weight') h = `${sheetHead('Weight')}<div class="sh-body detail"><div class="bignum"><span class="roll n-w"></span><u>kg</u></div><p>Down 0.3 kg a week. 75 kg around 21 December at this pace.</p>${sparkSVG([...wHist, st.weight], 76, 78)}
+    <div class="stepper"><button class="round press" data-w="-1">${I.minus}</button><span style="font-size:14px;color:var(--ink-3);font-weight:650">This morning</span><button class="round press" data-w="1">${I.plus}</button></div>
+    <button class="pill press wide" data-w="save">Log ${st.weight.toFixed(1)} kg</button></div>`;
+  openSheet(h, kind === 'weight' ? 560 : 470, () => {
+    const p = $('#sheet .draw'); if (p) anim(p, [{ strokeDashoffset: 1 }, { strokeDashoffset: 0 }], SP.soft, { duration: 900 });
+    const r = $('#sheet .n-w'); if (r) setRoll(r, st.weight.toFixed(1), true);
+  });
+}
+let wDraft = 0;
+$('#sheet').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-w]'); if (!b) return;
+  if (!wDraft) wDraft = st.weight;
+  if (b.dataset.w === 'save') { const old = st.weight; st.weight = wDraft; wDraft = 0; closeSheet();
+    const v = $('#wV'); if (v) v.firstChild.textContent = st.weight.toFixed(1);
+    toast(I.scale, `${st.weight.toFixed(1)} kg logged`, st.weight < old ? `Down ${(old - st.weight).toFixed(1)} on yesterday.` : 'Same pace as your week.', { label: 'Undo', fn: () => { st.weight = old; const v2 = $('#wV'); if (v2) v2.firstChild.textContent = old.toFixed(1); } });
+    return; }
+  wDraft = Math.round((wDraft + Number(b.dataset.w) * 0.1) * 10) / 10;
+  setRoll($('#sheet .n-w'), wDraft.toFixed(1)); $('#sheet [data-w="save"]').textContent = `Log ${wDraft.toFixed(1)} kg`;
+});
+/* ---------- workout ---------- */
+function woHTML() {
+  return `<div class="segs" id="segs">${EX.map(() => '<i></i>').join('')}</div>
+  <div class="name" id="wName"><b></b><span></span></div>
+  <div class="tr"><button class="round press" id="wDown" aria-label="Minimise">${I.down}</button><button class="round press" id="wEnd" aria-label="Finish workout">${I.flag}</button></div>
+  <div class="pane frost" id="pane"><small id="wSet"></small><em id="wLast"></em>
+    <div class="kg big"><span class="roll" id="wKg"></span><u>kg</u></div>
+    <button class="pm press" style="left:16px;top:70px" data-adj="kg-" aria-label="Less weight">${I.minus}</button><button class="pm press" style="right:16px;top:70px" data-adj="kg+" aria-label="More weight">${I.plus}</button>
+    <div class="reps big"><span class="roll" id="wReps"></span><u>reps</u></div>
+    <button class="pm press" style="left:16px;top:158px" data-adj="r-" aria-label="One rep less">${I.minus}</button><button class="pm press" style="right:16px;top:158px" data-adj="r+" aria-label="One rep more">${I.plus}</button>
+    <p class="line"><b>Coach</b><span id="wCoach"></span></p></div>
+  <div class="sets frost" id="strip"></div>
+  <div class="upn" id="upn"></div>
+  <button class="log press" id="logBtn"></button>
+  <div class="after" id="after"></div>
+  <div class="rest frost" id="rest"><i class="fill" id="restFill"></i><span class="lab">Rest</span><span class="rclock big"><span class="roll" id="restClock"></span></span>
+    <span class="btns"><button class="round press" data-rest="-15">−15</button><button class="round press" data-rest="15">+15</button><button class="mini press" data-rest="skip">Skip</button></span></div>`;
+}
+function startWorkout() {
+  closeSheet();
+  if (st.wo) { openWorkout(); return; }
+  st.wo = { ex: 0, set: EX[0].start, done: EX.map(e => e.sets.map((_, i) => i < e.start)), logs: EX.map(e => e.sets.map(s => s.slice())), t0: Date.now() - 22 * 60000, records: 0, kgTotal: 0, sets: 0, open: false };
+  const W = $('#wo'); W.innerHTML = woHTML(); wireWorkout(); renderWO(true); openWorkout();
+}
+function openWorkout() {
+  const W = $('#wo'); st.wo.open = true;
+  W.style.visibility = 'visible'; $('#live').style.visibility = 'hidden'; S.classList.remove('live');
+  wall.style.transform = `translateX(${-st.tab * 90}px) scale(1.08)`;     // push into the picture
+  ['#heroBox', '#tray', '#dock', '#coachBtn', '#head'].forEach(s => { const el = $(s); const a = anim(el, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(16px) scale(.98)' }], SP.move, { duration: 260 }); a.onfinish = () => { if (st.wo && st.wo.open) el.style.visibility = 'hidden'; a.cancel(); }; });
+  anim(W, [{ opacity: 0, transform: 'translateY(26px)' }, { opacity: 1, transform: 'none' }], SP.move, { delay: 90 });
+}
+function closeWorkout(finished) {
+  const W = $('#wo'); if (st.wo) st.wo.open = false;
+  wall.style.transform = `translateX(${-st.tab * 90}px)`;
+  const a = anim(W, [{ opacity: 1, transform: 'none' }, { opacity: 0, transform: 'translateY(26px)' }], SP.move, { duration: 280 });
+  a.onfinish = () => { W.style.visibility = 'hidden'; if (finished) { W.innerHTML = ''; } };
+  ['#heroBox', '#tray', '#dock', '#coachBtn', '#head'].forEach(s => { const el = $(s); el.style.visibility = 'visible'; el.getAnimations().forEach(x => x.cancel()); anim(el, [{ opacity: 0, transform: 'translateY(16px) scale(.98)' }, { opacity: 1, transform: 'none' }], SP.move, { delay: 120, fill: 'backwards' }); });
+  if (!finished) { const L = $('#live'); L.style.visibility = 'visible'; S.classList.add('live'); liveText(); anim(L, [{ transform: 'translateY(-60px) scale(.9)' }, { transform: 'none' }], SP.pop, { delay: 200 }); }
+}
+function liveText() { const w = st.wo; if (!w) return; const e = EX[w.ex]; $('#liveT').textContent = rest.on ? `${e.n} · rest ${mmss(rest.left())}` : `${e.n} · set ${w.set + 1} of ${e.sets.length}`; }
+const mmss = (s) => `${Math.floor(s / 60)}:${String(Math.max(0, s % 60)).padStart(2, '0')}`;
+function renderWO(instant) {
+  const w = st.wo, e = EX[w.ex], cur = w.logs[w.ex][w.set];
+  $('#wName b').textContent = e.n;
+  $('#wName span').textContent = `Set ${w.set + 1} of ${e.sets.length}, ${Math.round((Date.now() - w.t0) / 60000)} min in`;
+  $('#wSet').textContent = `Set ${w.set + 1}`;
+  $('#wLast').textContent = `Last time ${kgs(e.last[0])} × ${e.last[1]}`;
+  setRoll($('#wKg'), kgs(cur[0]), instant); setRoll($('#wReps'), String(cur[1]), instant);
+  $('#wCoach').textContent = coachTip(w, e, cur);
+  S.querySelectorAll('#segs i').forEach((s, i) => s.style.setProperty('--f', i < w.ex ? 1 : i === w.ex ? (w.done[i].filter(Boolean).length / e.sets.length) : 0));
+  const strip = $('#strip'); strip.style.gridTemplateColumns = `repeat(${e.sets.length}, 1fr)`;
+  strip.innerHTML = `<i class="hl" style="width:calc((100% - 12px) / ${e.sets.length});transform:translateX(${w.set * 100}%)"></i>` + e.sets.map((_, i) => {
+    const l = w.logs[w.ex][i]; return `<span class="${i === w.set ? 'now' : ''}">${i === w.set ? 'Now' : 'Set ' + (i + 1)}<b>${w.done[w.ex][i] ? I.check : ''}${kgs(l[0])} × ${l[1]}</b></span>`; }).join('');
+  $('#logBtn').textContent = `Log set ${w.set + 1}`;
+  const nx = EX[w.ex + 1]; $('#upn').innerHTML = nx ? `<span>Up next</span><span><b>${nx.n}</b>, ${nx.sets.length} × ${nx.sets[0][1]}</span>` : `<span>Last lift</span><span><b>Finish</b> after this</span>`;
+  $('#after').textContent = rest.on ? '' : `Rest starts by itself: ${mmss(restFor(e))}`;
+}
+const restFor = (e) => (e.n === 'Bench press' ? 150 : 90);
+function coachTip(w, e, cur) {
+  const best = e1(...cur) > e.best;
+  if (w.ex === 0 && w.set === 2) return cur[0] >= 85 ? '82.5 moved fast last week. 85 is a new best.' : 'Last week 82.5 moved fast. Try 85.';
+  if (best) return 'That would be a new best. Brace and go.';
+  if (w.set === 0) { const d = cur[0] - e.last[0]; return d > 0 ? `Up ${kgs(d)} kg on last time. Same reps.` : 'Same weight as last time, cleaner reps.'; }
+  if (w.set === e.sets.length - 1) return 'Last set. Leave one rep in the tank.';
+  return 'Same as last set. Smooth reps.';
+}
+function wireWorkout() {
+  const W = $('#wo');
+  W.addEventListener('click', (ev) => {
+    const b = ev.target.closest('button'); if (!b) return; const w = st.wo; if (!w) return;
+    if (b.dataset.adj) { const cur = w.logs[w.ex][w.set], e = EX[w.ex];
+      if (b.dataset.adj === 'kg+') cur[0] = Math.round((cur[0] + e.step) * 10) / 10;
+      if (b.dataset.adj === 'kg-') cur[0] = Math.max(0, Math.round((cur[0] - e.step) * 10) / 10);
+      if (b.dataset.adj === 'r+') cur[1] += 1; if (b.dataset.adj === 'r-') cur[1] = Math.max(1, cur[1] - 1);
+      renderWO(); return; }
+    if (b.id === 'logBtn') return logSet();
+    if (b.id === 'wDown') return closeWorkout(false);
+    if (b.id === 'wEnd') return finishSheet();
+    if (b.dataset.rest) { if (b.dataset.rest === 'skip') endRest(true); else rest.add(Number(b.dataset.rest)); }
+  });
+}
+function logSet() {
+  const w = st.wo, e = EX[w.ex], cur = w.logs[w.ex][w.set];
+  if (rest.on) return;
+  w.done[w.ex][w.set] = true; w.sets++; w.kgTotal += cur[0] * cur[1];
+  const isBest = e1(...cur) > e.best; if (isBest) { e.best = e1(...cur); w.records++; }
+  const diff = cur[0] - e.last[0];
+  // the strip cell ticks in place
+  const cell = $('#strip').children[w.set + 1]; if (cell) { cell.querySelector('b').innerHTML = I.check + `${kgs(cur[0])} × ${cur[1]}`; anim(cell.querySelector('b'), [{ transform: 'scale(.8)' }, { transform: 'scale(1)' }], SP.pop); }
+  const pr = rel($('#pane')); pop(diff > 0 ? `+${kgs(diff)} kg on last time` : diff === 0 ? 'Same as last time' : `${kgs(diff)} kg, easy day`, 192, pr.y - 18);
+  const lastOfEx = w.set === e.sets.length - 1;
+  if (isBest) setTimeout(() => record(e, cur), 380);
+  if (lastOfEx && w.ex === EX.length - 1) { setTimeout(finishSheet, isBest ? 3200 : 700); return; }
+  startRest(restFor(e), isBest ? 3000 : 0);
+}
+/* rest: the Log button turns into the rest bar (frosted from the first frame: revealed by a clip, never faded) */
+const rest = { on: false, end: 0, total: 0, timer: 0, fillAnim: null,
+  left() { return Math.max(0, Math.ceil((this.end - Date.now()) / 1000)); },
+  add(s) { this.end += s * 1000; this.total = Math.max(this.total + s, 1); if (this.left() <= 0) return endRest(true); tick(); runFill(); } };
+function runFill() {
+  const f = $('#restFill'); if (rest.fillAnim) rest.fillAnim.cancel();
+  const left = (rest.end - Date.now()) / 1000, frac = Math.max(0, left / rest.total);
+  rest.fillAnim = f.animate([{ transform: `scaleX(${frac})` }, { transform: 'scaleX(0)' }], { duration: Math.max(0, left * 1000), easing: 'linear', fill: 'both' });
+}
+function tick() { const c = $('#restClock'); if (c) setRoll(c, mmss(rest.left())); liveText(); }
+function startRest(secs, delay) {
+  rest.on = true; rest.total = secs; rest.end = Date.now() + secs * 1000 + delay;
+  const R = $('#rest'), L = $('#logBtn'); $('#after').textContent = '';
+  setTimeout(() => {
+    if (!rest.on) return;
+    setRoll($('#restClock'), mmss(rest.left()), true);
+    R.style.visibility = 'inherit';
+    anim(L, [{ transform: 'scale(1)', opacity: 1 }, { transform: 'scale(.9)', opacity: 0 }], SP.move, { duration: 220 });
+    anim(R, [{ clipPath: 'inset(24px 30px 30px 30px round 40px)' }, { clipPath: 'inset(0 0 0 0 round 40px)' }], SP.move);
+    runFill(); clearInterval(rest.timer); rest.timer = setInterval(() => { if (rest.left() <= 0) endRest(false); else tick(); }, 250);
+  }, delay);
+  advance();
+}
+function endRest(skipped) {
+  if (!rest.on) return; rest.on = false; clearInterval(rest.timer); if (rest.fillAnim) rest.fillAnim.cancel();
+  const R = $('#rest'), L = $('#logBtn');
+  const a = anim(R, [{ clipPath: 'inset(0 0 0 0 round 40px)' }, { clipPath: 'inset(24px 30px 30px 30px round 40px)' }], SP.move, { duration: 260 });
+  a.onfinish = () => { if (!rest.on) R.style.visibility = 'hidden'; };
+  anim(L, [{ transform: 'scale(.9)', opacity: 0 }, { transform: 'scale(1)', opacity: 1 }], SP.pop, { delay: 80 });
+  renderWO(); liveText();
+  if (!skipped) { const e = EX[st.wo.ex], c = st.wo.logs[st.wo.ex][st.wo.set]; toast(I.train, `Rest is over. Set ${st.wo.set + 1}: ${kgs(c[0])} × ${c[1]}`, e.n, null); if (navigator.vibrate) navigator.vibrate(30); }
+}
+function advance() {
+  const w = st.wo, e = EX[w.ex];
+  if (w.set < e.sets.length - 1) { w.set++; setTimeout(() => { if (st.wo) renderWO(); }, 520); return; }
+  // next exercise: the name and numbers slide across
+  w.ex++; w.set = EX[w.ex].start;
+  setTimeout(() => { if (!st.wo) return;
+    const nm = $('#wName'), pane = $('#pane');
+    anim(nm, [{ transform: 'none', opacity: 1 }, { transform: 'translateX(-40px)', opacity: 0 }], SP.move, { duration: 220 }).onfinish = () => {
+      renderWO(true); anim(nm, [{ transform: 'translateX(40px)', opacity: 0 }, { transform: 'none', opacity: 1 }]); };
+    anim(pane.querySelector('.kg'), [{ opacity: 1 }, { opacity: .2 }, { opacity: 1 }], SP.move, { duration: 460 });
+  }, 600);
+}
+/* record moment: a gold medal flips and catches the light */
+function record(e, cur) {
+  const Rc = $('#rec');
+  Rc.innerHTML = `<i class="bg"></i>${Array.from({ length: 14 }, () => '<i class="spark-dot"></i>').join('')}
+    <div class="card2 frost"><div class="medal"><div class="m"><b>PR</b><i class="sheen"></i></div></div>
+    <h3>New best</h3><p>${e.n}, ${kgs(cur[0])} kg × ${cur[1]}.<br>Your strongest set ever, about ${Math.round(e1(...cur))}&nbsp;kg for one.</p>
+    <button class="pill press wide" id="recOk">Keep going</button></div>`;
+  Rc.style.visibility = 'visible';
+  anim($('.bg', Rc), [{ opacity: 0 }, { opacity: 1 }], SP.move, { duration: 400 });
+  const card = $('.card2', Rc);
+  anim(card, [{ transform: 'translateY(40px) scale(.86)', opacity: 0 }, { transform: 'none', opacity: 1 }], SP.pop);
+  anim($('.m', Rc), [{ transform: 'rotateY(-200deg) scale(.6)' }, { transform: 'rotateY(0) scale(1)' }], spring(150, 14), { delay: 120 });
+  anim($('.sheen', Rc), [{ transform: 'translateX(0) skewX(-12deg)' }, { transform: 'translateX(420%) skewX(-12deg)' }], SP.soft, { delay: 700, duration: 1100, easing: 'ease-in-out' });
+  Rc.querySelectorAll('.spark-dot').forEach((d, i) => { const a = (i / 14) * Math.PI * 2, r = 120 + (i % 3) * 30;
+    anim(d, [{ transform: 'translate(-50%,-50%) scale(.4)', opacity: 1 }, { transform: `translate(${Math.cos(a) * r - 3}px, ${Math.sin(a) * r - 3}px) scale(1)`, opacity: 0 }], SP.soft, { delay: 200, duration: 1000, easing: 'cubic-bezier(.2,.7,.3,1)' }); });
+  if (navigator.vibrate) navigator.vibrate([20, 40, 30]);
+  $('#recOk').onclick = () => { const a = anim(card, [{ transform: 'none', opacity: 1 }, { transform: 'translateY(30px) scale(.94)', opacity: 0 }], SP.move, { duration: 260 });
+    anim($('.bg', Rc), [{ opacity: 1 }, { opacity: 0 }], SP.move, { duration: 300 }); a.onfinish = () => { Rc.style.visibility = 'hidden'; Rc.innerHTML = ''; }; };
+}
+function finishSheet() {
+  const w = st.wo; const min = Math.round((Date.now() - w.t0) / 60000);
+  openSheet(`${sheetHead('Finish Push day?')}<div class="sh-body detail">
+    <div class="duo" style="margin:6px 0 14px"><div class="tile" style="height:96px;padding:14px"><span class="lab">Minutes</span><span class="val" style="font-size:26px">${min}</span></div>
+    <div class="tile" style="height:96px;padding:14px"><span class="lab">Sets</span><span class="val" style="font-size:26px">${w.sets}</span></div>
+    <div class="tile" style="height:96px;padding:14px"><span class="lab">New bests</span><span class="val" style="font-size:26px">${w.records}</span></div></div>
+    <p>${w.sets < 6 ? 'Sets you did not log are kept as skipped, so next week still knows the plan.' : 'Good session. Eat within the hour: you are at ' + st.food.p + ' g protein.'}</p>
+    <button class="pill press wide" id="finYes" style="margin-top:8px">Finish workout</button>
+    <button class="press" id="finNo" style="width:100%;height:52px;font-weight:650;color:var(--ink-2);margin-top:6px">Keep training</button></div>`, 430);
+  $('#finYes').onclick = () => { endRestQuiet(); st.pushDone = true; st.last = { min, sets: w.sets, records: w.records }; const recs = w.records; st.wo = null; closeSheet(); closeWorkout(true); $('#live').style.visibility = 'hidden';
+    setTimeout(() => { showTab(0, false); setTimeout(() => toast(I.check, 'Push day saved', `${recs ? recs + ' new best. ' : ''}Rest well tonight.`, null), 500); }, 250); };
+  $('#finNo').onclick = () => closeSheet();
+}
+function endRestQuiet() { rest.on = false; clearInterval(rest.timer); if (rest.fillAnim) rest.fillAnim.cancel(); }
+
+/* ---------- wiring ---------- */
+S.addEventListener('click', (e) => {
+  const tab = e.target.closest('.dock .tab'); if (tab) { const t = Number(tab.dataset.tab); if (t !== st.tab) showTab(t); return; }
+  if (e.target.closest('#coachBtn')) return openCoach();
+  if (e.target.closest('#live')) return openWorkout();
+  if (e.target.closest('#meBtn')) return toast(I.me, 'Profile and settings', 'Not part of this prototype yet.', null);
+  const f = e.target.closest('[data-food]'); if (f) { addFood(f.dataset.food); const r = rel(f); pop(`+${FOODS[f.dataset.food].k} kcal`, r.x + r.w / 2, r.y + 5); return; }
+  const g = e.target.closest('[data-go]'); if (!g || e.target.closest('#sheet')) return;
+  const k = g.dataset.go;
+  if (k === 'start') return startWorkout();
+  if (k === 'food') return showTab(2);
+  if (k === 'water') { if (st.water >= st.waterGoal) { toast(I.drop, 'Water goal reached', '2 L today. Nice.', null); return; }
+    st.water++; const drops = g.querySelectorAll('.drops i'); drops[st.water - 1].classList.add('on');
+    anim(drops[st.water - 1], [{ transform: 'scale(.6)' }, { transform: 'scale(1)' }], SP.pop);
+    $('#waterV').innerHTML = `${(st.water * 0.25).toFixed(2).replace(/0$/, '')}<u>L</u>`;
+    const r = rel(g); pop('+250 ml', r.x + r.w / 2, r.y + 36);
+    if (st.water === st.waterGoal) setTimeout(() => toast(I.drop, 'Two litres. Goal reached.', 'Earliest this week.', null), 500);
+    return; }
+  if (['sleep', 'hr', 'hrv', 'weight'].includes(k)) return detail(k);
+});
+function setTime(ev) {
+  st.evening = ev; S.classList.toggle('evening', ev);
+  document.getElementById('tDawn').setAttribute('aria-pressed', String(!ev)); document.getElementById('tDusk').setAttribute('aria-pressed', String(ev));
+  $('#sbx').innerHTML = sb(ev ? '18:20' : '07:42');
+}
+document.getElementById('tDawn').onclick = () => setTime(false);
+document.getElementById('tDusk').onclick = () => setTime(true);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { if (sheetOpen) closeSheet(); else if (st.wo && st.wo.open) closeWorkout(false); } });
+
+/* ---------- open the app: the morning moment ---------- */
+function fit() { const w = document.documentElement.clientWidth; R.setProperty('--z', Math.min(1.1, Math.min(w, 440) / 384).toFixed(4)); }
+addEventListener('resize', fit); fit();
+const params = new URLSearchParams(location.search);
+showTab(0, true, params.has('still'));
+if (params.has('still')) { /* a still for screenshots: no opening motion */ }
+else {
+  anim(wall, [{ transform: 'scale(1.06)' }, { transform: 'none' }], SP.soft, { duration: 1600, fill: 'none', easing: 'cubic-bezier(.2,.7,.2,1)' });
+  const hero = $('#heroBox .hero');
+  [...hero.children].forEach((c, i) => anim(c, [{ transform: 'translateY(18px)', opacity: 0 }, { transform: 'none', opacity: 1 }], SP.move, { delay: 160 + i * 70, fill: 'backwards' }));
+  hero.querySelectorAll('.week b').forEach((b, i) => anim(b, [{ transform: 'scaleY(0)' }, { transform: 'scaleY(1)' }], SP.pop, { delay: 420 + i * 45, fill: 'backwards' }));
+  anim($('#tray'), [{ transform: 'translateY(330px)' }, { transform: 'none' }], SP.move, { delay: 260, fill: 'backwards' });
+  setTimeout(() => toast(I.spark, 'Protein ran short yesterday', 'Skyr at breakfast puts you back on track.', { label: 'Log skyr', fn: () => { showTab(2); setTimeout(() => addFood('skyr'), 450); } }), 1900);
+}
+if (params.get('tab')) showTab(Number(params.get('tab')), false, params.has('still'));
+if (params.has('wo')) startWorkout();
+if (params.has('coach')) openCoach();
+</script>
+</body>
+</html>
