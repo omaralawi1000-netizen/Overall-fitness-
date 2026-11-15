@@ -14,8 +14,8 @@
   color-scheme: dark;
   --deep: #23224a;                       /* the bay's own shadow: page ground, text on the pearl button */
   --ink: #ffffff;
-  --ink-2: rgba(255, 255, 255, .82);
-  --ink-3: rgba(255, 255, 255, .64);
+  --ink-2: rgba(255, 255, 255, .86);
+  --ink-3: rgba(255, 255, 255, .76);
   --hair: rgba(255, 255, 255, .16);
   --fill: rgba(255, 255, 255, .11);
   --pearl: #fbf5ec;                      /* the one thing to tap */
@@ -123,13 +123,13 @@ svg { display: block; }
 .moon b { position: relative; z-index: 1; font-size: 50px; line-height: .9; font-weight: 380; letter-spacing: -.03em; margin-left: 6px; }
 .moon span { position: relative; z-index: 1; margin: 3px 0 0 6px; font-size: 12.5px; font-weight: 500; letter-spacing: .02em; color: rgba(35, 34, 74, .72); }
 .legend { flex: none; width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); text-shadow: var(--ts); }
-.goal { display: flex; flex-direction: column; align-items: center; gap: 1px; min-height: 64px; padding: 6px 0; border-radius: 18px; transition: background-color .09s, transform .09s ease-out; }
+.goal { display: flex; flex-direction: column; align-items: center; gap: 1px; min-height: 64px; padding: 6px 0; margin: 0 4px; border-radius: 18px; background: rgba(35, 34, 74, .16); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .12); transition: background-color .09s, transform .09s ease-out; }
 .goal:active { background: rgba(255, 255, 255, .12); transform: scale(.97); }
 .goal .lab { display: flex; align-items: center; gap: 7px; }
 .goal .lab i { width: 8px; height: 8px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 1.5px rgba(35, 34, 74, .3); }
 .goal .val { font-size: 23px; line-height: 1.2; letter-spacing: -.01em; white-space: nowrap; }
 .goal .val small { font-size: 14px; color: var(--ink-2); letter-spacing: 0; margin-left: 3px; }
-.say { flex: none; max-width: 31ch; text-align: center; font-size: 16px; line-height: 1.4; color: var(--ink); text-wrap: balance; text-shadow: 0 1px 2px rgba(35, 34, 74, .35), 0 0 16px rgba(35, 34, 74, .45); }
+.say { flex: none; max-width: 31ch; text-align: center; font-size: 16px; line-height: 1.4; color: var(--ink); text-wrap: balance; text-shadow: 0 1px 2px rgba(35, 34, 74, .45), 0 1px 14px rgba(30, 20, 60, .6); }
 
 .tonight .top { display: flex; justify-content: space-between; align-items: baseline; }
 .tonight .lab i { font-style: normal; color: var(--sand); }
@@ -176,8 +176,8 @@ svg { display: block; }
 .sky text { font: 500 12.5px var(--font); fill: rgba(255, 255, 255, .86); text-anchor: middle; }
 .sky text.cur { fill: var(--sand); font-weight: 600; }
 .sky g.later { opacity: .8; }
-.sky line.plan { stroke: rgba(255, 255, 255, .22); stroke-dasharray: 1.5 4; }
-.sky .hollow { fill: rgba(35, 34, 74, .2); stroke: rgba(255, 255, 255, .62); stroke-width: 1; }
+.sky line.plan { stroke: rgba(255, 255, 255, .34); stroke-dasharray: 1.5 4; }
+.sky .hollow { fill: rgba(255, 255, 255, .14); stroke: rgba(255, 255, 255, .88); stroke-width: 1.2; }
 .sky .next { stroke: var(--sand); stroke-width: 1.4; animation: breathe 2.6s ease-in-out infinite alternate; }
 .sky .star { fill: #fff; transform-box: fill-box; transform-origin: center; }
 .sky .star.best { fill: var(--sand); }
@@ -209,8 +209,8 @@ svg { display: block; }
 .swap > :not(.off) { transition: opacity .26s ease-out .08s, transform .36s var(--ease) .08s, visibility 0s; }
 .fields { display: grid; grid-template-columns: 1fr 1px 1fr; align-items: center; }
 .fields hr { width: 1px; height: 46px; border: 0; margin: 0; background: var(--hair); }
-.field { position: relative; height: 82px; display: flex; align-items: baseline; justify-content: center; gap: 7px; padding-top: 6px; opacity: .72; transition: opacity var(--fast); }
-.field b { font-size: 62px; line-height: 1; font-weight: 300; letter-spacing: -.03em; }
+.field { position: relative; height: 76px; display: flex; align-items: baseline; justify-content: center; gap: 7px; padding-top: 6px; opacity: .72; transition: opacity var(--fast); }
+.field b { font-size: 58px; line-height: 1; font-weight: 300; letter-spacing: -.03em; }
 .field i { font-style: normal; font-size: 17px; color: var(--ink-2); }
 .field::after { content: ""; position: absolute; left: 50%; bottom: 2px; width: 34px; height: 2px; margin-left: -17px; border-radius: 1px; background: var(--sand); transform: scaleX(0); transition: transform .26s var(--ease); }
 .field:active { opacity: .8; }
@@ -260,7 +260,7 @@ svg { display: block; }
 .sets li .v { font-size: 15.5px; font-weight: 500; white-space: nowrap; letter-spacing: -.005em; }
 .sets li.done { color: var(--ink); }
 .sets li.cur { color: var(--ink); background: rgba(255, 255, 255, .13); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .6); }
-.live .primary { margin-top: 14px; }
+.live .primary { margin-top: 16px; }
 
 .done .dstats { display: grid; grid-template-columns: 1fr 1fr; }
 .dstats div { padding: 2px 0 14px 16px; border-left: 1px solid var(--hair); }
@@ -416,8 +416,8 @@ const T = {
     tonight: 'Tonight', done: 'done', inProgress: 'in progress', about: 'about 55 min', pushDay: 'Push day', planSub: 'Bench press, incline press and 4 more',
     start: 'Start workout', resume: 'Resume workout', see: 'See the workout', sleep: 'Sleep', protein: 'Protein', water: 'Water', h: 'h',
     finish: 'Finish', undo: 'Undo set', rest: 'Rest', close: 'Close', backToday: 'Back to Today', keepGoing: 'Keep going, there are sets left',
-    exOf: 'Exercise {a} of {b}', setOf: 'Set {a} of {b}', last: 'Last time {w} kg × {r}', log: 'Log set {a}', skip: 'Skip rest', then: 'then set {a}<br>{w} kg × {r}',
-    best: 'New best · {name} {w} kg', wkDone: 'Workout done', sets: 'sets', lifted: 'lifted', time: 'time', bests: 'new bests', bestOne: 'new best', notDone: 'not done', use: 'Use {w} kg', undoShort: 'Undo',
+    exOf: 'Exercise {a} of {b}', setOf: 'Set {a} of {b}', last: 'Last time {w} kg × {r}', log: 'Log set {a}', skip: 'Skip rest', then: 'next<br>{w} kg × {r}',
+    best: 'New best · {name} {w} kg', wkDone: 'Workout done', sets: 'sets', lifted: 'lifted', time: 'time', bests: 'new bests', bestOne: 'new best', notDone: '{n} more not done', use: 'Use {w} kg', undoShort: 'Undo',
     c0: 'Open where you left off last week. Then 82.5.', c1: '82.5 moved well last Tuesday. Hold six clean reps.', c3: 'Three clean sets. 85 kg is in reach for the last one.', cUsed: '85 kg is loaded for this set. Five reps is a new best.',
     cGen: 'Last time {w} kg × {r}. Match it, then add a rep.', cRest: '',
     sleepVal: '7 h 32', sleepSub: 'last night', sleepNote: 'Your best week of sleep this month. Friday’s 8 h 18 came before your heaviest squat.', goal: 'goal {v}',
@@ -430,8 +430,8 @@ const T = {
     tonight: 'I aften', done: 'færdig', inProgress: 'i gang', about: 'ca. 55 min', pushDay: 'Push-dag', planSub: 'Bænkpres, skrå pres og 4 mere',
     start: 'Start træning', resume: 'Fortsæt træning', see: 'Se træningen', sleep: 'Søvn', protein: 'Protein', water: 'Vand', h: 't',
     finish: 'Afslut', undo: 'Fortryd sæt', rest: 'Hvil', close: 'Luk', backToday: 'Tilbage til I dag', keepGoing: 'Fortsæt, der er sæt tilbage',
-    exOf: 'Øvelse {a} af {b}', setOf: 'Sæt {a} af {b}', last: 'Sidst {w} kg × {r}', log: 'Log sæt {a}', skip: 'Spring hvilet over', then: 'så sæt {a}<br>{w} kg × {r}',
-    best: 'Ny rekord · {name} {w} kg', wkDone: 'Træning færdig', sets: 'sæt', lifted: 'løftet', time: 'tid', bests: 'nye rekorder', bestOne: 'ny rekord', notDone: 'ikke lavet', use: 'Brug {w} kg', undoShort: 'Fortryd',
+    exOf: 'Øvelse {a} af {b}', setOf: 'Sæt {a} af {b}', last: 'Sidst {w} kg × {r}', log: 'Log sæt {a}', skip: 'Spring hvilet over', then: 'næste<br>{w} kg × {r}',
+    best: 'Ny rekord · {name} {w} kg', wkDone: 'Træning færdig', sets: 'sæt', lifted: 'løftet', time: 'tid', bests: 'nye rekorder', bestOne: 'ny rekord', notDone: '{n} mere ikke lavet', use: 'Brug {w} kg', undoShort: 'Fortryd',
     c0: 'Start hvor du slap i sidste uge. Derefter 82,5.', c1: '82,5 gik godt i tirsdags. Hold seks rene reps.', c3: 'Tre rene sæt. 85 kg er inden for rækkevidde i det sidste.', cUsed: '85 kg er sat til dette sæt. Fem reps er ny rekord.',
     cGen: 'Sidst {w} kg × {r}. Gentag det, og tag så én rep mere.', cRest: '',
     sleepVal: '7 t 32', sleepSub: 'i nat', sleepNote: 'Din bedste søvnuge denne måned. Fredagens 8 t 18 kom før dit tungeste squat.', goal: 'mål {v}',
@@ -607,7 +607,14 @@ let rAnim = false;
 /* tonight's sets as stars: lit when logged, hollow while they wait */
 function skyPoints() {
   const b = $('sky').getBoundingClientRect(), W = b.width, H = b.height, k = W / 384, top = 8, bot = 24, sy = Math.min(1.5, Math.max(.45, (H - top - bot) / 110));
-  return FIG.map(f => f.map(([x, y]) => [x * k, top + (H - top - bot - 110 * sy) / 2 + y * sy]));
+  const P = FIG.map(f => f.map(([x, y]) => [x * k, top + (H - top - bot - 110 * sy) / 2 + y * sy]));
+  if (!S.finished) return P;
+  /* the finished workout: zoom the sky so tonight's constellation fills it */
+  const lit = P.flatMap((f, ei) => f.slice(0, S.logs[ei].length));
+  if (!lit.length) return P;
+  const xs = lit.map(p => p[0]), ys = lit.map(p => p[1]), x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
+  const z = Math.min(2.4, (W - 72) / Math.max(1, x1 - x0), (H - top - bot) / Math.max(1, y1 - y0));
+  return P.map(f => f.map(([x, y]) => [W / 2 + (x - (x0 + x1) / 2) * z, (top + H - bot) / 2 + (y - (y0 + y1) / 2) * z]));
 }
 function sky() {
   const P = skyPoints(), el = $('sky'); let h = '';
@@ -629,7 +636,7 @@ function sky() {
     f.forEach(([x, y], si) => {
       const l = logs[si], next = cur && si === S.set;
       if (l) g += `<g transform="translate(${x} ${y}) scale(${l.best ? 1.5 : .95})"><path class="star${l.best ? ' best' : ''}${isFresh(ei, si) ? ' fresh' : (ei + si) % 4 === 1 ? ' tw' : ''}" d="${STAR}"/></g>`;
-      else if (!S.finished) g += `<circle class="hollow${next ? ' next' : ''}" cx="${x}" cy="${y}" r="${next ? 5.5 : 3}"/>`;
+      else if (!S.finished) g += `<circle class="hollow${next ? ' next' : ''}" cx="${x}" cy="${y}" r="${next ? 6 : 3.6}"/>`;
     });
     const cx = f.reduce((a, p) => a + p[0], 0) / f.length, by = Math.max(...f.map(p => p[1]));
     if (!S.finished) g += `<text class="${cur ? 'cur' : ''}" x="${cx}" y="${by + 19}">${ei + 1}</text>`;
@@ -738,11 +745,12 @@ function summary() {
   const b = bests();
   $('dstats').innerHTML = `<div><b>${logged()}</b><span class="lab">${t('sets')}</span></div><div><b>${num(kilos(), 0)}<small>kg</small></b><span class="lab">${t('lifted')}</span></div>`
     + `<div><b>${clock()}</b><span class="lab">${t('time')}</span></div><div class="${b ? 'gold' : ''}"><b>${b}</b><span class="lab">${t(b === 1 ? 'bestOne' : 'bests')}</span></div>`;
+  const skipped = EX.filter((e, i) => !S.logs[i].length).length;
   $('dlist').innerHTML = EX.map((e, i) => {
-    const l = S.logs[i]; if (!l.length) return `<li class="none"><span>${name(e)}</span><span>${t('notDone')}</span></li>`;
+    const l = S.logs[i]; if (!l.length) return '';
     const top = l.reduce((a, s) => s.w > a.w || (s.w === a.w && s.r > a.r) ? s : a);
     return `<li><span>${name(e)}</span><span>${top.best ? `<svg viewBox="-7 -7 14 14"><path d="${STAR}"/></svg>` : ''}${l.length} × ${num(top.w)} kg</span></li>`;
-  }).join('');
+  }).join('') + (skipped ? `<li class="none"><span>${t('notDone', { n: skipped })}</span></li>` : '');
   $('keepBtn').hidden = allDone();
 }
 
