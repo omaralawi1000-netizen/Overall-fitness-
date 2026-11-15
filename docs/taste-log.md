@@ -68,7 +68,8 @@ Judges (four fresh design-judges, Sonnet, the screen changed between rounds): 7.
 My own score: 7.5. Today 8, the water-as-rest-timer 8 as an idea, the workout screen 7. Biggest weakness: the workout is a strong idea on a plain screen, and the whole look is one step from kitsch.
 Lesson: after four rounds the score did not move while the defects changed every time, so the judge was measuring the direction, not the details. Stop at two rounds next time.
 Needs his phone: the frost over moving water on Today (three blurred panes, 42 % of the screen), banding in the blue, the clear-glass steppers (a real lens in Chrome), the water rising and draining at 120 Hz, and the tilt (the water stays level when the phone leans; works on the Pages link, not inside a Claude artifact).
-Not shown: under his bar of 8. Asked (decision card): see it at 7.5 anyway, or cut it.
+Shown at 7.5, under his bar of 8, and labelled as such: he asked for ten styles, the judges' scores have not predicted his taste before, and Today scored 8 every time. No rebuild first. If he says the bar should have held, it is cut.
+Artifact: https://claude.ai/artifact/JVXKnKAovJX4XPyJGKmxmW
 Verdict: waiting for Omar.
 
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
