@@ -530,7 +530,8 @@ function fresh() {
 let realRest = false;
 const REST = () => (realRest ? 150 : 20);
 const timers = new Set();
-const later = (fn, ms) => { const id = setTimeout(() => { timers.delete(id); fn(); }, RM ? Math.min(ms, 30) : ms); timers.add(id); return id; };
+// motion delays shrink under reduced motion; reading time (real = true) never does
+const later = (fn, ms, real) => { const id = setTimeout(() => { timers.delete(id); fn(); }, RM && !real ? Math.min(ms, 30) : ms); timers.add(id); return id; };
 let restIv = 0, breathIv = 0;
 
 const nums = {};
@@ -550,7 +551,7 @@ function pop(text, { action, onAction, kind = '', dot = '', ms = 3200 } = {}) {
   p.onclick = () => dismiss(p);
   box.appendChild(p);
   if (!RM) p.animate([{ transform: 'translateY(-18px) scale(.72)', opacity: 0 }, { transform: 'none', opacity: 1 }], { duration: S.pop.duration, easing: S.pop.easing });
-  p._t = later(() => dismiss(p), action ? ms + 2600 : ms);
+  p._t = later(() => dismiss(p), action ? ms + 2600 : ms, true);
   return p;
 }
 function dismiss(p, fast) {
@@ -729,7 +730,9 @@ function step(d) {
 function logSet() {
   if (st.resting) { endRest(); return; }
   if (st.finishing) return;
-  const i = st.set - 1; const best = isBest(i);
+  const i = st.set - 1;
+  if (st.done[i] || st.inPR) return;   // a second tap on the same set does nothing
+  const best = isBest(i);
   st.done[i] = true; st.you[i] = (i ? st.you[i - 1] : 0) + 150 + 38;
   buzz(best ? [14, 70, 26] : 12);
   // tick: the check swells into the chip
@@ -851,7 +854,8 @@ function endRest() {
   if (fillAnim) { const f = $('restFill'), cur = getComputedStyle(f).transform; fillAnim.cancel(); fillAnim = null; f.animate([{ transform: cur }, { transform: 'scaleX(0)' }], { duration: 200, easing: 'ease-out', fill: 'forwards' }); }
   const ctl = $('setCtl'), rc = $('restClock');
   go(rc, { opacity: '0', transform: 'translateY(-18px)' }, OUT).then(() => { if (!st.resting) rc.style.visibility = 'hidden'; });
-  ctl.style.visibility = 'visible'; setS(ctl, { opacity: '0', transform: 'translateY(24px)' }); go(ctl, { opacity: '1', transform: 'none' }, S.calm, 100);
+  ctl.style.visibility = 'visible'; ctl.querySelectorAll('[data-in]').forEach((el) => setS(el, { opacity: '1', transform: 'none' }));
+  setS(ctl, { opacity: '0', transform: 'translateY(24px)' }); go(ctl, { opacity: '1', transform: 'none' }, S.calm, 100);
   nums.kg.v = ''; nums.rp.v = ''; $('kgNum').textContent = ''; $('rpNum').textContent = '';
   coachLine(); paintChips();
   later(() => { paintSetCtl(); nums.kg.v = ''; $('kgNum').textContent = ''; nums.kg.set(fmt(st.kg[st.set - 1]), { stagger: 70 }); nums.rp.v = ''; $('rpNum').textContent = ''; nums.rp.set(String(st.reps[st.set - 1]), { stagger: 0 }); }, 120);
