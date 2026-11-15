@@ -55,6 +55,7 @@ button { font: inherit; color: inherit; }
   transition: transform var(--ms-bouncy) var(--sp-bouncy); will-change: transform; }
 .key.is-down .key__face, .key.is-latched .key__face { transform: translateY(calc(var(--depth) - 1px)); transition: transform 50ms linear; }
 .key:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
+.stage:focus { outline: none; } .stage:focus-visible { outline: 3px solid #fff; outline-offset: -6px; border-radius: 30px; }
 .key--sun { --face: var(--sun); --side: var(--sun-wall); }
 .key--ink { --face: var(--ink); --side: #08071a; --on: #fff; }
 .key--ink .key__face { box-shadow: inset 0 2px 0 rgba(255,255,255,.14); }
@@ -339,7 +340,7 @@ svg.i.go { width: 18px; height: 18px; color: var(--wall); stroke-width: 3.5; }
     <div class="target" id="target"><span>Make it</span><b id="targetKg">60 kg</b><span id="targetLeft"></span></div>
     <p class="w-info" id="info"></p>
     <div class="loader">
-      <div class="stage" id="stage" role="group" aria-label="Plates on one side of the bar. Tap a plate to take it off.">
+      <div class="stage" id="stage" role="group" tabindex="0" aria-label="Plates on one side of the bar. Tap a plate to take it off, or press Backspace to take off the outer one.">
         <div class="zoom"><div class="bar" id="bar"><div class="shaft"></div><div class="sleeve"></div><div class="collar"></div><div class="slotmark" id="slotmark"></div></div></div>
         <span class="twice" aria-hidden="true">Both sides</span>
       </div>
@@ -476,11 +477,11 @@ const stage = $('#stage'), bar = $('#bar'), rack = $('#rack'), numEl = $('#num')
 numEl.innerHTML = '<span class="unit">kg</span>';
 const setNum = roller(numEl);
 let stack = [], uid = 0;
-const GAP = 3, ROOM = 156;   /* ROOM: the widest stack the bar must hold (200 kg) */
+const GAP = 3, ROOM = 181;   /* ROOM: the widest stack plus and minus can ask for (197.5 kg: 25, 25, 25, 10, 2.5, 1.25) */
 let K = 1, X0 = 112;
 const stageW = () => stage.clientWidth / K;
 function fit() {   /* the plates grow to fill the bay; the stack sits mid-bay when there is width to spare */
-  K = Math.min(1.45, Math.max(.68, stage.clientHeight / 200)); stage.style.setProperty('--k', K);
+  K = Math.min(1.45, Math.max(.68, stage.clientHeight / 200), stage.clientWidth / (50 + ROOM + 32)); stage.style.setProperty('--k', K);
   X0 = Math.round(Math.max(50, (stageW() - ROOM) / 2 - 8)); bar.style.setProperty('--x0', X0 + 'px'); place();
 }
 new ResizeObserver(fit).observe(stage);
@@ -591,6 +592,10 @@ rack.addEventListener('pointerdown', e => {
 stage.addEventListener('pointerdown', () => { if (stack.length && !(W.test && W.test.round === 1)) clock(); });
 /* keyboard and screen-reader activation arrives as a click with no pointer behind it */
 rack.addEventListener('click', e => { const d = e.target.closest('.disc'); if (d && e.detail === 0 && addPlate(+d.dataset.kg)) touch(); });
+stage.addEventListener('keydown', e => {
+  if ((e.key !== 'Backspace' && e.key !== 'Delete') || !stack.length || (W.test && W.test.round === 1)) return;
+  e.preventDefault(); touch(); removePlate(stack[stack.length - 1]);
+});
 stage.addEventListener('click', e => {
   if (!stack.length || (W.test && W.test.round === 1)) return;
   const x = (e.clientX - stage.getBoundingClientRect().left) / K;
@@ -603,7 +608,7 @@ function holdKey(el, fn) {
   const stop = () => { clearTimeout(t1); clearInterval(t2); };
   el.addEventListener('pointerdown', () => { touch(); fn(); t1 = setTimeout(() => { t2 = setInterval(() => el.disabled ? stop() : fn(), 85); }, 380); });
   for (const ev of ['pointerup', 'pointercancel', 'pointerleave']) el.addEventListener(ev, stop);
-  el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fn(); } });
+  el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); touch(); fn(); } });
 }
 holdKey($('#plus'), () => setTotal(total() + 2.5));
 holdKey($('#minus'), () => setTotal(total() - 2.5));
