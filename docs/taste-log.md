@@ -57,6 +57,21 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: ten-style round, style 1 "Raster", Swiss editorial grid (/_prototypes/raster/)
+Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." This style was given a Swiss editorial grid and one experiment: a numbers-only workout mode, tested on whether it can be read in 3 seconds. First built on Fable; Omar then said "Stop all the working threads and start them again on Opus hi", so the Opus thread took the Fable version (judged 8) and improved it.
+Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. This style has none of what he asked for on 12 Nov (photo, frosted glass), so it is shown as one of ten, not as a lead.
+Built (Today and the live workout, clickable, English and Danish): paper, black, and red only for "what is happening now". One typeface (Archivo, variable width), a 4-column grid, rules instead of boxes.
+- **Today:** the session name "Push" as a giant word, cut by a red block with the start time, then the plan as four numbers, the Coach's line, sleep, readiness, protein and energy as big numbers with thin bars, and the week.
+- **Workout:** weight and reps as two giant numbers with + and − beside them, the sets as a table (today and last time), one black "Done" slab. Numbers roll digit by digit and fly into the table when a set is logged. Rest is a red field the height of the time left that falls as it runs out, with a giant countdown, the next set and ± on it. A new best is a black poster with the old best struck through. Finish turns the page red with the totals.
+- **Numbers-only mode** ("Aa / 12" top right): every word and label goes; only numbers, ×, a slash and "→ 0:00" for skip remain.
+- **The 3-second test** (bottom of Today): a short key to numbers only, then 12 real screens, every lift once with words and once with numbers only (half the lifts numbers-only first, two of them resting), each shown 3 seconds and then hidden, then 2 or 3 questions (weight, reps, which set; or rest left, next set). The result is right answers and seconds per answer for each mode, a careful verdict, and a "Copy result" button so the result can be pasted to Claude.
+Judges (Sonnet design-judges): Fable version 7.5, then 8 (Today 8, Workout 8.5, numbers-only 7.5). Opus version, after the test was added, one fresh judge: 8.5 (Today 8.5, Workout 9, numbers-only 8, the test 7.5). Its fixes were applied, not re-judged: "0:00" for skip became "→ 0:00", the test now uses the same lifts in both modes with the order balanced, 12 screens instead of 6, a key to numbers only before the start, a softer verdict, a larger toggle target, and the question screen shows a giant "12" or "Aa" so the mode is clear.
+An AI cold reader (Gemini Flash, on stills, Fable round) answered every question right in both modes. It lost the unit (kg or lb), the "new best if you get it" hint and the table headings in numbers-only. Not a human number.
+My own score: 8 as a design, about 5 as a fit for Omar's stated taste (no picture, no glass, nothing see-through). The parts worth keeping in any look: the giant weight and reps with steppers, the one-tap Done slab, the red rest field that falls with the time, and the 3-second test as a tool for any screen.
+Needs his phone: the seam of the red field while it falls, the digit roll at 120 Hz, the numbers flying into the table, a large flat red at night.
+Artifact: https://claude.ai/artifact/4yMFXNXZQLkVDtHimCqrkW
+Verdict: waiting for Omar.
+
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.
