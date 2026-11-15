@@ -57,6 +57,19 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
+Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
+Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.
+Built (Today and the live workout, clickable, English and Danish): a cobalt field cut by one hard diagonal, sharp navy frost panels, white slanted name plates, every number in condensed italic (Archivo). Solid white always means you; diagonal hatching always means the ghost, which is you in the same workout last time. Purple, green and yellow are used only for a set's result against the ghost (best ever, better, worse), white is level.
+- **Today:** the session as a fixture, "Push day", You vs Ghost, the kilos to beat, and the last five sessions as W and L. Sleep, protein and body weight as data strips, the Coach as a short radio message, a slow ticker of the week.
+- **Workout:** a race strip with one segment per set, your marker above and the ghost's below moving in real time, and the gap in minutes and seconds. The set on the bar in big numbers with a result plate that changes colour as the weight or reps change. A table of sets, you beside the ghost. One tap logs a set and stamps its result. Rest is a big clock with tenths, your target and how long the ghost rested. A best-ever set gets a purple banner. Finish shows the score, kilos, time and each exercise.
+- **The Coach** talks like a race engineer and acts: "Load 85 kg", with Undo.
+Judge (one fresh design-judge, Sonnet): 8. Its ten defects were small (ghost numbers too dim, result colours used for sleep, an unclear time pill, an empty result sheet, a small Finish target); all fixed, not re-judged. Its biggest weakness for the direction: "dense and loud … closer to a sports-betting or TV score app than a coach", with flat tones and little depth or material.
+My own score: 7.5 as a look for Omar, 8.5 for the ghost race as an idea. The race is the part worth keeping whichever style wins.
+Needs his phone: the frost on the panels, the diagonal wipe between screens, the ghost marker's smoothness.
+Artifact: https://claude.ai/artifact/NbT2qwEsHoNXXrQCzp4XdC
+Verdict: waiting for Omar.
+
 ### 12 Nov 2026, 08:16: Reed and Silk rejected; Oura as the inspiration (/_prototypes/summit/)
 Rejected: Reed and Silk, both of them, about 40 minutes after Silk was published.
 His words: "This is not how I would like it. I wanted to take a look at, make the Aura app as inspiration, like a wallpaper that's very beautiful, like it." ("Aura" is Oura, as on 2 Nov.)
