@@ -1,0 +1,849 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<!--page-->
+<title>Aven Press</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sofia+Sans+Extra+Condensed:wght@600..900&family=Sofia+Sans+Condensed:wght@400..800&family=Newsreader:ital,opsz,wght@0,6..72,400..600;1,6..72,400..600&display=swap">
+<style>
+/* Layout: one phone-sized sheet of paper. Today is the front page, the workout is the feature spread,
+   and a finished workout is printed as a cover. Pages turn sideways; the cover comes up from below. */
+:root {
+  color-scheme: light;
+  --paper: #e9e5da;
+  --paper-2: #d6d2c5;
+  --ink: #14161b;
+  --ink-2: #555963;
+  --rule: rgba(20, 22, 27, .22);
+  --spot: #1d3fd9;
+  --on-spot: #f3f0e8;
+  --mark: #f4d53a;
+  --disp: "Sofia Sans Extra Condensed", "Arial Narrow", Impact, sans-serif;
+  --util: "Sofia Sans Condensed", "Arial Narrow", Arial, sans-serif;
+  --serif: "Newsreader", Georgia, "Times New Roman", serif;
+  --ease: cubic-bezier(.22, 1, .36, 1);
+  --t-tap: 90ms;
+  --t-page: 420ms;
+  --gl: max(20px, env(safe-area-inset-left, 0px));
+  --gr: max(20px, env(safe-area-inset-right, 0px));
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 .08  0 0 0 0 .08  0 0 0 0 .1  0 0 0 .5 -.17'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+:root[data-stock="rosa"] { --paper: #f6e2dd; --paper-2: #e8cec7; --ink-2: #5a4a47; --rule: rgba(20, 22, 27, .26); }
+
+html { box-sizing: border-box; height: 100%; padding: env(safe-area-inset-top, 0px) 0 env(safe-area-inset-bottom, 0px); }
+*, *::before, *::after { box-sizing: inherit; }
+body { height: 100%; margin: 0; background: var(--paper-2); color: var(--ink); font-family: var(--util); -webkit-font-smoothing: antialiased; }
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; margin: 0; cursor: pointer; border-radius: 0; touch-action: manipulation; -webkit-tap-highlight-color: transparent; user-select: none; -webkit-user-select: none; }
+button:focus-visible, label:focus-within { outline: 2px solid var(--spot); outline-offset: 2px; }
+h1, h2, h3, p, figure, blockquote { margin: 0; }
+[hidden] { display: none !important; }
+img { display: block; }
+
+.stage { height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.phone { position: relative; width: 100%; height: 100%; overflow: hidden; overflow: clip; background: var(--paper); isolation: isolate; container-type: size; }
+.hint { display: none; }
+@media (min-width: 520px) {
+  .stage { padding-block: 20px; gap: 14px; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .phone { width: 384px; height: 832px; max-height: calc(100% - 40px); flex: none; border-radius: 34px; box-shadow: 0 0 0 1px rgba(20, 22, 27, .25), 0 30px 60px -30px rgba(20, 22, 27, .5); }
+  .hint { display: block; font: 500 14px/1.4 var(--util); color: var(--ink-2); letter-spacing: .02em; text-align: center; }
+}
+
+/* ---------- pages ---------- */
+.view { position: absolute; inset: 0; display: flex; flex-direction: column; background: var(--grain), var(--paper); transition: transform var(--t-page) var(--ease); will-change: transform; }
+#workout { transform: translateX(100%); }
+#cover { transform: translateY(100%); background: var(--grain), var(--paper-2); }
+.phone[data-view="workout"] #today { transform: translateX(-28%); }
+.phone[data-view="workout"] #workout { transform: none; }
+.phone[data-view="cover"] #cover { transform: none; }
+.phone[data-view="cover"][data-from="workout"] #workout { transform: none; }
+.phone[data-view="cover"][data-from="workout"] #today { transform: translateX(-28%); }
+.scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; }
+.scroll::-webkit-scrollbar { display: none; }
+.pad { padding-left: var(--gl); padding-right: var(--gr); }
+
+/* ---------- shared type ---------- */
+.kicker { font: 800 12px/1 var(--util); letter-spacing: .14em; text-transform: uppercase; color: var(--spot); }
+.agate { font: 600 11px/1.2 var(--util); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.num { font-variant-numeric: tabular-nums; }
+
+/* photographs: printed, never on glass */
+.duo { position: relative; overflow: hidden; isolation: isolate; background: var(--paper); }
+.duo img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.08); }
+.duo.ink img { mix-blend-mode: multiply; }
+.duo.tint { background: #fff; }
+.duo.tint::after { content: ""; position: absolute; inset: 0; background: var(--c, var(--spot)); mix-blend-mode: screen; }
+.duo::before { content: ""; position: absolute; inset: 0; z-index: 2; background: var(--grain); opacity: .9; pointer-events: none; }
+.credit { position: absolute; z-index: 3; right: 5px; bottom: 6px; writing-mode: vertical-rl; transform: rotate(180deg); font: 600 8.5px/1 var(--util); letter-spacing: .12em; text-transform: uppercase; white-space: nowrap; color: rgba(255, 255, 255, .78); }
+
+/* ---------- Today: the front page ---------- */
+.mast { padding-top: 14px; }
+.mast-in { display: flex; align-items: flex-end; justify-content: space-between; padding-bottom: 8px; border-bottom: 3px solid var(--ink); }
+.mast-name { font: 900 60px/.78 var(--disp); letter-spacing: .01em; }
+.mast-meta { text-align: right; display: grid; gap: 4px; padding-bottom: 1px; }
+.mast-meta b { font: 800 12px/1 var(--util); letter-spacing: .12em; text-transform: uppercase; }
+.lead { padding-top: 14px; }
+.hed { font: 900 124px/.8 var(--disp); font-size: clamp(84px, calc(124px - (832px - 100cqh) * .3), 124px); text-transform: uppercase; letter-spacing: -.012em; margin: 10px 0 12px -3px; text-wrap: balance; }
+.hed em { font-style: normal; color: var(--spot); }
+.hed.after { font-size: 92px; line-height: .84; }
+.plate { position: relative; margin-left: calc(var(--gl) * -1); margin-right: calc(var(--gr) * -1); }
+.plate .duo { height: 234px; height: clamp(100px, calc(234px - (832px - 100cqh) * .8), 234px); }
+.plate figcaption { padding: 7px var(--gr) 0 var(--gl); font: italic 400 13.5px/1.3 var(--serif); color: var(--ink-2); }
+.deck { font: 400 19.5px/1.3 var(--serif); margin-top: 12px; text-wrap: pretty; }
+.byline { display: flex; justify-content: space-between; margin-top: 12px; }
+.cta { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 62px; padding: 0 18px 0 20px; margin-top: 10px; background: var(--ink); color: var(--paper); font: 800 31px/1 var(--disp); letter-spacing: .02em; text-transform: uppercase; transition: transform var(--t-tap) ease-out; }
+.cta:active, .log:active, .steps button:active, .ghost:active, .rest-row button:active, .thumb:active { transform: scale(.975); }
+.cta svg { width: 30px; height: 30px; flex: none; }
+.cta.spot { background: var(--spot); color: var(--on-spot); }
+
+.sec { margin-top: 30px; }
+.sec-h { display: flex; align-items: baseline; justify-content: space-between; padding-bottom: 7px; border-bottom: 2px solid var(--ink); }
+.sec-h h2 { font: 800 13px/1 var(--util); letter-spacing: .16em; text-transform: uppercase; }
+.stats { display: grid; grid-template-columns: repeat(3, 1fr); }
+.stat { padding: 12px 0 2px 12px; border-left: 1px solid var(--rule); }
+.stat:first-child { padding-left: 0; border-left: 0; }
+.stat b { display: block; font: 800 50px/.9 var(--disp); }
+.stat b small { font: 700 20px/1 var(--disp); margin-left: 2px; }
+.stat span { display: block; margin-top: 5px; font: 700 12px/1.1 var(--util); letter-spacing: .08em; text-transform: uppercase; }
+.stat i { display: block; margin-top: 3px; font: italic 400 13px/1.25 var(--serif); color: var(--ink-2); }
+.pull { margin-top: 32px; }
+.pull::before { content: "\201C"; display: block; height: 40px; margin-left: -2px; font: 900 104px/.92 var(--disp); color: var(--spot); overflow: hidden; }
+.pull p { font: italic 400 25px/1.16 var(--serif); letter-spacing: -.005em; text-wrap: pretty; }
+.pull footer { margin-top: 10px; }
+.toc { list-style: none; margin: 0; padding: 0; }
+.toc li { display: grid; grid-template-columns: 40px 1fr auto; align-items: baseline; gap: 4px; padding: 11px 0 10px; border-bottom: 1px solid var(--rule); }
+.toc .n { font: 800 30px/.9 var(--disp); color: var(--spot); }
+.toc .t { font: 500 20px/1.1 var(--serif); }
+.toc .d { font: 700 13px/1 var(--util); letter-spacing: .06em; }
+.toc .aside { grid-column: 2 / 4; margin-top: 3px; font: italic 400 13.5px/1.25 var(--serif); color: var(--ink-2); }
+.shelf-row { display: flex; gap: 14px; overflow-x: auto; padding: 14px var(--gr) 6px var(--gl); margin: 0 calc(var(--gr) * -1) 0 calc(var(--gl) * -1); scrollbar-width: none; }
+.shelf-row::-webkit-scrollbar { display: none; }
+.thumb { flex: none; width: 120px; text-align: left; transition: transform var(--t-tap) ease-out; }
+.thumb-box { position: relative; width: 120px; height: 160px; box-shadow: 0 10px 16px -12px rgba(20, 22, 27, .7), 0 0 0 .5px rgba(20, 22, 27, .3); }
+.thumb-box .mag { position: absolute; left: 0; top: 0; transform: scale(.3488); transform-origin: 0 0; box-shadow: none; }
+.thumb-box .mag-top, .thumb-box .mag-lines, .thumb-box .mag-kick, .thumb-box .mag-deck, .thumb-box .mag-code { display: none; }
+.thumb-box .mag-hed { font-size: 92px; }
+.thumb-box .mag-hed.m, .thumb-box .mag-hed.l { font-size: 78px; }
+.thumb b { display: block; margin-top: 9px; font: 800 12px/1 var(--util); letter-spacing: .1em; text-transform: uppercase; }
+.thumb span { display: block; margin-top: 3px; font: italic 400 13px/1.2 var(--serif); color: var(--ink-2); }
+.thumb.new .thumb-box::after { content: "New"; position: absolute; left: -4px; top: 10px; padding: 3px 7px 2px; background: var(--mark); color: var(--ink); font: 800 11px/1 var(--util); letter-spacing: .12em; text-transform: uppercase; }
+.thumb.land { animation: shelve 520ms var(--ease) backwards; }
+@keyframes shelve { from { transform: translateY(-26px) rotate(-5deg); opacity: 0; } }
+.colophon { margin-top: 30px; padding-top: 12px; padding-bottom: 96px; border-top: 3px solid var(--ink); display: grid; gap: 14px; }
+.stock { display: flex; align-items: center; gap: 8px; }
+.stock button, .textbtn { height: 44px; padding: 0 14px; border: 2px solid var(--ink); font: 700 13px/1 var(--util); letter-spacing: .1em; text-transform: uppercase; }
+.stock button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.fine { font: italic 400 13px/1.35 var(--serif); color: var(--ink-2); }
+.tabs { position: absolute; left: 0; right: 0; bottom: 0; display: flex; padding: 0 var(--gr) env(safe-area-inset-bottom, 0px) var(--gl); background: var(--grain), var(--paper); border-top: 2px solid var(--ink); }
+.tabs button { position: relative; flex: 1; height: 58px; font: 700 13.5px/1 var(--util); letter-spacing: .1em; text-transform: uppercase; color: var(--ink-2); }
+.tabs button[aria-current="page"] { color: var(--ink); font-weight: 800; }
+.tabs button[aria-current="page"]::before { content: ""; position: absolute; left: 50%; top: -2px; width: 34px; height: 5px; margin-left: -17px; background: var(--spot); }
+
+/* ---------- running head (workout and cover) ---------- */
+.run { position: relative; z-index: 3; transition: color 90ms ease-out, border-color 90ms ease-out; flex: none; display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; height: 54px; border-bottom: 3px solid var(--ink); margin-left: var(--gl); margin-right: var(--gr); }
+.run-mid { text-align: center; display: grid; gap: 4px; }
+.run-mid b { font: 800 13px/1 var(--util); letter-spacing: .16em; text-transform: uppercase; }
+.run-mid span { font: 600 13px/1 var(--util); letter-spacing: .06em; color: var(--ink-2); transition: color 90ms ease-out; }
+#workout.resting .run, #workout.resting .run-mid span { color: var(--on-spot); border-color: var(--on-spot); transition-duration: 140ms; transition-delay: 230ms; }
+#workout.resting .ghost { border-color: var(--on-spot); transition: border-color 140ms ease-out 230ms; }
+.back { justify-self: start; height: 48px; padding-right: 14px; font: 700 13px/1 var(--util); letter-spacing: .1em; text-transform: uppercase; display: flex; align-items: center; gap: 4px; }
+.back svg { width: 16px; height: 16px; }
+.ghost { justify-self: end; height: 44px; padding: 0 12px; border: 1.5px solid var(--ink); font: 800 12px/1 var(--util); letter-spacing: .12em; text-transform: uppercase; transition: transform var(--t-tap) ease-out; }
+
+/* ---------- Workout: the feature spread ---------- */
+.wk-main { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; scrollbar-width: none; }
+.wk-main::-webkit-scrollbar { display: none; }
+.strip { flex: 1 1 112px; min-height: 52px; max-height: 150px; }
+.wk-body { flex: none; padding-top: 12px; }
+@container (max-height: 730px) { .strip { display: none; } }
+.prog { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
+.prog i { display: flex; gap: 3px; }
+.prog u { width: 9px; height: 9px; border: 1.5px solid var(--ink); }
+.prog u.d { background: var(--ink); }
+.prog u.c { background: var(--spot); border-color: var(--spot); }
+.prog span { margin-left: auto; }
+.wk-swap { transition: opacity 160ms ease-out, transform 220ms var(--ease); }
+.wk-swap.out { opacity: 0; transform: translateX(-18px); transition-duration: 110ms; }
+.wk-hed { font: 900 66px/.84 var(--disp); text-transform: uppercase; letter-spacing: -.008em; margin: 8px 0 7px -2px; text-wrap: balance; }
+.wk-hed.long { font-size: 50px; }
+.wk-last { font: italic 400 15px/1.25 var(--serif); color: var(--ink-2); }
+.fig { display: grid; grid-template-columns: 1.5fr 1fr; margin-top: 11px; border-top: 2px solid var(--ink); }
+.fig-col { padding: 10px 0 12px; min-width: 0; }
+.fig-col + .fig-col { padding-left: 16px; border-left: 1px solid var(--rule); }
+.fig-col:first-child { padding-right: 16px; }
+.fig-num { display: block; font: 900 116px/.84 var(--disp); letter-spacing: -.015em; margin: 4px 0 8px -3px; }
+.steps { display: flex; gap: 8px; }
+.steps button { flex: 1; height: 50px; border: 1.5px solid var(--ink); font: 800 16px/1 var(--util); letter-spacing: .04em; transition: transform var(--t-tap) ease-out, background-color var(--t-tap); }
+.steps button:active { background: var(--ink); color: var(--paper); }
+.steps button:disabled { opacity: .3; cursor: default; }
+.box { width: 100%; border-collapse: collapse; border-top: 2px solid var(--ink); font-variant-numeric: tabular-nums; }
+.box th { padding: 7px 0 5px; text-align: left; font: 700 10.5px/1 var(--util); letter-spacing: .12em; text-transform: uppercase; color: var(--ink-2); border-bottom: 1px solid var(--rule); }
+.box td { height: 30px; padding: 0; font: 600 16px/1 var(--util); border-bottom: 1px solid var(--rule); color: var(--ink-2); white-space: nowrap; }
+.box td:first-child, .box th:first-child { width: 38px; }
+.box tr.done td { color: var(--ink); font-weight: 800; }
+.box tr.cur td { color: var(--spot); font-weight: 800; }
+.box tr.cur td:first-child::after { content: " \25B8"; }
+.box .last { font: italic 400 14.5px/1 var(--serif); color: var(--ink-2); font-weight: 400; }
+.box .res { position: relative; }
+.stamp { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; margin-left: 7px; vertical-align: -4px; border-radius: 50%; background: var(--spot); color: var(--on-spot); transform: rotate(-8deg); }
+.stamp svg { width: 12px; height: 12px; }
+.stamp.hit { animation: stamp 260ms var(--ease) both; }
+@keyframes stamp { from { transform: rotate(-24deg) scale(2.1); opacity: 0; } }
+.tag { display: inline-block; margin-left: 7px; padding: 3px 5px 2px; vertical-align: 1px; font: 800 10px/1 var(--util); letter-spacing: .1em; text-transform: uppercase; background: var(--mark); color: var(--ink); }
+.coachline { margin-top: 10px; padding-left: 12px; border-left: 3px solid var(--spot); font: italic 400 15.5px/1.25 var(--serif); }
+.coachline b { font: 800 10.5px/1 var(--util); font-style: normal; letter-spacing: .14em; text-transform: uppercase; color: var(--spot); display: block; margin-bottom: 3px; }
+.wk-foot { flex: none; padding-top: 12px; padding-bottom: max(16px, env(safe-area-inset-bottom, 0px)); }
+.log { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 68px; padding: 0 16px 0 20px; background: var(--ink); color: var(--paper); transition: transform var(--t-tap) ease-out; }
+.log b { font: 800 35px/1 var(--disp); letter-spacing: .02em; text-transform: uppercase; }
+.log span { display: flex; align-items: center; gap: 10px; font: 700 17px/1 var(--util); letter-spacing: .04em; }
+.log svg { width: 34px; height: 34px; padding: 7px; border-radius: 50%; background: var(--paper); color: var(--ink); }
+.log.print { background: var(--spot); color: var(--on-spot); }
+.log.print svg { background: var(--on-spot); color: var(--spot); }
+
+/* rest: a full page of colour */
+.rest { position: absolute; left: 0; right: 0; top: 0; bottom: 0; display: flex; flex-direction: column; background: var(--spot); color: var(--on-spot); transform: translateY(102%); transition: transform 380ms var(--ease); will-change: transform; padding: 54px var(--gr) max(16px, env(safe-area-inset-bottom, 0px)) var(--gl); }
+.rest.on { transform: none; }
+.rest::before { content: ""; position: absolute; inset: 0; background: var(--grain); opacity: .7; pointer-events: none; }
+.rest > * { position: relative; }
+.press { margin: 12px calc(var(--gr) * -1) 0 calc(var(--gl) * -1); padding: 11px var(--gr) 9px var(--gl); background: var(--mark); color: var(--ink); }
+.press b { display: block; font: 800 11px/1 var(--util); letter-spacing: .2em; text-transform: uppercase; }
+.press span { display: block; margin-top: 3px; font: 900 34px/.9 var(--disp); text-transform: uppercase; }
+.press { transform: translateX(-100%); transition: transform 420ms 200ms var(--ease); }
+.rest.on .press { transform: none; }
+.rest:not(.on) .press { transition-delay: 0s; }
+.rest-top { display: flex; align-items: flex-start; justify-content: space-between; padding-top: 14px; }
+.rest-top .kicker { color: var(--on-spot); }
+.rest-top p + p { margin-top: 7px; font: italic 400 16px/1.2 var(--serif); }
+.undo { height: 44px; margin-top: -8px; padding: 0 0 0 16px; font: 700 12px/1 var(--util); letter-spacing: .12em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 4px; }
+.rest-mid { flex: 1 1 auto; min-height: 150px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; }
+.rest-vs { font: italic 400 21px/1.2 var(--serif); text-align: center; }
+.rest-time { font: 900 200px/.8 var(--disp); font-size: clamp(120px, 25cqh, 208px); letter-spacing: -.01em; font-variant-numeric: tabular-nums; }
+.bar { position: relative; height: 14px; overflow: hidden; background: repeating-linear-gradient(90deg, var(--on-spot) 0 8px, transparent 8px 11.5px); }
+.bar i { position: absolute; inset: 0; background: var(--spot); opacity: .78; }
+.bar i.run-a { animation: drain linear both; }
+@keyframes drain { from { transform: translateX(100%); } }
+.next { margin-top: 16px; padding-top: 12px; border-top: 2px solid var(--on-spot); }
+.next .agate { color: var(--on-spot); opacity: .8; }
+.next h3 { margin-top: 6px; font: 800 38px/.92 var(--disp); text-transform: uppercase; }
+.next p { margin-top: 6px; font: italic 400 16px/1.25 var(--serif); }
+.rest-row { display: flex; gap: 8px; margin-top: 16px; }
+.rest-row button { height: 60px; transition: transform var(--t-tap) ease-out; }
+.rest-row .adj { width: 64px; border: 1.5px solid var(--on-spot); font: 800 18px/1 var(--util); letter-spacing: .04em; }
+.rest-row .skip { flex: 1; display: flex; align-items: center; justify-content: space-between; padding: 0 14px 0 18px; background: var(--on-spot); color: var(--spot); font: 800 30px/1 var(--disp); letter-spacing: .02em; text-transform: uppercase; }
+.rest-row .skip svg { width: 28px; height: 28px; }
+
+/* a paper slip for confirm and notices */
+.slip { position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; padding: 18px var(--gr) max(18px, env(safe-area-inset-bottom, 0px)) var(--gl); background: var(--grain), var(--paper); border-top: 3px solid var(--ink); box-shadow: 0 -24px 40px -20px rgba(20, 22, 27, .45); transform: translateY(calc(110% + 56px)); transition: transform 320ms var(--ease); will-change: transform; }
+.slip.on { transform: none; }
+.slip h3 { font: 800 36px/.92 var(--disp); text-transform: uppercase; }
+.slip p { margin-top: 6px; font: 400 16px/1.3 var(--serif); }
+.slip-row { display: flex; gap: 8px; margin-top: 14px; }
+.slip-row button { flex: 1; height: 56px; border: 1.5px solid var(--ink); font: 800 14px/1 var(--util); letter-spacing: .1em; text-transform: uppercase; }
+.slip-row button.solid { background: var(--ink); color: var(--paper); }
+.toast { position: absolute; left: var(--gl); right: var(--gr); top: 64px; z-index: 6; padding: 12px 14px; background: var(--ink); color: var(--paper); font: 400 15px/1.3 var(--serif); opacity: 0; transform: translateY(-10px); transition: opacity 180ms ease-out, transform 240ms var(--ease); pointer-events: none; will-change: transform, opacity; }
+.toast.on { opacity: 1; transform: none; }
+
+/* ---------- the cover ---------- */
+.cover-in { padding-top: 18px; padding-bottom: max(22px, env(safe-area-inset-bottom, 0px)); display: grid; gap: 16px; justify-items: center; }
+.mag-fit { position: relative; width: 344px; height: 458px; }
+.mag { position: relative; width: 344px; height: 458px; overflow: hidden; background: var(--c); color: var(--on); box-shadow: 0 26px 34px -22px rgba(20, 22, 27, .75), 0 0 0 .5px rgba(20, 22, 27, .35); }
+.mag-fit.printing .mag { animation: print 620ms 280ms var(--ease) backwards; }
+@keyframes print { from { transform: translateY(70px) rotate(-5deg) scale(.92); opacity: 0; } }
+.mag-photo { position: absolute; inset: 0; }
+.mag-photo.duo { background: #fff; }
+.mag-scrim { position: absolute; inset: 0; z-index: 3; background: linear-gradient(to bottom, color-mix(in srgb, var(--c) 82%, transparent), transparent 40%), linear-gradient(to top, var(--c) 19%, transparent 62%), linear-gradient(to right, color-mix(in srgb, var(--c) 62%, transparent), transparent 52%); }
+.mag-art { position: absolute; left: -6px; right: 0; top: 118px; font: 900 330px/.8 var(--disp); letter-spacing: -.03em; opacity: var(--art-o, .17); white-space: nowrap; }
+.mag-top { position: absolute; z-index: 4; left: 16px; right: 16px; top: 13px; display: flex; justify-content: space-between; font: 700 10px/1 var(--util); letter-spacing: .16em; text-transform: uppercase; }
+.mag-mast { position: absolute; z-index: 4; left: 12px; top: 26px; font: 900 150px/.8 var(--disp); letter-spacing: .035em; }
+.mag-lines { position: absolute; z-index: 4; left: 16px; top: 153px; width: 104px; display: grid; gap: 9px; }
+.mag-lines div { padding-top: 6px; border-top: 1.5px solid currentColor; }
+.mag-lines b { display: block; font: 800 26px/.9 var(--disp); color: var(--hi); }
+.mag-lines span { display: block; margin-top: 2px; font: 700 10.5px/1.15 var(--util); letter-spacing: .1em; text-transform: uppercase; }
+.mag-main { position: absolute; z-index: 4; left: 16px; right: 16px; bottom: 14px; }
+.mag-kick { display: inline-block; padding: 4px 7px 3px; background: var(--hi); color: var(--hi-on); font: 800 10.5px/1 var(--util); letter-spacing: .16em; text-transform: uppercase; }
+.mag-hed { margin: 8px 0 0 -2px; font: 900 84px/.8 var(--disp); text-transform: uppercase; letter-spacing: -.01em; text-wrap: balance; }
+.mag-hed.s { font-size: 76px; }
+.mag-hed.m { font-size: 70px; }
+.mag-hed.l { font-size: 58px; line-height: .84; }
+.mag-deck { margin: 9px 76px 0 0; font: italic 400 14.5px/1.22 var(--serif); }
+.mag-hed.swap, .mag-deck.swap { animation: swap 300ms var(--ease) both; }
+@keyframes swap { from { transform: translateY(14px); opacity: 0; } }
+.mag-badge { position: absolute; z-index: 4; right: 14px; top: 150px; width: 62px; height: 62px; border-radius: 50%; display: grid; place-content: center; text-align: center; background: var(--hi); color: var(--hi-on); transform: rotate(9deg); }
+.mag-badge b { font: 900 27px/.82 var(--disp); }
+.mag-badge span { font: 800 9.5px/1 var(--util); letter-spacing: .14em; }
+.mag-code { position: absolute; z-index: 4; right: 16px; bottom: 16px; width: 60px; padding: 5px 5px 3px; background: #fff; color: #14161b; }
+.mag-code i { display: flex; height: 24px; align-items: stretch; }
+.mag-code i u { background: #14161b; margin-right: 1px; }
+.mag-code span { display: block; margin-top: 2px; font: 700 7px/1 var(--util); letter-spacing: .12em; text-align: center; }
+.why { width: 344px; max-width: 100%; padding-top: 10px; border-top: 2px solid var(--ink); }
+.why p { margin-top: 6px; font: 400 15.5px/1.32 var(--serif); }
+.cover-act { width: 344px; max-width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cover-act .textbtn { display: flex; align-items: center; justify-content: center; text-align: center; height: 50px; padding: 0 8px; cursor: pointer; }
+.cover-act .cta { grid-column: 1 / 3; margin-top: 0; }
+.cover-act input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 1ms !important; animation-duration: 1ms !important; animation-delay: 0ms !important; }
+  .bar i.run-a { animation: none; opacity: 0; }
+}
+</style>
+</head>
+<body>
+<!--body-->
+<div class="stage">
+<div class="phone" id="phone" data-view="today">
+
+  <!-- ===== Today ===== -->
+  <section class="view" id="today" aria-label="Today">
+    <div class="scroll" id="todayScroll">
+      <header class="mast pad">
+        <div class="mast-in">
+          <div class="mast-name">AVEN</div>
+          <div class="mast-meta"><b>No. 214</b><span class="agate">Sunday 15 November</span></div>
+        </div>
+      </header>
+
+      <article class="lead pad">
+        <p class="kicker" id="leadKick">Cover story · Push day</p>
+        <h1 class="hed" id="leadHed">One set<br>from <em>85</em></h1>
+        <figure class="plate">
+          <div class="duo ink"><img src="img/chalk.jpg" alt="Chalked hands being clapped together before a lift"><span class="credit">Photo Tima Miroshnichenko</span></div>
+          <figcaption id="leadCap">Friday's last set went 82.5 kg × 6, and it moved fast.</figcaption>
+        </figure>
+        <p class="deck" id="leadDeck">Three weeks at 82.5 kg on the bench. You slept 7 h 42 and got 142 g of protein yesterday. Tonight the bar moves.</p>
+        <div class="byline"><span class="agate">By your Coach</span><span class="agate" id="leadMeta">3 exercises · 10 sets · about 30 min</span></div>
+        <button class="cta" id="startBtn"><span id="startLab">Start Push day</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M4 12h15M13 5.5 19.5 12 13 18.5"/></svg></button>
+      </article>
+
+      <section class="sec pad" aria-label="The numbers">
+        <div class="sec-h"><h2>The numbers</h2><span class="agate">This morning, 07:42</span></div>
+        <div class="stats">
+          <div class="stat"><b class="num">7:42</b><span>Sleep</span><i>31 min over your average</i></div>
+          <div class="stat"><b class="num">142<small>g</small></b><span>Protein</span><i>yesterday, of 150</i></div>
+          <div class="stat"><b class="num">78.4</b><span>Weight, kg</span><i>down 0.3 this week</i></div>
+        </div>
+      </section>
+
+      <blockquote class="pull pad">
+        <p>Protein was under 120 grams four days last week. Yesterday you hit 142. Keep that up and the bench follows.</p>
+        <footer class="agate">The Coach, this morning</footer>
+      </blockquote>
+
+      <section class="sec pad" aria-label="In this issue">
+        <div class="sec-h"><h2>In this issue</h2><span class="agate">Tonight's session</span></div>
+        <ol class="toc" id="toc"></ol>
+      </section>
+
+      <section class="sec pad" aria-label="Back issues">
+        <div class="sec-h"><h2>Back issues</h2><span class="agate">One cover per workout</span></div>
+        <div class="shelf-row" id="shelf"></div>
+      </section>
+
+      <footer class="colophon pad">
+        <div class="stock" role="group" aria-label="Paper stock">
+          <span class="agate">Paper</span>
+          <button id="stockNews" aria-pressed="true">Newsprint</button>
+          <button id="stockRosa" aria-pressed="false">Rosa</button>
+        </div>
+        <button class="textbtn" id="skipAhead" style="justify-self:start">Skip ahead to the last set</button>
+        <p class="fine">A look prototype: Today and the live workout are built, in English. Photographs by Tima Miroshnichenko, César Pérez, Muhammet Raşit Kaplan and Victor Freitas on Pexels.</p>
+      </footer>
+    </div>
+    <nav class="tabs" aria-label="Sections">
+      <button aria-current="page">Today</button>
+      <button data-soon="Train">Train</button>
+      <button data-soon="Food">Food</button>
+      <button data-soon="Health">Health</button>
+      <button data-soon="Coach">Coach</button>
+    </nav>
+  </section>
+
+  <!-- ===== Workout ===== -->
+  <section class="view" id="workout" aria-label="Workout" inert>
+    <header class="run">
+      <button class="back" id="wkBack"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>Today</button>
+      <div class="run-mid"><b>Push day</b><span class="num" id="clock">00:00</span></div>
+      <button class="ghost" id="finishBtn">Finish</button>
+    </header>
+    <div class="wk-main">
+      <div class="strip duo tint"><img id="stripImg" src="img/bench.jpg" alt=""><span class="credit" id="stripCredit">Photo César Pérez</span></div>
+      <div class="wk-body pad">
+        <div class="prog" id="prog"></div>
+        <div class="wk-swap" id="wkSwap">
+          <p class="kicker" id="wkKick"></p>
+          <h1 class="wk-hed" id="wkHed"></h1>
+          <p class="wk-last" id="wkLast"></p>
+        </div>
+        <div class="fig">
+          <div class="fig-col">
+            <span class="agate" id="kgLab">Weight, kg</span>
+            <output class="fig-num num" id="kg"></output>
+            <div class="steps"><button id="kgDown" aria-label="Less weight"></button><button id="kgUp" aria-label="More weight"></button></div>
+          </div>
+          <div class="fig-col">
+            <span class="agate">Reps</span>
+            <output class="fig-num num" id="reps"></output>
+            <div class="steps"><button id="repDown" aria-label="One rep fewer">− 1</button><button id="repUp" aria-label="One rep more">+ 1</button></div>
+          </div>
+        </div>
+        <table class="box" id="box"></table>
+        <p class="coachline" id="coachline"></p>
+      </div>
+    </div>
+    <div class="wk-foot pad">
+      <button class="log" id="logBtn"><b id="logLab"></b><span><i id="logSub" style="font-style:normal"></i><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg></span></button>
+    </div>
+
+    <div class="rest" id="rest" inert>
+      <div class="press" id="press" hidden><b>Stop press</b><span id="pressText"></span></div>
+      <div class="rest-top">
+        <div><p class="kicker">Rest</p><p id="restDone"></p></div>
+        <button class="undo" id="undoBtn">Undo set</button>
+      </div>
+      <div class="rest-mid"><div class="rest-time" id="restTime" role="timer" aria-live="off">0:00</div><p class="rest-vs" id="restVs"></p></div>
+      <div class="bar"><i id="barVeil"></i></div>
+      <div class="next">
+        <span class="agate">Up next</span>
+        <h3 id="nextHed"></h3>
+        <p id="nextCue"></p>
+      </div>
+      <div class="rest-row">
+        <button class="adj" id="restMinus" aria-label="15 seconds less">− 15</button>
+        <button class="adj" id="restPlus" aria-label="15 seconds more">+ 15</button>
+        <button class="skip" id="skipBtn"><span>Skip rest</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M4 12h15M13 5.5 19.5 12 13 18.5"/></svg></button>
+      </div>
+    </div>
+
+    <div class="slip" id="slip" inert>
+      <h3 id="slipHed"></h3>
+      <p id="slipText"></p>
+      <div class="slip-row"><button id="slipNo">Keep going</button><button class="solid" id="slipYes">Finish and print</button></div>
+    </div>
+  </section>
+
+  <!-- ===== Cover ===== -->
+  <section class="view" id="cover" aria-label="Cover" inert>
+    <header class="run">
+      <button class="back" id="coverBack"><svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M10 3 5 8l5 5"/></svg>Today</button>
+      <div class="run-mid"><b id="coverNo">Issue No. 214</b><span id="coverSub">Printed tonight</span></div>
+      <span></span>
+    </header>
+    <div class="scroll" id="coverScroll">
+      <div class="cover-in pad">
+        <div class="mag-fit" id="magFit"></div>
+        <div class="why" id="why"><span class="agate">Why this headline</span><p id="whyText"></p></div>
+        <div class="cover-act" id="coverAct">
+          <button class="textbtn" id="altBtn">Another headline</button>
+          <label class="textbtn" for="photoIn">Use my photo<input type="file" accept="image/*" id="photoIn"></label>
+          <button class="cta" id="shelfBtn"><span>Put it on the shelf</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M4 12h15M13 5.5 19.5 12 13 18.5"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast" role="status"></div>
+</div>
+<p class="hint">Start the workout, log a few sets, then finish to print the cover.</p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var phone = $('phone');
+  var CHECK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" aria-hidden="true"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>';
+
+  // ----- the session on the page (a made-up lifter; nothing here is real data) -----
+  var PLAN = [
+    { name: 'Bench press', short: 'Bench', step: 2.5, rest: 150, per: 1, best: { kg: 82.5, reps: 6 }, stall: 'since 25 October',
+      sets: [[80, 6], [82.5, 6], [82.5, 6], [85, 5]], last: [[80, 6], [82.5, 6], [82.5, 6], [82.5, 5]],
+      cue: 'Set 2 moved fast on Friday. Keep the same grip and 85 is there on the last set.', img: 'img/bench.jpg', by: 'César Pérez' },
+    { name: 'Incline dumbbell press', short: 'Incline press', step: 2, rest: 90, per: 2, best: { kg: 26, reps: 10 },
+      sets: [[26, 10], [26, 10], [26, 9]], last: [[26, 10], [26, 9], [26, 8]],
+      cue: 'Last time the reps fell off after set one. Take the full rest.', img: 'img/plates.jpg', by: 'Victor Freitas' },
+    { name: 'Triceps pushdown', short: 'Pushdown', step: 2.5, rest: 75, per: 1, best: { kg: 35, reps: 12 },
+      sets: [[35, 12], [35, 12], [35, 12]], last: [[35, 12], [35, 12], [35, 10]],
+      cue: 'Two reps short on the last set on Friday. Get all twelve.', img: 'img/chalk.jpg', by: 'Tima Miroshnichenko' }
+  ];
+  var TOTAL = PLAN.reduce(function (n, e) { return n + e.sets.length; }, 0);
+  var ISSUE_NO = 214;
+
+  var S = { started: false, finished: false, ex: 0, set: 0, logged: PLAN.map(function () { return []; }), kg: 0, reps: 0,
+            phase: 'set', clockBase: 0, clockFrom: 0, restEnd: 0, restTotal: 0, variant: 0, photo: null, issue: null };
+
+  function fmt(n) { return (Math.round(n * 10) / 10).toString(); }
+  function pair(p) { return fmt(p[0]) + ' × ' + p[1]; }
+  function doneCount() { return S.logged.reduce(function (n, a) { return n + a.length; }, 0); }
+  function isRecord(ex, kg, reps) { return kg > ex.best.kg || (kg === ex.best.kg && reps > ex.best.reps); }
+  function versus(ex, i, kg, reps) {
+    var l = ex.last[i]; if (!l) return 'No set to compare with on Friday.';
+    if (kg !== l[0]) return fmt(Math.abs(kg - l[0])) + ' kg ' + (kg > l[0] ? 'more' : 'less') + ' than Friday\u2019s set ' + (i + 1) + '.';
+    if (reps === l[1]) return 'Level with Friday\u2019s set ' + (i + 1) + '.';
+    var d = Math.abs(reps - l[1]);
+    return (d === 1 ? 'One rep ' : d + ' reps ') + (reps > l[1] ? 'more' : 'fewer') + ' than Friday\u2019s set ' + (i + 1) + '.';
+  }
+  function beatsLast(ex, i, kg, reps) { var l = ex.last[i]; return !!l && (kg > l[0] || (kg === l[0] && reps > l[1])); }
+
+  // ----- pages -----
+  function show(view, from) {
+    phone.dataset.view = view;
+    if (from) phone.dataset.from = from; else delete phone.dataset.from;
+    ['today', 'workout', 'cover'].forEach(function (v) { $(v).inert = v !== view; });
+  }
+  var toastT;
+  function toast(msg) {
+    var t = $('toast'); t.textContent = msg; t.classList.add('on');
+    clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('on'); }, 2600);
+  }
+
+  // ----- Today -----
+  $('toc').innerHTML = PLAN.map(function (e, i) {
+    var top = e.sets[e.sets.length - 1];
+    var tag = i === 0 ? 'Record attempt on the last set: 85 kg. Your best is 82.5.' : (i === 1 ? 'Dumbbells, kg each. One more rep than Friday on sets two and three.' : 'All twelve on every set this time.');
+    return '<li><span class="n num">0' + (i + 1) + '</span><span class="t">' + e.name + '</span><span class="d num">' + e.sets.length + ' sets · top ' + fmt(top[0]) + ' kg</span><span class="aside">' + tag + '</span></li>';
+  }).join('');
+
+  document.querySelectorAll('.tabs [data-soon]').forEach(function (b) {
+    b.addEventListener('click', function () { toast(b.dataset.soon + ' is not printed yet. This prototype has Today and the live workout.'); });
+  });
+  function setStock(rosa) {
+    if (rosa) document.documentElement.dataset.stock = 'rosa'; else delete document.documentElement.dataset.stock;
+    $('stockRosa').setAttribute('aria-pressed', rosa); $('stockNews').setAttribute('aria-pressed', !rosa);
+  }
+  $('stockNews').addEventListener('click', function () { setStock(false); });
+  $('stockRosa').addEventListener('click', function () { setStock(true); });
+
+  $('startBtn').addEventListener('click', function () {
+    if (S.finished) { openCover(S.issue, true); return; }
+    if (!S.started) startWorkout();
+    show('workout');
+  });
+  $('skipAhead').addEventListener('click', function () {
+    if (S.finished) { toast('Issue No. ' + ISSUE_NO + ' is already printed.'); return; }
+    if (!S.started) startWorkout();
+    closeRest();
+    PLAN.forEach(function (e, i) {
+      var upTo = i === PLAN.length - 1 ? e.sets.length - 1 : e.sets.length;
+      for (var j = S.logged[i].length; j < upTo; j++) {
+        S.logged[i].push({ kg: e.sets[j][0], reps: e.sets[j][1], rec: isRecord(e, e.sets[j][0], e.sets[j][1]), i: j });
+        S.clockBase += 45 + e.rest;
+      }
+    });
+    S.ex = PLAN.length - 1; S.set = PLAN[S.ex].sets.length - 1; S.phase = 'set';
+    loadTarget(); renderSet(); show('workout');
+  });
+
+  // ----- workout -----
+  function startWorkout() {
+    S.started = true; S.clockFrom = Date.now();
+    loadTarget(); renderSet();
+    PLAN.map(function (e) { return e.img; }).concat('img/cover.jpg').forEach(function (src) { var im = new Image(); im.src = src; if (im.decode) im.decode().catch(function () {}); });
+    $('startLab').textContent = 'Back to Push day';
+    setInterval(tick, 250);
+  }
+  function loadTarget() { var t = PLAN[S.ex].sets[S.set]; S.kg = t[0]; S.reps = t[1]; }
+  function clockSecs() { return S.clockBase + (S.finished ? 0 : Math.floor((Date.now() - S.clockFrom) / 1000)); }
+  function mmss(s) { s = Math.max(0, Math.round(s)); var m = Math.floor(s / 60), r = s % 60; return (m < 10 ? '0' : '') + m + ':' + (r < 10 ? '0' : '') + r; }
+  var lastClock = '', lastRest = '';
+  function tick() {
+    if (!S.finished) { var c = mmss(clockSecs()); if (c !== lastClock) { $('clock').textContent = lastClock = c; } }
+    if (S.phase === 'rest') {
+      var rem = Math.ceil((S.restEnd - Date.now()) / 1000);
+      if (rem <= 0) { endRest(); return; }
+      var t = Math.floor(rem / 60) + ':' + (rem % 60 < 10 ? '0' : '') + rem % 60;
+      if (t !== lastRest) { $('restTime').textContent = lastRest = t; }
+    }
+  }
+
+  function renderProg() {
+    var left = TOTAL - doneCount();
+    $('prog').innerHTML = PLAN.map(function (e, i) {
+      return '<i>' + e.sets.map(function (_, j) {
+        var c = j < S.logged[i].length ? 'd' : (i === S.ex && j === S.set && S.phase !== 'done' ? 'c' : '');
+        return '<u class="' + c + '"></u>';
+      }).join('') + '</i>';
+    }).join('') + '<span class="agate num">' + (left ? left + (left === 1 ? ' set to go' : ' sets to go') : 'All ' + TOTAL + ' sets logged') + '</span>';
+  }
+  function renderBox(hit) {
+    var ex = PLAN[S.ex], rows = '';
+    ex.sets.forEach(function (t, j) {
+      var lg = S.logged[S.ex][j], cls = lg ? 'done' : (j === S.set && S.phase !== 'done' ? 'cur' : '');
+      var res = lg ? pair([lg.kg, lg.reps]) + '<span class="stamp' + (hit && j === S.logged[S.ex].length - 1 ? ' hit' : '') + '">' + CHECK + '</span>' + (lg.rec ? '<span class="tag">Record</span>' : '')
+                   : (isRecord(ex, t[0], t[1]) ? '<span class="tag">Record try</span>' : '');
+      rows += '<tr class="' + cls + '"><td>' + (j + 1) + '</td><td>' + pair(t) + '</td><td class="res">' + res + '</td><td class="last">' + (ex.last[j] ? pair(ex.last[j]) : '') + '</td></tr>';
+    });
+    $('box').innerHTML = '<thead><tr><th>Set</th><th>Plan</th><th>Logged</th><th>Friday</th></tr></thead><tbody>' + rows + '</tbody>';
+  }
+  function renderFig() {
+    $('kg').textContent = fmt(S.kg); $('reps').textContent = S.reps;
+    var ex = PLAN[S.ex];
+    $('kgDown').textContent = '− ' + fmt(ex.step); $('kgUp').textContent = '+ ' + fmt(ex.step);
+    $('kgLab').textContent = ex.per === 2 ? 'Weight, kg each' : 'Weight, kg';
+    ['kgDown', 'kgUp', 'repDown', 'repUp'].forEach(function (id) { $(id).disabled = S.phase === 'done'; });
+    if (S.phase === 'done') {
+      $('logLab').textContent = 'Print the cover'; $('logSub').textContent = 'No. ' + ISSUE_NO;
+      $('logBtn').classList.add('print');
+    } else {
+      $('logLab').textContent = 'Log set ' + (S.set + 1); $('logSub').textContent = fmt(S.kg) + ' × ' + S.reps;
+      $('logBtn').classList.remove('print');
+    }
+  }
+  function renderSet(hit) {
+    var ex = PLAN[S.ex];
+    $('wkKick').textContent = S.phase === 'done' ? 'Session complete' : 'Exercise ' + (S.ex + 1) + ' of ' + PLAN.length + ' · Set ' + (S.set + 1) + ' of ' + ex.sets.length;
+    $('wkHed').textContent = ex.name; $('wkHed').classList.toggle('long', ex.name.length > 14);
+    var lo = Math.min.apply(null, ex.last.map(function (p) { return p[0]; })), hi = Math.max.apply(null, ex.last.map(function (p) { return p[0]; }));
+    $('wkLast').textContent = 'Friday: ' + ex.last.map(function (p) { return p[1]; }).join(', ') + ' reps at ' + fmt(lo) + (hi > lo ? ' to ' + fmt(hi) : '') + ' kg. Best ' + pair([ex.best.kg, ex.best.reps]) + '.';
+    $('coachline').innerHTML = '<b>Coach</b>' + ex.cue;
+    if ($('stripImg').getAttribute('src') !== ex.img) { $('stripImg').src = ex.img; $('stripCredit').textContent = 'Photo ' + ex.by; }
+    renderProg(); renderBox(hit); renderFig();
+  }
+  function bump(el) { if (el.animate) el.animate([{ transform: 'translateY(7px)' }, { transform: 'none' }], { duration: 150, easing: 'cubic-bezier(.22,1,.36,1)' }); }
+  function adjust(what, d) {
+    if (S.phase !== 'set') return;
+    if (what === 'kg') { S.kg = Math.max(0, S.kg + d * PLAN[S.ex].step); bump($('kg')); }
+    else { S.reps = Math.max(1, S.reps + d); bump($('reps')); }
+    renderFig();
+  }
+  $('kgDown').addEventListener('click', function () { adjust('kg', -1); });
+  $('kgUp').addEventListener('click', function () { adjust('kg', 1); });
+  $('repDown').addEventListener('click', function () { adjust('reps', -1); });
+  $('repUp').addEventListener('click', function () { adjust('reps', 1); });
+
+  $('logBtn').addEventListener('click', function () {
+    if (S.phase === 'done') { finish(); return; }
+    if (S.phase !== 'set') return;
+    var ex = PLAN[S.ex], rec = isRecord(ex, S.kg, S.reps);
+    S.logged[S.ex].push({ kg: S.kg, reps: S.reps, rec: rec, i: S.set });
+    S.clockBase += 45;
+    var lastOfEx = S.set === ex.sets.length - 1, lastOfAll = lastOfEx && S.ex === PLAN.length - 1;
+    if (lastOfAll) { S.phase = 'done'; renderSet(true); if (rec) toast('Stop press: new ' + ex.short.toLowerCase() + ' record, ' + fmt(S.kg) + ' kg × ' + S.reps + '.'); return; }
+    S.phase = 'rest'; renderProg(); renderBox(true);
+    openRest(ex, rec, lastOfEx);
+  });
+
+  function openRest(ex, rec, lastOfEx) {
+    var lg = S.logged[S.ex][S.logged[S.ex].length - 1];
+    $('restDone').textContent = 'Set ' + (S.set + 1) + ' logged: ' + fmt(lg.kg) + ' kg × ' + lg.reps + '.';
+    $('restVs').textContent = versus(ex, S.set, lg.kg, lg.reps);
+    $('press').hidden = !rec; void $('press').offsetWidth;
+    if (rec) $('pressText').textContent = 'New ' + ex.short + ' record: ' + fmt(lg.kg) + ' × ' + lg.reps;
+    var nEx = lastOfEx ? PLAN[S.ex + 1] : ex, nSet = lastOfEx ? 0 : S.set + 1, t = nEx.sets[nSet];
+    $('nextHed').innerHTML = (lastOfEx ? nEx.name + '<br>' : '') + 'Set ' + (nSet + 1) + ' · ' + fmt(t[0]) + ' kg × ' + t[1];
+    $('nextCue').textContent = isRecord(nEx, t[0], t[1]) ? 'A record attempt. Your best is ' + pair([nEx.best.kg, nEx.best.reps]) + '.' : (lastOfEx ? nEx.cue : 'Friday you got ' + (nEx.last[nSet] ? pair(nEx.last[nSet]) : 'no set here') + ' on this set.');
+    S.restTotal = ex.rest; S.restEnd = Date.now() + ex.rest * 1000; lastRest = '';
+    syncBar(); tick();
+    $('rest').classList.add('on'); $('rest').inert = false; $('workout').classList.add('resting');
+  }
+  function syncBar() {
+    var v = $('barVeil'), rem = Math.max(0, (S.restEnd - Date.now()) / 1000);
+    v.classList.remove('run-a'); void v.offsetWidth;
+    v.style.animationDuration = S.restTotal + 's'; v.style.animationDelay = -(S.restTotal - rem) + 's';
+    v.classList.add('run-a');
+  }
+  function closeRest() { $('rest').classList.remove('on'); $('rest').inert = true; $('workout').classList.remove('resting'); }
+  function endRest() {
+    if (S.phase !== 'rest') return;
+    var ex = PLAN[S.ex], newEx = S.set === ex.sets.length - 1;
+    if (newEx) { S.ex++; S.set = 0; } else { S.set++; }
+    S.phase = 'set'; loadTarget();
+    if (newEx) {
+      var sw = $('wkSwap'); sw.classList.add('out');
+      setTimeout(function () { renderSet(); sw.classList.remove('out'); }, 120);
+    } else { renderSet(); bump($('kg')); bump($('reps')); }
+    closeRest();
+  }
+  $('skipBtn').addEventListener('click', function () {
+    if (S.phase !== 'rest') return;
+    S.clockBase += Math.max(0, Math.round((S.restEnd - Date.now()) / 1000));
+    endRest();
+  });
+  function restAdj(d) {
+    if (S.phase !== 'rest') return;
+    var rem = (S.restEnd - Date.now()) / 1000 + d;
+    if (rem <= 0) { endRest(); return; }
+    S.restEnd = Date.now() + rem * 1000; S.restTotal = Math.max(S.restTotal, Math.ceil(rem)); lastRest = '';
+    syncBar(); tick();
+  }
+  $('restMinus').addEventListener('click', function () { restAdj(-15); });
+  $('restPlus').addEventListener('click', function () { restAdj(15); });
+  $('undoBtn').addEventListener('click', function () {
+    if (S.phase !== 'rest') return;
+    var lg = S.logged[S.ex].pop(); S.clockBase -= 45; S.phase = 'set'; S.kg = lg.kg; S.reps = lg.reps;
+    renderSet(); closeRest(); toast('Set ' + (S.set + 1) + ' is back on the page, not logged.');
+  });
+
+  $('wkBack').addEventListener('click', function () { show('today'); });
+  function slip(on) { $('slip').classList.toggle('on', on); $('slip').inert = !on; }
+  $('finishBtn').addEventListener('click', function () {
+    var n = doneCount();
+    if (!n) { toast('Nothing is logged yet, so there is nothing to print.'); return; }
+    if (n === TOTAL) { finish(); return; }
+    $('slipHed').textContent = 'Finish with ' + (TOTAL - n) + (TOTAL - n === 1 ? ' set' : ' sets') + ' left?';
+    $('slipText').textContent = 'The cover is written from what you logged, so it will say ' + n + ' of ' + TOTAL + '.';
+    slip(true);
+  });
+  $('slipNo').addEventListener('click', function () { slip(false); });
+  $('slipYes').addEventListener('click', function () { slip(false); finish(); });
+
+  // ----- the cover: written from the log, never invented -----
+  function facts() {
+    var f = { done: doneCount(), planned: TOTAL, volume: 0, minutes: Math.max(1, Math.round(clockSecs() / 60)), records: [], better: 0, short: 0, lastEx: null };
+    PLAN.forEach(function (e, i) {
+      S.logged[i].forEach(function (lg) {
+        f.volume += lg.kg * lg.reps * e.per;
+        if (lg.rec) f.records.push({ ex: e, kg: lg.kg, reps: lg.reps });
+        if (beatsLast(e, lg.i, lg.kg, lg.reps)) f.better++;
+        if (lg.reps < e.sets[lg.i][1] && lg.kg <= e.sets[lg.i][0]) f.short++;
+        f.lastEx = e;
+      });
+    });
+    f.complete = f.done === f.planned;
+    return f;
+  }
+  function story(f) {
+    var r = f.records.length ? f.records.reduce(function (a, b) { return b.kg >= a.kg ? b : a; }) : null, s = {};
+    if (r) {
+      s.kick = 'The ' + r.ex.short.toLowerCase() + ' issue';
+      s.heds = [fmt(r.kg) + '. Finally.', 'The ' + r.ex.short.toLowerCase() + ' moves', r.ex.stall ? 'Three weeks, one bar' : 'A new best'];
+      s.deck = (r.ex.stall ? 'Stuck at ' + fmt(r.ex.best.kg) + ' kg ' + r.ex.stall + '. ' : 'The old best was ' + pair([r.ex.best.kg, r.ex.best.reps]) + '. ') + 'Tonight ' + fmt(r.kg) + ' went up for ' + r.reps + '.' + (f.complete ? '' : ' Then you stopped at ' + f.done + ' of ' + f.planned + ' sets.');
+      s.spot = '#1d3fd9'; s.on = '#f3f0e8'; s.photo = 'img/cover.jpg';
+      s.why = 'New ' + r.ex.short.toLowerCase() + ' best, ' + fmt(r.kg) + ' kg × ' + r.reps + ' (it was ' + pair([r.ex.best.kg, r.ex.best.reps]) + ')';
+    } else if (f.complete) {
+      s.kick = 'The clean issue';
+      s.heds = ['Clean sheet', f.done + ' from ' + f.planned, 'Nothing skipped'];
+      s.deck = 'Every set on the page got done' + (f.better ? ', and ' + f.better + ' of them beat Friday' : '') + '. No record tonight. The work was the story.';
+      s.spot = '#c5223f'; s.on = '#f3f0e8'; s.photo = 'img/plates.jpg';
+      s.why = 'No record, and no set skipped';
+    } else {
+      s.kick = 'The short issue';
+      s.heds = ['Cut short', f.done + ' of ' + f.planned, f.done * 2 <= f.planned ? 'Half an issue' : 'Left on the page'];
+      s.deck = 'You logged ' + f.done + ' of ' + f.planned + ' sets and stopped after the ' + f.lastEx.short.toLowerCase() + '. The rest is still on the plan.';
+      s.spot = '#f3f0e8'; s.on = '#14161b'; s.art = f.done + '/' + f.planned;
+      s.why = 'You stopped early, so the cover says so';
+    }
+    s.lines = [{ n: Math.round(f.volume).toLocaleString('en-GB'), l: 'kg moved tonight' }, { n: f.done + '/' + f.planned, l: 'sets logged' }];
+    if (f.better) s.lines.push({ n: '' + f.better, l: f.better === 1 ? 'set beat Friday' : 'sets beat Friday' });
+    else if (f.short) s.lines.push({ n: '' + f.short, l: f.short === 1 ? 'set short of plan' : 'sets short of plan' });
+    s.whyText = s.why + ' · ' + f.done + ' of ' + f.planned + ' sets · ' + Math.round(f.volume).toLocaleString('en-GB') + ' kg · ' + f.minutes + ' min. Every number comes from your log.';
+    s.badge = f.minutes;
+    return s;
+  }
+
+  function barcode(seed) {
+    var out = '', x = seed * 9301 + 49297;
+    for (var i = 0; i < 20; i++) { x = (x * 9301 + 49297) % 233280; out += '<u style="width:' + (1 + (x % 3)) + 'px"></u>'; }
+    return out;
+  }
+  function hedClass(h) { return h.length > 16 ? ' l' : (h.length > 12 ? ' m' : (h.length > 9 ? ' s' : '')); }
+  // a cover line that would run into the headline is left off the cover
+  function tidy(root) {
+    root.querySelectorAll('.mag').forEach(function (m) {
+      var lines = m.querySelector('.mag-lines'), main = m.querySelector('.mag-main'), k = m.getBoundingClientRect().width / 344, art = m.querySelector('.mag-art span');
+      if (art && !art.dataset.fit) { art.dataset.fit = 1; var w = art.getBoundingClientRect().width / k; if (w > 330) art.parentNode.style.fontSize = Math.floor(330 * 330 / w) + 'px'; }
+      while (lines.children.length > 1 && lines.getBoundingClientRect().bottom > main.getBoundingClientRect().top - 8 * k) lines.lastElementChild.remove();
+    });
+  }
+  function magHTML(c) {
+    var dark = c.on !== '#14161b';
+    return '<div class="mag" style="--c:' + c.spot + ';--on:' + c.on + ';--hi:' + (dark ? '#f4d53a' : '#14161b') + ';--hi-on:' + (dark ? '#14161b' : '#f4d53a') + (c.spot === '#f3f0e8' ? ';--art-o:.085' : '') + '">' +
+      (c.photo ? '<div class="mag-photo duo tint"><img src="' + c.photo + '" alt=""></div><div class="mag-scrim"></div>' : '<div class="mag-art num"><span>' + c.art + '</span></div>') +
+      '<div class="mag-top"><span>No. ' + c.no + '</span><span>' + c.date + '</span><span>' + c.day + '</span></div>' +
+      '<div class="mag-mast">AVEN</div>' +
+      '<div class="mag-lines">' + c.lines.map(function (l) { return '<div><b class="num">' + l.n + '</b><span>' + l.l + '</span></div>'; }).join('') + '</div>' +
+      '<div class="mag-badge"><b class="num">' + c.badge + '</b><span>MIN</span></div>' +
+      '<div class="mag-main"><span class="mag-kick">' + c.kick + '</span><h2 class="mag-hed' + hedClass(c.hed) + '">' + c.hed + '</h2><p class="mag-deck">' + c.deck + '</p></div>' +
+      '<div class="mag-code"><i>' + barcode(c.no) + '</i><span>AVEN ' + c.no + '</span></div></div>';
+  }
+
+  var BACK = [
+    { no: 213, date: '13 Nov 2026', day: 'Legs', when: 'Friday', spot: '#0f7a4c', on: '#f3f0e8', art: '140', kick: 'The squat issue', hed: '140 for five', deck: 'The squat is back where it was in September.', lines: [{ n: '5,880', l: 'kg moved' }, { n: '12/12', l: 'sets logged' }], badge: 48 },
+    { no: 212, date: '12 Nov 2026', day: 'Wrestling', when: 'Thursday', spot: '#f1c22e', on: '#14161b', art: '6×5', kick: 'The mat issue', hed: 'Six rounds, still standing', deck: 'Hard sparring and no lifting. Expect heavy legs on Friday.', lines: [{ n: '6', l: 'rounds of five minutes' }, { n: '8/10', l: 'how hard it felt' }], badge: 75 },
+    { no: 211, date: '10 Nov 2026', day: 'Pull', when: 'Tuesday', spot: '#f3f0e8', on: '#14161b', art: '150', kick: 'The deadlift issue', hed: 'Stuck at 150', deck: 'Third week on the same bar. The Coach changes the plan on Thursday.', lines: [{ n: '4,310', l: 'kg moved' }, { n: '11/13', l: 'sets logged' }], badge: 44 },
+    { no: 210, date: '9 Nov 2026', day: 'Push', when: 'Monday', spot: '#1d3fd9', on: '#f3f0e8', art: '82.5', kick: 'The bench issue', hed: '82.5, again', deck: 'Six, six, six, five. One rep short of moving up.', lines: [{ n: '4,290', l: 'kg moved' }, { n: '10/10', l: 'sets logged' }], badge: 31 }
+  ];
+  function thumb(c, isNew) {
+    var b = document.createElement('button');
+    b.className = 'thumb' + (isNew ? ' new' : '');
+    b.innerHTML = '<div class="thumb-box">' + magHTML(c) + '</div><b>No. ' + c.no + ' · ' + c.day + '</b><span>' + c.when + '</span>';
+    b.setAttribute('aria-label', 'Open issue ' + c.no + ', ' + c.hed);
+    b.addEventListener('click', function () { openCover(c, c === S.issue); });
+    return b;
+  }
+  BACK.forEach(function (c) { $('shelf').appendChild(thumb(c)); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(function () { tidy($('shelf')); }); else tidy($('shelf'));
+
+  function fitMag() {
+    var w = Math.min(344, $('coverScroll').clientWidth - 40), k = w / 344, f = $('magFit');
+    f.style.width = w + 'px'; f.style.height = 458 * k + 'px';
+    var m = f.firstElementChild; if (m) { m.style.transformOrigin = '0 0'; m.style.transform = k < 1 ? 'scale(' + k + ')' : ''; }
+  }
+  window.addEventListener('resize', fitMag);
+
+  function openCover(c, mine, print) {
+    $('magFit').classList.remove('printing');
+    $('magFit').innerHTML = magHTML(c); fitMag(); tidy($('magFit'));
+    $('magFit').classList.toggle('printing', !!print);
+    $('coverNo').textContent = 'Issue No. ' + c.no;
+    $('coverSub').textContent = mine ? 'Printed tonight' : c.when + ' · ' + c.day;
+    $('why').hidden = !mine; $('coverAct').hidden = !mine;
+    if (mine) $('whyText').textContent = S.whyText;
+    $('coverScroll').scrollTop = 0;
+    show('cover', print ? 'workout' : null);
+  }
+  function buildIssue() {
+    var s = story(facts());
+    S.whyText = s.whyText; S.heds = s.heds;
+    var mine = S.photo ? { spot: s.photo ? s.spot : '#1d3fd9', on: '#f3f0e8', photo: S.photo } : s;
+    S.issue = { no: ISSUE_NO, date: '15 Nov 2026', day: 'Push', when: 'Tonight', spot: mine.spot, on: mine.on, photo: mine.photo, art: mine.art, kick: s.kick, hed: s.heds[S.variant % s.heds.length], deck: s.deck, lines: s.lines, badge: s.badge };
+    return S.issue;
+  }
+  function finish() {
+    S.clockBase = clockSecs(); S.finished = true; closeRest(); S.phase = 'done';
+    openCover(buildIssue(), true, true);
+    syncToday();
+  }
+  function syncToday() {
+    var c = S.issue;
+    $('leadKick').textContent = 'Printed tonight · Push day';
+    $('leadHed').textContent = c.hed; $('leadHed').classList.add('after');
+    $('leadDeck').textContent = c.deck; $('leadCap').textContent = S.whyText;
+    $('leadMeta').textContent = c.lines[1].n + ' sets · ' + c.badge + ' min';
+    $('startLab').textContent = 'Read issue No. ' + c.no;
+    var old = $('shelf').querySelector('.thumb.new, .thumb.mine'); if (old) old.remove();
+    var t = thumb(c, true); t.classList.add('mine'); $('shelf').prepend(t); tidy(t);
+  }
+  $('altBtn').addEventListener('click', function () {
+    S.variant++; S.issue.hed = S.heds[S.variant % S.heds.length];
+    var h = $('magFit').querySelector('.mag-hed');
+    h.textContent = S.issue.hed; h.className = 'mag-hed' + hedClass(S.issue.hed);
+    void h.offsetWidth; h.classList.add('swap'); tidy($('magFit'));
+    syncToday();
+  });
+  $('photoIn').addEventListener('change', function (e) {
+    var file = e.target.files && e.target.files[0]; if (!file) return;
+    var url = URL.createObjectURL(file), im = new Image();
+    var swap = function () {
+      S.photo = url; buildIssue();
+      $('magFit').classList.remove('printing'); $('magFit').innerHTML = magHTML(S.issue); fitMag(); tidy($('magFit')); syncToday();
+    };
+    im.onerror = function () { toast('That file is not a picture this page can open.'); };
+    im.src = url;
+    if (im.decode) im.decode().then(swap, function () {}); else im.onload = swap;
+  });
+  function backToToday(toShelf) {
+    show('today');
+    if (toShelf) {
+      var sc = $('todayScroll'), el = $('shelf'), mine = el.querySelector('.thumb.mine');
+      sc.scrollTop = Math.max(0, el.offsetTop - 120); el.scrollLeft = 0;
+      if (mine) { mine.classList.remove('land'); void mine.offsetWidth; mine.classList.add('land'); mine.style.animationDelay = '340ms'; }
+    }
+  }
+  $('shelfBtn').addEventListener('click', function () { backToToday(true); });
+  $('coverBack').addEventListener('click', function () { backToToday(false); });
+})();
+</script>
+</body>
+</html>

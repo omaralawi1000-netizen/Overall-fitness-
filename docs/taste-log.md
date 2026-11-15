@@ -57,6 +57,15 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: ten styles, style 2 "Press", a print sports magazine (/_prototypes/press/)
+Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test test each thing on some of them. Test some unique things on some of them, like anything, you know what I mean?" One thread per style; every style builds the same two screens (Today and the live workout) so he can compare.
+Built: paper instead of glass, heavy condensed headlines, a serif for the Coach's words, one cobalt ink, photographs printed in one ink. Today is a front page: "One set from 85" as the cover story, the numbers, a Coach pull-quote, tonight's session as a contents list, a shelf of back issues. The live workout is a feature spread: two giant numbers with steppers, a box score of the sets against last Friday, one tap on a black "Log set" bar. Rest turns the whole page cobalt with a giant countdown and a strip of blocks that empties; a record prints a yellow "Stop press" band.
+The experiment: finishing prints the workout as a magazine cover. Headline, deck and cover lines are written by code from the log, never invented: a record ("85. Finally."), every set done ("Clean sheet") or stopping early ("Cut short", on plain paper, said plainly). "Why this headline" lists the facts used; "Another headline" rewords the same facts; "Use my photo" puts his own picture on the cover; covers collect on the shelf.
+Judges: design judge 7.5 (rest screen had a seam, every cover from tonight looked the same, Rosa paper muddy), then a fresh judge 8 after fixes (Today 8.5, workout 8, cover 8.5). Both judges on the experiment: rewarding, not a gimmick, because it is honest and shows its facts; it goes stale if covers repeat, so it needs many photos or his own. Motion judge (code only): pass with fixes, applied.
+Our own harsh score: 8 as a piece of design, about 6 as a fit for what he has asked for so far (calm, premium, frosted glass, a picture of a real place). Biggest weakness: the live workout is a dense form and the least magazine-like screen; the look is loud and flat on purpose.
+Needs his phone: whether the paper grain reads as paper or dirt, the one-ink photo tints, the rest page and the page turns at 120 Hz.
+Verdict: waiting for Omar.
+
 ### 12 Nov 2026, 08:16: Reed and Silk rejected; Oura as the inspiration (/_prototypes/summit/)
 Rejected: Reed and Silk, both of them, about 40 minutes after Silk was published.
 His words: "This is not how I would like it. I wanted to take a look at, make the Aura app as inspiration, like a wallpaper that's very beautiful, like it." ("Aura" is Oura, as on 2 Nov.)
