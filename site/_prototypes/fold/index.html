@@ -753,7 +753,7 @@ const fb = $('finBtn');
 fb.addEventListener('pointerdown', () => {
   if (st.phase === 'busy' || st.phase === 'done') return; buzz(4);
   if (holdA) holdA.cancel();
-  const a = anim(fb.querySelector('.fill'), [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 700, easing: 'cubic-bezier(.3,0,.4,1)' });
+  const a = anim(fb.querySelector('.fill'), [{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 700, easing: 'cubic-bezier(.3,0,.4,1)', keepTime: true });
   holdA = a;
   // only the press that is still held, and ran forward to the end, finishes the workout
   a.finished.then(() => { if (holdA === a && a.playbackRate > 0) { holdA = null; finishWorkout(); } }).catch(() => {});
