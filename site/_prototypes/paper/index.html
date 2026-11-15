@@ -474,7 +474,7 @@ function renderToday() {
   $('coachWho').textContent = t('coach');
   $('coachOk').textContent = t('ok'); $('coachUndo').textContent = t('undo');
 }
-function bestLine() { const pr = S.done.flat().find((s) => s.pr); return pr ? `${t('newBest')}: <b>${num(pr.w)} kg × ${pr.r}</b>` : t('coachDone', setCount(), Math.round(volume()).toLocaleString(S.lang === 'da' ? 'da-DK' : 'en-GB')); }
+function bestLine() { const pr = S.done.flat().filter((s) => s.pr).reduce((m, s) => (!m || e1(s.w, s.r) > e1(m.w, m.r) ? s : m), null); return pr ? `${t('newBest')}: <b>${num(pr.w)} kg × ${pr.r}</b>` : t('coachDone', setCount(), Math.round(volume()).toLocaleString(S.lang === 'da' ? 'da-DK' : 'en-GB')); }
 
 /* ---------- Coach note on vellum ---------- */
 function coachText() { if (S.coachState === 'done') return t('coachDone', setCount(), Math.round(volume()).toLocaleString(S.lang === 'da' ? 'da-DK' : 'en-GB'));
@@ -599,6 +599,7 @@ $('wm').onclick = () => nudge(-2.5, 0); $('wp').onclick = () => nudge(2.5, 0); $
 function openWork() {
   if (S.finished) { openTray(`<h3>${t('sumH')}</h3><p>${bestLine()}</p>` + list(summaryRows()), $('start')); return; }
   if (!S.started) { S.started = true; S.t0 = Date.now(); loadSet(); }
+  if (closing) { closing.onfinish = null; closing.cancel(); closing = null; }
   S.screen = 'work'; stopSway(); hideToast();
   const w = $('work'); w.classList.add('on'); renderWork(false);
   anim(w, [{ transform: 'translateY(102%)' }, { transform: 'none' }], SOFT); w.style.transform = 'none';
@@ -608,9 +609,11 @@ function openWork() {
   // plates go onto the bar one by one as the bench arrives
   [...$('plates').children].forEach((el, k) => anim(el, [{ transform: 'translate(90px, -14px) rotate(-5deg)', opacity: 0 }, { transform: 'none', opacity: 1 }], POP, { delay: 180 + k * 70, fill: 'backwards' }));
 }
+let closing = null;
 function closeWork(after) {
   S.screen = 'today'; const w = $('work');
-  anim(w, [{ transform: 'none' }, { transform: 'translateY(102%)' }], SNAP).onfinish = () => { w.classList.remove('on'); after && after(); };
+  closing = anim(w, [{ transform: 'none' }, { transform: 'translateY(102%)' }], SNAP);
+  closing.onfinish = () => { closing = null; if (S.screen !== 'today') return; w.classList.remove('on'); after && after(); };
   w.style.transform = 'translateY(102%)';
   anim($('today'), [{ transform: 'scale(.94)', opacity: .7 }, { transform: 'none', opacity: 1 }], SOFT, { fill: 'forwards' }); $('today').classList.remove('away');
   renderToday(); startSway();
@@ -659,7 +662,8 @@ function startRest() {
   const note = $('note'); const canUp = setIdx() < cur().sets && lastSet && lastSet.r >= cur().plan[0][1] && !lastSet.pr && S.ex === EX.indexOf(cur());
   if (canUp && S.done[S.ex].length >= 1) { const up = +(S.w + 2.5).toFixed(2); $('noteMsg').textContent = t('noteFast', num(up)); $('noteAct').textContent = t('load', num(up)); note.classList.remove('hide');
     $('noteAct').onclick = () => { const was = S.w; nudge(2.5, 0); S.noteLoad = S.w; $('restNext').innerHTML = nextText(); note.classList.add('hide');
-      toast(t('loaded', num(S.w)), () => { S.w = was; S.noteLoad = null; renderPlates(true); roll($('wv'), num(S.w), -1); $('restNext').innerHTML = nextText(); }); }; }
+      const ex = S.ex, at = setIdx();
+      toast(t('loaded', num(S.w)), () => { if (S.ex !== ex || setIdx() !== at || S.screen !== 'work') return; S.w = was; S.noteLoad = null; renderPlates(true); roll($('wv'), num(S.w), -1); $('restNext').innerHTML = nextText(); }); }; }
   else note.classList.add('hide');
   // The words stay still at the top; the blue paper under them is the time left, and its edge climbs as it runs out.
   const H0 = $('app').clientHeight, body = r.querySelector('.body'), keep = body.offsetTop + body.offsetHeight + 34;
