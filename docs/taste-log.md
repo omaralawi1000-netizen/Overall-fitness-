@@ -67,6 +67,7 @@ Judge (one fresh design-judge, Sonnet, after the Today rebuild): 7.5 overall (To
 My own score: 7.5. Today is the most organised and jewel-like Today so far; the workout is good but the sheet is tall. The orbits are close to Apple's activity rings in idea, though not in look.
 Checked in a real browser at 384 px: every flow (log, rest, Undo, ruler, Coach action, new best, finish early and keep going, details, Danish), one blurred layer per screen (two with a chart open), and no slow frames headless. Frame rate itself is a phone test.
 Needs his phone: the frost over the rose cloud and the water, banding in the night sky, the orbit sweep and star flight at 120 Hz, the feel of the ruler under a thumb.
+Artifact: https://claude.ai/artifact/XBPFw2WLQ6SyPrbrD2iteW
 Verdict: waiting for Omar.
 
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
