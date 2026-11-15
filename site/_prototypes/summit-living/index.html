@@ -948,8 +948,8 @@ $('card')._onclose = null;
 /* ---------------- fit to the screen ---------------- */
 function fit() {
   const w = innerWidth, h = innerHeight; let s, H, x = 0, y = 0;
-  // short phones shrink the whole app rather than letting the workout panels overlap
-  if (w < 520) { s = Math.min(w / 384, h / 680); H = Math.round(h / s); x = (w - 384 * s) / 2; app.classList.remove('desk'); }
+  // short phones shrink the whole app (Today with the Coach showing needs 740 px) rather than letting panels overlap
+  if (w < 520) { s = Math.min(w / 384, h / 740); H = Math.round(h / s); x = (w - 384 * s) / 2; app.classList.remove('desk'); }
   else { H = 832; s = Math.min(1.05, (h - 32) / H); x = (w - 384 * s) / 2; y = Math.max(16, (h - H * s) / 2); app.classList.add('desk'); }
   app.style.setProperty('--H', `${H}px`); app.style.setProperty('--s', s); app.style.height = `${H}px`;
   app.style.transform = `translate(${x}px, ${y}px) scale(${s})`;
