@@ -535,11 +535,15 @@ const EX = [
   { en: 'Lateral raise', da: 'Sideløft', kg: 10, reps: 15, step: 1, n: 3, best: 12, last: [10, 14] },
   { en: 'Triceps pushdown', da: 'Triceps pushdown', kg: 30, reps: 12, step: 2.5, n: 3, best: 32.5, last: [30, 12] },
 ];
+const EX_BEST = EX.map((e) => e.best);
 const REST = Q.get('rest') ? Math.max(3, +Q.get('rest')) : 90;
 const S = { screen: 'today', ex: 0, set: 0, kg: 80, reps: 8, sets: [], started: 0, resting: false, restEnd: 0, restDur: REST, bests: 0, finished: false,
   prot: 38, weight: 78.4, weightWeek: -0.3, loaded: false, lastLog: null };
 function resetWorkout() {
+  if (S.resting) stopRest();
   S.ex = 0; S.set = 0; S.bests = 0; S.finished = false; S.loaded = false; S.started = 0; S.resting = false;
+  EX.forEach((e, i) => { e.best = EX_BEST[i]; });
+  if (typeof showView === 'function' && $('workView')) showView('work');
   S.sets = EX.map((e) => Array.from({ length: e.n }, () => ({ kg: e.kg, reps: e.reps, done: false, best: false })));
   S.kg = EX[0].kg; S.reps = EX[0].reps;
 }
@@ -727,7 +731,7 @@ async function logSet() {
   const st = row.querySelector('.st');
   st.className = 'st undo'; st.textContent = t('undo');
   anim(st, [{ transform: 'scale(.6)', opacity: 0 }, { transform: 'none', opacity: 1 }], SP.glide);
-  S.lastLog = { ex: S.ex, i, at: Date.now(), pr };
+  S.lastLog = { ex: S.ex, i, at: Date.now(), pr, prevBest: ex().best };
   setTimeout(() => settleUndo(i), 5000);
   if (pr) { S.bests++; ex().best = s.kg; }
   S.set++;
@@ -752,7 +756,7 @@ async function undoLast(i) {
   busy = true; S.lastLog = null;
   stopRest();
   const s = S.sets[S.ex][i];
-  if (s.best) { S.bests--; ex().best = EX_BEST[S.ex]; }
+  if (s.best) { S.bests--; ex().best = L0.prevBest; }
   s.done = false; s.best = false; S.set = i; S.kg = s.kg; S.reps = s.reps;
   showView('work');
   const row = $('sets').children[i];
@@ -761,7 +765,6 @@ async function undoLast(i) {
   renderSets(true); renderMeta(); renderHint(); logLabel(); updateLive();
   busy = false;
 }
-const EX_BEST = EX.map((e) => e.best);
 
 /* ---------- rest: the clock fills with light as you recover ---------- */
 let restTimer = 0, fillA = null, fillB = null;
@@ -804,10 +807,11 @@ function stopRest() {
   [fillA, fillB].forEach((a) => a && a.cancel()); fillA = fillB = null;
 }
 async function endRest(skipped) {
-  if (!S.resting) return;
+  if (!S.resting || busy) return;
+  busy = true; // a second tap on "Skip rest" must not log the next set while the clock rolls into it
   stopRest(); buzz(skipped ? 6 : [12, 60, 12]);
   [fillA, fillB] = [null, null];
-  if (S.set >= ex().n) { renderHint(); logLabel(); nextExercise(); return; }
+  if (S.set >= ex().n) { renderHint(); logLabel(); busy = false; nextExercise(); return; }
   const nxt = S.sets[S.ex][S.set]; S.kg = nxt.kg; S.reps = nxt.reps;
   // the clock's own digits roll into the next set's weight, then the work view takes over in place
   $('rFill').getAnimations().forEach((a) => a.cancel());
@@ -819,11 +823,13 @@ async function endRest(skipped) {
   $('rFill').style.transform = ''; $('rBright').style.transform = '';
   renderSets(true); renderMeta(); renderHint(); logLabel();
   anim($('wReps').parentElement, [{ transform: 'translateY(16px)', opacity: 0 }, { transform: 'none', opacity: 1 }], SP.soft);
+  busy = false;
 }
 function showView(v) {
   const w = $('workView'), r = $('restView');
   const on = v === 'rest' ? r : w, off = v === 'rest' ? w : r;
-  on.style.visibility = 'visible'; on.style.opacity = 1; off.style.opacity = 0; off.style.visibility = 'hidden';
+  // 'inherit', never 'visible': a child set to visible shows through (and catches taps) while the workout screen is hidden
+  on.style.visibility = 'inherit'; on.style.opacity = 1; off.style.opacity = 0; off.style.visibility = 'hidden';
   if (v === 'rest' && !REDUCED) {
     anim(r.querySelector('.r-row'), [{ transform: 'translateY(14px)', opacity: 0 }, { transform: 'none', opacity: 1 }], SP.soft, { delay: 60, fill: 'backwards' });
     anim($('coachW'), [{ transform: 'translateY(18px)', opacity: 0 }, { transform: 'none', opacity: 1 }], SP.soft, { delay: 120, fill: 'backwards' });
@@ -889,7 +895,7 @@ async function showPR(s, i) {
   $('prUnit').textContent = `kg · ${exName()}`;
   write($('prKick'), t('newBest'), { by: 'char', stagger: 34, delay: 120 });
   $('prSub').textContent = '';
-  ov.style.visibility = 'visible';
+  ov.style.visibility = 'inherit';
   morphIn(ov, $('sets').children[i]);
   const flip = $('flip'); flip.style.transform = 'none';
   await wait(650);
@@ -932,7 +938,7 @@ async function finishWorkout() {
   S.sets.flat().forEach((s) => { if (!s.done) s.skipped = true; });
   const ov = $('done');
   ['sKg', 'sMin', 'sSets', 'sBest'].forEach((id) => { const r = R[id] || (R[id] = new Roll($(id))); r.text = ''; r.slots.forEach((s) => s.remove()); r.slots = []; });
-  ov.style.visibility = 'visible';
+  ov.style.visibility = 'inherit';
   morphIn(ov, $('finishBtn'));
   write($('doneH'), t('doneH'), { by: 'char', stagger: 50, delay: 100 });
   const kg = doneKg().toLocaleString(L === 'da' ? 'da-DK' : 'en-GB');
