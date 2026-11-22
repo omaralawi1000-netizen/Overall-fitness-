@@ -57,6 +57,23 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: Claude's own taste, "Paper", layered paper depth (/_prototypes/paper/)
+Asked (Omar, 06:21): "Have it have its own taste also on the fitness app. Not only my taste … Be creative, but do not make it ugly." Then (06:29): "they have to be alive … instant … morph animations with pop-ups … pop-up with morph." This thread was given layered paper depth.
+Reading of the log before building: Tide (paper layers, 12 Nov) got 7 for no hero and a stock pastel palette, so this one has one bold hero on Today (a yellow paper sun with the readiness number) and one decisive colour (ultramarine paper), and the paper carries meaning instead of decoration.
+Built (Today, live workout, rest, record, finish; English and Danish):
+- **Today:** the week is a paper mountain. Every finished session is one more cut layer with its tag (Mon Push, Wed Pull, Fri Wrestling); today's session is still a dashed, uncut line. The Coach speaks on tracing paper (the one blurred surface) that grows out of the sun and folds back into it, with Undo ("I cut squats to 4 sets"). Tapping the sun, a layer's tag or protein opens a tray that morphs out of what you tapped. Layers sway slowly and follow your finger by depth.
+- **Workout (its own job, not Today's look):** a paper bench. The bar with paper plates in real gym colours (25 red, 20 blue, 15 yellow, 10 green); changing the weight slides plates on and off, and only the digits that change roll. One tap logs a set: the sheet lifts and files itself as a tab on the pad.
+- **Rest:** a sheet of ultramarine paper lies over the bench; the blue under the clock is the time left, and its cut edge climbs as it runs out, uncovering the next set. The Coach offers +2.5 kg with Undo.
+- **Record:** a page morphs out of the set's red tab, a yellow page pops up behind it, a paper rosette turns once and catches the light.
+- **Finish:** back on Today, today's layer is cut and lifted into the mountain ("4 of 4").
+Library motions used: Family tray heights and Days card-to-page (every tray and the record page grow out of what you tapped, reversed on close), Push's digit roll, Google's step check (the logged sheet shrinks into a tab and the next one is underneath), Headspace's rising level reversed (the rest paper drains instead of fills), Any Distance's medal turn (as a paper rosette), Monument Valley's quiet finish (one layer lifts, no confetti).
+Checks: headless at 384 px and DPR 3.75, no dropped frames in any moment (60 Hz software, one long frame on first load); one blurred element on the page.
+Judge (one fresh design-judge, Sonnet): 7. Fixed after it: rest rebuilt so the clock sits at the top and the blue below it is the time left, bigger bar and plates, clearer last-time chips and tags, a blue scrim instead of grey, a deeper blue palette. Not re-judged. Its biggest weakness: "no hero … the palette (periwinkle, buttery yellow, cream) is the same pastel look as Tide", and the workout screens are flatter paper than Today.
+My own score: 7.5. Biggest weakness: the paper is honest but quiet; it may read as calm and pretty rather than "what app is that?". Best parts to keep whichever style wins: the week as layers that get cut as you train, plates in real colours on the bar, rest as paper draining away.
+Needs his phone: the tracing-paper blur over the sun, banding in the soft paper shadows, 120 Hz smoothness of the morphs and the rest edge.
+Artifact: https://claude.ai/artifact/XTbWyXXTa4xckdBPphq7gd
+Verdict: waiting for Omar.
+
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.
