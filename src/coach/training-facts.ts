@@ -10,8 +10,8 @@ export interface LiftFact {
   exercise: string;
   /** best working set of each recent session, oldest first (best = highest estimated one-rep max) */
   best: { day: string; kg: number; reps: number }[];
-  /** compared over these sessions: up / flat / down by estimated one-rep max (more than 1 % either way) */
-  status: 'up' | 'flat' | 'down';
+  /** compared over these sessions: up / flat / down by estimated one-rep max (more than 1 % either way); 'stalled' is up over the window but stuck on one best set (see isStuck): "up" would mislead (12 Nov: the Coach read it as progress) */
+  status: 'up' | 'flat' | 'down' | 'stalled';
   /** how many sessions in a row ended on exactly the same best set (kg × reps) */
   sameInARow: number;
 }
@@ -24,6 +24,10 @@ export interface TrainingFacts {
 }
 
 const live = <T extends AnyRecord>(rs: AnyRecord[], kind: T['kind']) => rs.filter((r): r is T => r.kind === kind && !r.deleted);
+/** the same best set this many sessions in a row: the lift is stuck, whatever it did before */
+export const STALLED_AFTER = 5;
+/** the same best set 5 sessions in a row, or 3 once it is at the top of a rep range (12 or more reps: time to add weight) */
+export const isStuck = (reps: number, sameInARow: number): boolean => sameInARow >= STALLED_AFTER || (reps >= 12 && sameInARow >= 3);
 export const DAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const e1rm = (kg: number, reps: number) => kg * (1 + reps / 30);
 
@@ -86,9 +90,9 @@ export function trainingFacts(records: AnyRecord[], o: { today: string; dayStart
     const best = [...bySession.values()].sort((a, b) => a.day.localeCompare(b.day) || a.t - b.t).slice(-6).map(({ day, kg, reps }) => ({ day, kg, reps }));
     if (best.length < 2) continue;
     const first = e1rm(best[0].kg, best[0].reps), last = e1rm(best.at(-1)!.kg, best.at(-1)!.reps);
-    const status = last > first * 1.01 ? 'up' : last < first * 0.99 ? 'down' : 'flat';
     let sameInARow = 1;
     for (let i = best.length - 2; i >= 0 && best[i].kg === best.at(-1)!.kg && best[i].reps === best.at(-1)!.reps; i--) sameInARow++;
+    const status: LiftFact['status'] = last > first * 1.01 ? (isStuck(best.at(-1)!.reps, sameInARow) ? 'stalled' : 'up') : last < first * 0.99 ? 'down' : 'flat';
     lifts.push({ exercise: CATALOG_BY_ID.get(ex)?.name ?? custom.get(ex) ?? ex, best, status, sameInARow });
   }
   lifts.sort((a, b) => b.best.length - a.best.length || a.exercise.localeCompare(b.exercise));

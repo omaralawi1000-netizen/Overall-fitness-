@@ -641,6 +641,43 @@ Coach candidate in the tests, not the builder.
 - The check that was planned next (about $2, the same 10 cases against `/mnt/project-files/e2/stage1-2026-11-12/answers.jsonl`):
   the plan under "Cheap models first" recommends skipping it ("What not to do"). Omar decides; a card asked him on 12 Nov.
 
+### Step 2 done: findings v1 (22 Nov 2026; free, nothing paid, no model was called; code `src/coach/findings.ts`, tests `tests/coach/findings.test.ts`)
+Omar asked whether Coach work waits for his 6 blind picks. It does not: the picks decide how a reply reads, and findings only change what the
+Coach is handed. No tone choice was locked.
+
+**Free read of the misses first (the plan's step 2 rule).** The Coach's 10 lost points of 60 on the 10 known cases (12 Nov answers, catch report), by kind:
+- **Code can compute or check it: 4 points.** The low food log (n02; p03 before #100), the whole week's load (m07.load), the day clash (c01.no-clash, half), the calorie sum (m03.math, half).
+- **How the answer reads, restraint: 2 points.** r04 ("what's today?"): every setup adds advice nobody asked for and runs long. Findings cannot fix this, and none fires on r04 on purpose.
+- **Written expertise (playbooks): 1.5 points.** o09.expect (what creatine does at first), p10.placement (half).
+- **Question order and trust: 1.5 points.** m03.ask-goal, c01.trust-words (half).
+- **Good news it did not name: 1 point.** n02.gains (her reps went up). Not built: a "progress" finding is the next candidate.
+So findings can win back at most about 4 of the 10 lost points on these cases, plus the cut-pace and next-weight items on the 10 newer cases. That is the size of the bet.
+
+**What was built.** `FactSheet.findings`: ranked, each with the number to say and a line on when it applies. Shown first on the sheet.
+1. `low-food-log`: the #100 line moved here from the trust notes, unchanged except one clause: "That is the only question in the reply" (the 12 Nov smoke test saw two questions on p03). Applies always.
+2. `sessions-dropping`: the last 7 days at half of the usual or less, with a usual of 1.5 a week or more; names the next planned session.
+3. `stalled-lifts`: the same best set 5 sessions in a row (3 at 12 reps or more), up to 3 lifts, with the next weight and reps (2.5 kg, 5 kg on a heavy squat or deadlift; reps from the same one-rep-max formula, never higher). A current health note is named so the model never adds weight to a lift it touches. The lift label "up" on a stuck lift is now "stalled" (lesson 9).
+4. `goal-pace`: ahead or behind, the date the trend reaches the goal, the kcal that makes the date (maintenance estimate plus the needed pace). Never a kcal number under 1,500, never for someone who says they are under 18, and a pace over 0.75 % of body weight a week says "move the date, do not push". A gap under 0.2 kg a week is noise and stays quiet.
+5. `week-load`: planned lifting plus sport days, from 6 a week; a walk or mobility does not count.
+6. Plan clash, as reference not finding: `dayLoad`, `clashes` and a PLAN line saying which free days sit next to a session. Built for step 4's live check; the line is on the sheet now.
+One rule line in the prompt tells the model to lead with the finding that fits the question and never recite all of them (one change, tested at gate A).
+
+**Tested free, offline (23 tests; the whole suite passes).** Against the 20 tuning cases' own records:
+- Every item findings claim to supply (18 of the 119 items) is on the sheet of its case. That is "handed to the model", not "caught": no answer was generated, so no catch rate is claimed.
+- 12 of the 20 cases get no finding at all (false-alarm guard): p10, m03, m04, o09, r04, p14, c01, p06, p09, m08, m06, p13.
+- Boundaries tested on made-up sheets: 4 vs 5 sessions, 3 at 12 reps, a falling lift, 5 5 5 4 weeks, a one-a-week habit, noise in pace, wrong direction, the kcal floor, under 18, walk and mobility days.
+
+**Weak points, said plainly.**
+1. Nothing here is measured on an answer. Gate A is the first real test: does a cheap model use a finding, and does it raise one the question has nothing to do with?
+2. False-alarm risk is real and not removed by code: the Jonas cases (o08 shoulder pop, o03 "am I on track") carry goal-pace, week-load and stalled-row findings, and only the "applies:" text and one rule line keep the model from reciting them. Gate A must read those two answers by hand.
+3. Findings supply about 15 % of the catch items. Most of the gap to plain Opus is still how the answer reads and written expertise (playbooks, step 4).
+4. p06 (eats at maintenance, wants to gain) has no finding: "weight flat at maintenance" cannot be told apart from someone who maintains on purpose without knowing the goal.
+5. The one-question clause is untested; the low-food line moved from the bottom of the sheet to the top, which could change the 4-of-4 behaviour from the smoke test.
+6. English finding text on Danish sheets (the model replies in the person's language, as it did with the other sheet lines).
+
+**Harsh score: 6.5/10.** The computing is sound and tested on all 20 cases with no false alarm on 12 of them. It cannot score higher before a model has used it, and the biggest weakness is the one above: an unmeasured bet on an unmeasured reader.
+**Next:** gate A (about $1.50 to $2) needs Omar's yes. A model-free check on the two risky answers (o08, o03) is the first thing to read when it runs.
+
 ### Exam v3 plan (Omar's brief, 4 Nov 2026; replaces the pending E2 round-2 work)
 Omar: "make the Coach's answers the best in the world, and prove it with measurements, not opinions." His brief is the
 spec (Answer Bar 12 rules, ~60 cases with 4–8 checks each, 10 hold-out, kappa-calibrated judges, both orders, worst of 3
