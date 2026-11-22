@@ -11,7 +11,7 @@
 import { LOOKUP, MINOR, RISK } from './route';
 import { numbersIn } from './untrusted';
 
-export type SlipId = 'only-repeats' | 'ignores-message' | 'sends-away';
+export type SlipId = 'only-repeats' | 'ignores-message' | 'sends-away' | 'minor-number';
 export interface Slip { id: SlipId; reason: string }
 
 const W = (list: string) => new RegExp(`(?<![\\p{L}\\p{N}_])(?:${list})(?![\\p{L}\\p{N}_])`, 'iu');
@@ -44,6 +44,10 @@ const MUST_ANSWER: { cue: RegExp; answer: RegExp; what: string }[] = [
   { what: 'the sickness', cue: W('sick|ill|fever|cold|flu|syg\\w*|feber|forkølet'), answer: W('sick|ill|fever|cold|flu|rest\\w*|recover\\w*|syg\\w*|feber|forkølet|hvile\\w*') },
 ];
 
+/** a minor asking to lose weight: any body-weight or calorie figure is a slip, even the one they named (m06, 22 Nov: "before you aim for 3 kg") */
+const CUT_TALK = W('cut\\w*|lose|losing|drop|lighter|slim\\w*|diet\\w*|weight class|weigh-?in\\w*|tabe\\w*|smide|slank\\w*|kur|vægtklasse\\p{L}*|indvejning\\p{L}*');
+const BODY_FIGURE = /\d+(?:[.,]\d+)?\s*(?:kg|kilos?|kilo|kcal|calories|cal|kalorier|lbs?|pounds?)(?![\p{L}])/iu;
+
 export interface SlipContext {
   /** the person's latest message; empty when the Coach speaks first */
   personText: string;
@@ -51,6 +55,8 @@ export interface SlipContext {
   sheetNumbers: number[];
   /** a memory that says the person is under 18 */
   minor?: boolean;
+  /** the person's earlier messages in this talk ("my coach says I should" still continues a cut) */
+  earlier?: string;
 }
 
 export function findSlips(say: string, ctx: SlipContext): Slip[] {
@@ -77,12 +83,19 @@ export function findSlips(say: string, ctx: SlipContext): Slip[] {
   if (!risky && REFERRAL.test(text) && wordsOf(text).length <= 60 && usedSheet.size === 0 && !STEP.test(text.replace(REFERRAL, ''))) {
     slips.push({ id: 'sends-away', reason: 'it sends the person to someone else without answering, and nothing here is a stop sign' });
   }
+  // 4. a minor who wants to lose weight gets no weight or calorie figure at all
+  const talk = `${ctx.earlier ?? ''}\n${person}`;
+  if ((ctx.minor || MINOR.test(talk)) && CUT_TALK.test(talk) && BODY_FIGURE.test(text)) {
+    slips.push({ id: 'minor-number', reason: 'the person is under 18 and asked about losing weight, and the answer names a weight or calorie figure' });
+  }
   return slips;
 }
 
 /** the one retry: the same request plus what was wrong, in the model's own terms */
 export const retryNote = (slips: Slip[]): string =>
-  `(Your last answer slipped: ${slips.map((s) => s.reason).join('; ')}. Answer again from the start. Use what the person just said, give the next step as a number or an action from FACTS, and answer before you point anyone elsewhere.)`;
+  slips.some((s) => s.id === 'minor-number')
+    ? `(Your last answer slipped: ${slips.map((s) => s.reason).join('; ')}. Answer again from the start. Use what the person just said, name no weight, kilo or calorie figure at all (not even one they named), bring in a parent and a doctor together with their coach, and say what they can work on instead.)`
+    : `(Your last answer slipped: ${slips.map((s) => s.reason).join('; ')}. Answer again from the start. Use what the person just said, give the next step as a number or an action from FACTS, and answer before you point anyone elsewhere.)`;
 
 /** shown when the retry slips too: plain, true, and the person chooses whether to spend more */
 export const fallback = (lang: 'en' | 'da'): string =>

@@ -7,8 +7,8 @@ const ids = (t: string) => pickPlaybooks(t).map((p) => p.id);
 
 describe('playbooks', () => {
   it('every card has cover, stop signs and an example with no digits (a small model cannot copy a figure)', () => {
-    expect(PLAYBOOKS.length).toBe(12);
-    expect(new Set(PLAYBOOKS.map((p) => p.id)).size).toBe(12);
+    expect(PLAYBOOKS.length).toBe(13);
+    expect(new Set(PLAYBOOKS.map((p) => p.id)).size).toBe(13);
     for (const p of PLAYBOOKS) {
       expect(p.cover.length, p.id).toBeGreaterThanOrEqual(2);
       expect(p.stop.length, p.id).toBeGreaterThanOrEqual(1);
@@ -25,6 +25,11 @@ describe('playbooks', () => {
     expect(ids('I barely slept last night, should I still train today?')).toEqual(['sleep-shifts']);
     expect(ids('why is my row stuck?')).toEqual(['stalled-lift']);
     expect(ids('can you make me a 3-day plan? 45 min each')).toEqual(['plan-request']);
+    expect(ids('hvad står der i dag?')).toEqual(['plain-lookup']);
+    expect(ids("what's on today?")).toEqual(['plain-lookup']);
+    // a look-up with more in it is not a plain look-up
+    expect(ids("what's today? my knee hurts")).not.toContain('plain-lookup');
+    expect(ids('what is the best plan for today if I slept badly?')).not.toContain('plain-lookup');
   });
   it('the race card needs a race close by, not just the word', () => {
     expect(ids('I run 5k three times a week. How do I build endurance?')).toEqual([]);
@@ -32,8 +37,9 @@ describe('playbooks', () => {
     expect(ids('my marathon is next week, how do I taper?')).toEqual(['race-week']);
     expect(ids('race on Sunday, what should this week look like?')).toEqual(['race-week']);
   });
-  it('does not fire on look-ups, logging or thanks, and "hurtigere" is speed, not pain', () => {
-    for (const t of ['thanks!', 'log 3 eggs and 200 g oats', 'hvad står der i dag?', 'move today\'s pull to Wednesday', 'I want to go back on the plan']) expect(ids(t), t).toEqual([]);
+  it('no situation card on logging, thanks or a move (a plain look-up gets only its own card), and "hurtigere" is speed, not pain', () => {
+    for (const t of ['thanks!', 'log 3 eggs and 200 g oats', 'move today\'s pull to Wednesday', 'I want to go back on the plan']) expect(ids(t), t).toEqual([]);
+    expect(ids('hvad står der i dag?')).toEqual(['plain-lookup']);
     expect(ids('vil være hurtigere')).not.toContain('sore-joint');
     expect(ids('I want to train shoulders today')).toEqual([]);
   });
