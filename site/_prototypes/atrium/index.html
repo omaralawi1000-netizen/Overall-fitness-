@@ -1,0 +1,1316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aven Atrium</title>
+<meta name="theme-color" content="#ECE6DD">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Geist:wght@300..700&display=swap">
+<style>
+/* Atrium: a sunlit plaster wall. Your week stands on it as an arched stained-glass window, one pane per day,
+   coloured by what you trained. Its coloured light falls on the wall below, and the frosted glass you read sits in
+   that light, so the frost always has colour to show. Every logged set leads a new strip of glass into today's pane. */
+:root {
+  color-scheme: light;
+  --wall: #ECE6DD;
+  --ink: #1E1A25;
+  --ink-2: rgba(30, 26, 37, .7);
+  --ink-3: rgba(30, 26, 37, .52);
+  --hair: rgba(30, 26, 37, .1);
+  --push: #EC5B7A;
+  --pull: #3F67E6;
+  --legs: #17A68E;
+  --wrestle: #8B5CF0;
+  --gold: #DFA43A;
+  --c: var(--push);
+  --frost: rgba(255, 253, 250, .5);
+  --frost-2: rgba(255, 253, 250, .34);
+  --blur: blur(26px) saturate(1.75);
+  --well: rgba(255, 255, 255, .5);
+  --r-card: 28px;
+  --r-in: 16px;
+  --gap: 12px;
+  --gl: max(16px, env(safe-area-inset-left, 0px));
+  --gr: max(16px, env(safe-area-inset-right, 0px));
+  --top: max(14px, env(safe-area-inset-top, 0px));
+  --bot: max(14px, env(safe-area-inset-bottom, 0px));
+  --font: "Geist", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  /* springs: overwritten by script with sampled linear() curves; these are the fallbacks */
+  --sp: cubic-bezier(.2, .9, .25, 1.04); --sp-t: 380ms;
+  --sp-calm: cubic-bezier(.22, .8, .25, 1); --sp-calm-t: 640ms;
+  --sp-sheet: cubic-bezier(.2, .9, .25, 1); --sp-sheet-t: 520ms;
+}
+:root[data-glass="sea"] {
+  --wall: #E7EBE8;
+  --push: #23A5A0;
+  --pull: #3A7BD5;
+  --legs: #7DB85F;
+  --wrestle: #6676E6;
+  --gold: #D9A43C;
+  --ink: #15242A;
+  --ink-2: rgba(21, 36, 42, .7);
+  --ink-3: rgba(21, 36, 42, .52);
+  --hair: rgba(21, 36, 42, .1);
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { color-scheme: light; } }
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body { margin: 0; background: #D9D2C8; color: var(--ink); font-family: var(--font); font-size: 15px; line-height: 1.38;
+  font-weight: 450; overflow: hidden; overscroll-behavior: none; -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent; -webkit-user-select: none; user-select: none;
+  font-variant-numeric: tabular-nums; letter-spacing: -.005em; }
+button { font: inherit; color: inherit; border: 0; background: none; padding: 0; margin: 0; cursor: pointer;
+  touch-action: manipulation; text-align: inherit; }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+h1, h2, h3, p, ul, ol { margin: 0; padding: 0; }
+ul, ol { list-style: none; }
+svg { display: block; }
+[hidden] { display: none !important; }
+
+/* the room */
+.app { position: relative; height: 100%; max-width: 440px; margin: 0 auto; overflow: hidden; background: var(--wall);
+  box-shadow: 0 0 60px rgba(60, 40, 20, .18); }
+.wall { position: absolute; inset: 0; pointer-events: none; }
+.wall canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.wall canvas.next { opacity: 0; transition: opacity 1.1s ease; }
+.wall canvas.next.on { opacity: 1; }
+
+.screen { position: absolute; inset: 0; display: flex; flex-direction: column; padding: var(--top) var(--gr) var(--bot) var(--gl);
+  transition: transform var(--sp-calm-t) var(--sp-calm); will-change: transform; overflow-y: auto; overflow-x: hidden;
+  scrollbar-width: none; }
+.screen::-webkit-scrollbar { display: none; }
+.screen.off { visibility: hidden; }
+#today.left { transform: translateX(-30%); }
+#workout.right { transform: translateX(104%); }
+#today > *, #workout > * { flex: none; }
+.screen .fade { transition: opacity .32s ease; }
+#today.left .fade { opacity: 0; }
+
+/* glass: plain live blur, a warm white tint and a lit edge (decision A) */
+.glass { position: relative; background: var(--frost); -webkit-backdrop-filter: var(--blur); backdrop-filter: var(--blur);
+  border-radius: var(--r-card);
+  box-shadow: 0 24px 40px -26px rgba(60, 40, 30, .42), 0 1px 3px rgba(60, 40, 30, .06); }
+.glass::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none; padding: 1px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, .95), rgba(255, 255, 255, .25) 42%, rgba(255, 255, 255, .55) 100%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0); }
+.press { transition: transform 160ms var(--sp); }
+.press:active { transform: scale(.965); transition-duration: 60ms; }
+
+/* type */
+.eyebrow { font-size: 12.5px; font-weight: 560; letter-spacing: .02em; color: var(--ink-2); display: flex; align-items: center; gap: 7px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--c); box-shadow: 0 0 0 2px rgba(255, 255, 255, .6); flex: none; }
+.meta { font-size: 13.5px; color: var(--ink-2); }
+
+/* Today */
+.thead { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; padding-top: 6px; }
+.date { font-size: 13.5px; font-weight: 520; color: var(--ink-2); }
+.hello { font-size: 30px; line-height: 1.08; font-weight: 600; letter-spacing: -.028em; margin-top: 4px; }
+.round { width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; flex: none; }
+.round svg { width: 22px; height: 22px; }
+
+/* the window: an arched frame with seven panes */
+.win-wrap { margin-top: 16px; }
+.window { position: relative; padding: 7px; background: linear-gradient(180deg, #FFFDF9, #F2EDE5 70%, #EAE3D9);
+  border-radius: 50% 50% 18px 18px / 62px 62px 18px 18px;
+  box-shadow: inset 0 1px 0 #fff, inset 0 -1px 0 rgba(120, 90, 60, .12), 0 20px 32px -20px rgba(80, 50, 30, .45), 0 2px 4px rgba(80, 50, 30, .1); }
+.glasses { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; height: 150px; overflow: hidden;
+  border-radius: 50% 50% 12px 12px / 56px 56px 12px 12px; }
+.pane { position: relative; overflow: hidden; border-radius: 3px; background: linear-gradient(180deg, rgba(255, 255, 255, .78), rgba(255, 255, 255, .42));
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .55); }
+.pane .tint { position: absolute; inset: 0; background:
+  linear-gradient(180deg, color-mix(in oklab, var(--c) 52%, #fff) 0%, var(--c) 46%, color-mix(in oklab, var(--c) 78%, #24102c) 100%);
+  transform-origin: 50% 100%; }
+.pane .tint::before { content: ""; position: absolute; inset: 0; opacity: .5; mix-blend-mode: soft-light;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.09' numOctaves='2' seed='4'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1.4 -.35'/%3E%3C/filter%3E%3Crect width='80' height='80' filter='url(%23n)'/%3E%3C/svg%3E"); }
+.pane::after { content: ""; position: absolute; inset: -20% -60%; pointer-events: none;
+  background: linear-gradient(112deg, transparent 38%, rgba(255, 255, 255, .5) 46%, rgba(255, 255, 255, .08) 53%, transparent 60%); }
+.pane.rest .tint { display: none; }
+.vlab { position: absolute; left: 50%; bottom: 10px; transform: translateX(-50%) rotate(180deg); writing-mode: vertical-rl; font-size: 11px; font-weight: 600;
+  letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); white-space: nowrap; }
+.pane.today .vlab { color: color-mix(in oklab, var(--c) 75%, var(--ink)); }
+.pane.today.fresh { background: linear-gradient(180deg, rgba(255, 255, 255, .9), rgba(255, 255, 255, .55)); }
+.pane.today.fresh::before { content: ""; position: absolute; inset: 0; box-shadow: inset 0 0 0 2px color-mix(in oklab, var(--c) 55%, transparent);
+  animation: breathe 2.8s ease-in-out infinite; }
+@keyframes breathe { 50% { opacity: .35; } }
+.pane.today { box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, .95), 0 0 0 1.5px color-mix(in oklab, var(--c) 60%, transparent); }
+.pane.today::after { animation: shine 4.8s cubic-bezier(.4, 0, .2, 1) infinite; }
+.pane.lit::after { animation: shine 1.4s cubic-bezier(.3, 0, .2, 1) 1; }
+@keyframes shine { 0% { transform: translateX(-70%); } 46%, 100% { transform: translateX(70%); } }
+.bands { position: absolute; inset: 0; display: flex; flex-direction: column-reverse; gap: 2px; padding: 0; }
+.band { flex: 1; position: relative; overflow: hidden; background: color-mix(in oklab, var(--c) 13%, rgba(255, 255, 255, .55)); }
+.band.gap { margin-top: 2px; }
+.band i { position: absolute; inset: 0; transform: scaleY(0); transform-origin: 50% 100%;
+  background: linear-gradient(90deg, color-mix(in oklab, var(--c) 70%, #fff), var(--c) 55%, color-mix(in oklab, var(--c) 82%, #2a1030)); }
+.band.done i { transform: none; }
+.band.gold i { background: linear-gradient(90deg, #FFE6A6, var(--gold) 50%, #B97C1C); }
+.band b { position: absolute; inset: 0; transform: scaleX(0); transform-origin: 0 50%; background: rgba(255, 249, 232, .98); }
+.days { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; padding: 9px 7px 0; text-align: center; }
+.days button { font-size: 12px; font-weight: 560; color: var(--ink-3); padding: 2px 0 4px; border-radius: 8px; }
+.days button.on { color: var(--ink); }
+.days button.on::after { content: ""; display: block; width: 4px; height: 4px; border-radius: 50%; background: var(--c); margin: 4px auto 0; }
+.wcap { display: flex; justify-content: space-between; align-items: baseline; margin-top: 8px; padding: 0 4px; gap: 10px; }
+.wcap strong { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+.legend { display: flex; gap: 10px; font-size: 12px; color: var(--ink-2); flex-wrap: wrap; justify-content: flex-end; }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.legend i { width: 7px; height: 11px; border-radius: 2px; background: var(--c); }
+
+.sess { margin-top: 16px; padding: 16px 18px 18px; }
+.sess h2 { font-size: 22px; font-weight: 600; letter-spacing: -.02em; line-height: 1.16; margin-top: 8px; }
+.sess .meta { margin-top: 4px; }
+.coachline { display: flex; gap: 10px; align-items: flex-start; width: 100%; margin-top: 14px; padding: 12px 12px; border-radius: var(--r-in);
+  background: var(--well); font-size: 14px; line-height: 1.38; color: var(--ink); }
+.coachline svg { width: 18px; height: 18px; flex: none; margin-top: 1px; }
+.coachline .chev { margin-left: auto; color: var(--ink-3); font-size: 18px; line-height: 1; align-self: center; }
+.cta { position: relative; display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 58px; margin-top: 14px;
+  border-radius: 20px; color: #fff; font-size: 17px; font-weight: 580; letter-spacing: -.01em; overflow: hidden;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--c) 58%, #2a1430), color-mix(in oklab, var(--c) 40%, #170a1c));
+  box-shadow: 0 16px 26px -14px color-mix(in oklab, var(--c) 60%, #1a0a20), inset 0 1px 0 rgba(255, 255, 255, .22), inset 0 -1px 0 rgba(0, 0, 0, .2); }
+.cta .pip { width: 9px; height: 9px; border-radius: 50%; background: color-mix(in oklab, var(--c) 40%, #fff); box-shadow: 0 0 0 3px rgba(255, 255, 255, .18); }
+.cta.done .pip { background: var(--c); }
+.cta.done { background: rgba(255, 255, 255, .55); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .7); }
+
+.nums { margin-top: var(--gap); display: grid; grid-template-columns: repeat(3, 1fr); padding: 6px; gap: 0; }
+.num-b { padding: 10px 11px 12px; border-radius: 22px; text-align: left; min-width: 0; }
+.num-b + .num-b { box-shadow: inset 1px 0 0 var(--hair); border-radius: 0 22px 22px 0; }
+.num-b .lab { font-size: 12.5px; font-weight: 560; color: var(--ink-2); display: flex; justify-content: space-between; align-items: center; height: 22px; }
+.num-b .lab em { font-style: normal; color: var(--ink); font-weight: 600; font-size: 11.5px; height: 22px; padding: 0 7px; border-radius: 11px;
+  background: rgba(255, 255, 255, .7); display: grid; place-items: center; }
+.num-b .v { font-size: 24px; font-weight: 560; letter-spacing: -.03em; margin-top: 3px; display: flex; align-items: baseline; gap: 3px; white-space: nowrap; }
+.num-b .v small { font-size: 12.5px; font-weight: 500; color: var(--ink-3); letter-spacing: 0; }
+.bar { display: block; height: 4px; border-radius: 2px; background: rgba(30, 26, 37, .09); margin-top: 8px; overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: inherit; background: var(--c); transform-origin: 0 50%; transition: transform var(--sp-calm-t) var(--sp-calm); }
+
+.tabs { margin-top: auto; position: sticky; bottom: 0; display: grid; grid-template-columns: repeat(4, 1fr); padding: 6px; border-radius: 26px;
+  margin-bottom: 2px; }
+.spacer { flex: 1 0 18px !important; }
+.tab { height: 54px; border-radius: 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  font-size: 11.5px; font-weight: 560; color: var(--ink-2); }
+.tab svg { width: 22px; height: 22px; }
+.tab.on { background: rgba(255, 255, 255, .62); color: var(--ink); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .8); }
+
+/* Workout */
+.wtop { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 4px; }
+.wmid { text-align: center; font-size: 14px; font-weight: 560; color: var(--ink-2); }
+.wmid b { display: block; font-size: 16px; color: var(--ink); font-weight: 600; letter-spacing: -.01em; }
+.pill { height: 46px; padding: 0 18px; border-radius: 23px; font-size: 15px; font-weight: 580; display: grid; place-items: center; }
+.exhead { display: flex; gap: 16px; align-items: center; margin-top: 18px; }
+.extext { flex: 1; min-width: 0; }
+.exname { display: block; font-size: 32px; line-height: 1.06; font-weight: 600; letter-spacing: -.03em; margin-top: 8px; }
+.exname::after { content: " ›"; color: var(--ink-3); font-weight: 400; }
+.exhead .meta { margin-top: 8px; }
+.daypane { width: 70px; flex: none; text-align: center; }
+.daypane .window { padding: 5px; border-radius: 50% 50% 12px 12px / 30px 30px 12px 12px; }
+.daypane .glasses { display: block; height: 118px; border-radius: 50% 50% 8px 8px / 26px 26px 8px 8px; }
+.daypane .pane { height: 100%; border-radius: 0; }
+.daypane .cap { font-size: 12px; font-weight: 560; color: var(--ink-2); margin-top: 7px; }
+.xfade { transition: opacity .26s ease, transform .5s var(--sp-calm); }
+.xfade.out { opacity: 0; transform: translateY(6px); }
+
+.sets { margin-top: 14px; padding: 8px; min-height: 192px; }
+.srow { display: grid; grid-template-columns: 34px 1fr auto; align-items: center; height: 44px; padding: 0 12px 0 10px; border-radius: 16px; font-size: 16px; }
+.srow .n { font-size: 13px; font-weight: 600; color: var(--ink-3); }
+.srow .wr { font-weight: 560; letter-spacing: -.01em; }
+.srow .wr small { color: var(--ink-3); font-weight: 500; font-size: 13px; margin-left: 4px; }
+.srow .st { font-size: 13px; color: var(--ink-3); display: flex; align-items: center; gap: 6px; }
+.srow.now { background: rgba(255, 255, 255, .58); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .8); }
+.srow.now .n, .srow.now .st { color: var(--ink); }
+.srow.done .wr { color: var(--ink); }
+.tick { width: 22px; height: 22px; border-radius: 50%; background: var(--c); display: grid; place-items: center; }
+.tick.gold { background: var(--gold); }
+.tick path { stroke: #fff; stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 14; stroke-dashoffset: 0; }
+.tick.draw path { animation: draw .42s .08s cubic-bezier(.3, .7, .2, 1) both; }
+.tick.draw { animation: pop var(--sp-t) var(--sp) both; }
+@keyframes draw { from { stroke-dashoffset: 14; } }
+@keyframes pop { from { transform: scale(.4); } }
+
+.ctrl { margin-top: var(--gap); padding: 16px; overflow: hidden; }
+.faces { display: grid; }
+.face { grid-area: 1 / 1; transition: opacity .24s ease, transform .5s var(--sp-calm); }
+.face.away { opacity: 0; pointer-events: none; transform: translateY(10px); }
+.frow { display: flex; justify-content: space-between; align-items: center; gap: 10px; min-height: 26px; }
+.frow .eyebrow { font-size: 13px; color: var(--ink); }
+.coachmini { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-2); text-align: right; padding: 4px 0 4px 8px; }
+.coachmini svg { width: 16px; height: 16px; flex: none; }
+.coachsay { font-size: 14px; line-height: 1.38; color: var(--ink-2); margin-top: 6px; min-height: 38px; }
+.stp { display: grid; grid-template-columns: 60px 1fr 60px; align-items: center; height: 64px; margin-top: 8px; border-radius: 22px; background: var(--well);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .6); }
+.stp + .stp { margin-top: 8px; }
+.stp button { height: 64px; display: grid; place-items: center; font-size: 28px; font-weight: 400; color: var(--ink); border-radius: 22px; }
+.stp button:active { background: rgba(255, 255, 255, .6); }
+.stp .val { text-align: center; display: flex; align-items: baseline; justify-content: center; gap: 6px; }
+.stp .unit { font-size: 14px; color: var(--ink-3); font-weight: 520; }
+.big { font-size: 44px; font-weight: 540; letter-spacing: -.035em; line-height: 1; }
+.ctrl .cta { margin-top: 12px; height: 62px; }
+.rest-count { font-size: 76px; font-weight: 450; letter-spacing: -.045em; line-height: 1; text-align: center; margin-top: 26px; }
+.rbar { height: 6px; border-radius: 3px; background: rgba(30, 26, 37, .1); margin: 22px 18px 0; overflow: hidden; }
+.rbar i { display: block; height: 100%; background: linear-gradient(90deg, color-mix(in oklab, var(--c) 60%, #fff), var(--c)); transform-origin: 0 50%; }
+.rbtns { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 24px; }
+.rbtns button { height: 52px; border-radius: 18px; background: var(--well); font-size: 15px; font-weight: 560; display: grid; place-items: center;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .6); }
+.rnext { font-size: 13px; color: var(--ink-2); }
+.ctrl .cta.skip { margin-top: 10px; }
+.sweep { position: absolute; top: -10%; bottom: -10%; left: 0; width: 70%; pointer-events: none; opacity: 0;
+  background: linear-gradient(90deg, transparent, color-mix(in oklab, var(--c) 30%, transparent) 30%, rgba(255, 255, 255, .55) 50%, color-mix(in oklab, var(--c) 30%, transparent) 70%, transparent);
+  transform: translateX(-110%) skewX(-18deg); }
+.sweep.gold { background: linear-gradient(90deg, transparent, rgba(255, 214, 120, .4) 30%, rgba(255, 247, 220, .8) 50%, rgba(255, 214, 120, .4) 70%, transparent); }
+
+/* rolling digits */
+.roll { display: inline-flex; align-items: baseline; line-height: 1; }
+.dg { display: inline-block; height: 1em; line-height: 1; overflow: hidden; margin-bottom: var(--dg-base, -.15em); }
+.dg > span { display: block; transform: translateY(-10em); }
+.dg > span > span { display: block; height: 1em; }
+
+/* sheets */
+.scrim { position: absolute; inset: 0; background: rgba(252, 246, 238, .42); opacity: 0; transition: opacity .34s ease; pointer-events: none; z-index: 20; }
+.scrim.on { opacity: 1; pointer-events: auto; }
+.sheet { position: absolute; left: 8px; right: 8px; bottom: 8px; z-index: 21; overflow: hidden;
+  box-shadow: 0 30px 60px -20px rgba(60, 40, 30, .35), 0 2px 8px rgba(60, 40, 30, .08); max-height: calc(100% - var(--top) - 40px); display: flex; flex-direction: column;
+  border-radius: 32px; transform: translateY(calc(100% + 24px)); transition: transform var(--sp-sheet-t) var(--sp-sheet);
+  --frost: rgba(255, 253, 250, .64); visibility: hidden; }
+.sheet.on { transform: none; visibility: visible; }
+.sheet.dragging { transition: none; }
+.grab { height: 26px; flex: none; display: grid; place-items: center; touch-action: none; cursor: grab; }
+.grab::before { content: ""; width: 40px; height: 5px; border-radius: 3px; background: rgba(30, 26, 37, .2); }
+.sbody { overflow-y: auto; padding: 0 18px 18px; overscroll-behavior: contain; scrollbar-width: none; touch-action: pan-y; }
+.sbody::-webkit-scrollbar { display: none; }
+.sbody h3 { font-size: 24px; font-weight: 600; letter-spacing: -.025em; line-height: 1.15; }
+.sbody .lead { font-size: 15.5px; line-height: 1.45; margin-top: 10px; color: var(--ink); }
+.sec { font-size: 12.5px; font-weight: 600; letter-spacing: .02em; color: var(--ink-2); margin: 20px 4px 8px; }
+.list { border-radius: 20px; background: var(--well); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .6); overflow: hidden; }
+.li { display: flex; align-items: center; gap: 12px; min-height: 54px; padding: 8px 14px; width: 100%; font-size: 15px; }
+.li + .li { box-shadow: inset 0 1px 0 var(--hair); }
+.li .grow { flex: 1; min-width: 0; }
+.li .sub { font-size: 13px; color: var(--ink-2); margin-top: 1px; }
+.li .x { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; color: var(--ink-3); font-size: 20px; flex: none; }
+.li .add { height: 36px; padding: 0 14px; border-radius: 18px; background: rgba(255, 255, 255, .8); font-weight: 600; font-size: 14px; display: grid; place-items: center; flex: none; }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+.chip { height: 42px; padding: 0 16px; border-radius: 21px; background: rgba(255, 255, 255, .7); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .9);
+  font-size: 14.5px; font-weight: 540; display: inline-flex; align-items: center; }
+.reply { margin-top: 14px; padding: 14px; border-radius: 20px; background: rgba(255, 255, 255, .72); font-size: 15px; line-height: 1.45;
+  transform-origin: 50% 0; animation: arrive var(--sp-t) var(--sp) both; }
+.reply .act { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 12px; padding-top: 12px; box-shadow: inset 0 1px 0 var(--hair);
+  font-size: 13.5px; color: var(--ink-2); }
+.reply .act button { height: 38px; padding: 0 16px; border-radius: 19px; background: var(--ink); color: #fff; font-weight: 580; font-size: 14px; }
+@keyframes arrive { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+.ask { display: flex; gap: 8px; margin-top: 16px; }
+.ask input { flex: 1; min-width: 0; height: 50px; border-radius: 25px; border: 0; padding: 0 18px; font: inherit; font-size: 16px; color: var(--ink);
+  background: rgba(255, 255, 255, .78); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .9); -webkit-user-select: text; user-select: text; }
+.ask button { width: 50px; height: 50px; border-radius: 50%; background: var(--ink); color: #fff; display: grid; place-items: center; flex: none; }
+.seg { display: inline-flex; padding: 3px; border-radius: 16px; background: rgba(30, 26, 37, .07); }
+.seg button { height: 34px; padding: 0 14px; border-radius: 13px; font-size: 14px; font-weight: 560; color: var(--ink-2); }
+.seg button.on { background: #fff; color: var(--ink); box-shadow: 0 1px 3px rgba(30, 26, 37, .12); }
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; }
+.stat { padding: 12px 10px; border-radius: 18px; background: var(--well); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .6); }
+.stat .lab { font-size: 12px; color: var(--ink-2); font-weight: 560; }
+.stat .v { font-size: 21px; font-weight: 580; letter-spacing: -.03em; margin-top: 2px; }
+.hold { position: relative; overflow: hidden; }
+.hold i { position: absolute; inset: 0; background: var(--c); transform: scaleX(0); transform-origin: 0 50%; }
+.hold span { position: relative; }
+.fin-hero { display: flex; gap: 16px; align-items: center; }
+.fin-hero .daypane { width: 64px; }
+.fin-hero .daypane .glasses { height: 120px; }
+.chart { margin-top: 10px; border-radius: 20px; background: var(--well); padding: 12px 12px 8px; box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .6); }
+.chart svg { width: 100%; height: 120px; overflow: visible; }
+
+/* toast */
+.toast { position: absolute; left: 50%; top: calc(var(--top) + 62px); z-index: 30; display: flex; align-items: center; gap: 12px; min-height: 56px; max-width: calc(100% - 32px);
+  padding: 8px 18px 8px 12px; border-radius: 26px; transform: translate(-50%, -160%); transition: transform var(--sp-t) var(--sp);
+  font-size: 14.5px; font-weight: 540; visibility: hidden; white-space: nowrap; --frost: rgba(255, 253, 250, .72); }
+.toast.on { transform: translate(-50%, 0); visibility: visible; }
+.toast.low { transform: translate(-50%, 26px) scale(.94); opacity: 0; transition: transform var(--sp-t) var(--sp), opacity .2s ease; }
+.toast.low.on { transform: translate(-50%, 0); opacity: 1; }
+.toast:has(button:not([hidden])) { padding-right: 8px; }
+.toast .tx { overflow: hidden; text-overflow: ellipsis; }
+.toast .tx small { display: block; font-size: 12.5px; color: var(--ink-2); font-weight: 500; }
+.toast button { height: 36px; padding: 0 14px; border-radius: 18px; background: rgba(30, 26, 37, .08); font-weight: 600; font-size: 13.5px; flex: none; }
+.toast .gem { width: 32px; height: 32px; flex: none; clip-path: polygon(50% 0, 100% 34%, 80% 100%, 20% 100%, 0 34%);
+  background: conic-gradient(from 200deg at 50% 42%, color-mix(in oklab, var(--c) 40%, #fff), var(--c), color-mix(in oklab, var(--c) 70%, #2a1030), color-mix(in oklab, var(--c) 55%, #fff), var(--c), color-mix(in oklab, var(--c) 40%, #fff)); }
+.toast .gem i { display: block; width: 100%; height: 100%; background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, .85) 48%, transparent 60%); transform: translateX(-100%); }
+.toast.gold .gem { background: conic-gradient(from 200deg at 50% 42%, #FFF3CF, #E9B248, #9A6512, #F6D58A, #C98A22, #FFF3CF); }
+.toast.gold.on .gem i { animation: glint 1.1s .25s cubic-bezier(.3, 0, .2, 1) both; }
+@keyframes glint { to { transform: translateX(100%); } }
+.toast.gold { box-shadow: 0 0 0 1px rgba(223, 164, 58, .75), 0 18px 34px -16px rgba(150, 100, 20, .5); }
+.toast.gold .tx small { color: #8A5A10; }
+.toast.plain .gem { display: none; }
+
+.flyer { position: absolute; z-index: 15; pointer-events: none; border-radius: 4px; overflow: hidden;
+  background: linear-gradient(180deg, color-mix(in oklab, var(--c) 52%, #fff), var(--c) 50%, color-mix(in oklab, var(--c) 78%, #24102c)); }
+
+/* shorter screens (a browser with its address bar): keep Log on screen without scrolling */
+@media (max-height: 800px) {
+  .exhead { margin-top: 8px; }
+  .daypane .glasses { height: 96px; }
+  .sets { margin-top: 10px; min-height: 172px; padding: 6px; }
+  .srow { height: 40px; }
+  .coachsay { min-height: 0; display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+  .stp, .stp button { height: 58px; }
+  .ctrl .cta { height: 56px; }
+  .ctrl { padding: 14px; }
+  .rest-count { margin-top: 18px; font-size: 68px; }
+  .rbtns { margin-top: 18px; }
+  .glasses { height: 132px; }
+  .hello { font-size: 28px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 1ms !important; animation-iteration-count: 1 !important; transition-duration: 1ms !important; }
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="glyph" viewBox="0 0 20 20">
+    <clipPath id="archclip"><path d="M3.5 18.5V9a6.5 6.5 0 0 1 13 0v9.5z"/></clipPath>
+    <g clip-path="url(#archclip)">
+      <rect x="3.5" y="2" width="3.4" height="17" style="fill:var(--push)"/>
+      <rect x="6.9" y="2" width="3.1" height="17" style="fill:var(--pull)"/>
+      <rect x="10" y="2" width="3.1" height="17" style="fill:var(--wrestle)"/>
+      <rect x="13.1" y="2" width="3.4" height="17" style="fill:var(--legs)"/>
+    </g>
+    <path d="M3.5 18.5V9a6.5 6.5 0 0 1 13 0v9.5z" fill="none" stroke="#fff" stroke-width="1.2" opacity=".9"/>
+    <path d="M6.9 3.6V18.5M10 2.5V18.5M13.1 3.6V18.5" stroke="#fff" stroke-width=".9" opacity=".85"/>
+  </symbol>
+</svg>
+
+<div class="app" id="app">
+  <div class="wall" id="wall"></div>
+
+  <!-- TODAY -->
+  <main class="screen" id="today">
+    <header class="thead fade">
+      <div>
+        <p class="date" id="tDate"></p>
+        <h1 class="hello" data-t="hello"></h1>
+      </div>
+      <button class="round glass press" id="coachBtn" aria-label="Coach"><svg><use href="#glyph"/></svg></button>
+    </header>
+
+    <section class="win-wrap fade" aria-label="This week">
+      <div class="window" id="weekWin"><div class="glasses" id="weekPanes"></div></div>
+      <div class="days" id="weekDays"></div>
+      <div class="wcap"><strong id="weekCap"></strong><span class="legend" id="legend"></span></div>
+    </section>
+
+    <section class="glass sess fade" id="sess">
+      <p class="eyebrow"><i class="dot"></i><span id="sEyebrow"></span></p>
+      <h2 id="sTitle"></h2>
+      <p class="meta" id="sMeta"></p>
+      <button class="coachline press" id="sCoach"><svg><use href="#glyph"/></svg><span id="sCoachTx"></span><span class="chev">›</span></button>
+      <button class="cta press" id="startBtn"><span class="pip"></span><span id="startTx"></span></button>
+    </section>
+
+    <section class="glass nums fade" id="nums">
+      <button class="num-b press" id="nProtein"><span class="lab"><span data-t="protein"></span></span><span class="v"><span class="roll" id="vProt"></span><small>/ 150 g</small></span><span class="bar"><i id="bProt"></i></span></button>
+      <button class="num-b press" id="nWater"><span class="lab"><span data-t="water"></span><em>+250</em></span><span class="v"><span class="roll" id="vWater"></span><small>/ 2,5 L</small></span><span class="bar"><i id="bWater" style="background:var(--pull)"></i></span></button>
+      <button class="num-b press" id="nSleep"><span class="lab"><span data-t="sleep"></span></span><span class="v"><span class="roll" id="vSleep"></span><small>h</small></span><span class="bar"><i style="background:var(--wrestle);transform:scaleX(.92)"></i></span></button>
+    </section>
+
+    <div class="spacer"></div>
+    <nav class="glass tabs" id="tabs">
+      <button class="tab on" data-tab="today"><svg viewBox="0 0 20 20"><use href="#glyph"/></svg><span data-t="tToday"></span></button>
+      <button class="tab" data-tab="train"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 12h18M6 8v8M9 6v12M15 6v12M18 8v8"/></svg><span data-t="tTrain"></span></button>
+      <button class="tab" data-tab="food"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 21c4.4 0 7-3.2 7-7.5S15.5 6 12 6s-7 3.2-7 7.5S7.6 21 12 21z"/><path d="M12 6c0-1.6.7-2.8 2.2-3.4"/></svg><span data-t="tFood"></span></button>
+      <button class="tab" data-tab="health"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-5 4 10 2-5h6"/></svg><span data-t="tHealth"></span></button>
+    </nav>
+  </main>
+
+  <!-- WORKOUT -->
+  <main class="screen right off" id="workout" aria-label="Workout">
+    <header class="wtop">
+      <button class="round glass press" id="backBtn" aria-label="Back"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg></button>
+      <p class="wmid"><b>Push</b><span id="wClock">0:00</span></p>
+      <button class="pill glass press" id="finishBtn" data-t="finish"></button>
+    </header>
+
+    <section class="exhead">
+      <div class="extext xfade" id="exText">
+        <p class="eyebrow" id="exEyebrow"></p>
+        <button class="exname" id="exName"></button>
+        <p class="meta" id="exLast"></p>
+      </div>
+      <div class="daypane" id="dayPaneBox">
+        <div class="window"><div class="glasses"><div class="pane today" id="dayPane"><div class="bands" id="dayBands"></div></div></div></div>
+        <p class="cap" id="paneCap"></p>
+      </div>
+    </section>
+
+    <section class="glass sets" id="setList"><ol class="xfade" id="setRows"></ol></section>
+
+    <div class="spacer"></div>
+    <section class="glass ctrl" id="ctrl">
+      <div class="faces">
+        <div class="face" id="faceLog">
+          <div class="frow"><span class="eyebrow" id="setLabel"></span><button class="coachmini press" id="wCoachBtn"><svg><use href="#glyph"/></svg><span data-t="askCoach"></span></button></div>
+          <p class="coachsay" id="coachSay"></p>
+          <div class="stp" data-k="w"><button class="minus" aria-label="minus">−</button><div class="val"><span class="big roll" id="vW"></span><span class="unit">kg</span></div><button class="plus" aria-label="plus">+</button></div>
+          <div class="stp" data-k="r"><button class="minus" aria-label="minus">−</button><div class="val"><span class="big roll" id="vR"></span><span class="unit" data-t="repsU"></span></div><button class="plus" aria-label="plus">+</button></div>
+          <button class="cta press" id="logBtn"><span class="pip"></span><span data-t="logSet"></span></button>
+        </div>
+        <div class="face away" id="faceRest" inert>
+          <div class="frow"><span class="eyebrow" data-t="rest"></span><span class="rnext" id="restNext"></span></div>
+          <div class="rest-count"><span class="roll" id="restCount"></span></div>
+          <div class="rbar"><i id="restFill"></i></div>
+          <div class="rbtns"><button class="press" id="rMinus">−15 s</button><button class="press" id="rPlus">+15 s</button><button class="press" id="rUndo" data-t="undoSet"></button></div>
+          <button class="cta press skip" id="rSkip"><span data-t="skip"></span></button>
+        </div>
+      </div>
+      <div class="sweep" id="sweep"></div>
+    </section>
+  </main>
+
+  <div class="scrim" id="scrim"></div>
+  <section class="sheet glass" id="sheet" role="dialog" aria-modal="true"><div class="grab" id="grab"></div><div class="sbody" id="sbody"></div></section>
+  <div class="toast glass" id="toast" role="status"><span class="gem"><i></i></span><span class="tx" id="toastTx"></span><button id="toastBtn" hidden></button></div>
+</div>
+
+<script>
+(() => {
+'use strict';
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const q = new URLSearchParams(location.search);
+const root = document.documentElement;
+
+/* ---------- springs: one shared set, sampled into linear() ---------- */
+function spring(zeta, omega) {
+  const f = t => {
+    if (zeta < 1) { const wd = omega * Math.sqrt(1 - zeta * zeta); return 1 - Math.exp(-zeta * omega * t) * (Math.cos(wd * t) + zeta * omega / wd * Math.sin(wd * t)); }
+    return 1 - Math.exp(-omega * t) * (1 + omega * t);
+  };
+  let T = .1;
+  for (; T < 3; T += .01) { let ok = true; for (let k = 0; k < 25; k++) if (Math.abs(1 - f(T + k * .01)) > .0015) { ok = false; break; } if (ok) break; }
+  const n = 40, pts = [];
+  for (let i = 0; i <= n; i++) pts.push(i === n ? 1 : +f(T * i / n).toFixed(4));
+  return { ease: `linear(${pts.join(', ')})`, ms: Math.round(T * 1000) };
+}
+const SP = { snap: spring(.78, 24), calm: spring(1, 12.5), sheet: spring(.9, 17) };
+if (CSS.supports('transition-timing-function', 'linear(0, 1)')) {
+  root.style.setProperty('--sp', SP.snap.ease); root.style.setProperty('--sp-t', SP.snap.ms + 'ms');
+  root.style.setProperty('--sp-calm', SP.calm.ease); root.style.setProperty('--sp-calm-t', SP.calm.ms + 'ms');
+  root.style.setProperty('--sp-sheet', SP.sheet.ease); root.style.setProperty('--sp-sheet-t', SP.sheet.ms + 'ms');
+}
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------- words ---------- */
+const T = {
+  en: {
+    hello: 'Good morning, Omar', protein: 'Protein', water: 'Water', sleep: 'Sleep',
+    tToday: 'Today', tTrain: 'Train', tFood: 'Food', tHealth: 'Health',
+    repsU: 'reps', finish: 'Finish', askCoach: 'Coach', logSet: 'Log set', rest: 'Rest', undoSet: 'Undo set', skip: 'Skip rest',
+    days: ['M', 'T', 'W', 'T', 'F', 'S', 'S'], dayNames: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    months: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    types: { push: 'Push', pull: 'Pull', legs: 'Legs', wrestle: 'Wrestling', rest: 'Rest' },
+    weekCap: n => `${n} sessions`,
+    sEyebrow: 'Today · Push', sTitle: 'Chest, shoulders and triceps',
+    sMeta: (n, m, s) => `${n} exercises · about ${m} min · ${s} sets`,
+    sCoach: 'Bench moved last time: 82.5 × 5, up from 80 × 6. Today\'s plan stands.',
+    sCoachDone: n => (n ? `${n === 1 ? 'A new best' : n + ' new bests'} today. ` : 'Good session. ') + 'Eat 40 g protein in the next two hours and you hit today\'s goal.',
+    start: 'Start Push', resume: (d, t) => `Resume · ${d} of ${t} sets`, done: (s, m) => `Push done · ${s} sets · ${m} min`,
+    of: 'of', setOf: (i, n) => `Set ${i} of ${n}`, last: 'Last time', best: 'Best', paneCap: (d, t) => `${d} of ${t} sets`,
+    next: 'Next', nextSet: (i, w, r) => `Next: set ${i} · ${w} × ${r}`, nextEx: n => `Next: ${n}`, lastSet: 'Last set. Then finish.',
+    now: 'now', newBest: 'New best', e1: x => `Estimated 1-rep max ${x} kg`, setLogged: (w, r) => `${w} × ${r} logged`,
+    undo: 'Undo', undone: 'Undone',
+    paneTip: (d, t, m, s) => s ? `${d} · ${t} · ${m} min · ${s} sets` : `${d} · ${t} · ${m} min`, paneRest: d => `${d} · rest day`, paneToday: 'Today · Push, not started yet',
+    coachTitle: 'Coach', coachHello: 'Morning, Omar. Bench moved last time: 82.5 × 5, up from 80 × 6. You slept 7 h 40, so today\'s plan stands.',
+    coachWork: 'You\'re on {ex}. Ask me to change the plan; I\'ll do it and you can undo it.',
+    chips: ['I have 25 minutes', 'Swap dips', 'Why is bench up?'],
+    rShort: 'Done. I cut cable fly and pushdowns and kept the heavy work. Now {n} exercises, about 25 min.',
+    rShortNo: 'Those two are already done or gone, so the plan stays as it is. You have {n} sets left.',
+    rSwap: 'Swapped weighted dips for close-grip bench, 3 × 8 at 65 kg. Easier on your left shoulder.',
+    rSwapNo: 'Dips are already swapped or done.',
+    rWhy: 'Three things in your log: you slept 7 h 30 or more before your last two push days, ate 140 g protein or more on four of the last seven days, and kept rests at 2 min. Estimated 1-rep max went from 94 to 96 kg in two weeks.',
+    rElse: 'This prototype answers the three questions above. The real Coach answers anything you say or type.',
+    applied: 'Changed in your plan', undoneTx: 'Put back as it was', ask: 'Ask or tell the Coach', memory: 'What I remember',
+    mem: ['Bed by 23:30 on school nights', 'Wrestling on Wednesdays and Saturdays', 'Left shoulder: no deep dips'],
+    forgot: 'Forgotten',
+    foodTitle: 'Food', foodLead: (p) => `${p} of 150 g protein today.`, quick: 'Quick add',
+    foods: [['Skyr, 200 g', 22], ['Two eggs', 12], ['Rye bread with leverpostej', 7], ['Protein shake', 25]],
+    logged: n => `${n} logged`, waterAdd: 'Water +250 ml',
+    healthTitle: 'Health', sleepTx: 'In bed 23:18 · up 06:58', weight: 'Weight', weightSub: 'Down 0.4 kg this week',
+    settings: 'Settings', lang: 'Language', glass: 'Glass', jewel: 'Jewel', sea: 'Sea glass',
+    trainTitle: 'This week', trainLead: n => `${n} of 6 sessions done. Push is next.`, startShort: 'Start',
+    plan: [['Sun', 'Push', 'today'], ['Mon', 'Pull'], ['Tue', 'Legs'], ['Wed', 'Wrestling'], ['Thu', 'Rest']],
+    exHist: 'Your last sessions', exChart: 'Estimated 1-rep max, last 8 sessions',
+    finTitle: 'Finish Push?', finLeft: n => `${n} sets not logged. They stay in the plan for next time.`, finAll: 'Every set is logged.',
+    hold: 'Hold to finish', doneTitle: 'Push, done.', doneLead: n => `Sunday is filled in. ${n} sessions this week.`, setsBest: (n, w, r) => `${n} ${n === 1 ? 'set' : 'sets'} · best ${w} × ${r}`,
+    sTime: 'Time', sSets: 'Sets', sLifted: 'Lifted', sBests: 'Bests', backToday: 'Back to Today', restOver: 'Rest is over',
+    keepGoing: 'Keep going'
+  },
+  da: {
+    hello: 'Godmorgen, Omar', protein: 'Protein', water: 'Vand', sleep: 'Søvn',
+    tToday: 'I dag', tTrain: 'Træning', tFood: 'Mad', tHealth: 'Helbred',
+    repsU: 'gent.', finish: 'Afslut', askCoach: 'Coach', logSet: 'Log sæt', rest: 'Pause', undoSet: 'Fortryd', skip: 'Spring pausen over',
+    days: ['M', 'T', 'O', 'T', 'F', 'L', 'S'], dayNames: ['mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag', 'søndag'],
+    months: ['januar', 'februar', 'marts', 'april', 'maj', 'juni', 'juli', 'august', 'september', 'oktober', 'november', 'december'],
+    types: { push: 'Push', pull: 'Pull', legs: 'Ben', wrestle: 'Brydning', rest: 'Hvile' },
+    weekCap: n => `${n} træninger`,
+    sEyebrow: 'I dag · Push', sTitle: 'Bryst, skuldre og triceps',
+    sMeta: (n, m, s) => `${n} øvelser · cirka ${m} min · ${s} sæt`,
+    sCoach: 'Bænkpres gik frem sidst: 82,5 × 5, op fra 80 × 6. Dagens plan holder.',
+    sCoachDone: n => (n ? `${n === 1 ? 'En ny rekord' : n + ' nye rekorder'} i dag. ` : 'God træning. ') + 'Spis 40 g protein inden for to timer, så når du dagens mål.',
+    start: 'Start Push', resume: (d, t) => `Fortsæt · ${d} af ${t} sæt`, done: (s, m) => `Push klaret · ${s} sæt · ${m} min`,
+    of: 'af', setOf: (i, n) => `Sæt ${i} af ${n}`, last: 'Sidst', best: 'Bedst', paneCap: (d, t) => `${d} af ${t} sæt`,
+    next: 'Næste', nextSet: (i, w, r) => `Næste: sæt ${i} · ${w} × ${r}`, nextEx: n => `Næste: ${n}`, lastSet: 'Sidste sæt. Så er du færdig.',
+    now: 'nu', newBest: 'Ny rekord', e1: x => `Anslået 1RM ${x} kg`, setLogged: (w, r) => `${w} × ${r} logget`,
+    undo: 'Fortryd', undone: 'Fortrudt',
+    paneTip: (d, t, m, s) => s ? `${d} · ${t} · ${m} min · ${s} sæt` : `${d} · ${t} · ${m} min`, paneRest: d => `${d} · hviledag`, paneToday: 'I dag · Push, ikke startet endnu',
+    coachTitle: 'Coach', coachHello: 'Godmorgen, Omar. Bænkpres gik frem sidst: 82,5 × 5, op fra 80 × 6. Du sov 7 t 40, så dagens plan holder.',
+    coachWork: 'Du er på {ex}. Bed mig ændre planen; jeg gør det, og du kan fortryde.',
+    chips: ['Jeg har 25 minutter', 'Byt dips ud', 'Hvorfor går bænk frem?'],
+    rShort: 'Klaret. Jeg fjernede kabelflyes og pushdowns og beholdt det tunge. Nu {n} øvelser, cirka 25 min.',
+    rShortNo: 'De to er allerede lavet eller fjernet, så planen er som før. Du har {n} sæt tilbage.',
+    rSwap: 'Byttede dips med vægt ud med smal bænkpres, 3 × 8 på 65 kg. Skånsomt for venstre skulder.',
+    rSwapNo: 'Dips er allerede byttet ud eller lavet.',
+    rWhy: 'Tre ting i din log: du sov 7 t 30 eller mere før dine sidste to push-dage, spiste mindst 140 g protein fire af de sidste syv dage, og holdt pauserne på 2 min. Anslået 1RM gik fra 94 til 96 kg på to uger.',
+    rElse: 'Prototypen svarer på de tre spørgsmål ovenfor. Den rigtige Coach svarer på alt, du siger eller skriver.',
+    applied: 'Ændret i din plan', undoneTx: 'Sat tilbage som før', ask: 'Spørg eller fortæl Coachen', memory: 'Det husker jeg',
+    mem: ['I seng kl. 23.30 på skoledage', 'Brydning onsdag og lørdag', 'Venstre skulder: ingen dybe dips'],
+    forgot: 'Glemt',
+    foodTitle: 'Mad', foodLead: (p) => `${p} af 150 g protein i dag.`, quick: 'Hurtigt',
+    foods: [['Skyr, 200 g', 22], ['To æg', 12], ['Rugbrød med leverpostej', 7], ['Proteinshake', 25]],
+    logged: n => `${n} logget`, waterAdd: 'Vand +250 ml',
+    healthTitle: 'Helbred', sleepTx: 'I seng 23.18 · oppe 06.58', weight: 'Vægt', weightSub: 'Ned 0,4 kg denne uge',
+    settings: 'Indstillinger', lang: 'Sprog', glass: 'Glas', jewel: 'Juvel', sea: 'Havglas',
+    trainTitle: 'Denne uge', trainLead: n => `${n} af 6 træninger klaret. Push er den næste.`, startShort: 'Start',
+    plan: [['Søn', 'Push', 'today'], ['Man', 'Pull'], ['Tir', 'Ben'], ['Ons', 'Brydning'], ['Tor', 'Hvile']],
+    exHist: 'Dine sidste gange', exChart: 'Anslået 1RM, sidste 8 gange',
+    finTitle: 'Afslut Push?', finLeft: n => `${n} sæt ikke logget. De bliver i planen til næste gang.`, finAll: 'Alle sæt er logget.',
+    hold: 'Hold for at afslutte', doneTitle: 'Push, klaret.', doneLead: n => `Søndag er fyldt ud. ${n} træninger i denne uge.`, setsBest: (n, w, r) => `${n} sæt · bedst ${w} × ${r}`,
+    sTime: 'Tid', sSets: 'Sæt', sLifted: 'Løftet', sBests: 'Rekorder', backToday: 'Tilbage til I dag', restOver: 'Pausen er slut',
+    keepGoing: 'Fortsæt'
+  }
+};
+let lang = (q.get('lang') === 'da' || location.hash === '#da') ? 'da' : 'en';
+const t = k => T[lang][k];
+const fmtL = n => { const s = n.toFixed(2); return lang === 'da' ? s.replace('.', ',') : s; };
+const fmt = n => { const s = (Math.round(n * 10) / 10).toString(); return lang === 'da' ? s.replace('.', ',') : s; };
+
+/* ---------- data (a made-up week; nothing is saved) ---------- */
+const EX = [
+  { id: 'bench', n: { en: 'Bench press', da: 'Bænkpres' }, m: { en: 'Chest', da: 'Bryst' }, sets: 4, w: 82.5, r: 5, step: 2.5, rest: 120, last: [80, 6], best: [85, 5],
+    say: { en: 'Set 2 moved fast last week. Same weight, chase a clean 5.', da: 'Sæt 2 gik hurtigt sidste uge. Samme vægt, gå efter 5 rene.' },
+    hist: [[82.5, 5, 'Sun 8 Nov', 'søn 8. nov'], [80, 6, 'Mon 2 Nov', 'man 2. nov'], [80, 5, 'Mon 26 Oct', 'man 26. okt']], chart: [89, 90.5, 91, 92.6, 93.3, 94, 95.3, 96.3] },
+  { id: 'incline', n: { en: 'Incline dumbbell press', da: 'Skrå håndvægtspres' }, m: { en: 'Upper chest', da: 'Øvre bryst' }, sets: 3, w: 30, r: 8, step: 2, rest: 90, last: [28, 9], best: [30, 9],
+    hist: [[28, 9, 'Sun 8 Nov', 'søn 8. nov'], [28, 8, 'Mon 2 Nov', 'man 2. nov'], [26, 9, 'Mon 26 Oct', 'man 26. okt']], chart: [31, 32, 32, 33.5, 33.5, 34, 35.5, 36.4] },
+  { id: 'ohp', n: { en: 'Overhead press', da: 'Skulderpres' }, m: { en: 'Shoulders', da: 'Skuldre' }, sets: 3, w: 50, r: 6, step: 2.5, rest: 120, last: [50, 6], best: [52.5, 6],
+    hist: [[50, 6, 'Sun 8 Nov', 'søn 8. nov'], [50, 5, 'Mon 2 Nov', 'man 2. nov'], [47.5, 6, 'Mon 26 Oct', 'man 26. okt']], chart: [55, 56, 56.5, 57, 57.5, 58.3, 58.3, 60] },
+  { id: 'fly', n: { en: 'Cable fly', da: 'Kabelflyes' }, m: { en: 'Chest', da: 'Bryst' }, sets: 3, w: 15, r: 12, step: 2.5, rest: 75, last: [15, 12], best: [17.5, 12],
+    hist: [[15, 12, 'Sun 8 Nov', 'søn 8. nov'], [15, 11, 'Mon 2 Nov', 'man 2. nov'], [12.5, 12, 'Mon 26 Oct', 'man 26. okt']], chart: [18, 18.5, 19, 19, 20, 20, 21, 21] },
+  { id: 'dips', n: { en: 'Weighted dips', da: 'Dips med vægt' }, m: { en: 'Triceps', da: 'Triceps' }, sets: 3, w: 10, r: 8, step: 2.5, rest: 90, last: [10, 8], best: [12.5, 8],
+    hist: [[10, 8, 'Sun 8 Nov', 'søn 8. nov'], [10, 7, 'Mon 2 Nov', 'man 2. nov'], [7.5, 8, 'Mon 26 Oct', 'man 26. okt']], chart: [10, 11, 11.5, 12, 12.5, 12.7, 12.7, 12.7] },
+  { id: 'pushdown', n: { en: 'Triceps pushdown', da: 'Triceps pushdown' }, m: { en: 'Triceps', da: 'Triceps' }, sets: 2, w: 27.5, r: 12, step: 2.5, rest: 60, last: [27.5, 12], best: [30, 12],
+    hist: [[27.5, 12, 'Sun 8 Nov', 'søn 8. nov'], [27.5, 11, 'Mon 2 Nov', 'man 2. nov'], [25, 12, 'Mon 26 Oct', 'man 26. okt']], chart: [33, 34, 34, 35, 36, 36.5, 37.5, 38.5] }
+];
+const SWAP = { id: 'cgbench', n: { en: 'Close-grip bench', da: 'Smal bænkpres' }, m: { en: 'Triceps', da: 'Triceps' }, sets: 3, w: 65, r: 8, step: 2.5, rest: 90, last: [62.5, 8], best: [65, 8],
+  hist: [[62.5, 8, 'Sun 25 Oct', 'søn 25. okt'], [60, 8, 'Sun 18 Oct', 'søn 18. okt'], [60, 7, 'Sun 11 Oct', 'søn 11. okt']], chart: [74, 75, 76, 77, 77.5, 78, 79, 81.3] };
+const WEEK = [
+  { t: 'push', min: 58, sets: 18 }, { t: 'pull', min: 52, sets: 16 }, { t: 'wrestle', min: 90 }, { t: 'rest' },
+  { t: 'legs', min: 61, sets: 17 }, { t: 'wrestle', min: 75 }, { t: 'today' }
+];
+const TODAY = 6; // Sunday 15 November 2026 (the demo day)
+const e1 = (w, r) => w * (1 + r / 30);
+
+const S = {
+  plan: EX.map(x => ({ ...x })), ex: 0, logs: [], w: EX[0].w, r: EX[0].r, startedAt: 0, running: false, finished: false, finMin: 0,
+  rest: null, protein: 92, water: 1.25, glass: q.get('glass') === 'sea' ? 'sea' : 'jewel', mem: [0, 1, 2], screen: 'today'
+};
+const restScale = q.get('rest') ? Math.max(1, +q.get('rest')) : 0;
+const total = () => S.plan.reduce((a, x) => a + x.sets, 0);
+const doneCount = () => S.logs.reduce((a, l) => a + l.length, 0);
+const exLogs = i => S.logs[i] || (S.logs[i] = []);
+const bestOf = x => e1(x.best[0], x.best[1]);
+
+/* ---------- rolling digits ---------- */
+const rolls = new WeakMap();
+function roll(el, text, animate = true) {
+  text = String(text);
+  let st = rolls.get(el);
+  const mask = text.replace(/\d/g, '0');
+  if (!st || st.mask !== mask) {
+    el.textContent = '';
+    st = { mask, cols: [] };
+    for (const ch of text) {
+      if (/\d/.test(ch)) {
+        const dg = document.createElement('span'); dg.className = 'dg';
+        const strip = document.createElement('span');
+        for (let k = 0; k < 30; k++) { const s = document.createElement('span'); s.textContent = k % 10; strip.appendChild(s); }
+        dg.appendChild(strip); el.appendChild(dg);
+        const idx = 10 + +ch; strip.style.transform = `translateY(${-idx}em)`;
+        st.cols.push({ strip, idx });
+      } else { const s = document.createElement('span'); s.textContent = ch; el.appendChild(s); st.cols.push(null); }
+    }
+    rolls.set(el, st);
+    return;
+  }
+  [...text].forEach((ch, i) => {
+    const c = st.cols[i]; if (!c) return;
+    const d = +ch, cur = c.idx % 10;
+    if (d === cur) return;
+    let delta = d - cur; if (delta > 5) delta -= 10; if (delta < -5) delta += 10;
+    const from = 10 + cur, to = from + delta;
+    c.idx = 10 + d;
+    c.strip.getAnimations().forEach(a => a.cancel());
+    if (!animate || reduce) { c.strip.style.transform = `translateY(${-(10 + d)}em)`; return; }
+    c.strip.style.transform = `translateY(${-(10 + d)}em)`;
+    c.strip.animate([{ transform: `translateY(${-from}em)` }, { transform: `translateY(${-to}em)` }],
+      { duration: SP.snap.ms + 60, easing: SP.snap.ease });
+  });
+}
+
+/* ---------- the wall: sunlight through the week window, drawn once, dithered ---------- */
+const wallEl = $('#wall');
+function hexRgb(h) { const n = parseInt(h.slice(1), 16); return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+function cssVar(n) { return getComputedStyle(root).getPropertyValue(n).trim(); }
+function paneColour(d) {
+  if (d.t === 'rest') return null;
+  if (d.t === 'today') return S.finished ? cssVar('--push') : null;
+  return cssVar('--' + d.t);
+}
+function archPath(g, x, y, w, h, rx, ry) {
+  g.beginPath(); g.moveTo(x, y + h); g.lineTo(x, y + ry);
+  g.ellipse(x + w / 2, y + ry, w / 2, ry, 0, Math.PI, 0); g.lineTo(x + w, y + h); g.closePath();
+}
+function paintWall() {
+  const box = $('#app').getBoundingClientRect();
+  const W = Math.round(box.width), H = Math.round(box.height);
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const cv = document.createElement('canvas'); cv.width = W * dpr; cv.height = H * dpr;
+  const g = cv.getContext('2d');
+  g.scale(dpr, dpr);
+  const wall = hexRgb(cssVar('--wall'));
+  const sea = S.glass === 'sea';
+  // plaster in shade, a little warmer where the room's daylight lands
+  const base = g.createLinearGradient(0, 0, W * .4, H);
+  base.addColorStop(0, `rgb(${wall.map(v => Math.min(255, v + 6))})`);
+  base.addColorStop(1, `rgb(${wall.map(v => v - 12)})`);
+  g.fillStyle = base; g.fillRect(0, 0, W, H);
+  const bloom = g.createRadialGradient(W * .9, H * .02, 0, W * .9, H * .02, H * .62);
+  bloom.addColorStop(0, sea ? 'rgba(250,255,252,.85)' : 'rgba(255,251,242,.9)'); bloom.addColorStop(1, 'rgba(255,250,240,0)');
+  g.fillStyle = bloom; g.fillRect(0, 0, W, H);
+
+  // the window, projected down the wall by a low sun from the upper left
+  const ww = 352, wh = 164, gap = 6, pad = 7;
+  const sx = W / ww * 1.2, sy = 2.5, shear = .62, x0 = -W * .18, y0 = H * .37;
+  const light = document.createElement('canvas'); light.width = cv.width; light.height = cv.height;
+  const lg = light.getContext('2d');
+  lg.setTransform(sx * dpr, 0, shear * dpr, sy * dpr, x0 * dpr, y0 * dpr);
+  archPath(lg, 0, 0, ww, wh, ww / 2, 58); lg.save(); lg.clip();
+  const pw = (ww - pad * 2 - gap * 6) / 7;
+  WEEK.forEach((d, i) => {
+    const x = pad + i * (pw + gap);
+    const col = paneColour(d);
+    if (col) { const c = hexRgb(col); lg.fillStyle = `rgb(${c.map(v => Math.round(v * .66 + 255 * .34))})`; }
+    else lg.fillStyle = sea ? '#FBFFFC' : '#FFF8EC';
+    lg.fillRect(x, pad, pw, wh - pad * 2);
+  });
+  lg.restore();
+  lg.setTransform(1, 0, 0, 1, 0, 0);
+  // light weakens with distance from the window
+  lg.globalCompositeOperation = 'destination-in';
+  const fall = lg.createLinearGradient(0, y0 * dpr, 0, (y0 + wh * sy) * dpr);
+  fall.addColorStop(0, 'rgba(0,0,0,.96)'); fall.addColorStop(.7, 'rgba(0,0,0,.78)'); fall.addColorStop(1, 'rgba(0,0,0,.5)');
+  lg.fillStyle = fall; lg.fillRect(0, 0, light.width, light.height);
+
+  // leaf shadows of a plant by the window, only where the sun lands
+  const leaf = document.createElement('canvas'); leaf.width = cv.width; leaf.height = cv.height;
+  const fg = leaf.getContext('2d'); fg.scale(dpr, dpr); fg.fillStyle = '#000';
+  const stem = (x, y, a, len, n, s) => {
+    fg.save(); fg.translate(x, y); fg.rotate(a);
+    fg.lineWidth = 1.6; fg.strokeStyle = '#000'; fg.beginPath(); fg.moveTo(0, 0); fg.quadraticCurveTo(len * .5, len * .08, len, 0); fg.stroke();
+    for (let k = 1; k <= n; k++) {
+      const p = k / (n + 1) * len, side = k % 2 ? 1 : -1, L = s * (1 - k / (n + 3));
+      fg.save(); fg.translate(p, 0); fg.rotate(side * (.75 + .1 * Math.sin(k * 7)));
+      fg.beginPath(); fg.moveTo(0, 0); fg.quadraticCurveTo(L * .5, -L * .32, L, 0); fg.quadraticCurveTo(L * .5, L * .32, 0, 0); fg.fill(); fg.restore();
+    }
+    fg.save(); fg.translate(len, 0); fg.beginPath(); fg.moveTo(0, 0); fg.quadraticCurveTo(s * .5, -s * .3, s * .9, 0); fg.quadraticCurveTo(s * .5, s * .3, 0, 0); fg.fill(); fg.restore();
+    fg.restore();
+  };
+  stem(W * 1.04, H * .46, Math.PI * 1.08, W * .55, 7, 44);
+  stem(W * 1.06, H * .62, Math.PI * .96, W * .42, 6, 38);
+  stem(W * 1.02, H * .76, Math.PI * 1.15, W * .34, 5, 34);
+  fg.setTransform(1, 0, 0, 1, 0, 0);
+  fg.globalCompositeOperation = 'destination-in'; fg.drawImage(light, 0, 0);
+
+  // compose: penumbra on the light, softer on the leaves (they are further from the wall)
+  g.setTransform(1, 0, 0, 1, 0, 0);
+  g.filter = `blur(${3.2 * dpr}px)`; g.globalAlpha = .9; g.drawImage(light, 0, 0); g.globalAlpha = 1;
+  g.filter = `blur(${4.5 * dpr}px)`; g.globalAlpha = .17; g.globalCompositeOperation = 'multiply'; g.drawImage(leaf, 0, 0);
+  g.filter = 'none'; g.globalAlpha = 1; g.globalCompositeOperation = 'source-over';
+  // faint shafts of light in the air between window and wall
+  g.save(); g.scale(dpr, dpr); g.filter = `blur(${18 * dpr}px)`;
+  const shaft = g.createLinearGradient(0, H * .2, W * .5, H * .9);
+  shaft.addColorStop(0, 'rgba(255,252,244,0)'); shaft.addColorStop(.5, 'rgba(255,252,244,.18)'); shaft.addColorStop(1, 'rgba(255,252,244,0)');
+  g.fillStyle = shaft; g.beginPath(); g.moveTo(W * .05, H * .18); g.lineTo(W * .7, H * .18); g.lineTo(W * 1.1, H * .9); g.lineTo(W * .1, H * .9); g.fill();
+  g.restore(); g.filter = 'none';
+
+  // dither: ±1.5 levels of noise so slow gradients never show steps on an 8-bit screen
+  const img = g.getImageData(0, 0, cv.width, cv.height), px = img.data;
+  let seed = 7;
+  for (let i = 0; i < px.length; i += 4) {
+    seed = (seed * 1664525 + 1013904223) >>> 0; const n = ((seed >>> 24) / 255 - .5) * 3;
+    px[i] += n; px[i + 1] += n; px[i + 2] += n;
+  }
+  g.putImageData(img, 0, 0);
+  return cv;
+}
+let pendingWall = null;
+function drawWall(fadeIn) {
+  const cv = pendingWall || paintWall(); pendingWall = null;
+  const old = wallEl.querySelector('canvas');
+  if (!old || !fadeIn || reduce) { wallEl.textContent = ''; wallEl.appendChild(cv); return; }
+  cv.className = 'next'; wallEl.appendChild(cv);
+  requestAnimationFrame(() => requestAnimationFrame(() => cv.classList.add('on')));
+  setTimeout(() => { old.remove(); cv.className = ''; }, 1250);
+}
+
+/* ---------- Today ---------- */
+function bandsHTML() {
+  let h = '', g = 0;
+  S.plan.forEach((x, i) => {
+    for (let k = 0; k < x.sets; k++) {
+      const l = (S.logs[i] || [])[k];
+      h += `<div class="band${k === 0 && i > 0 ? ' gap' : ''}${l ? ' done' : ''}${l && l.best ? ' gold' : ''}" data-g="${g++}"><i></i><b></b></div>`;
+    }
+  });
+  return h;
+}
+function renderWeek() {
+  const panes = $('#weekPanes');
+  panes.innerHTML = WEEK.map((d, i) => {
+    const today = d.t === 'today';
+    const c = today ? 'push' : d.t;
+    const fresh = today && !S.finished && !S.running && !doneCount();
+    return `<button class="pane${d.t === 'rest' ? ' rest' : ''}${today ? ' today' : ''}${fresh ? ' fresh' : ''}" data-i="${i}" style="--c:var(--${c})" aria-label="${t('dayNames')[i]}">` +
+      (fresh ? `<span class="vlab">${t('tToday')}</span>` : today && !S.finished ? `<div class="bands">${bandsHTML()}</div>` : d.t === 'rest' ? `<span class="vlab">${t('types').rest}</span>` : `<div class="tint"></div>`) + `</button>`;
+  }).join('');
+  $('#weekDays').innerHTML = t('days').map((d, i) => `<button class="${i === TODAY ? 'on' : ''}" data-i="${i}">${d}</button>`).join('');
+  const done = WEEK.filter(d => d.t !== 'rest' && d.t !== 'today').length + (S.finished ? 1 : 0);
+  $('#weekCap').textContent = t('weekCap')(done);
+  $('#legend').innerHTML = ['push', 'pull', 'legs', 'wrestle'].map(k => `<span><i style="--c:var(--${k})"></i>${t('types')[k]}</span>`).join('');
+}
+function renderToday() {
+  const d = new Date(2026, 10, 15);
+  $('#tDate').textContent = lang === 'da' ? `${t('dayNames')[TODAY]} ${d.getDate()}. ${t('months')[10]}` : `${t('dayNames')[TODAY]} ${d.getDate()} ${t('months')[10]}`;
+  $$('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); });
+  renderWeek();
+  $('#sEyebrow').textContent = t('sEyebrow');
+  $('#sTitle').textContent = t('sTitle');
+  const mins = Math.round(total() * 3.1);
+  $('#sMeta').textContent = t('sMeta')(S.plan.length, mins, total());
+  $('#sCoachTx').textContent = S.finished ? t('sCoachDone')(finishStats().bests) : t('sCoach');
+  const sb = $('#startBtn');
+  sb.classList.toggle('done', S.finished);
+  $('#startTx').textContent = S.finished ? t('done')(doneCount(), S.finMin) : (doneCount() ? t('resume')(doneCount(), total()) : t('start'));
+  roll($('#vProt'), Math.round(S.protein), false);
+  roll($('#vWater'), fmtL(S.water), false);
+  roll($('#vSleep'), '7:40', false);
+  $('#bProt').style.transform = `scaleX(${Math.min(1, S.protein / 150)})`;
+  $('#bWater').style.transform = `scaleX(${Math.min(1, S.water / 2.5)})`;
+  $$('.num-b small')[1].textContent = lang === 'da' ? '/ 2,5 L' : '/ 2.5 L';
+}
+
+/* ---------- toast ---------- */
+let toastTimer = 0;
+function toast(html, { gold = false, plain = false, action = null, ms = 2600 } = {}) {
+  const el = $('#toast');
+  el.classList.toggle('gold', gold); el.classList.toggle('plain', plain);
+  // in the workout, pop-ups rise from the control card, where the tap happened, instead of covering the header
+  const low = S.screen === 'workout' && !sheet.classList.contains('on');
+  el.classList.toggle('low', low);
+  el.style.top = low ? ($('#ctrl').getBoundingClientRect().top - $('#app').getBoundingClientRect().top - 68) + 'px' : '';
+  $('#toastTx').innerHTML = html;
+  const b = $('#toastBtn');
+  if (action) { b.hidden = false; b.textContent = action.label; b.onclick = () => { action.fn(); hideToast(); }; } else b.hidden = true;
+  el.classList.add('on');
+  clearTimeout(toastTimer); toastTimer = setTimeout(hideToast, ms);
+}
+function hideToast() { $('#toast').classList.remove('on'); }
+
+/* ---------- sheets ---------- */
+const sheet = $('#sheet'), scrim = $('#scrim'), sbody = $('#sbody');
+let sheetKind = '';
+function openSheet(kind, html) {
+  sheetKind = kind; sbody.innerHTML = html; sbody.scrollTop = 0;
+  sheet.style.transform = ''; sheet.classList.remove('dragging');
+  sheet.style.visibility = 'visible';
+  requestAnimationFrame(() => { sheet.classList.add('on'); scrim.classList.add('on'); });
+  $$('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === (['train', 'food', 'health'].includes(kind) ? kind : 'today')));
+}
+function closeSheet() {
+  if (!sheet.classList.contains('on')) return;
+  const leaveFinished = sheetKind === 'finish' && S.finished && S.screen === 'workout';
+  sheet.classList.remove('on', 'dragging'); sheet.style.transform = ''; scrim.classList.remove('on'); sheetKind = '';
+  $$('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === 'today'));
+  const end = () => { if (!sheet.classList.contains('on')) sheet.style.visibility = ''; };
+  setTimeout(end, SP.sheet.ms + 40);
+  // however the summary is dismissed, a finished workout goes back to Today
+  if (leaveFinished) goToday(true);
+}
+scrim.addEventListener('click', closeSheet);
+addEventListener('keydown', e => { if (e.key === 'Escape') closeSheet(); });
+// drag the sheet down; it follows the finger, and the release hands its speed to the spring
+(() => {
+  let y0 = 0, dy = 0, t0 = 0, last = 0, v = 0, on = false;
+  const start = e => {
+    if (e.target.closest('button, input')) return;
+    if (e.currentTarget === sbody && sbody.scrollTop > 0) return;
+    on = true; y0 = e.clientY; dy = 0; t0 = last = performance.now(); v = 0; sheet.classList.add('dragging');
+  };
+  const move = e => {
+    if (!on) return;
+    const ny = Math.max(0, e.clientY - y0), now = performance.now();
+    v = (ny - dy) / Math.max(1, now - last); dy = ny; last = now;
+    if (dy > 4) e.preventDefault();
+    sheet.style.transform = `translateY(${dy}px)`;
+  };
+  const end = () => {
+    if (!on) return; on = false; sheet.classList.remove('dragging');
+    if (dy > 110 || v > .6) { sheet.style.transition = `transform ${Math.max(160, Math.min(380, 300 / Math.max(.4, v)))}ms cubic-bezier(.2,.6,.3,1)`; closeSheet(); setTimeout(() => sheet.style.transition = '', 420); }
+    else { sheet.style.transform = ''; }
+  };
+  [$('#grab'), sbody].forEach(el => { el.addEventListener('pointerdown', start); });
+  addEventListener('pointermove', move, { passive: false });
+  addEventListener('pointerup', end); addEventListener('pointercancel', end);
+})();
+
+/* ---------- Coach ---------- */
+let coachReplies = [];
+let undoStack = null;
+function coachHTML() {
+  const inWork = S.screen === 'workout';
+  const lead = inWork ? t('coachWork').replace('{ex}', cur().n[lang]) : t('coachHello');
+  return `<div style="display:flex;gap:12px;align-items:center"><svg style="width:30px;height:30px"><use href="#glyph"/></svg><h3>${t('coachTitle')}</h3></div>
+  <p class="lead">${lead}</p>
+  <div class="chips">${t('chips').map((c, i) => `<button class="chip press" data-chip="${i}">${c}</button>`).join('')}</div>
+  <div id="replies">${coachReplies.join('')}</div>
+  <form class="ask" id="askForm"><input id="askIn" placeholder="${t('ask')}" autocomplete="off" enterkeyhint="send"><button aria-label="Send"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></button></form>
+  <p class="sec">${t('memory')}</p>
+  <div class="list" id="memList">${S.mem.map(i => `<div class="li"><span class="grow">${t('mem')[i]}</span><button class="x" data-mem="${i}" aria-label="Forget">×</button></div>`).join('')}</div>`;
+}
+function openCoach() { openSheet('coach', coachHTML()); }
+let undoId = '';
+function retireUndo() {
+  if (!undoId) return;
+  const old = undoId; undoId = ''; undoStack = null;
+  const el = document.getElementById(old); if (el) { const b = el.querySelector('[data-undo]'); if (b) b.remove(); }
+  coachReplies = coachReplies.map(h => h.includes(`id="${old}"`) ? h.replace(/<button data-undo="[^"]*">[^<]*<\/button>/, '') : h);
+}
+function reply(text, act) {
+  const id = 'r' + Date.now() + Math.random().toString(36).slice(2, 6);
+  if (act) undoId = id;
+  const h = `<div class="reply" id="${id}">${text}${act ? `<div class="act"><span>${t('applied')}</span><button data-undo="${id}">${t('undo')}</button></div>` : ''}</div>`;
+  coachReplies.push(h);
+  const box = $('#replies'); if (box) { box.insertAdjacentHTML('beforeend', h); $('#' + id).scrollIntoView({ block: 'nearest', behavior: 'smooth' }); }
+}
+function remaining() { return total() - doneCount(); }
+function chip(i) {
+  if (i === 0) {
+    const before = S.plan.map(x => x);
+    const drop = S.plan.filter((x, k) => (x.id === 'fly' || x.id === 'pushdown') && !(S.logs[k] || []).length && k !== S.ex);
+    if (!drop.length) return reply(t('rShortNo').replace('{n}', remaining()));
+    const keepLogs = []; S.plan.forEach((x, k) => { if (!drop.includes(x)) keepLogs.push(S.logs[k] || []); });
+    const beforeLogs = S.plan.map((x, k) => S.logs[k] || []); const beforeEx = S.ex; const curId = cur().id;
+    S.plan = S.plan.filter(x => !drop.includes(x)); S.logs = keepLogs; S.ex = S.plan.findIndex(x => x.id === curId);
+    retireUndo(); undoStack = () => { S.plan = before; S.logs = beforeLogs; S.ex = beforeEx; };
+    reply(t('rShort').replace('{n}', S.plan.length), true);
+  } else if (i === 1) {
+    const k = S.plan.findIndex(x => x.id === 'dips');
+    if (k < 0 || (S.logs[k] || []).length || k === S.ex && doneCount()) return reply(t('rSwapNo'));
+    const old = S.plan[k]; S.plan = S.plan.map((x, j) => j === k ? { ...SWAP } : x);
+    retireUndo(); undoStack = () => { S.plan = S.plan.map((x, j) => j === k ? old : x); };
+    reply(t('rSwap'), true);
+  } else reply(t('rWhy'));
+  refreshAll();
+}
+sbody.addEventListener('click', e => {
+  const c = e.target.closest('[data-chip]'); if (c) return chip(+c.dataset.chip);
+  const u = e.target.closest('[data-undo]');
+  if (u && undoStack && u.dataset.undo === undoId) { undoStack(); undoStack = null; undoId = ''; u.parentElement.innerHTML = `<span>${t('undoneTx')}</span>`; coachReplies = coachReplies.map(h => h.includes(u.dataset.undo) ? $('#' + u.dataset.undo).outerHTML : h); refreshAll(); return; }
+  const m = e.target.closest('[data-mem]');
+  if (m) {
+    const idx = +m.dataset.mem; const row = m.closest('.li');
+    S.mem = S.mem.filter(x => x !== idx); row.remove();
+    toast(`${t('forgot')}: ${t('mem')[idx]}`, { plain: true, action: { label: t('undo'), fn: () => { S.mem.push(idx); S.mem.sort(); if (sheetKind === 'coach') { $('#memList').outerHTML; openSheet('coach', coachHTML()); } } } });
+    return;
+  }
+  const f = e.target.closest('[data-food]');
+  if (f) {
+    const [name, p] = t('foods')[+f.dataset.food]; S.protein += p; renderNumsLive();
+    $('#foodLead').textContent = t('foodLead')(Math.round(S.protein));
+    toast(t('logged')(name), { action: { label: t('undo'), fn: () => { S.protein -= p; renderNumsLive(); const fl = $('#foodLead'); if (fl) fl.textContent = t('foodLead')(Math.round(S.protein)); } } });
+    return;
+  }
+  const L = e.target.closest('[data-lang]'); if (L) { lang = L.dataset.lang; refreshAll(); openSheet('health', healthHTML()); return; }
+  const G = e.target.closest('[data-glass]'); if (G) { setGlass(G.dataset.glass); openSheet('health', healthHTML()); return; }
+  const st = e.target.closest('[data-start]'); if (st) { closeSheet(); setTimeout(startWorkout, 120); return; }
+  const h = e.target.closest('.hold'); if (h) return;
+  const bt = e.target.closest('[data-back]'); if (bt) closeSheet();
+});
+sbody.addEventListener('submit', e => {
+  e.preventDefault(); const v = ($('#askIn').value || '').toLowerCase(); $('#askIn').value = '';
+  if (!v.trim()) return;
+  if (/25|minut/.test(v)) chip(0); else if (/swap|byt|dips/.test(v)) chip(1); else if (/why|hvorfor|bench|bænk/.test(v)) chip(2); else reply(t('rElse'));
+});
+
+/* ---------- Food, Health, Train ---------- */
+function foodHTML() {
+  return `<h3>${t('foodTitle')}</h3><p class="lead" id="foodLead">${t('foodLead')(Math.round(S.protein))}</p>
+  <p class="sec">${t('quick')}</p><div class="list">${t('foods').map(([n, p], i) => `<div class="li"><span class="grow">${n}<div class="sub">${p} g protein</div></span><button class="add press" data-food="${i}">+</button></div>`).join('')}</div>`;
+}
+function healthHTML() {
+  const wts = [78.9, 78.8, 78.9, 78.6, 78.6, 78.5, 78.4];
+  const mn = 78.2, mx = 79.1, pts = wts.map((v, i) => `${(i / 6 * 300).toFixed(1)},${(60 - (v - mn) / (mx - mn) * 50).toFixed(1)}`).join(' ');
+  return `<h3>${t('healthTitle')}</h3>
+  <div class="stats" style="grid-template-columns:1fr 1fr">
+    <div class="stat"><div class="lab">${t('sleep')}</div><div class="v">7 h 40</div><div class="lab" style="font-weight:500;margin-top:2px">${t('sleepTx')}</div></div>
+    <div class="stat"><div class="lab">${t('weight')}</div><div class="v">${fmt(78.4)} kg</div><div class="lab" style="font-weight:500;margin-top:2px">${t('weightSub')}</div></div>
+  </div>
+  <div class="chart"><svg viewBox="0 0 300 64" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="var(--wrestle)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg></div>
+  <p class="sec">${t('settings')}</p>
+  <div class="list">
+    <div class="li"><span class="grow">${t('lang')}</span><span class="seg"><button class="${lang === 'en' ? 'on' : ''}" data-lang="en">English</button><button class="${lang === 'da' ? 'on' : ''}" data-lang="da">Dansk</button></span></div>
+    <div class="li"><span class="grow">${t('glass')}</span><span class="seg"><button class="${S.glass === 'jewel' ? 'on' : ''}" data-glass="jewel">${t('jewel')}</button><button class="${S.glass === 'sea' ? 'on' : ''}" data-glass="sea">${t('sea')}</button></span></div>
+  </div>`;
+}
+function trainHTML() {
+  const done = WEEK.filter(d => d.t !== 'rest' && d.t !== 'today').length;
+  return `<h3>${t('trainTitle')}</h3><p class="lead">${t('trainLead')(done)}</p>
+  <div class="list" style="margin-top:16px">${t('plan').map(([d, n, today]) => `<div class="li"><span class="grow"><b style="font-weight:600">${n}</b><div class="sub">${d}</div></span>${today && !S.finished ? `<button class="add press" data-start="1">${t('startShort')}</button>` : ''}</div>`).join('')}</div>`;
+}
+
+/* ---------- workout ---------- */
+const cur = () => S.plan[S.ex];
+function setRowsHTML() {
+  const x = cur(), logs = exLogs(S.ex);
+  let h = '';
+  for (let k = 0; k < x.sets; k++) {
+    const l = logs[k], now = !l && k === logs.length;
+    const w = l ? l.w : (now ? S.w : x.w), r = l ? l.r : (now ? S.r : x.r);
+    h += `<li class="srow${l ? ' done' : ''}${now ? ' now' : ''}" data-k="${k}"><span class="n">${k + 1}</span><span class="wr">${fmt(w)} × ${r}<small>kg</small></span>` +
+      `<span class="st">${l ? `<span class="tick${l.best ? ' gold' : ''}"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 7.4l2.6 2.6L11 4.4"/></svg></span>` : now ? t('now') : ''}</span></li>`;
+  }
+  return h;
+}
+function renderExercise(animate) {
+  const x = cur();
+  const apply = () => {
+    $('#exEyebrow').textContent = `${S.ex + 1} ${t('of')} ${S.plan.length} · ${x.m[lang]}`;
+    $('#exName').textContent = x.n[lang];
+    $('#exLast').textContent = `${t('last')} ${fmt(x.last[0])} × ${x.last[1]} · ${t('best')} ${fmt(x.best[0])} × ${x.best[1]}`;
+    $('#setRows').innerHTML = setRowsHTML();
+  };
+  if (animate && !reduce) {
+    $('#exText').classList.add('out'); $('#setRows').classList.add('out');
+    setTimeout(() => { apply(); $('#exText').classList.remove('out'); $('#setRows').classList.remove('out'); }, 270);
+  } else apply();
+  renderSetFace();
+}
+function renderSetFace() {
+  const x = cur(), n = exLogs(S.ex).length;
+  $('#setLabel').textContent = t('setOf')(Math.min(n + 1, x.sets), x.sets);
+  $('#coachSay').textContent = x.say ? x.say[lang] : (lang === 'da' ? `Sidst ${fmt(x.last[0])} × ${x.last[1]}. Gør det samme, og læg en rep til.` : `Last time ${fmt(x.last[0])} × ${x.last[1]}. Match it, then add a rep.`);
+  roll($('#vW'), fmt(S.w)); roll($('#vR'), S.r);
+}
+function renderPane() {
+  $('#dayBands').innerHTML = bandsHTML();
+  $('#paneCap').textContent = t('paneCap')(doneCount(), total());
+}
+function refreshAll() {
+  renderToday();
+  if (S.running || S.finished) { renderExercise(false); renderPane(); }
+  $$('[data-t]').forEach(el => { el.textContent = t(el.dataset.t); });
+  if (S.rest) updateRestText(true);
+}
+function stepVal(k, dir) {
+  const x = cur();
+  if (k === 'w') S.w = Math.max(0, Math.round((S.w + dir * x.step) * 10) / 10); else S.r = Math.max(1, S.r + dir);
+  roll($('#vW'), fmt(S.w)); roll($('#vR'), S.r);
+  const row = $('#setRows .now .wr'); if (row) row.innerHTML = `${fmt(S.w)} × ${S.r}<small>kg</small>`;
+}
+$$('.stp').forEach(s => {
+  s.querySelector('.minus').addEventListener('click', () => stepVal(s.dataset.k, -1));
+  s.querySelector('.plus').addEventListener('click', () => stepVal(s.dataset.k, 1));
+});
+
+let clockTimer = 0;
+function tickClock() {
+  if (!S.running) return;
+  const s = Math.floor((Date.now() - S.startedAt) / 1000);
+  $('#wClock').textContent = `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+function startWorkout() {
+  if (S.finished) return goWorkout();
+  if (!S.running) { S.running = true; S.startedAt = Date.now() - (S.preElapsed || 0); }
+  renderExercise(false); renderPane();
+  clearInterval(clockTimer); clockTimer = setInterval(tickClock, 1000); tickClock();
+  goWorkout(true);
+}
+function flyPane(toWorkout) {
+  if (reduce) return;
+  const a = $('#weekPanes .pane.today').getBoundingClientRect(), b = $('#dayPane').getBoundingClientRect(), app = $('#app').getBoundingClientRect();
+  const from = toWorkout ? a : b, to = toWorkout ? b : a;
+  const f = document.createElement('div'); f.className = 'flyer';
+  f.style.cssText = `left:${from.left - app.left}px;top:${from.top - app.top}px;width:${from.width}px;height:${from.height}px;background:rgba(255,255,255,.85);box-shadow:0 0 0 1.5px color-mix(in oklab,var(--push) 60%,transparent),0 10px 24px -10px rgba(80,40,40,.4)`;
+  $('#app').appendChild(f);
+  const dx = to.left - from.left, dy = to.top - from.top, s = to.width / from.width, sy = to.height / from.height;
+  f.style.transformOrigin = '0 0';
+  f.animate([{ transform: 'none' }, { transform: `translate(${dx}px,${dy}px) scale(${s},${sy})` }], { duration: SP.calm.ms, easing: SP.calm.ease, fill: 'forwards' })
+    .finished.then(() => f.remove());
+}
+function goWorkout(fly) {
+  S.screen = 'workout';
+  const w = $('#workout'), td = $('#today');
+  w.classList.remove('off');
+  requestAnimationFrame(() => {
+    if (fly) flyPane(true);
+    td.classList.add('left'); w.classList.remove('right');
+  });
+  setTimeout(() => { if (S.screen === 'workout') td.classList.add('off'); }, SP.calm.ms + 30);
+}
+function goToday(fromFinish) {
+  S.screen = 'today';
+  const w = $('#workout'), td = $('#today');
+  renderToday();
+  td.classList.remove('off');
+  requestAnimationFrame(() => {
+    if (!fromFinish && S.running) flyPane(false);
+    td.classList.remove('left'); w.classList.add('right');
+  });
+  setTimeout(() => { if (S.screen === 'today') w.classList.add('off'); }, SP.calm.ms + 30);
+  if (fromFinish) setTimeout(pourToday, SP.calm.ms * .6);
+}
+// the moment you're back: today's pane fills with colour, then the light on the wall changes with it
+function pourToday() {
+  const p = $('#weekPanes .pane.today');
+  if (!p) return;
+  p.classList.add('lit');
+  const tint = document.createElement('div'); tint.className = 'tint'; p.appendChild(tint);
+  if (!reduce) tint.animate([{ transform: 'scaleY(0)' }, { transform: 'none' }], { duration: 900, easing: SP.calm.ease, fill: 'backwards' });
+  setTimeout(() => drawWall(true), 450);
+}
+
+/* logging a set: one tap */
+function logSet() {
+  const x = cur(), logs = exLogs(S.ex);
+  if (S.finished || S.rest || logs.length >= x.sets) return;
+  retireUndo(); // a plan change can't be undone once sets are logged on top of it
+  const val = e1(S.w, S.r), best = val > bestOf(x) + .01;
+  if (best) x.best = [S.w, S.r];
+  logs.push({ w: S.w, r: S.r, best });
+  if (navigator.vibrate) try { navigator.vibrate(best ? [12, 40, 18] : 10); } catch (_) {}
+  // tick the row
+  const row = $(`#setRows .srow[data-k="${logs.length - 1}"]`);
+  if (row) {
+    row.classList.remove('now'); row.classList.add('done');
+    row.querySelector('.wr').innerHTML = `${fmt(S.w)} × ${S.r}<small>kg</small>`;
+    row.querySelector('.st').innerHTML = `<span class="tick draw${best ? ' gold' : ''}"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 7.4l2.6 2.6L11 4.4"/></svg></span>`;
+  }
+  // a new strip of glass is led into today's pane
+  const gi = S.plan.slice(0, S.ex).reduce((a, y) => a + y.sets, 0) + logs.length - 1;
+  const band = $(`#dayBands .band[data-g="${gi}"]`);
+  if (band) {
+    band.classList.add('done'); if (best) band.classList.add('gold');
+    band.querySelector('b').getAnimations().forEach(a => a.cancel());
+    if (!reduce) band.querySelector('i').animate([{ transform: 'scaleY(0)' }, { transform: 'none' }], { duration: SP.snap.ms + 80, easing: SP.snap.ease });
+  }
+  $('#paneCap').textContent = t('paneCap')(doneCount(), total());
+  // light through the new glass crosses the card
+  const sw = $('#sweep'); sw.classList.toggle('gold', best);
+  if (!reduce) sw.animate([{ opacity: 1, transform: 'translateX(-110%) skewX(-18deg)' }, { opacity: 1, offset: .7 }, { opacity: 0, transform: 'translateX(190%) skewX(-18deg)' }],
+    { duration: 900, easing: 'cubic-bezier(.3,.1,.2,1)' });
+  if (best) toast(`${t('newBest')} · ${x.n[lang]}<small>${t('e1')(fmt(Math.round(val * 10) / 10))}</small>`, { gold: true, ms: 3400 });
+  else toast(t('setLogged')(fmt(S.w), S.r), { plain: true, ms: 1300 });
+
+  const lastOfEx = logs.length >= x.sets, lastOfAll = lastOfEx && S.ex >= S.plan.length - 1;
+  if (lastOfAll) { setTimeout(openFinish, 700); renderSetFace(); return; }
+  startRest(lastOfEx);
+}
+$('#logBtn').addEventListener('click', logSet);
+
+/* the rest timer: the next strip of glass fills with daylight while you rest */
+let restTimer = 0;
+function startRest(nextEx) {
+  const x = cur();
+  const dur = restScale || x.rest;
+  S.rest = { end: Date.now() + dur * 1000, dur, nextEx, anims: [] };
+  if (nextEx) {
+    S.advT = setTimeout(() => { S.advT = 0; S.ex++; const y = cur(); S.w = y.w; S.r = y.r; renderExercise(true); updateRestText(); startRestAnims(); }, 650);
+  } else { renderSetFace(); }
+  showFace('rest');
+  updateRestText(true); startRestAnims();
+  clearInterval(restTimer); restTimer = setInterval(updateRestText, 200);
+}
+function nextBand() {
+  const gi = S.plan.slice(0, S.ex).reduce((a, y) => a + y.sets, 0) + exLogs(S.ex).length;
+  return $(`#dayBands .band[data-g="${gi}"] b`);
+}
+function startRestAnims() {
+  if (!S.rest) return;
+  S.rest.anims.forEach(a => a.cancel());
+  const left = Math.max(0, S.rest.end - Date.now()), el = S.rest.dur * 1000 - left;
+  const total = S.rest.dur * 1000;
+  const a1 = $('#restFill').animate([{ transform: 'scaleX(1)' }, { transform: 'scaleX(0)' }], { duration: total, fill: 'both' });
+  a1.currentTime = el;
+  const b = nextBand(); const anims = [a1];
+  if (b) { const a2 = b.animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: total, fill: 'both' }); a2.currentTime = el; anims.push(a2); }
+  S.rest.anims = anims;
+}
+function updateRestText(instant) {
+  if (!S.rest) return;
+  const left = Math.max(0, Math.ceil((S.rest.end - Date.now()) / 1000));
+  roll($('#restCount'), `${Math.floor(left / 60)}:${String(left % 60).padStart(2, '0')}`, !instant);
+  const x = cur(), n = exLogs(S.ex).length;
+  $('#restNext').textContent = S.rest.nextEx && n === 0 ? t('nextEx')(x.n[lang]) : (n === x.sets - 1 && S.ex === S.plan.length - 1 ? t('lastSet') : t('nextSet')(n + 1, fmt(S.w), S.r));
+  if (left <= 0) endRest(true);
+}
+function showFace(which) {
+  const on = which === 'rest' ? $('#faceRest') : $('#faceLog'), off = which === 'rest' ? $('#faceLog') : $('#faceRest');
+  const hadFocus = off.contains(document.activeElement);
+  off.classList.add('away'); off.inert = true;
+  on.classList.remove('away'); on.inert = false;
+  if (hadFocus) (which === 'rest' ? $('#rSkip') : $('#logBtn')).focus({ preventScroll: true });
+}
+function endRest(natural) {
+  if (!S.rest) return;
+  clearInterval(restTimer);
+  S.rest.anims.forEach(a => a.cancel());
+  const b = nextBand(); if (b) b.style.transform = '';
+  S.rest = null;
+  showFace('log');
+  $('#setRows').innerHTML = setRowsHTML();
+  renderSetFace();
+  if (natural) {
+    if (navigator.vibrate) try { navigator.vibrate([20, 60, 20]); } catch (_) {}
+    if (!reduce) $('#logBtn').animate([{ transform: 'scale(1)' }, { transform: 'scale(1.035)' }, { transform: 'scale(1)' }], { duration: 520, easing: 'ease-in-out' });
+  }
+}
+$('#rSkip').addEventListener('click', () => endRest(false));
+$('#rPlus').addEventListener('click', () => { if (!S.rest) return; S.rest.end += 15000; S.rest.dur += 15; startRestAnims(); updateRestText(); });
+$('#rMinus').addEventListener('click', () => { if (!S.rest) return; S.rest.end -= 15000; S.rest.dur = Math.max(1, S.rest.dur - 15); startRestAnims(); updateRestText(); });
+$('#rUndo').addEventListener('click', () => {
+  if (!S.rest) return;
+  const pending = !!S.advT; if (pending) { clearTimeout(S.advT); S.advT = 0; }
+  const wasNext = !pending && S.rest.nextEx && exLogs(S.ex).length === 0 && S.ex > 0;
+  endRest(false);
+  if (wasNext) S.ex--;
+  const l = exLogs(S.ex).pop();
+  if (l) { S.w = l.w; S.r = l.r; if (l.best) { const x = cur(); const orig = EX.find(e => e.id === x.id) || SWAP; x.best = exLogs(S.ex).reduce((b, s) => e1(s.w, s.r) > e1(b[0], b[1]) + .01 ? [s.w, s.r] : b, [...orig.best]); } }
+  renderExercise(wasNext); renderPane();
+  toast(t('undone'), { plain: true, ms: 1200 });
+});
+
+/* finishing: a big decision, so you hold it */
+function finishStats() {
+  let kg = 0, bests = 0; S.logs.forEach(l => (l || []).forEach(s => { kg += s.w * s.r; if (s.best) bests++; }));
+  const min = S.finished ? S.finMin : Math.max(1, Math.round((Date.now() - S.startedAt) / 60000));
+  return { kg: Math.round(kg), bests, min };
+}
+function openFinish() {
+  const left = remaining();
+  openSheet('finish', `<h3>${t('finTitle')}</h3><p class="lead">${left ? t('finLeft')(left) : t('finAll')}</p>
+    <button class="cta hold" id="holdBtn" style="margin-top:20px"><i></i><span>${t('hold')}</span></button>
+    <button class="cta done press" id="keepBtn" style="margin-top:10px">${t('keepGoing')}</button>`);
+  const hb = $('#holdBtn'); let anim = null;
+  const down = e => { e.preventDefault(); anim = hb.querySelector('i').animate([{ transform: 'scaleX(0)' }, { transform: 'scaleX(1)' }], { duration: 750, easing: 'cubic-bezier(.4,0,.6,1)', fill: 'forwards' }); anim.onfinish = commitFinish; };
+  const up = () => { if (anim && anim.playState === 'running') { anim.onfinish = null; anim.reverse(); } };
+  hb.addEventListener('pointerdown', down); hb.addEventListener('pointerup', up); hb.addEventListener('pointerleave', up); hb.addEventListener('pointercancel', up);
+  hb.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); commitFinish(); } });
+  $('#keepBtn').addEventListener('click', closeSheet);
+}
+function commitFinish() {
+  if (S.finished) return;
+  const st = finishStats();
+  S.finished = true; S.running = false; S.finMin = st.min; clearInterval(clockTimer); if (S.rest) endRest(false);
+  setTimeout(() => { if (S.finished) pendingWall = paintWall(); }, 1300); // paint the new light while the summary is read
+  if (navigator.vibrate) try { navigator.vibrate([10, 30, 10, 30, 30]); } catch (_) {}
+  sbody.innerHTML = `<div class="fin-hero"><div class="daypane"><div class="window"><div class="glasses"><div class="pane today lit" style="--c:var(--push)"><div class="bands">${bandsHTML()}</div><div class="tint" id="finTint"></div></div></div></div></div>
+    <div><h3>${t('doneTitle')}</h3><p class="lead" style="margin-top:6px">${t('doneLead')(WEEK.filter(d => d.t !== 'rest' && d.t !== 'today').length + 1)}</p></div></div>
+    <div class="stats" style="grid-template-columns:1fr 1fr"><div class="stat"><div class="lab">${t('sTime')}</div><div class="v">${st.min}<small style="font-size:12px"> min</small></div></div>
+    <div class="stat"><div class="lab">${t('sSets')}</div><div class="v">${doneCount()}</div></div>
+    <div class="stat"><div class="lab">${t('sLifted')}</div><div class="v">${st.kg.toLocaleString(lang === 'da' ? 'da-DK' : 'en-GB')}<small style="font-size:12px"> kg</small></div></div>
+    <div class="stat"><div class="lab">${t('sBests')}</div><div class="v">${st.bests}</div></div></div>
+    <div class="list" style="margin-top:12px">${S.plan.map((x, i) => { const l = S.logs[i] || []; if (!l.length) return ''; const top = l.reduce((a, s) => e1(s.w, s.r) > e1(a.w, a.r) ? s : a); return `<div class="li"><span class="grow">${x.n[lang]}<div class="sub">${t('setsBest')(l.length, fmt(top.w), top.r)}</div></span>${l.some(s => s.best) ? '<span class="tick gold"><svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 7.4l2.6 2.6L11 4.4"/></svg></span>' : ''}</div>`; }).join('')}</div>
+    <button class="cta press" data-back="1" style="margin-top:16px">${t('backToday')}</button>`;
+  if (!reduce) {
+    const sw = document.createElement('div'); sw.className = 'sweep' + (st.bests ? ' gold' : ''); sheet.appendChild(sw);
+    sw.animate([{ opacity: 1, transform: 'translateX(-110%) skewX(-18deg)' }, { opacity: 1, offset: .75 }, { opacity: 0, transform: 'translateX(200%) skewX(-18deg)' }],
+      { duration: 1300, delay: 700, easing: 'cubic-bezier(.3,.1,.2,1)', fill: 'backwards' }).finished.then(() => sw.remove());
+  }
+  if (!reduce) $('#finTint').animate([{ transform: 'scaleY(0)' }, { transform: 'none' }], { duration: 1000, delay: 250, easing: SP.calm.ease, fill: 'backwards' });
+  renderPane();
+}
+$('#finishBtn').addEventListener('click', openFinish);
+
+/* ---------- wiring ---------- */
+$('#startBtn').addEventListener('click', () => { if (S.finished) { toast(t('done')(doneCount(), S.finMin), { plain: true }); return; } startWorkout(); });
+$('#backBtn').addEventListener('click', () => goToday(false));
+$('#coachBtn').addEventListener('click', openCoach);
+$('#sCoach').addEventListener('click', openCoach);
+$('#wCoachBtn').addEventListener('click', openCoach);
+$('#exName').addEventListener('click', () => {
+  const x = cur(), c = x.chart, mn = Math.min(...c) - 1, mx = Math.max(...c) + 1;
+  const pts = c.map((v, i) => [i / (c.length - 1) * 300, 100 - (v - mn) / (mx - mn) * 90]);
+  openSheet('ex', `<p class="eyebrow">${x.m[lang]}</p><h3 style="margin-top:6px">${x.n[lang]}</h3>
+    <p class="sec">${t('exChart')}</p>
+    <div class="chart"><svg viewBox="0 0 300 104" preserveAspectRatio="none"><polyline points="${pts.map(p => p.map(v => v.toFixed(1)).join(',')).join(' ')}" fill="none" stroke="var(--push)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/></svg>
+    <div style="display:flex;justify-content:space-between;font-size:12.5px;color:var(--ink-2);margin-top:6px"><span>${fmt(c[0])} kg</span><span style="color:var(--ink);font-weight:600">${fmt(c[c.length - 1])} kg</span></div></div>
+    <p class="sec">${t('exHist')}</p>
+    <div class="list">${x.hist.map(h => `<div class="li"><span class="grow">${fmt(h[0])} kg × ${h[1]}</span><span class="sub">${lang === 'da' ? h[3] : h[2]}</span></div>`).join('')}</div>`);
+});
+$('#nWater').addEventListener('click', () => {
+  S.water = Math.round((S.water + .25) * 100) / 100; renderNumsLive();
+  toast(t('waterAdd'), { action: { label: t('undo'), fn: () => { S.water = Math.max(0, Math.round((S.water - .25) * 100) / 100); renderNumsLive(); } } });
+});
+$('#nProtein').addEventListener('click', () => openSheet('food', foodHTML()));
+$('#nSleep').addEventListener('click', () => openSheet('health', healthHTML()));
+function renderNumsLive() {
+  roll($('#vProt'), Math.round(S.protein)); roll($('#vWater'), fmtL(S.water));
+  $('#bProt').style.transform = `scaleX(${Math.min(1, S.protein / 150)})`;
+  $('#bWater').style.transform = `scaleX(${Math.min(1, S.water / 2.5)})`;
+}
+$('#tabs').addEventListener('click', e => {
+  const b = e.target.closest('.tab'); if (!b) return;
+  const k = b.dataset.tab;
+  if (k === 'today') return closeSheet();
+  openSheet(k, k === 'food' ? foodHTML() : k === 'health' ? healthHTML() : trainHTML());
+});
+$('#weekPanes').addEventListener('click', e => {
+  const p = e.target.closest('.pane'); if (!p) return;
+  paneTip(+p.dataset.i);
+});
+$('#weekDays').addEventListener('click', e => { const b = e.target.closest('button'); if (b) paneTip(+b.dataset.i); });
+function paneTip(i) {
+  const d = WEEK[i], name = t('dayNames')[i]; const Name = name[0].toUpperCase() + name.slice(1);
+  const p = $(`#weekPanes .pane[data-i="${i}"]`); p.classList.remove('lit'); void p.offsetWidth; p.classList.add('lit');
+  if (d.t === 'today') return toast(S.finished ? t('done')(doneCount(), S.finMin) : (doneCount() ? t('resume')(doneCount(), total()) : t('paneToday')), { plain: true });
+  if (d.t === 'rest') return toast(t('paneRest')(Name), { plain: true });
+  const el = $('#toast'); el.style.setProperty('--c', `var(--${d.t})`);
+  toast(t('paneTip')(Name, t('types')[d.t], d.min, d.sets));
+  setTimeout(() => el.style.removeProperty('--c'), 3000);
+}
+function setGlass(g) { S.glass = g; if (g === 'sea') root.dataset.glass = 'sea'; else delete root.dataset.glass; drawWall(true); }
+
+/* ---------- start ---------- */
+if (S.glass === 'sea') root.dataset.glass = 'sea';
+renderToday();
+drawWall(false);
+let rT = 0; addEventListener('resize', () => { clearTimeout(rT); rT = setTimeout(() => drawWall(false), 200); });
+// opening in the morning: the panes light up one after another, the wall's light comes up with them
+if (!reduce && !q.get('screen')) {
+  $$('#weekPanes .pane .tint').forEach((el, i) => el.animate([{ transform: 'scaleY(0)', opacity: .4 }, { transform: 'none', opacity: 1 }],
+    { duration: 620, delay: 140 + i * 70, easing: SP.calm.ease, fill: 'backwards' }));
+  wallEl.animate([{ opacity: .35 }, { opacity: 1 }], { duration: 1100, easing: 'ease-out' });
+}
+// demo states: ?screen=workout opens mid-session (two sets logged), ?state=rest adds a running rest
+if (q.get('screen') === 'workout') {
+  S.preElapsed = 9 * 60e3 + 12e3;
+  S.logs = [[{ w: 80, r: 6, best: false }, { w: 82.5, r: 5, best: false }]];
+  startWorkout();
+  $('#today').classList.add('left', 'off'); $('#workout').classList.remove('right');
+  if (q.get('state') === 'rest') { S.logs[0].pop(); renderExercise(false); renderPane(); S.w = 82.5; S.r = 5; logSet(); hideToast(); S.rest.end = Date.now() + 74e3; startRestAnims(); updateRestText(true); }
+}
+})();
+</script>
+</body>
+</html>
