@@ -57,6 +57,21 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: Summit D, delight and motion (/_prototypes/summit-d/)
+Asked (Omar, 04:56 and 05:00, dictated): "Try to make four different versions of my taste … like the ones with the wallpaper. It has to be different, but you know, the same style … Make it actually beautiful." Then: "I wanted to have pop-ups, more pop-ups, alive feelings. I wanted to feel alive, genuine." At 05:05 he asked for the threads to restart on Opus high; this is take D of four.
+Reading of the log before building: the wallpaper is the product, the picture must mean something, plain screens die, and a judge's 8 has not predicted his yes. So the photo carries the story of the session and every moment answers with something that moves.
+Built (clickable Today, live workout, rest, record, finish and Coach, English and Danish): a rocky peak above a sea of clouds (Pexels, Yunus Tuğ), toned three ways. It is before sunrise when you open the app, the clouds warm set by set, and the big number sits on open sky with the glass you touch over the clouds and the peak between them.
+- **Pop-ups:** the Coach offers breakfast on Today ("200 g skyr is 22 g protein", one tap logs it, with Undo), every stat answers a tap, the race against Tuesday announces your lead after each set, a 10-second warning in rest, the next set arrives as a gold pop when it would beat your best.
+- **Numbers have weight:** only the changed digit rolls, the weight re-centres, plates slide onto the bar (muted gym colours) and the bar under the number shows exactly what to load.
+- **Tick and rest:** one tap logs the set; the button says "Set 2 done" back, then becomes the rest bar with a fill that drains; the weight becomes the countdown in the same place, a soft light breathes (4 s in, 6 s out) and the next set's plates load while you rest.
+- **The record:** the glass fades away, the photo turns to full sun and pulls back to show the whole peak, a light sweeps across, a medal flips in and catches the light, chips pop in one by one, and "Keep going" flies the medal into the set's tick.
+- **Finish is held:** hold the button and a gold fill grows; let go early and it runs back.
+Judges (one fresh round, Sonnet): design 7 (record 8.5, finish 7.5, live set 7, Coach 7, Today 6.5, rest 6), motion 7.5. Fixed after: the peak is bigger and sits between the numbers and the glass, pop-ups cover the top bar like an island instead of colliding with it, digits roll as a clean odometer and reuse their cells, the rest clock follows real time and +30 s grows the bar on a spring, the rest fill is a bright bar over light glass, the glass lightens once the sun is up (it read brown), a slow drift keeps Today alive, the steppers dim when there is nothing left to change. Not re-judged.
+My own score: 7.5. Biggest weakness: Today still follows the Oura pattern (number, sentence, cards) and is calm rather than alive; the life is mostly in the workout.
+Needs his phone: the frost, stripes in the smooth sky, the cross-fades of the light and the record moment at 120 Hz, the drift on Today under four blurred layers.
+Artifact: https://claude.ai/artifact/FxVY7TixZMhpex9pSU2hh4
+Verdict: waiting for Omar.
+
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.
