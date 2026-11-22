@@ -26,6 +26,8 @@ import { PREV_RULES } from './prev-rules';
 export const SETUPS: Record<string, Setup> = {
   flash: { name: 'flash', quick: 'gemini-3.8-flash', deep: 'gemini-3.8-flash' },
   sonnet: { name: 'sonnet', quick: 'claude-sonnet-5-5', deep: 'claude-sonnet-5-5' },
+  // the live code checks on (src/coach/slips.ts): the same Sonnet, one retry with the reason, else the plain fallback
+  sonnetguard: { name: 'sonnetguard', quick: 'claude-sonnet-5-5', deep: 'claude-sonnet-5-5', guard: true },
   mix: { name: 'mix', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5' },
   // Flash thinking 4,096 tokens took 7–34 s a quick answer on 4 Nov (Sonnet: 2–3 s): the same mix with a small budget
   flashlow: { name: 'flashlow', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5', thinking: 512 },
