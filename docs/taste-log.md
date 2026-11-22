@@ -57,6 +57,21 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: Claude's-own-taste round, style 4 "Ceramic", sculpted matte ceramic in light 3D (/_prototypes/ceramic/)
+Asked (Omar, 06:21): "Keep testing options. Have it have its own taste also on the fitness app. Not only my taste … Be creative, but do not make it ugly." Then (06:29): "they have to be alive … instant … morph animations with pop-ups." This thread was given sculpted ceramic.
+Reading of the log before building: flat CSS rounds were called plain, his liked apps share one richly made object with a quiet UI around it, and the workout must not copy Today (15 Nov). So each screen has one real ceramic object that means something, and the two screens are different rooms.
+Built (clickable, English and Danish, one file, three.js drawn only while something moves):
+- **Today** (porcelain morning): three bisque rings on a thrown porcelain plinth. Each ring is glazed as far as the day has got (blue training, celadon protein, lilac sleep); raw clay is what is left. On open the rings settle like a spun coin (Euler's disc). Tap a ring and it gives a little knock and wobble. Tiles and the Coach sit under it; the Coach acts (85 kg on set 3) with Undo.
+- **Workout** (a cobalt room, lifting first): ceramic plates on a steel bar, the exact plates for the weight. Changing the weight slides plates off and on the sleeve; they clack against the plate inside them and roll a little. Big weight and reps with steppers, last time and best, set beads, one tap logs a set.
+- **Rest**: a porcelain kitchen-timer dial in CSS 3D that winds up and is turned back to zero by the browser itself (compositor, 120 Hz possible). Drag it to change the time, or −15/+15 s. The last three seconds blur-flip.
+- **Record**: the old best is a bisque medallion; it cracks, the crack fills with gold, and it turns over to the new number in gold (kintsugi). Then rest starts.
+- **Morph**: every pop-up grows out of what you tapped and folds back into it: the sheets out of their tile, the workout out of the Start button (and back into the Resume pill), the record out of the set bead, the finish sheet out of Finish.
+Library motions used: Any Distance medal turn (copied, gold light runs over the number as it turns); Opal gem crack (reversed: the crack is mended, not opened); Peace Out rest ring (reversed: a dial winds up and runs down instead of light closing in); Miles blur flip (last three seconds); Push and NumberFlow (only the changed digit rolls); Not Boring hold-to-tick (only the swell and settle, on one tap); Days card to page and Family trays (the morphs).
+Judge (one fresh design-judge, Sonnet): 7 overall (Today 7.5, Workout 7, Rest 8, Record 6.5). Its eight defects were fixed, not re-judged: seam drawn over the record number, crowded steppers, small set beads, weak tile edges, small Coach buttons, a pale sheet at the start of the morph, "–" for lifts not done, a heavy blue ring.
+My own score: 7/10. Biggest weakness: the 3D (rings, plates, medal) is drawn by a script loop, which Chrome on his phone runs at about 60 fps (LESSONS 6); only the dial, digits and morphs run in the compositor. Second: the cream Today has a lot of empty field around a small object.
+Needs his phone: frame rate of the plate slide and the record turn, the clip morphs over blurred sheets, banding in the cobalt room.
+Verdict: waiting for Omar.
+
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.
