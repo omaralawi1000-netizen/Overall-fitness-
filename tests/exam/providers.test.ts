@@ -434,6 +434,13 @@ describe('OpenAI adapter (offline)', () => {
     const fetchFn = (async () => ({ status: 401, json: async () => ({ error: { message: 'Incorrect API key provided: sk-test-***-123.' } }) })) as unknown as typeof fetch;
     const err = await call('gpt-6.2-sol', BODY, { ledger, purpose: 't', fetchFn }).catch((e) => e);
     expect(err.message).not.toMatch(/sk-test/);
+    // a body that breaks off after a 200 is a network failure whose worst case is counted, not a free empty answer
+    const broken = (async () => ({ status: 200, json: async () => { throw new Error('terminated'); } })) as unknown as typeof fetch;
+    const l2 = new Ledger(tmp(), 5);
+    const e2 = await call('gpt-6.2-sol', BODY, { ledger: l2, purpose: 't', fetchFn: broken }).catch((e) => e);
+    expect(e2).toBeInstanceOf(CallError);
+    expect(e2.status).toBe(-1);
+    expect(l2.spent).toBeGreaterThan(0);
     if (saved === undefined) delete process.env.OPENAI_API_KEY; else process.env.OPENAI_API_KEY = saved;
   });
 });

@@ -285,7 +285,9 @@ async function openaiPost(body: unknown, o: Pick<CallOpts, 'fetchFn' | 'dispatch
   const f = o.fetchFn ?? fetch;
   const res: any = await f('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body: JSON.stringify(body), ...(o.dispatcher ? { dispatcher: o.dispatcher } : {}), signal: AbortSignal.timeout(180_000) } as RequestInit)
     .catch((e: unknown) => { throw new CallError(-1, scrubKey(`network: ${String((e as Error)?.message ?? e).slice(0, 200)}`)); });
-  const data: any = await res.json().catch(() => null);
+  // a body that breaks off after a 200 is a network failure that may still be billed, never an empty answer (Codex, PR #136)
+  const data: any = await res.json().catch(() => (res.status === 200 ? undefined : null));
+  if (data === undefined) throw new CallError(-1, 'network: the reply body broke off after a 200');
   if (res.status !== 200) throw new CallError(res.status, scrubKey(`${res.status} ${String(data?.error?.message ?? '').slice(0, 200)}`));
   return data;
 }
