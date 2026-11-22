@@ -37,6 +37,7 @@ export const SETUPS: Record<string, Setup> = {
   hydrogenbare: { name: 'hydrogenbare', quick: 'gemini-4-hydrogen', deep: 'gemini-4-hydrogen', rules: FORMAT_RULES, more: true },
   neonxbare: { name: 'neonxbare', quick: 'gemini-4-neon', deep: 'gemini-4-neon', thinking: 'xhigh', rules: FORMAT_RULES, more: true },
   neonx: { name: 'neonx', quick: 'gemini-4-neon', deep: 'gemini-4-neon', thinking: 'xhigh', guard: true },
+  neon: { name: 'neon', quick: 'gemini-4-neon', deep: 'gemini-4-neon', thinking: 'high', guard: true },
   mix: { name: 'mix', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5' },
   // Flash thinking 4,096 tokens took 7–34 s a quick answer on 4 Nov (Sonnet: 2–3 s): the same mix with a small budget
   flashlow: { name: 'flashlow', quick: 'gemini-3.8-flash', deep: 'claude-sonnet-5-5', thinking: 512 },

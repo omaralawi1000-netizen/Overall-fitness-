@@ -15,6 +15,10 @@ Problems found:
 - Gemini: set and working (checked 27 Oct after Omar switched the environment). There is no GEMINI_API_KEY variable; the environment injects the key as the x-goog-api-key header on requests to generativelanguage.googleapis.com, so send requests without a key. A test call to gemini-3.8-flash answered. Note: gemini-2.5-flash now returns 404 ("no longer available to new users"), so use gemini-3.8-flash.
 - Downloading release assets: `gh release download` fails (GraphQL is blocked in cloud sessions). Use the REST API: `gh api -H "Accept: application/octet-stream" repos/omaralawi1000-netizen/Overall-fitness-/releases/assets/<id>`.
 
+## Session: Gemini 4 Neon at high (22 Nov 2026, Opus high; $2.07 answers + scoring)
+- Omar picked "Run Neon at high, 1 run" (cap raised to about $22). One test call first ($0.11), then 20 cases with the Coach stack: **73 %**, Sonnet with the stack is 72.5 %, Hydrogen 69 %. $0.083 a reply, 27 s median. Details in `docs/COACH.md` §8 Step 5.
+- Next: no more paid model arms; a person reads the m06 answers (checker strictness on `m06.adults`) and the playbook cards.
+
 ## Session: the three live code checks (22 Nov 2026, Sonnet high; $0)
 `src/coach/slips.ts` (only repeats the screen, ignores what was said, sends away without answering) plus `guard()` (one retry with the reason, then a plain fallback and the "Think deeper" offer). 10 offline tests; 0 false alarms on the 150 saved answers. Wired into the exam runner (`sonnetguard` setup); the Sonnet run of 25 replies fired it 0 times. Details: `docs/COACH.md` §8 "Step 5".
 
