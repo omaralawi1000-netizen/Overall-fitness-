@@ -176,7 +176,7 @@ describe('exam v2 cases', () => {
     expect(seen).toHaveLength(2);
     // the note the answer saw is still in what More reads
     expect(seen[1].system).toContain('Left shoulder sore');
-    expect(seen[1].system.split('FACTS (computed')[1].split('KNOWLEDGE')[0]).toBe(seen[0].system.split('FACTS (computed')[1].split('KNOWLEDGE')[0]);
+    expect(seen[1].system.split('FACTS (computed')[1].split('PLAYBOOKS (')[0].split('ANSWER FORMAT')[0].split('\n\nThe person tapped')[0]).toBe(seen[0].system.split('FACTS (computed')[1].split('PLAYBOOKS (')[0].split('ANSWER FORMAT')[0]);
     expect(r.turns.at(-1)!.shown!.did).toHaveLength(1);
     expect(seen[1].turns).toContain('Done in the app: ');
     expect(r.turns.at(-1)!.more).toBe('More.');

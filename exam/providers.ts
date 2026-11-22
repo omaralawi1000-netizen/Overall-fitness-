@@ -38,7 +38,8 @@ export const PRICES: Record<string, Price> = {
   'gemini-4-argon': { in: 2, out: 10, cacheRead: 0.1, search: 0.035, until: '2026-11-30' },
   // the yardstick's second checker (12 Nov 2026, ai.google.dev pricing page): the cloud key reaches it on the free tier
   'gemini-3-flash-preview': { in: 0.5, out: 3, cacheRead: 0.05, search: 0.035, until: '2026-12-31' },
-  'claude-sonnet-5-5': { in: 2, out: 10, cacheRead: 0.2, search: 0.01, until: '2026-12-31' },
+  // Sonnet 5.5 reads its cache at 0.05x input (the claude-api prompt-caching reference, 22 Nov)
+  'claude-sonnet-5-5': { in: 2, out: 10, cacheRead: 0.1, search: 0.01, until: '2026-12-31' },
   // Haiku 5.5 (22 Nov 2026, the claude-api reference table): $0.10 / $0.50 for prompts up to 100K tokens; cache read is assumed at the usual 10 % of input
   'claude-haiku-5-5': { in: 0.1, out: 0.5, cacheRead: 0.01, search: 0.01, until: '2026-12-31' },
   'claude-opus-5-5': { in: 4, out: 20, cacheRead: 0.2, search: 0.01, until: '2026-12-31' },
@@ -190,9 +191,23 @@ export function toClaude(model: string, body: GeminiBody, effort: 'low' | 'mediu
   };
 }
 
-function systemBlocks(system: string): Anthropic.TextBlockParam[] {
+/** Where the cached part is cut again: before the person's facts (rules and knowledge are the same for everyone) and before this message's cards. */
+const CACHE_CUTS = [/\n\nFACTS \(computed/, /\n\nPLAYBOOKS \(/];
+export function systemBlocks(system: string): Anthropic.TextBlockParam[] {
   const [stable, tail] = splitSystem(system);
-  return [{ type: 'text', text: stable, cache_control: { type: 'ephemeral' } }, ...(tail ? [{ type: 'text' as const, text: tail }] : [])];
+  const parts: string[] = [];
+  let rest = stable;
+  for (const cut of CACHE_CUTS) {
+    const i = rest.search(cut);
+    if (i > 0) { parts.push(rest.slice(0, i)); rest = rest.slice(i); }
+  }
+  parts.push(rest);
+  // a breakpoint after each shared part (at most 4 in all); the cards change with every message, so they are never cached alone
+  const cards = parts.length > 1 && /^\n\nPLAYBOOKS \(/.test(parts.at(-1)!);
+  return [
+    ...parts.map((text, i) => (cards && i === parts.length - 1 ? { type: 'text' as const, text } : { type: 'text' as const, text, cache_control: { type: 'ephemeral' as const } })),
+    ...(tail ? [{ type: 'text' as const, text: tail }] : []),
+  ];
 }
 
 // ── the call ──

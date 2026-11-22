@@ -147,7 +147,9 @@ export function coachRequest(sheet: FactSheet, convo: CoachTurn[], o: { voice?: 
   // (a short follow-up still gets the card of the message before it; any other new request gets none from the last topic)
   const said = convo.filter((t) => t.role === 'person' && !t.notice).map((t) => t.text);
   const cards = convo.at(-1)?.role === 'person' && !convo.at(-1)?.notice ? pickForConversation(said) : [];
-  const system = [o.rules ?? rulesFor(o.tier), `FACTS (computed by the app, the only numbers you may use):\n${renderFacts(sheet)}`, `KNOWLEDGE (general guidelines; cite with "sources", never in the text):\n${renderKnowledge()}`, ...(cards.length ? [`${PLAYBOOK_HEAD}\n${renderPlaybooks(cards)}`] : [])].join('\n\n');
+  // the same for every person first (rules, knowledge), then this person's facts, then this message's cards: each part is a
+  // longer-lived prompt-cache prefix than the next, so most of the prompt is read from cache at a tenth of the price
+  const system = [o.rules ?? rulesFor(o.tier), `KNOWLEDGE (general guidelines; cite with "sources", never in the text):\n${renderKnowledge()}`, `FACTS (computed by the app, the only numbers you may use):\n${renderFacts(sheet)}`, ...(cards.length ? [`${PLAYBOOK_HEAD}\n${renderPlaybooks(cards)}`] : [])].join('\n\n');
   const turns = convo.map((t, i) => ({
     role: t.role === 'person' ? ('user' as const) : ('model' as const),
     text: [t.notice ? `(No message from the person. The app asks you to speak first: ${t.notice}. Say something only if FACTS hold something worth their attention right now; otherwise reply with "say": "-" and no actions. At most two sentences.)` : t.text, t.untrusted ? fence(t.untrusted.text, t.untrusted.source) : '', i === convo.length - 1 && t.role === 'person' && o.voice ? '(voice: true)' : '']
