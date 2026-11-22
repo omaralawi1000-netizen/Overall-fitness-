@@ -15,6 +15,8 @@ export interface Playbook {
   name: string;
   /** what the person says, English and Danish; checked against the latest message only */
   when: RegExp;
+  /** a second test the same message must also pass (the race card needs a date close by, not just the word "race") */
+  also?: RegExp;
   /** a stop sign first: the cards that guard safety are picked before the others */
   safety?: boolean;
   cover: string[];
@@ -92,7 +94,9 @@ export const PLAYBOOKS: Playbook[] = [
   {
     id: 'race-week', name: 'Race week or taper',
     when: W('race week|marathon|half marathon|10k|5k|race|taper\\w*|the big day|halvmaraton|maraton|løber \\d+ ?km|\\d+ ?km (?:løb|på (?:søn|man|tirs|ons|tors|fre|lør)\\p{L}*)|stævne næste uge'),
+    also: W('this (?:week|weekend)|next (?:week|weekend)|tomorrow|tonight|in (?:\\d+|a|one|two|three|a few|few) (?:days?|weeks?)|on (?:mon|tues?|wednes|thurs?|fri|satur|sun)\\p{L}*|race week|taper\\w*|i morgen|i aften|denne uge|næste uge|i weekenden|på (?:man|tirs|ons|tors|fre|lør|søn)\\p{L}*|om (?:\\d+|en|to|tre) (?:dage?|uger?)'),
     cover: [
+      'If the message does not say how close the race is, ask when it is before prescribing a taper; a race months away is a build, not a taper.',
       'In the last week cut volume, not sharpness: fewer hard sets and shorter sessions, a little quality kept.',
       'Sleep first, then food: normal meals with enough carbohydrate, nothing new on or just before the day.',
       'Name the one thing to do the day before and the one thing to not do (new shoes, new food, a hard session).',
@@ -178,7 +182,7 @@ export const MAX_PLAYBOOKS = 2;
 /** Code picks the cards, never the model: the safety cards first, then by how many of the person's words matched. */
 export function pickPlaybooks(text: string, max = MAX_PLAYBOOKS): Playbook[] {
   if (!text.trim()) return [];
-  const hits = PLAYBOOKS.map((p) => ({ p, n: (text.match(new RegExp(p.when.source, 'giu')) ?? []).length })).filter((h) => h.n > 0);
+  const hits = PLAYBOOKS.map((p) => ({ p, n: p.also && !p.also.test(text) ? 0 : (text.match(new RegExp(p.when.source, 'giu')) ?? []).length })).filter((h) => h.n > 0);
   hits.sort((a, b) => Number(!!b.p.safety) - Number(!!a.p.safety) || b.n - a.n || PLAYBOOKS.indexOf(a.p) - PLAYBOOKS.indexOf(b.p));
   return hits.slice(0, max).map((h) => h.p);
 }

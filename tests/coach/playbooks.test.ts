@@ -26,6 +26,12 @@ describe('playbooks', () => {
     expect(ids('why is my row stuck?')).toEqual(['stalled-lift']);
     expect(ids('can you make me a 3-day plan? 45 min each')).toEqual(['plan-request']);
   });
+  it('the race card needs a race close by, not just the word', () => {
+    expect(ids('I run 5k three times a week. How do I build endurance?')).toEqual([]);
+    expect(ids('I want to run a marathon in six months')).toEqual([]);
+    expect(ids('my marathon is next week, how do I taper?')).toEqual(['race-week']);
+    expect(ids('race on Sunday, what should this week look like?')).toEqual(['race-week']);
+  });
   it('does not fire on look-ups, logging or thanks, and "hurtigere" is speed, not pain', () => {
     for (const t of ['thanks!', 'log 3 eggs and 200 g oats', 'hvad står der i dag?', 'move today\'s pull to Wednesday', 'I want to go back on the plan']) expect(ids(t), t).toEqual([]);
     expect(ids('vil være hurtigere')).not.toContain('sore-joint');
