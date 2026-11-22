@@ -23,6 +23,8 @@ const STEP = W(
     'prøv', 'tag', 'spis', 'sov', 'hold', 'flyt', 'drop', 'næste', 'i morgen', 'i aften', 'jeg ville', 'skal vi', 'vil du', 'du kan', 'du bør', 'du skal', 'start', 'gør', 'lad', 'så først', 'fortæl', 'planen', 'hvile', 'giv det', 'ekstra', 'skal op', 'nemmeste', 'meal', 'måltid',
   ].join('|'),
 );
+/** stop signs the playbooks name that the routing regex may not (swelling, numbness, dizziness, chest, blood): a referral is the right answer to these */
+const STOP_SIGN = W('swell\\w*|swollen|numb\\w*|tingl\\w*|dizz\\w*|faint\\w*|chest|blood|can\'?t (?:bend|walk|move|put weight)|hævel\\w*|hævet|følelsesløs\\w*|svimmel\\w*|besvim\\w*|bryst\\w*|blod\\w*');
 /** the answer's only advice is to see someone else */
 const REFERRAL = W('doctor|physio\\w*|dietitian|nutritionist|professional|specialist|gp|your coach|læge\\w*|fysioterapeut\\w*|diætist\\w*|kostvejleder\\w*|din træner|speciallæge');
 
@@ -38,7 +40,7 @@ const MUST_ANSWER: { cue: RegExp; answer: RegExp; what: string }[] = [
   { what: 'the pain or injury', cue: W('pain\\w*|hurt(?:s|ing)?|sore|ache\\w*|injur\\w*|pop(?:ped)?|swollen|smert\\w*|ondt|skade\\w*|knæ\\p{L}*|hævet'), answer: W('pain|hurt\\w*|sore|ache|injur\\w*|joint|knee|shoulder|elbow|wrist|back|hip|ankle|stop|doctor|physio\\w*|smert\\w*|ondt|skade\\w*|knæ\\p{L}*|skulder\\p{L}*|læge\\w*|fysio\\w*|ryg') },
   { what: 'the bad sleep or tiredness', cue: W('slept|sleep\\w*|tired|exhausted|insomnia|søvn\\w*|træt\\w*|udmattet|sov'), answer: W('sleep\\w*|slept|rest\\w*|tired|night|wrecked|rough|recover\\w*|nap|søvn\\w*|træt\\w*|hvile\\w*|sov\\w*|restitution') },
   { what: 'the shift or the schedule clash', cue: W('(?:late|night|early)\\s+shifts?|nights?\\s+(?:all\\s+)?week|shift\\s+work|vagt\\w*|skiftehold'), answer: W('shift\\w*|night\\w*|late|early|schedule|vagt\\w*|nat|sen|tidlig\\w*|skift\\w*') },
-  { what: 'the match, race or event they named', cue: W('match|game|race|kamp|løb|stævne|turnering|tournament|competition|konkurrence'), answer: W('match|game|race|kamp\\w*|løb\\w*|stævne|tournament|turnering|competition|konkurrence\\w*|taper|nedtrapning\\w*|event') },
+  { what: 'the match, race or event they named', cue: W('match|game|race|kamp|løb|stævne|turnering|tournament|competition|konkurrence'), answer: W('match|game|race|kamp\\w*|løb\\w*|stævne|tournament|turnering|competition|konkurrence\\w*|taper|nedtrapning\\w*|event|weigh\\w*|vejning\\w*|hvornår|hour\\w*|eat|spis\\w*|meal|måltid\\w*|food|mad|carb\\w*|kulhydrat\\w*') },
   { what: 'the sickness', cue: W('sick|ill|fever|cold|flu|syg\\w*|feber|forkølet'), answer: W('sick|ill|fever|cold|flu|rest\\w*|recover\\w*|syg\\w*|feber|forkølet|hvile\\w*') },
 ];
 
@@ -56,7 +58,7 @@ export function findSlips(say: string, ctx: SlipContext): Slip[] {
   const person = ctx.personText.trim();
   if (!text || text === '-' || !person) return [];
   const slips: Slip[] = [];
-  const risky = RISK.test(person) || !!ctx.minor || MINOR.test(person);
+  const risky = RISK.test(person) || STOP_SIGN.test(person) || !!ctx.minor || MINOR.test(person);
   const sheet = new Set(ctx.sheetNumbers.map((n) => Math.round(n * 10) / 10));
   const usedSheet = new Set(numbersIn(text).map((n) => Math.round(n * 10) / 10).filter((n) => sheet.has(n) && n > 1));
   const step = STEP.test(text) || text.includes('?');

@@ -24,6 +24,11 @@ describe('the three live checks', () => {
     expect(ids('Talk to a doctor or a dietitian about that.', 'felt a pop in my shoulder, it hurts')).not.toContain('sends-away');
     expect(ids('Talk to a doctor about that.', 'how do I cut 3 kg?', { minor: true })).not.toContain('sends-away');
   });
+  it('keeps a referral for the stop signs the playbooks name, and accepts a prerequisite question for an event', () => {
+    expect(ids('See a doctor about the swelling.', 'My knee is swollen after training.')).not.toContain('sends-away');
+    expect(ids('Tal med en læge om hævelsen.', 'mit knæ er hævet')).not.toContain('sends-away');
+    expect(ids('Hvornår er vejningen? Så kan jeg sige, hvad du skal spise.', 'hvad skal jeg spise før en kamp kl 14?')).toEqual([]);
+  });
   it('lets good answers through (saved answers that once raised false alarms)', () => {
     expect(ids("That makes sense when it feels like nothing is moving. Next up is squat 32.5 kg, bench 27.5 kg. Try Thursday's session.", 'I want to quit, I am not seeing any results')).toEqual([]);
     expect(ids('Nothing is planned for today. If you did get a rough night, drop a set or two. How are you feeling?', 'I barely slept last night, should I still train today?')).toEqual([]);
