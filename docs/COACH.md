@@ -461,6 +461,9 @@ and sharper. (Done 12 Nov: see below. Next is step 2, findings v1.)
 - `pairs-page.html` + `build-pairs-page.test.ts`: the blind page for people (6 single-turn pairs, the Coach of 12 Nov
   against plain Opus; sides shuffled per viewer, pick buttons wake after 6 s, picks saved per viewer). Published at
   https://claude.ai/artifact/W9td4SnPhreKDbABbwtvBG. The key (which side is which) is only in the shared folder.
+  Second build (22 Nov, page `bb2eb0`): the Coach on Haiku 5.5 with the stack (the cheap everyday candidate) against the same
+  plain Opus answers, plus an optional one-line "why" per pick: https://claude.ai/artifact/XpzCaMBow7RyZGdBRBdusD. Key:
+  `e2/pairs-haiku-opus-key.json` in the shared folder.
 
 **Is it trustworthy?**
 - The done-bar is met: the Sonnet checker agrees with the hand-read on **18 of 20** random items and 4 of 4 hard ones. The
