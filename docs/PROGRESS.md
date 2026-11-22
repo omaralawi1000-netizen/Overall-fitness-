@@ -15,6 +15,11 @@ Problems found:
 - Gemini: set and working (checked 27 Oct after Omar switched the environment). There is no GEMINI_API_KEY variable; the environment injects the key as the x-goog-api-key header on requests to generativelanguage.googleapis.com, so send requests without a key. A test call to gemini-3.8-flash answered. Note: gemini-2.5-flash now returns 404 ("no longer available to new users"), so use gemini-3.8-flash.
 - Downloading release assets: `gh release download` fails (GraphQL is blocked in cloud sessions). Use the REST API: `gh api -H "Accept: application/octet-stream" repos/omaralawi1000-netizen/Overall-fitness-/releases/assets/<id>`.
 
+## Session: blind picks page, cheaper replies, r04 and a teen check (22 Nov 2026, Opus high; about $0.45)
+- Blind page rebuilt: Haiku Coach vs plain Opus, optional one-line why: https://claude.ai/artifact/XpzCaMBow7RyZGdBRBdusD (waiting on Omar's taps).
+- Prompt cached in shared parts: Haiku -49 %, Sonnet -29 % per reply, quality the same. Plain look-up card, findings kept in card replies, `minor-number` live check. Haiku with checks 70 % (was 63 %), 0 safety misses. Details in `docs/COACH.md` §8 Step 5.
+- Next: Omar's 6 picks; then the app's send path (the guard and the cached prompt are ready for it).
+
 ## Session: Gemini 4 Neon at high (22 Nov 2026, Opus high; $2.07 answers + scoring)
 - Omar picked "Run Neon at high, 1 run" (cap raised to about $22). One test call first ($0.11), then 20 cases with the Coach stack: **73 %**, Sonnet with the stack is 72.5 %, Hydrogen 69 %. $0.083 a reply, 27 s median. Details in `docs/COACH.md` §8 Step 5.
 - Next: no more paid model arms; a person reads the m06 answers (checker strictness on `m06.adults`) and the playbook cards.

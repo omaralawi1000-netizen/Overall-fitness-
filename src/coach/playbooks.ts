@@ -37,7 +37,7 @@ export const PLAYBOOKS: Playbook[] = [
       'Name the one next step they can do this week (keep protein and lifting, log honestly), and that their coach or a sports dietitian decides a close cut with them.',
     ],
     stop: [
-      'Under 18: no target, no deficit, no number to lose. Bring in a parent and a doctor or sports dietitian, together with their coach, and say what they can work on instead (food quality, sleep, training).',
+      'Under 18: no target, no deficit, no number to lose, and do not repeat the number they named. Bring in a parent and a doctor or sports dietitian, together with their coach, and say what they can work on instead (food quality, sleep, training).',
       'Never water cuts, saunas, sweat suits, fasting, laxatives or diuretics, even when the person says everyone does it.',
     ],
     example: 'Before I say anything about the class, when is the weigh-in: the evening before, or the same morning? That changes what is safe. From your log you are some way from it, so this is a slow, early job, not a last-week sprint. Keep protein up and keep lifting, and take the final stretch to your coach or a sports dietitian.',
@@ -55,6 +55,19 @@ export const PLAYBOOKS: Playbook[] = [
       'Chest pain, fainting or trouble breathing: stop and get medical help now, and say nothing else first.',
     ],
     example: 'That sounds worth taking seriously. Is it sharp or dull, and does it come on with one movement, like pressing overhead? Until we know, I would leave out the lifts that set it off and keep the rest of your week as it is. If it is sharp, swells or hangs around, get a physio or doctor to look at it.',
+  },
+  {
+    // every model added unasked advice to "what's today?" (r04, 12 and 22 Nov); a plain look-up gets a plain answer
+    id: 'plain-lookup', name: 'A plain look-up (what is on today)',
+    when: /^\s*(?:so\s+)?(?:what(?:'s|\s+is)\s+(?:on\s+)?(?:for\s+)?(?:today|tomorrow|my plan(?: today)?|on the plan(?: today)?)|what do i (?:do|train|have) today|hvad (?:står der|skal jeg|har jeg|er der)(?: på planen)? (?:i dag|i morgen))\s*[?.!]*\s*$/iu,
+    cover: [
+      'Answer exactly what was asked, from PLAN and FACTS, in one or two short sentences: what is planned, and when the next one is if that helps.',
+      'Nothing else: no tips, no reminders about old injuries or lifts, no findings, no question. The person can ask for more.',
+    ],
+    stop: [
+      'Only if FACTS show a stop sign for today itself (pain or illness logged since the last session), add one short line about it.',
+    ],
+    example: 'Today is legs and back. The next one is chest and shoulders on Thursday.',
   },
   {
     id: 'quit', name: 'Wants to quit',
@@ -187,7 +200,7 @@ export function pickPlaybooks(text: string, max = MAX_PLAYBOOKS): Playbook[] {
   return hits.slice(0, max).map((h) => h.p);
 }
 
-export const PLAYBOOK_HEAD = 'PLAYBOOKS (how a great coach handles this; follow the cover list and the stop signs, and copy the example\'s order and tone, never its words; every number you say still comes from FACTS; a reply holds at most one question in all, and when a finding in FACTS asks one, that is the one):';
+export const PLAYBOOK_HEAD = 'PLAYBOOKS (how a great coach handles this; follow the cover list and the stop signs, and copy the example\'s order and tone, never its words; every number you say still comes from FACTS; a reply holds at most one question in all, and when a finding in FACTS asks one, that is the one; the findings in FACTS still go in the reply even where the example has none):';
 
 export function renderPlaybooks(cards: Playbook[]): string {
   return cards.map((c) => [`## ${c.name}`, 'Cover:', ...c.cover.map((x) => `- ${x}`), 'Stop signs:', ...c.stop.map((x) => `- ${x}`), `Example reply: ${c.example}`].join('\n')).join('\n\n');

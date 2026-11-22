@@ -18,7 +18,7 @@
   --accent: #7fb6d3; --accent-ink: #0d1a20; --chosen: #1f3340; --ok: #6cc394; --warn: #e0a85a; color-scheme: dark }
 html, body { height: 100%; }
 body { background: var(--ground); color: var(--ink); font: 400 16px/1.5 var(--text); -webkit-tap-highlight-color: transparent; }
-.wrap { max-width: 640px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 140px; display: flex; flex-direction: column; gap: 16px; }
+.wrap { max-width: 640px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 200px; display: flex; flex-direction: column; gap: 16px; }
 h1 { font: 600 1.6rem/1.2 var(--display); margin: 0; text-wrap: balance; letter-spacing: -0.01em; }
 h2 { font: 600 1.05rem/1.3 var(--display); margin: 0; }
 p { margin: 0; }
@@ -60,6 +60,7 @@ input[type=text] { font: 400 16px var(--text); padding: 12px; border-radius: 10p
 .note { font-size: 0.875rem; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); }
 .note.warn { color: var(--warn); }
 .note.ok { color: var(--ok); }
+.why { display: block; width: 100%; max-width: 640px; box-sizing: border-box; font: inherit; font-size: 1rem; padding: 10px 12px; margin: 0 auto 8px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: inherit; }
 .code { font: 500 0.9rem/1.4 ui-monospace, "SF Mono", Menlo, monospace; word-break: break-all; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; user-select: all; }
 ol.how { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 6px; }
 @media (prefers-reduced-motion: no-preference) { .fill { transition: width 0.2s linear; } }
@@ -176,6 +177,7 @@ function show(i) {
   bar.hidden = false;
   bar.innerHTML = `<div class="timer" aria-hidden="true"><div class="fill" id="fill"></div></div>
     <div class="meta"><span id="hint">Read both replies first</span><span id="status">${picked ? 'Saved' : ''}</span></div>
+    <input id="why" class="why" type="text" maxlength="140" placeholder="Why? One line, optional" value="${esc(picked?.why ?? '')}" aria-label="Why, optional">
     <div class="row">
       <button class="pick primary" data-pick="${first}" disabled>A is better</button>
       <button class="pick" data-pick="same" disabled>About the same</button>
@@ -196,7 +198,8 @@ function show(i) {
 }
 
 async function pick(p, better, shownFirst) {
-  state.picks[p.id] = { better, shownFirst, ms: Math.round(performance.now() - shownAt), at: new Date().toISOString() };
+  const why = (document.getElementById('why')?.value ?? '').trim().slice(0, 140);
+  state.picks[p.id] = { better, shownFirst, ms: Math.round(performance.now() - shownAt), at: new Date().toISOString(), ...(why ? { why } : {}) };
   keep();
   const status = document.getElementById('status');
   status.textContent = 'Saving…';
@@ -211,7 +214,9 @@ async function pick(p, better, shownFirst) {
 
 function code() {
   const m = { r1: '1', r2: '2', same: 's' };
-  return PAGE + ':' + LIST.map((p) => state.picks[p.id] ? p.id + m[state.picks[p.id].better] + (state.picks[p.id].shownFirst === 'r1' ? 'a' : 'b') : p.id + '-').join('.');
+  const whys = LIST.filter((p) => state.picks[p.id]?.why).map((p) => p.id + ' ' + state.picks[p.id].why.replace(/[|]/g, '/'));
+  // the why lines ride along, so a viewer whose picks could not be saved still sends them (Codex, PR #141)
+  return PAGE + ':' + LIST.map((p) => state.picks[p.id] ? p.id + m[state.picks[p.id].better] + (state.picks[p.id].shownFirst === 'r1' ? 'a' : 'b') : p.id + '-').join('.') + (whys.length ? ' | ' + whys.join(' | ') : '');
 }
 
 function end() {

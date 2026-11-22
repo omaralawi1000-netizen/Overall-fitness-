@@ -40,7 +40,7 @@ describe('prices fail closed', () => {
   it('prices cached tokens at the cache rate', () => {
     const p = PRICES['claude-sonnet-5-5'];
     expect(costOf(p, { inTokens: 1e6, cachedTokens: 0, outTokens: 1e6, searches: 0 })).toBeCloseTo(12);
-    expect(costOf(p, { inTokens: 1e6, cachedTokens: 1e6, outTokens: 0, searches: 0 })).toBeCloseTo(0.2);
+    expect(costOf(p, { inTokens: 1e6, cachedTokens: 1e6, outTokens: 0, searches: 0 })).toBeCloseTo(0.1);
     expect(costOf(p, { inTokens: 0, cachedTokens: 0, outTokens: 0, searches: 2 })).toBeCloseTo(0.02);
     expect(costOf(p, { inTokens: 1e6, cachedTokens: 0, cacheWriteTokens: 1e6, outTokens: 0, searches: 0 })).toBeCloseTo(2.5);
   });
@@ -151,6 +151,16 @@ describe('Gemini request → Claude request', () => {
       expect(splitSystem(base + tail)).toEqual([base, tail]);
     const r2 = toClaude('claude-sonnet-5-5', { ...BODY, systemInstruction: { parts: [{ text: `${base}\n\nANSWER FORMAT: z` }] } }, 'low');
     expect(r2.system).toEqual([{ type: 'text', text: base, cache_control: { type: 'ephemeral' } }, { type: 'text', text: '\n\nANSWER FORMAT: z' }]);
+  });
+  it('caches the shared rules apart from the person\'s facts, and never the cards alone (22 Nov)', () => {
+    const rules = 'You are the Coach.\n\nKNOWLEDGE (general): k';
+    const facts = '\n\nFACTS (computed by the app): f';
+    const cards = '\n\nPLAYBOOKS (how a great coach): c';
+    const fmt = '\n\nANSWER FORMAT: z';
+    const sys = (t: string) => toClaude('claude-haiku-5-5', { ...BODY, systemInstruction: { parts: [{ text: t }] } }, 'low').system;
+    const c = { cache_control: { type: 'ephemeral' } };
+    expect(sys(rules + facts + cards + fmt)).toEqual([{ type: 'text', text: rules, ...c }, { type: 'text', text: facts, ...c }, { type: 'text', text: cards }, { type: 'text', text: fmt }]);
+    expect(sys(rules + facts + fmt)).toEqual([{ type: 'text', text: rules, ...c }, { type: 'text', text: facts, ...c }, { type: 'text', text: fmt }]);
   });
   it('turns Google search grounding into Claude web search', () => {
     expect(toClaude('claude-opus-5-5', { ...BODY, tools: [{ google_search: {} }] }, 'high').tools?.[0]).toMatchObject({ type: 'web_search_20260209', name: 'web_search' });

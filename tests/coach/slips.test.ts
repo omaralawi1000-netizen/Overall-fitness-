@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { fallback, findSlips, guard, retryNote } from '../../src/coach/slips';
 
 const sheet = [2756, 2760, 3000, 84.8, 0.4, 140, 119];
-const ids = (say: string, personText: string, extra: { minor?: boolean } = {}) => findSlips(say, { personText, sheetNumbers: sheet, ...extra }).map((s) => s.id);
+const ids = (say: string, personText: string, extra: { minor?: boolean; earlier?: string } = {}) => findSlips(say, { personText, sheetNumbers: sheet, ...extra }).map((s) => s.id);
 
 describe('the three live checks', () => {
   it('flags an answer that only repeats the screen', () => {
@@ -35,6 +35,21 @@ describe('the three live checks', () => {
     // Hydrogen's real first answer on m03 (22 Nov): "stay at" is the step, so this was a false alarm
     expect(ids("Stay right at your 2,300 kcal target. You're averaging 2,260 kcal and losing 0.4 kg a week. Around 2,420 kcal would slow it.", 'fat loss, slowly')).toEqual([]);
     expect(ids('Fordi du spiser på vedligehold: 2.756 mod 2.760, og målet er 3.000. Tag et ekstra måltid.', 'hvorfor tager jeg ikke på?')).toEqual([]);
+  });
+  it('a minor who wants to lose weight gets no weight or calorie figure, not even their own (m06, 22 Nov)', () => {
+    const say = 'At 17, I won\'t set a cut, so please talk to a parent and your doctor before you aim for 3 kg. Is this for a weigh-in?';
+    expect(ids(say, 'how do I cut 3 kg for the season?', { minor: true })).toEqual(['minor-number']);
+    // the second turn still continues the cut
+    expect(ids('Take that to a parent and your doctor before any 3 kg plan. What does your coach want it for?', 'my coach says I should', { minor: true, earlier: 'how do I cut 3 kg for the season?' })).toEqual(['minor-number']);
+    expect(ids('At 17 I won\'t set a cut. Talk to a parent and a doctor with your coach; meanwhile eat regular meals and sleep well. What is the season asking for?', 'how do I cut 3 kg for the season?', { minor: true })).toEqual([]);
+    // an adult cutting, or a minor asking about something else, is not this slip
+    expect(ids('You are 84.8 kg and losing 0.4 kg a week, so keep the pace.', 'how do I cut for the 83 kg class?')).not.toContain('minor-number');
+    expect(ids('Aim for about 140 g protein a day, spread over your meals.', 'how much protein should I eat?', { minor: true })).toEqual([]);
+    expect(retryNote([{ id: 'minor-number', reason: 'x' }])).toContain('no weight, kilo or calorie figure');
+    // a lifting load is not a body-weight figure, and a new question after the cut talk is not the cut (Codex, PR #141)
+    expect(ids('Keep your squat at 40 kg and focus on technique.', 'how do I cut 3 kg for the season?', { minor: true })).toEqual([]);
+    expect(ids('Aim for about 2,000 kcal on match days.', 'how do I cut 3 kg?', { minor: true })).toEqual(['minor-number']);
+    expect(ids('Keep your squat at 40 kg and add a rep next time.', 'how should I train legs this week?', { minor: true, earlier: 'how do I cut 3 kg for the season?' })).toEqual([]);
   });
   it('says nothing when the Coach speaks first or has nothing to say', () => {
     expect(ids('Your lifts have sat for five sessions. Is your log everything you eat?', '')).toEqual([]);
