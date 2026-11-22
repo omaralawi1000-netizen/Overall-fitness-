@@ -11,6 +11,7 @@ import { apply, check, didLines, readProposal, type Did, type Proposal } from '.
 import type { Tier } from './route';
 import { renderFacts, sheetNumbers, type FactSheet } from './facts';
 import { KNOWLEDGE, renderKnowledge, type Guideline } from './knowledge';
+import { PLAYBOOK_HEAD, pickPlaybooks, renderPlaybooks } from './playbooks';
 import { asksFor, corrects, fence, gate, saysNotTo, type UntrustedSource } from './untrusted';
 import { newId } from '../engine/util';
 
@@ -142,7 +143,11 @@ export interface CoachRequest { system: string; turns: { role: 'user' | 'model';
 
 /** Build the request: rules + this person's facts + the knowledge pack, then the conversation. */
 export function coachRequest(sheet: FactSheet, convo: CoachTurn[], o: { voice?: boolean; rules?: string; tier?: Tier } = {}): CoachRequest {
-  const system = [o.rules ?? rulesFor(o.tier), `FACTS (computed by the app, the only numbers you may use):\n${renderFacts(sheet)}`, `KNOWLEDGE (general guidelines; cite with "sources", never in the text):\n${renderKnowledge()}`].join('\n\n');
+  // code picks at most two playbook cards from what the person said just now (never from a pasted page or a notice)
+  // (when the latest message brings none, the person's message before it still does: "my coach says I should" follows "how do I cut 3 kg?")
+  const said = convo.filter((t) => t.role === 'person' && !t.notice);
+  const cards = convo.at(-1)?.role === 'person' && !convo.at(-1)?.notice ? (pickPlaybooks(said.at(-1)?.text ?? '').length ? pickPlaybooks(said.at(-1)!.text) : pickPlaybooks(said.at(-2)?.text ?? '')) : [];
+  const system = [o.rules ?? rulesFor(o.tier), `FACTS (computed by the app, the only numbers you may use):\n${renderFacts(sheet)}`, `KNOWLEDGE (general guidelines; cite with "sources", never in the text):\n${renderKnowledge()}`, ...(cards.length ? [`${PLAYBOOK_HEAD}\n${renderPlaybooks(cards)}`] : [])].join('\n\n');
   const turns = convo.map((t, i) => ({
     role: t.role === 'person' ? ('user' as const) : ('model' as const),
     text: [t.notice ? `(No message from the person. The app asks you to speak first: ${t.notice}. Say something only if FACTS hold something worth their attention right now; otherwise reply with "say": "-" and no actions. At most two sentences.)` : t.text, t.untrusted ? fence(t.untrusted.text, t.untrusted.source) : '', i === convo.length - 1 && t.role === 'person' && o.voice ? '(voice: true)' : '']
