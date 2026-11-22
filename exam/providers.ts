@@ -32,10 +32,15 @@ export interface Price {
  */
 export const PRICES: Record<string, Price> = {
   'gemini-3.8-flash': { in: 0.75, out: 3.75, cacheRead: 0.075, search: 0.035, until: '2026-12-31' },
+  // Gemini 4 (22 Nov 2026, aistudio.google.com/docs/pricing, Standard paid tier; output includes thinking)
+  'gemini-4-neon': { in: 3, out: 15, cacheRead: 0.15, search: 0.014, until: '2026-12-31' },
+  'gemini-4-hydrogen': { in: 1.5, out: 7.5, cacheRead: 0.075, search: 0.014, until: '2026-12-31' },
   'gemini-4-argon': { in: 2, out: 10, cacheRead: 0.1, search: 0.035, until: '2026-11-30' },
   // the yardstick's second checker (12 Nov 2026, ai.google.dev pricing page): the cloud key reaches it on the free tier
   'gemini-3-flash-preview': { in: 0.5, out: 3, cacheRead: 0.05, search: 0.035, until: '2026-12-31' },
   'claude-sonnet-5-5': { in: 2, out: 10, cacheRead: 0.2, search: 0.01, until: '2026-12-31' },
+  // Haiku 5.5 (22 Nov 2026, the claude-api reference table): $0.10 / $0.50 for prompts up to 100K tokens; cache read is assumed at the usual 10 % of input
+  'claude-haiku-5-5': { in: 0.1, out: 0.5, cacheRead: 0.01, search: 0.01, until: '2026-12-31' },
   'claude-opus-5-5': { in: 4, out: 20, cacheRead: 0.2, search: 0.01, until: '2026-12-31' },
   // Fable 5.2 (9 Nov, the claude-api reference table dated 3 Nov): 4x Sonnet per token; check again before 31 Dec
   'claude-fable-5-2': { in: 8, out: 40, cacheRead: 0.2, search: 0.01, until: '2026-12-31' },
@@ -106,7 +111,7 @@ export interface GeminiPart { text?: string; thought?: boolean }
 export interface GeminiBody {
   systemInstruction?: { parts: GeminiPart[] };
   contents: { role: string; parts: GeminiPart[] }[];
-  generationConfig?: { temperature?: number; responseMimeType?: string; responseSchema?: unknown; maxOutputTokens?: number; thinkingConfig?: { thinkingBudget?: number } };
+  generationConfig?: { temperature?: number; responseMimeType?: string; responseSchema?: unknown; maxOutputTokens?: number; thinkingConfig?: { thinkingBudget?: number; thinkingLevel?: 'low' | 'medium' | 'high' | 'xhigh' } };
   tools?: unknown[];
 }
 export interface GeminiReply {
@@ -198,7 +203,7 @@ let claude: Anthropic | null = null;
 export const isGpt = (model: string) => model.startsWith('gpt-');
 const API = 'https://generativelanguage.googleapis.com/v1beta';
 const maxOutOf = (model: string, body: GeminiBody) =>
-  (body.generationConfig?.maxOutputTokens ?? 2048) + (model.startsWith('claude-') || isGpt(model) ? 6000 : body.generationConfig?.thinkingConfig?.thinkingBudget ?? 8192);
+  (body.generationConfig?.maxOutputTokens ?? 2048) + (model.startsWith('claude-') || isGpt(model) ? 6000 : body.generationConfig?.thinkingConfig?.thinkingLevel ? 0 : body.generationConfig?.thinkingConfig?.thinkingBudget ?? 8192);
 const entry = (model: string, purpose: string, usd: number, usage: Usage, ok: boolean): LedgerEntry => ({ at: new Date().toISOString(), model, purpose, usd, usage, ok });
 /**
  * A failure after which the provider may still have done (and billed) the work: the connection dropped or timed out, or a
@@ -278,7 +283,7 @@ export function toOpenAI(model: string, body: GeminiBody, effort: 'low' | 'mediu
   };
 }
 /** a key (or the masked copy OpenAI echoes in an error) never reaches a message, a ledger line or a log */
-const scrubKey = (t: string) => t.replace(/sk-[A-Za-z0-9_*.-]+/g, 'sk-…');
+const scrubKey = (t: string) => t.replace(/sk-[A-Za-z0-9_*.-]+/g, 'sk-…').replace(/(?:AIza|AQ\.)[A-Za-z0-9_.-]+/g, '[key]');
 async function openaiPost(body: unknown, o: Pick<CallOpts, 'fetchFn' | 'dispatcher'>): Promise<any> {
   const key = process.env.OPENAI_API_KEY;
   if (!key) throw new CallError(401, 'no OpenAI key in OPENAI_API_KEY');
@@ -302,13 +307,15 @@ export function openaiReply(data: any): GeminiReply {
 
 async function geminiPost(path: string, body: unknown, o: Pick<CallOpts, 'fetchFn' | 'dispatcher'>, method = 'POST'): Promise<any> {
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-  if (process.env.GEMINI_API_KEY) headers['x-goog-api-key'] = process.env.GEMINI_API_KEY;
+  // a key set for this session goes in the query: a proxy that adds its own key header would otherwise replace it (22 Nov)
+  const key = process.env.GEMINI_API_KEY;
+  const q = key ? `${path.includes('?') ? '&' : '?'}key=${encodeURIComponent(key)}` : '';
   const f = o.fetchFn ?? fetch;
   // (a dropped connection or a timeout is a CallError(-1) like any other network failure, so the callers' retries apply)
-  const res: any = await f(`${API}/${path}`, { method, headers, ...(method === 'POST' ? { body: JSON.stringify(body) } : {}), ...(o.dispatcher ? { dispatcher: o.dispatcher } : {}), signal: AbortSignal.timeout(120_000) } as RequestInit)
-    .catch((e: unknown) => { throw new CallError(-1, `network: ${String((e as Error)?.message ?? e).slice(0, 200)}`); });
+  const res: any = await f(`${API}/${path}${q}`, { method, headers, ...(method === 'POST' ? { body: JSON.stringify(body) } : {}), ...(o.dispatcher ? { dispatcher: o.dispatcher } : {}), signal: AbortSignal.timeout(120_000) } as RequestInit)
+    .catch((e: unknown) => { throw new CallError(-1, scrubKey(`network: ${String((e as Error)?.message ?? e).slice(0, 200)}`)); });
   const data: any = await res.json().catch(() => null);
-  if (res.status !== 200) throw new CallError(res.status, `${res.status} ${String(data?.error?.message ?? '').slice(0, 200)}`);
+  if (res.status !== 200) throw new CallError(res.status, scrubKey(`${res.status} ${String(data?.error?.message ?? '').slice(0, 200)}`));
   return data;
 }
 function geminiReply(data: any): GeminiReply {
