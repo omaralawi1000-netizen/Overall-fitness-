@@ -40,6 +40,28 @@ describe('the three live checks', () => {
     expect(fallback('en')).toContain('Think deeper');
   });
 
+  describe('deliberately bad answers are caught', () => {
+    const bad: [string, string, string, string][] = [
+      ['only-repeats', 'why am I not gaining?', 'You eat 2,756 kcal, maintenance is 2,760 and your goal is 3,000.', 'a'],
+      ['only-repeats', 'how am I doing?', 'Weight 84.8 kg, protein 119 g, target 140 g, maintenance 2,760 kcal.', 'b'],
+      ['only-repeats', 'hvorfor tager jeg ikke på?', 'Du spiser 2.756 kcal, vedligehold er 2.760 og målet er 3.000.', 'c'],
+      ['ignores-message', 'I felt a pop in my shoulder on bench, it hurts', 'Your squat is at 100 kg. Next up is 102.5.', 'a'],
+      ['ignores-message', 'ondt i knæet efter løbeturen', 'Dine løft ser fine ud. Fortsæt som planlagt.', 'b'],
+      ['ignores-message', 'I barely slept last night, should I still train today?', 'Full body A is on the plan. Squat 100 kg.', 'c'],
+      ['ignores-message', 'I am on nights all week', 'Your protein is 119 g. Aim for 140 g.', 'd'],
+      ['ignores-message', 'I have a match on Saturday', 'Your bench is 60 kg. Add 2.5 kg next time.', 'e'],
+      ['ignores-message', 'I have a fever and feel awful', 'Your squat is at 100 kg. Next up is 102.5.', 'f'],
+      ['sends-away', 'is oat milk good for me?', 'Ask a dietitian.', 'a'],
+      ['sends-away', 'how much protein should I eat?', 'That is a question for a nutritionist or your GP.', 'b'],
+      ['sends-away', 'hvor meget skal jeg spise?', 'Tal med en diætist om det.', 'c'],
+    ];
+    for (const [id, person, say, tag] of bad) {
+      it(`${id} ${tag}: ${say.slice(0, 40)}`, () => {
+        expect(ids(say, person)).toContain(id);
+      });
+    }
+  });
+
   describe('guard', () => {
     const ctx = { personText: 'is oat milk good for me?', sheetNumbers: [] };
     it('passes a clean answer without asking again', async () => {
