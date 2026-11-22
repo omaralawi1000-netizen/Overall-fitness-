@@ -18,7 +18,7 @@ const ACTIONS = ['set_target', 'remember', 'forget', 'log_water', 'log_weight', 
 const W = (list: string) => new RegExp(`(?<![\\p{L}\\p{N}_])(?:${list})(?![\\p{L}\\p{N}_])`, 'iu');
 
 /** topics where a mistake matters: always the strong model */
-const RISK = W(
+export const RISK = W(
   [
     'pain\\w*', 'hurt\\w*', 'injur\\w*', 'sore\\w*', 'ache\\w*', 'dizz\\w*', 'faint\\w*', 'chest', 'smert\\w*', 'ondt', 'skade\\w*', 'svimmel',
     'cut\\w*', 'weigh-?ins?', 'weight class', 'make weight', 'diet\\w*', 'fast\\w*', 'skip\\w*', 'starv\\w*', 'binge\\w*', 'purg\\w*', 'vægtklasse', 'indvejning', 'faste', 'sult\\w*', 'slank\\w*',
@@ -30,7 +30,7 @@ const RISK = W(
 /** the person wants reasons or a plan: coaching, not a lookup */
 const THINK = W(['why', 'should', 'how do i', 'plan\\w*', 'program\\w*', 'help me', 'stuck', 'plateau\\w*', 'quit', 'hvorfor', 'skal jeg', 'hvordan', 'hjælp', 'giv op', 'stoppe'].join('|'));
 /** a plain data question ("how much protein is left") */
-const LOOKUP = W(['how much', 'how many', 'what is my', "what's my", 'left', 'hvor meget', 'hvor mange', 'hvad er mit', 'tilbage'].join('|'));
+export const LOOKUP = W(['how much', 'how many', 'what is my', "what's my", 'left', 'hvor meget', 'hvor mange', 'hvad er mit', 'tilbage'].join('|'));
 
 /** the biggest tasks in the app (Omar, 8 Nov): only these may go to the most expensive model */
 const BIG = [
