@@ -11,7 +11,7 @@ import { Engine } from '../../src/engine/engine';
 import { buildFacts, renderFacts } from '../../src/coach/facts';
 import { unsourcedNumbers } from '../checks/numbers';
 import { coachRequest, finishTurn, moreRequest, unbackedClaims, type CoachTurn, type ModelReply, type Shown } from '../../src/coach/coach';
-import { route, type Tier } from '../../src/coach/route';
+import { route, MINOR, type Tier } from '../../src/coach/route';
 import { guard } from '../../src/coach/slips';
 import { sheetNumbers } from '../../src/coach/facts';
 import { askCoach } from './ask-coach';
@@ -104,16 +104,20 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
     const asked = await askCoach(model, req, { ...o, purpose: `${c.id} ${setup.name}`, ...bigEffort(tier), ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
     if (!asked.reply) { turns.push({ tier, model, error: asked.error, ...(asked.callFailed ? { callFailed: true } : {}), ...(asked.raw ? { raw: asked.raw } : {}), dropped: asked.dropped, usd: asked.usd, ms: asked.ms }); break; }
     let retryReply: ModelReply | undefined;
+    let retryLost: { error?: string; raw?: string } | undefined;
     let reply = asked.reply;
     let live: Pick<TurnLog, 'slips' | 'retried' | 'fellBack' | 'rejected'> = {};
     if (setup.guard) {
-      const ctx = { personText: t.text, sheetNumbers: sheetNumbers(sheet) };
+      const ctx = { personText: t.text, sheetNumbers: sheetNumbers(sheet), minor: sheet.memory.some((m) => MINOR.test(m.text)) };
       const g = await guard(reply.say, ctx, c.person.lang, async (note) => {
         const again = await askCoach(model, coachRequest(sheet, [...convo.slice(0, -1), { ...convo[convo.length - 1], text: `${t.text}\n\n${note}` }], { voice: t.voice, tier: promptTier(tier), ...(setup.rules ? { rules: setup.rules } : {}) }), { ...o, purpose: `${c.id} ${setup.name} retry`, ...bigEffort(tier), ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
         asked.usd += again.usd; asked.ms += again.ms;
         if (again.reply) retryReply = again.reply;
+        else if (again.callFailed) retryLost = { ...(again.error ? { error: `retry: ${again.error}` } : {}), ...(again.raw ? { raw: again.raw } : {}) };
         return again.reply?.say ?? reply.say;
       });
+      // a retry that never happened (network, cap) is no answer: the case is not saved as finished, like any failed call
+      if (retryLost) { turns.push({ tier, model, ...retryLost, callFailed: true, dropped: asked.dropped, usd: asked.usd, ms: asked.ms }); break; }
       if (g.retried) { live = { slips: g.slips.map((x) => x.id), retried: true, fellBack: g.fellBack, rejected: reply.say }; reply = g.fellBack ? { ...reply, say: g.say, actions: [], ...(reply.brokenDo ? { brokenDo: [] } : {}) } : retryReply ?? reply; }
     }
     const shown = await finishTurn(e, reply, { personText: t.text, untrusted, sheet, now, tz: TZ, lang: c.person.lang, pending, lastDid });
