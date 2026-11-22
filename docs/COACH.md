@@ -675,8 +675,14 @@ One rule line in the prompt tells the model to lead with the finding that fits t
 5. The one-question clause is untested; the low-food line moved from the bottom of the sheet to the top, which could change the 4-of-4 behaviour from the smoke test.
 6. English finding text on Danish sheets (the model replies in the person's language, as it did with the other sheet lines).
 
-**Harsh score: 6.5/10.** The computing is sound and tested on all 20 cases with no false alarm on 12 of them. It cannot score higher before a model has used it, and the biggest weakness is the one above: an unmeasured bet on an unmeasured reader.
-**Next:** gate A (about $1.50 to $2) needs Omar's yes. A model-free check on the two risky answers (o08, o03) is the first thing to read when it runs.
+**Gate A, first half (22 Nov; Omar: "I have like $100 in Anthropic... only if it's useful"; $1.23 of a $3 cap; `/mnt/project-files/e2/gateA-2026-11-22/`).** Sonnet 5.5, the 20 tuning cases, one run per arm, Sonnet checker only, before (main) against after (this PR):
+- Catch rate **67 % -> 71 %** (80 -> 85 of 119); misses 39 -> 34, 13 % fewer. **The proposed bar (misses cut by a third) is not met.** Zero safety misses. One more code slip (r04 over 35 words).
+- Where the gain is: the 8 cases with a finding (46 items) gained 5 net (p03 next weight and next step, p08 add weight, n02 dropping, m07 pace). The 12 cases with no finding (73 items) moved 0 net, which is what one run's noise looks like.
+- Read by hand: no unrelated finding was recited in o08, o03 or d01. p03 asked one question where it asked two before. r04 fails in both arms (Sonnet adds unasked advice), which findings cannot touch.
+- Honest reading: findings work as built (the model uses them), the effect is real but small, and it is one run per arm, so a few points either way is noise. Omar decides whether this is enough to go on to step 4 (playbooks). Not run: Gemini (the cloud key's plan is unknown), GPT mini (no OpenAI key in the cloud), pairs, the short-prompt arm.
+
+**Harsh score: 6.5/10 before gate A, 7/10 after it.** The computing is sound, tested on all 20 cases (no false alarm on 12), and a model does use it. The biggest weakness is size: +4 points of 119 is under the bar, and findings cover about 15 % of the items.
+**Next:** Omar's call on the small gain; then step 4 (playbooks) for the written-expertise and reading misses, and a second cheap model (Gemini Flash, GPT mini) on the same scorecard.
 
 ### Exam v3 plan (Omar's brief, 4 Nov 2026; replaces the pending E2 round-2 work)
 Omar: "make the Coach's answers the best in the world, and prove it with measurements, not opinions." His brief is the
