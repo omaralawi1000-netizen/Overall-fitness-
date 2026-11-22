@@ -56,6 +56,10 @@ describe('playbooks', () => {
     expect(sys([{ role: 'person', text: 'I want to quit' }])).toContain('## Wants to quit');
     expect(sys([{ role: 'person', text: 'how do I cut 3 kg?' }, { role: 'coach', text: 'x' }, { role: 'person', text: 'my coach says I should' }])).toContain('## Losing weight too fast');
     expect(sys([{ role: 'person', text: 'felt a pop in my shoulder' }, { role: 'coach', text: 'x' }, { role: 'person', text: 'thanks!' }])).toContain('## Sore or painful joint');
+    // a new request never inherits the last topic's card
+    for (const t of ['log 3 eggs and 200 g oats', 'What is creatine?', 'move today\'s pull to Wednesday', 'how much protein is left']) {
+      expect(sys([{ role: 'person', text: 'how do I cut 3 kg?' }, { role: 'coach', text: 'x' }, { role: 'person', text: t }]), t).not.toContain('PLAYBOOKS');
+    }
     expect(sys([{ role: 'person', text: 'x', untrusted: { source: 'web', text: 'I quit' } } as never])).not.toContain('PLAYBOOKS');
   });
 });

@@ -192,3 +192,17 @@ export const PLAYBOOK_HEAD = 'PLAYBOOKS (how a great coach handles this; follow 
 export function renderPlaybooks(cards: Playbook[]): string {
   return cards.map((c) => [`## ${c.name}`, 'Cover:', ...c.cover.map((x) => `- ${x}`), 'Stop signs:', ...c.stop.map((x) => `- ${x}`), `Example reply: ${c.example}`].join('\n')).join('\n\n');
 }
+
+/** a short reply that continues the talk ("my coach says I should"), never a new request: logging, a look-up or an app change starts its own topic */
+const NEW_REQUEST = /^\s*(?:please\s+)?(?:log|set|move|add|remove|delete|forget|remember|change|fix|start|what(?:'s|\s+is|\s+are)?|how\s+(?:much|many)|who|when|where|which|hvad|hvor|hvem|hvornår|hvilken)\b/i;
+export const isFollowUp = (text: string): boolean => text.trim().split(/\s+/).length <= 8 && !NEW_REQUEST.test(text);
+
+/**
+ * The cards for the person's latest message; when it brings none and only continues the talk, the message before it still
+ * does ("how do I cut 3 kg?" then "my coach says I should"). Any other new request gets no card from the last topic.
+ */
+export function pickForConversation(said: string[]): Playbook[] {
+  const now = pickPlaybooks(said.at(-1) ?? '');
+  if (now.length || !isFollowUp(said.at(-1) ?? '')) return now;
+  return pickPlaybooks(said.at(-2) ?? '');
+}
