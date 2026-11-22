@@ -46,6 +46,10 @@ describe('the three live checks', () => {
     expect(ids('You are 84.8 kg and losing 0.4 kg a week, so keep the pace.', 'how do I cut for the 83 kg class?')).not.toContain('minor-number');
     expect(ids('Aim for about 140 g protein a day, spread over your meals.', 'how much protein should I eat?', { minor: true })).toEqual([]);
     expect(retryNote([{ id: 'minor-number', reason: 'x' }])).toContain('no weight, kilo or calorie figure');
+    // a lifting load is not a body-weight figure, and a new question after the cut talk is not the cut (Codex, PR #141)
+    expect(ids('Keep your squat at 40 kg and focus on technique.', 'how do I cut 3 kg for the season?', { minor: true })).toEqual([]);
+    expect(ids('Aim for about 2,000 kcal on match days.', 'how do I cut 3 kg?', { minor: true })).toEqual(['minor-number']);
+    expect(ids('Keep your squat at 40 kg and add a rep next time.', 'how should I train legs this week?', { minor: true, earlier: 'how do I cut 3 kg for the season?' })).toEqual([]);
   });
   it('says nothing when the Coach speaks first or has nothing to say', () => {
     expect(ids('Your lifts have sat for five sessions. Is your log everything you eat?', '')).toEqual([]);

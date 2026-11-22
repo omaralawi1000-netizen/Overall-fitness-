@@ -214,7 +214,9 @@ async function pick(p, better, shownFirst) {
 
 function code() {
   const m = { r1: '1', r2: '2', same: 's' };
-  return PAGE + ':' + LIST.map((p) => state.picks[p.id] ? p.id + m[state.picks[p.id].better] + (state.picks[p.id].shownFirst === 'r1' ? 'a' : 'b') : p.id + '-').join('.');
+  const whys = LIST.filter((p) => state.picks[p.id]?.why).map((p) => p.id + ' ' + state.picks[p.id].why.replace(/[|]/g, '/'));
+  // the why lines ride along, so a viewer whose picks could not be saved still sends them (Codex, PR #141)
+  return PAGE + ':' + LIST.map((p) => state.picks[p.id] ? p.id + m[state.picks[p.id].better] + (state.picks[p.id].shownFirst === 'r1' ? 'a' : 'b') : p.id + '-').join('.') + (whys.length ? ' | ' + whys.join(' | ') : '');
 }
 
 function end() {

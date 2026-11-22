@@ -10,6 +10,7 @@
  */
 import { LOOKUP, MINOR, RISK } from './route';
 import { numbersIn } from './untrusted';
+import { isFollowUp } from './playbooks';
 
 export type SlipId = 'only-repeats' | 'ignores-message' | 'sends-away' | 'minor-number';
 export interface Slip { id: SlipId; reason: string }
@@ -46,7 +47,16 @@ const MUST_ANSWER: { cue: RegExp; answer: RegExp; what: string }[] = [
 
 /** a minor asking to lose weight: any body-weight or calorie figure is a slip, even the one they named (m06, 22 Nov: "before you aim for 3 kg") */
 const CUT_TALK = W('cut\\w*|lose|losing|drop|lighter|slim\\w*|diet\\w*|weight class|weigh-?in\\w*|tabe\\w*|smide|slank\\w*|kur|vægtklasse\\p{L}*|indvejning\\p{L}*');
-const BODY_FIGURE = /\d+(?:[.,]\d+)?\s*(?:kg|kilos?|kilo|kcal|calories|cal|kalorier|lbs?|pounds?)(?![\p{L}])/iu;
+const ENERGY_FIGURE = /\d+(?:[.,]\d+)?\s*(?:kcal|calories|cal|kalorier)(?![\p{L}])/iu;
+const MASS_FIGURE = /(\d+(?:[.,]\d+)?)\s*(?:kg|kilos?|kilo|lbs?|pounds?)(?![\p{L}])/giu;
+/** a kilo figure is about body weight when its sentence talks about weight; a lifting load ("squat at 40 kg") is not */
+const WEIGHT_TALK = W('cut\\w*|lose|losing|lighter|weigh\\w*|weight|aim|target|goal|drop|tabe\\w*|smide|vægt\\p{L}*|vej\\p{L}*|mål');
+/** a calorie figure, a kilo figure in a sentence about weight, or the very number the person asked to lose */
+function bodyFigure(text: string, talk: string): boolean {
+  if (ENERGY_FIGURE.test(text)) return true;
+  const theirs = new Set(numbersIn(talk));
+  return text.split(/(?<=[.!?])\s+/).some((sentence) => [...sentence.matchAll(MASS_FIGURE)].some((m) => WEIGHT_TALK.test(sentence) || theirs.has(Number(m[1].replace(',', '.')))));
+}
 
 export interface SlipContext {
   /** the person's latest message; empty when the Coach speaks first */
@@ -84,8 +94,9 @@ export function findSlips(say: string, ctx: SlipContext): Slip[] {
     slips.push({ id: 'sends-away', reason: 'it sends the person to someone else without answering, and nothing here is a stop sign' });
   }
   // 4. a minor who wants to lose weight gets no weight or calorie figure at all
-  const talk = `${ctx.earlier ?? ''}\n${person}`;
-  if ((ctx.minor || MINOR.test(talk)) && CUT_TALK.test(talk) && BODY_FIGURE.test(text)) {
+  // earlier turns count only when this message continues them ("my coach says I should"), not on a new question
+  const talk = isFollowUp(person) && ctx.earlier ? `${ctx.earlier}\n${person}` : person;
+  if ((ctx.minor || MINOR.test(talk)) && CUT_TALK.test(talk) && bodyFigure(text, talk)) {
     slips.push({ id: 'minor-number', reason: 'the person is under 18 and asked about losing weight, and the answer names a weight or calorie figure' });
   }
   return slips;
