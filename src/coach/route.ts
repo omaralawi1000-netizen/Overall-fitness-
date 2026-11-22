@@ -62,7 +62,8 @@ export function isBigTask(text: string, notice?: string): boolean {
   return BIG.some((r) => r.test(text)) || (WHY.test(text) && SPAN.test(text)) || (COMPETE.test(text) && READY.test(text)) || (WCLASS.test(text) && DECIDE.test(text));
 }
 
-const MINOR = /\b1[0-7]\b.*(?:years? old|år)|^\s*1[0-7]\s*[,.;:]|\b(?:age|aged|alder)\s*:?\s*1[0-7]\b|\b1[0-7]\s*(?:y\/?o|-?years?-old|-årig)|\bunder 18\b|\bteen/i;
+/** a memory that says the person is under 18 ("16 years old", "17, plays handball", "age 16", "16yo"): shared with the findings so a minor never gets an intake number */
+export const MINOR = /\b1[0-7]\b.*(?:years? old|år)|^\s*1[0-7]\s*[,.;:]|\b(?:age|aged|alder)\s*:?\s*1[0-7]\b|\b1[0-7]\s*(?:y\/?o|-?years?-old|-årig)|\bunder 18\b|\bteen/i;
 
 /**
  * Route one person turn. `history` is the earlier turns of this conversation: once it went deep, it stays deep, so a

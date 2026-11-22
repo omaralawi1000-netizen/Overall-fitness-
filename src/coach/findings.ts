@@ -12,6 +12,7 @@
  */
 import type { FactSheet, Fact } from './facts';
 import { DAYS, isStuck, type LiftFact } from './training-facts';
+import { MINOR } from './route';
 import { addDays, diffDays, weekdayOf } from '../engine/time';
 
 export interface Finding {
@@ -30,7 +31,6 @@ const KCAL_PER_KG_WEEK = 7700 / 7;
 /** below this the Coach never proposes an intake (the safety rule's floor for an adult who trains) */
 const KCAL_FLOOR = 1500;
 const LOWER_BODY = /squat|deadlift|leg press|hip thrust|lunge/i;
-const MINOR = /\b(?:1[0-7])[\s-]*(?:years?[\s-]*old|yo|y\/o|år)\b|\bunder 18\b|\b(?:1[0-7])-årig/i;
 
 /** the smallest sensible jump: 5 kg on a heavy squat or deadlift, else 2.5 kg */
 export function nextStep(exercise: string, kg: number): number { return LOWER_BODY.test(exercise) && kg >= 100 ? 5 : 2.5; }
@@ -100,14 +100,16 @@ function goalPace(s: FactSheet): Finding | undefined {
   for (const g of s.goals) {
     if (g.metric !== 'weight' || g.target === undefined || g.neededKgPerWeek === undefined || !g.by) continue;
     if (g.status !== 'ahead' && g.status !== 'behind') continue;
-    const needed = g.neededKgPerWeek;
-    const losing = g.target < latest.value;
+    // the sheet shows the needed pace to 0.1 kg; the intake is worked out from the exact remaining weight and time
+    const needed = (g.target - latest.value) / (Math.max(diffDays(g.by, s.now.day), 1) / 7);
+    const shown = g.neededKgPerWeek;
     // a small gap between the pace and the need is noise, not a finding
     if (g.status === 'ahead' && Math.abs(trend.value - needed) < 0.2) continue;
-    const numbers: number[] = [trend.value, needed, g.target];
+    const numbers: number[] = [trend.value, shown, g.target];
     const sign = (n: number) => (n > 0 ? `+${n}` : `${n}`);
-    let text = `${g.text}: ${g.status}. Weight is moving ${sign(trend.value)} kg a week and the date needs ${sign(needed)} kg a week.`;
-    const toward = losing ? trend.value < 0 : trend.value > 0;
+    let text = `${g.text}: ${g.status}. Weight is moving ${sign(trend.value)} kg a week and the date needs ${sign(shown)} kg a week.`;
+    const gaining = g.target > latest.value;
+    const toward = gaining ? trend.value > 0 : trend.value < 0;
     if (toward) {
       const weeks = Math.abs(latest.value - g.target) / Math.abs(trend.value);
       const reach = addDays(s.now.day, Math.ceil(weeks * 7));
@@ -119,17 +121,19 @@ function goalPace(s: FactSheet): Finding | undefined {
         ? ` At this pace the target is reached about ${reach}, ${early} weeks before ${g.by}.`
         : ` At this pace the target is reached about ${reach}, ${-early} weeks after ${g.by}.`;
     } else text += ' At this pace the target is not reached.';
-    // a pace faster than about 0.75 % of body weight a week is not chased: the date is what moves
+    // a pace faster than about 0.75 % of body weight a week is never chased, ahead or behind: the date is what moves
     const tooFast = Math.abs(needed) > latest.value * 0.0075;
-    if (g.status === 'behind' && tooFast) text += ' The pace the date needs is faster than is sensible: the honest option is a later date, not a harder push.';
+    if (tooFast) text += ' The pace the date needs is faster than is sensible: the honest option is a later date, not a harder push.';
     else if (maint && !minor) {
+      const delta = r10(needed * KCAL_PER_KG_WEEK);
       const kcal = r10(maint.value + needed * KCAL_PER_KG_WEEK);
       if (kcal >= KCAL_FLOOR) {
-        numbers.push(kcal, maint.value);
+        numbers.push(kcal, maint.value, Math.abs(delta));
+        const how = `About ${kcal} kcal a day (the maintenance estimate ${maint.value} ${delta < 0 ? 'minus' : 'plus'} ${Math.abs(delta)}, an estimate)`;
+        // ahead: the current pace is faster than the date needs, so the intake that makes the date moves toward maintenance
         text += g.status === 'ahead'
-          ? ` About ${kcal} kcal a day (the maintenance estimate ${maint.value} ${needed < 0 ? 'minus' : 'plus'} ${Math.abs(r10(needed * KCAL_PER_KG_WEEK))}, an estimate) still makes the date, so there is room to eat more.`
-          : ` About ${kcal} kcal a day (the maintenance estimate ${maint.value} ${needed < 0 ? 'minus' : 'plus'} ${Math.abs(r10(needed * KCAL_PER_KG_WEEK))}, an estimate) would make the date.`;
-        numbers.push(Math.abs(r10(needed * KCAL_PER_KG_WEEK)));
+          ? ` ${how} still makes the date, so there is room to ${gaining ? 'ease off the surplus' : 'eat more'}.`
+          : ` ${how} would make the date.`;
       }
     }
     return { id: 'goal-pace', text, when: 'asked about the goal, the pace, eating, energy, tiredness, a cut or competing', numbers };
@@ -190,22 +194,25 @@ export function renderFindings(fs: Finding[]): string[] {
 
 export interface DayLoad { onDay: string[]; dayBefore: string[]; dayAfter: string[] }
 
-/** what the weekly plan has on each weekday (0 Sunday … 6 Saturday), read from the next 7 days and today */
-function weekdayMap(s: FactSheet): Map<number, string[]> {
-  const m = new Map<number, string[]>();
-  const add = (wd: number, what: string) => m.set(wd, [...(m.get(wd) ?? []), what]);
+/**
+ * What the plan has on a date. Today and the next 7 days are read as dated (overrides and cleared days already applied
+ * in `plan.next` and `plan.today`); a date further out repeats the weekday of the next 7 days. Sport repeats by weekday.
+ */
+function loadOn(s: FactSheet, day: string): string[] {
   const p = s.training.plan;
-  if (p.note) return m;
-  for (const n of p.next) add(weekdayOf(n.day.slice(0, 10)), n.routine);
-  for (const [name, types] of Object.entries(p.sportDays)) for (const t of types) if (!EASY.has(t)) add(DAYS.indexOf(name), t);
-  return m;
+  if (p.note) return []; // a rotation plan has no fixed week
+  const sport = (Object.entries(p.sportDays).find(([name]) => DAYS.indexOf(name) === weekdayOf(day))?.[1] ?? []).filter((t) => !EASY.has(t));
+  const gap = diffDays(day, s.now.day);
+  let lifts: string[];
+  if (gap === 0) lifts = p.today ? [p.today] : [];
+  else if (gap > 0 && gap <= 7) lifts = p.next.filter((n) => n.day.startsWith(day)).map((n) => n.routine);
+  else lifts = p.next.filter((n) => weekdayOf(n.day.slice(0, 10)) === weekdayOf(day)).map((n) => n.routine);
+  return [...lifts, ...sport];
 }
 
 /** a day's plan and its two neighbours', for the plan-clash check: moving a session onto a day that already has one, or next to one */
 export function dayLoad(s: FactSheet, day: string): DayLoad {
-  const m = weekdayMap(s);
-  const at = (d: string) => m.get(weekdayOf(d)) ?? [];
-  return { onDay: at(day), dayBefore: at(addDays(day, -1)), dayAfter: at(addDays(day, 1)) };
+  return { onDay: loadOn(s, day), dayBefore: loadOn(s, addDays(day, -1)), dayAfter: loadOn(s, addDays(day, 1)) };
 }
 
 /** true when a session moved to `day` would share it with another session or sit straight before or after one */
@@ -216,11 +223,10 @@ export function clashes(s: FactSheet, day: string): boolean {
 
 /** reference lines for the PLAN block: days with nothing planned and nothing next to them, or the plain fact that there are none */
 export function planNotes(s: FactSheet): string[] {
-  const m = weekdayMap(s);
-  if (!m.size) return [];
+  if (s.training.plan.note || (!s.training.plan.today && !s.training.plan.next.length && !Object.keys(s.training.plan.sportDays).length)) return [];
   const days = Array.from({ length: 7 }, (_, i) => addDays(s.now.day, i));
   const free = days.filter((d) => !clashes(s, d));
-  const empty = days.filter((d) => !m.get(weekdayOf(d))?.length);
+  const empty = days.filter((d) => !loadOn(s, d).length);
   const name = (d: string) => `${DAYS[weekdayOf(d)]} ${d}`;
   if (free.length) return [`- days with no session and none next to it: ${free.map(name).join(', ')}`];
   return [`- every day without a session sits next to one (${empty.map(name).join(', ')}): a session moved there makes two days in a row`];

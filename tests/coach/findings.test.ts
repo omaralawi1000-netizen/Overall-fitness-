@@ -84,9 +84,9 @@ describe('goal pace', () => {
     const f = find(sheetOf('d02-row-stuck'), 'goal-pace')!;
     expect(f.text).toContain('moving -0.5 kg a week and the date needs -0.1 kg a week');
     expect(f.text).toContain('weeks before 2027-02-28');
-    expect(f.text).toContain('About 3060 kcal');
+    expect(f.text).toContain('About 3050 kcal'); // from the exact pace (-0.108), not the displayed -0.1
     expect(f.text).toContain('an estimate');
-    expect(f.numbers).toEqual(expect.arrayContaining([3060, 3170, 110]));
+    expect(f.numbers).toEqual(expect.arrayContaining([3050, 3170, 120]));
   });
   it('is quiet when there is no goal, no trend, or the gap is only noise', () => {
     for (const id of ['m03-kcal-needs-goal', 'o03-odd-weighin', 'p06-not-gaining-da', 'm06-teen-cut-push']) expect(ids(sheetOf(id)), id).not.toContain('goal-pace');
@@ -100,21 +100,44 @@ describe('goal pace', () => {
     });
     const slow = run(mk(-0.4, -0.1, 'behind'))[0];
     expect(slow.text).toContain('weeks after 2027-02-28');
-    expect(slow.text).toContain('About 2730 kcal');
+    expect(slow.text).toContain('About 3050 kcal');
     const wrong = run(mk(-0.4, 0.1, 'behind'))[0];
     expect(wrong.text).toContain('not reached');
-    const crazy = run(mk(-1.5, -0.1, 'behind'))[0];
+    const crazy = run(goalSheet({ latest: 80, target: 66, trend: -0.1, status: 'behind' }))[0];
     expect(crazy.text).toContain('a later date, not a harder push');
     expect(crazy.text).not.toContain('kcal a day');
-    const low = run(mk(-0.4, -0.1, 'behind', 84.8, 1700))[0];
+    const low = run(goalSheet({ latest: 84.8, target: 83, trend: -0.1, status: 'behind', maint: 1600 }))[0];
     expect(low.text).not.toContain('kcal a day');
-    expect(run(mk(-0.35, -0.5, 'ahead'))).toEqual([]); // 0.15 apart is noise
+    expect(run(goalSheet({ latest: 84.8, target: 83, trend: -0.2, status: 'ahead' }))).toEqual([]); // 0.09 apart is noise
   });
-  it('gives no kcal number to someone who says they are under 18', () => {
+  it('gives no kcal number to someone who says they are under 18, in every form the router knows (Codex, PR #135)', () => {
     const s = sheetOf('d02-row-stuck');
-    const kid = { ...s, memory: [...s.memory, { id: 'x', text: '16 years old, in season', topic: 'about' as const }] };
-    const f = computeFindings(kid, {}).find((x) => x.id === 'goal-pace')!;
-    expect(f.text).not.toContain('kcal');
+    for (const text of ['16 years old, in season', 'age 16', '17, plays handball', '16yo', '15-årig']) {
+      const kid = { ...s, memory: [...s.memory, { id: 'x', text, topic: 'about' as const }] };
+      expect(computeFindings(kid, {}).find((x) => x.id === 'goal-pace')!.text, text).not.toContain('kcal');
+    }
+  });
+  const goalSheet = (o: { latest: number; target: number; trend: number; status: 'ahead' | 'behind'; maint?: number }) => {
+    const base = sheetOf('d02-row-stuck');
+    return sheet({
+      now: base.now, memory: [], goals: [{ memoryId: 'g', text: 'Goal', metric: 'weight', target: o.target, by: '2027-02-28', status: o.status, neededKgPerWeek: 0 }],
+      weight: { latest: { id: 'weight.latest', value: o.latest, unit: 'kg', confidence: 'measured' }, trend: { id: 'weight.trend', value: o.trend, unit: 'kg/week', confidence: 'measured' }, odd: [] },
+      food28: { daysLogged: 20, daysComplete: 20, facts: [{ id: 'food28.maintenanceKcal', value: o.maint ?? 2500, unit: 'kcal', confidence: 'estimate' }] },
+    });
+  };
+  it('a gain that is ahead of pace never says "eat more" (Codex, PR #135)', () => {
+    const t = run(goalSheet({ latest: 70, target: 74, trend: 0.5, status: 'ahead' }))[0].text;
+    expect(t).toContain('ease off the surplus');
+    expect(t).not.toContain('eat more');
+  });
+  it('a pace the date needs that is too fast is never chased, ahead or behind (Codex, PR #135)', () => {
+    const t = run(goalSheet({ latest: 80, target: 66, trend: -1.1, status: 'ahead' }))[0].text;
+    expect(t).toContain('a later date, not a harder push');
+    expect(t).not.toContain('kcal a day');
+  });
+  it('works out the intake from the exact remaining weight, not the pace shown to 0.1 (Codex, PR #135)', () => {
+    const t = run(goalSheet({ latest: 80, target: 79.5, trend: -0.3, status: 'ahead' }))[0].text;
+    expect(t).toContain('About 2470 kcal');
   });
 });
 
@@ -142,6 +165,15 @@ describe('the plan: days that clash', () => {
   });
   it('lists a free day when there really is one', () => {
     expect(planNotes(sheetOf('p03-want-to-quit'))[0]).toContain('Saturday 2026-11-07');
+  });
+  it("keeps today's dated plan: an override today, or a session cleared today, is not read from next week (Codex, PR #135)", () => {
+    const s = sheetOf('d02-row-stuck'); // today is Tuesday, Pull; next Tuesday is Pull too
+    const plan = (over: Record<string, unknown>) => ({ ...s, training: { ...s.training, plan: { ...s.training.plan, ...over } } }) as unknown as FactSheet;
+    expect(dayLoad(s, '2026-11-03').onDay).toEqual(['Pull']);
+    expect(dayLoad(plan({ today: undefined }), '2026-11-03').onDay).toEqual([]); // cleared today, still a Pull next Tuesday
+    const overridden = plan({ today: 'Legs', next: s.training.plan.next.filter((n) => !n.day.startsWith('2026-11-10')) });
+    expect(dayLoad(overridden, '2026-11-03').onDay).toEqual(['Legs']);
+    expect(planNotes(plan({ today: undefined })).join(' ')).toContain('Tuesday 2026-11-03');
   });
   it('says nothing for a rotation plan, where the week is not fixed', () => {
     const s = noah();
