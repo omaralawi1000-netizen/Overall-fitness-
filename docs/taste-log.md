@@ -10,7 +10,15 @@ Every test, prototype and rejection, newest first: what Omar picked, what he rej
 ## RETIRED (9 Nov 2026, 21:58): the "old Aven ingredients" look
 Asked whether design threads should keep using it, Omar said: "No, delete that." The look (near-black room, one soft glow, clear glass, italic serif names, thin numbers, one orange thing to tap, the orb) is **not his taste anymore and not a rule**. Never feed it to a design thread, a judge or a prototype brief. Everything below that praises it is history only. Italic serif titles, which he picked in the taste test, are not part of this retirement; they stand or fall on his latest words.
 
-## What it suggests now (12 Nov 2026, after Reed and Silk were rejected)
+## RULE (15 Nov 2026, 05:53): the workout screen is not Today
+His words: "Do not replicate the today screen to the workout screen. The today screen is this beautiful for a reason. The workout screen is something else." Today keeps its photo wallpaper and calm frosted glass. The live workout shares the app's type, buttons and Coach pop-ups, but it gets its own design for lifting (read at arm's length, a sweaty thumb, one big action), never Today's photo-plus-glass-card layout. Also 15 Nov, 05:00: "I wanted to have pop-ups, more pop-ups, alive feelings. I wanted to feel alive, genuine."
+
+## What it suggests now (15 Nov 2026, before the four workout options)
+- **Two jobs, two designs.** Calm photo for the glance at Today, something built for the bar mid-set. One app is held together by type, buttons and the Coach's voice, not by the same wallpaper on every screen.
+- **"Alive" means things that react to what he just did,** with real numbers: a race against last time, a Coach pop-up that acts, a record that leaves a mark. Not decoration that moves on its own.
+- **Still true:** the judge's 8 does not predict his yes, so the options are shown early and labelled with their scores.
+
+## What it suggested before that (12 Nov 2026, after Reed and Silk were rejected)
 - **He wants a picture of a real place, not an abstract material.** Glass ribs and satin folds scored 8 with the judges and got "this is not how I would like it". What he asked for instead: "the Aura app as inspiration, like a wallpaper that's very beautiful". Oura again, for the third time since 2 Nov.
 - **The judge's 8 does not predict his yes.** Both looks that passed were rejected, and five fresh judges scored the same kind of screen anywhere from 6.5 to 8. The bar stays his rule for what he is shown, but his own eyes on a still are the real test, so show little and early.
 - **The wallpaper is the product.** In every judge round the screen with the most beautiful, softest photo won, and every fix that made the glass lighter and the picture more visible helped.
@@ -56,6 +64,20 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 - **After the Pick list (2 Nov):** he picks mechanics he can picture using (trays, rolling digits, card to page, records as objects) and leaves atmosphere (skies, light floods) at "maybe". Prove atmosphere inside a real moment before building on it.
 
 ## Entries
+
+### 15 Nov 2026: four workout options apart from Today (/_prototypes/lifting/)
+Asked (via the coordinator, after the rule above): "Keep testing different options." Four live-workout options in one clickable page with a switcher, each next to a Today stand-in, built from the round's best workout ideas:
+- **Slab:** Raster's giant numbers and one Done slab; the slab rises into the rest and drains back down into the button (the water-level timer); a new best clears frost off the Today photo, the only time it shows mid-workout.
+- **Ghost:** the race against last Tuesday's you, live, with pop-ups when Tuesday finishes a set; a breathing rest ring; a medal flips when you pass Tuesday with a new best.
+- **Rack:** plates on the bar, a spin dial for reps, voice logging ("85 for 6"); the dial unwinds as the rest timer; a new best stamps the screen.
+- **Ridge (new):** each set raises a peak as high as the set was heavy, over Tuesday's dotted range; adding weight grows the target peak; rest walks a dot down into the valley; a new best plants a flag that stays and warms the sky.
+Then (Omar, 06:29, via the coordinator): "Remember they have to be alive like alive like instant like that's how a very good app works alive and like very beautiful with the best animations and everything And also m morph animations with pop-ups and everything like pop-up with morph." So every pop-up now grows out of the thing that caused it (the number, the clock, the mic, Tuesday's dot, the flag, the button you tapped) and folds back into it when it goes.
+Judges (one design-judge and one motion-judge, Sonnet, before their fixes, not re-judged): design Slab 7, Ghost 7.5, Rack 6.5, Ridge 7.5; motion 6, 5, 5, 6. Every finding was fixed.
+My scores: Ridge 7.5 (new and meaningful, ties to Summit's mountains; weakest: flat drawn peaks next to a real photo on Today), Ghost 7.5 (the race is the best idea; the dark screen around it is plain), Slab 7 (works, most familiar, least alive between taps), Rack 6.5 (most to learn; coloured plates break the calm). None reaches 8 yet; shown anyway, labelled.
+Tested: 23 tap checks pass on all four (full workouts, one new best, voice, Undo, plates, dial); no dropped frames headless; at most one blur layer at a time.
+Needs his phone: the frost on pop-ups while they morph, banding in the Ridge sky, how smooth the rolling numbers are at 120 Hz, touch feel.
+Artifact: https://claude.ai/artifact/PD6AjSfq6H5CFxMWzFFuq6
+Verdict: waiting for Omar.
 
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
