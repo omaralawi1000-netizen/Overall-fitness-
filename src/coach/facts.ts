@@ -12,6 +12,7 @@
 import type { AnyRecord, Bodyweight, FoodLog, MemoryCard, Settings } from '../engine/model';
 import { addDays, dayKeyAt, diffDays, wallClock, weekdayOf } from '../engine/time';
 import { numbersIn } from './untrusted';
+import { computeFindings, planNotes, renderFindings, type Finding } from './findings';
 import { DAYS, renderTraining, trainingFacts, trainingNumbers, type TrainingFacts } from './training-facts';
 
 /** how far a fact can be trusted */
@@ -45,6 +46,8 @@ export interface FactSheet {
   food28: { daysLogged: number; daysComplete: number; facts: Fact[] };
   weight: { latest?: Fact; latestDay?: string; trend?: Fact; odd: { id: string; kg: number; day: string }[] };
   training: { sessions7: number; sessions28: number; activities7: Record<string, number> } & TrainingFacts;
+  /** what stands out, worked out by code, most important first, each with its next step (findings.ts) */
+  findings: Finding[];
   /** what the data can't say, in plain words */
   trust: string[];
 }
@@ -204,9 +207,7 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
   const kcalTarget = targets.kcal;
   // (three days with calories, not three days with any food: a protein-only log adds nothing to the average: Codex, PR #96)
   const kcalLoggedDays = logged.filter((d) => perDay.get(d)!.kcal !== undefined).length;
-  if (kcalLogged && kcalLoggedDays >= 3 && (kcalLogged.value < 1200 || (typeof kcalTarget === 'number' && kcalLogged.value < kcalTarget * 0.6))) {
-    trust.push(`Logged food averages ${kcalLogged.value} kcal a day${typeof kcalTarget === 'number' ? `, far under the ${kcalTarget} kcal target` : ', very low for anyone who trains'}. It may only be incomplete logging: say so in the answer itself and ask once, gently, whether that is everything they eat, without quoting the number. Never an alarm, a lower target or a meal plan.`);
-  }
+  const lowFoodAvg = kcalLogged && kcalLoggedDays >= 3 && (kcalLogged.value < 1200 || (typeof kcalTarget === 'number' && kcalLogged.value < kcalTarget * 0.6)) ? kcalLogged.value : undefined;
   if (logged.length < 28) trust.push(`Food was logged on ${logged.length} of the last 28 days${done.length ? `, ${done.length} marked complete` : ', none marked complete'}.`);
   if (todaySum && !todayComplete) trust.push("Today's food is what's logged so far, not the whole day.");
 
@@ -275,7 +276,7 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
     if (d <= today && diffDays(today, d) < 7) activities7[a.type] = (activities7[a.type] ?? 0) + 1;
   }
 
-  return {
+  const sheet: FactSheet = {
     now: { at: o.now, day: today, weekday: weekdayOf(today), hour, partOfDay: partOfDay(hour) },
     person: { ...(settings?.name ? { name: settings.name } : {}), language: settings?.language ?? 'en', targets: targetFacts },
     memory, ended, goals,
@@ -289,8 +290,11 @@ export function buildFacts(records: AnyRecord[], o: { now: number; tz: string })
     food28: { daysLogged: logged.length, daysComplete: done.length, facts: food28 },
     weight: { ...(latest ? { latest, latestDay: lastDay } : {}), ...(trend ? { trend } : {}), odd: odd.map((w) => ({ id: w.id, kg: w.kg, day: dayOf(w, dayStart) })) },
     training: { sessions7: finishedIn(7), sessions28: finishedIn(28), activities7, ...trainingFacts(records, { today, dayStart, now: o.now, tz: o.tz }) },
+    findings: [],
     trust,
   };
+  sheet.findings = computeFindings(sheet, { lowFoodAvg, kcalTarget: typeof kcalTarget === 'number' ? kcalTarget : undefined });
+  return sheet;
 }
 
 /** Every number on the sheet, for the code check that each number in an answer is traced to a fact or the message. */
@@ -299,6 +303,7 @@ export function sheetNumbers(s: FactSheet): number[] {
   const facts = [...s.person.targets, ...s.today.food, ...s.today.left, ...s.food28.facts];
   for (const f of facts) out.push(f.value);
   for (const f of [s.today.water, s.today.weighIn, s.weight.latest, s.weight.trend]) if (f) out.push(f.value);
+  for (const f of s.findings) out.push(...f.numbers);
   for (const g of s.goals) { if (g.target !== undefined) out.push(g.target); if (g.neededKgPerWeek !== undefined) out.push(g.neededKgPerWeek); }
   for (const w of s.weight.odd) out.push(w.kg);
   for (const f of s.today.entries) out.push(f.amount, ...(f.kcal !== undefined ? [f.kcal] : []), ...(f.protein !== undefined ? [f.protein] : []));
@@ -317,6 +322,7 @@ export function renderFacts(s: FactSheet): string {
   // the weekday is given, never worked out: on 4 Nov Sonnet called Saturday 31 October "mandag den 31. oktober"
   const out: string[] = [`NOW: ${DAYS[s.now.weekday]} ${s.now.day}, ${String(s.now.hour).padStart(2, '0')}:00 (${s.now.partOfDay})`];
   if (s.person.name) out.push(`NAME: ${s.person.name}`);
+  out.push(...renderFindings(s.findings));
   out.push('TARGETS:', ...(s.person.targets.length ? s.person.targets.map((f) => line(f, L)) : ['- none set']));
   out.push('MEMORY (current, in their words):', ...(s.memory.length ? s.memory.map((m) => `- ${m.id} [${m.topic}] ${m.text}${m.until ? ` (until ${m.until})` : ''}`) : ['- none']));
   if (s.ended.length) out.push('ENDED (past, not current):', ...s.ended.map((m) => `- ${m.id} ${m.text} (ended ${m.endedOn})`));
@@ -328,7 +334,7 @@ export function renderFacts(s: FactSheet): string {
   out.push(`LAST 28 DAYS: food logged ${s.food28.daysLogged} days, ${s.food28.daysComplete} complete; ${s.training.sessions28} sessions (${s.training.sessions7} in the last 7 days)`, ...s.food28.facts.map((f) => line(f, L)));
   const acts = Object.entries(s.training.activities7);
   if (acts.length) out.push(`- activities last 7 days: ${acts.map(([k, v]) => `${k} ${v}`).join(', ')}`);
-  out.push(...renderTraining(s.training));
+  out.push(...renderTraining(s.training), ...planNotes(s));
   out.push('WEIGHT:', ...[s.weight.latest, s.weight.trend].filter((f): f is Fact => !!f).map((f) => line(f, L)));
   if (s.trust.length) out.push('WHAT THE DATA CAN\'T SAY:', ...s.trust.map((t) => `- ${t}`));
   return out.join('\n');

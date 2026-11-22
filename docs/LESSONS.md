@@ -132,4 +132,5 @@ something goes wrong. The plan these belong to: `docs/COACH.md` §8 "Cheap model
 13. **An AI reader prefers its own model's writing** (13 Nov: the same five simulated readers picked the Coach 15 to 6
     when played by Sonnet and 6 to 17 when played by Opus). Rule: an AI judge's pick between two models is not a human
     number; say which model judged, and settle it with people.
-14. Kept from before: a cheap round before any full run, and stop when the gain is marginal.
+14. **A finding is not a reference fact.** Which days are free is something to use when asked, not something to raise. Rule: findings carry an "applies when" line, reference facts live on the plan lines, and a case where nothing should fire gets a test (22 Nov).
+15. Kept from before: a cheap round before any full run, and stop when the gain is marginal.
