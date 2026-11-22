@@ -57,6 +57,16 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: "Aven One", the best of every 15 Nov design in one app (/_prototypes/one/)
+Asked (Omar, 21:08): "Between all of the things we created, all of the artifacts, take every good thing out of everything and put it into one amazing one." Then (22:25): "I actually like the alive feeling of paper. Every interaction is alive and I like it." And (22:27): "make it even better, make it match the top quality of Apple and top apps."
+Reading of the log before building: his yes so far is Summit's photo sky (Oura family); the workout must not copy Today (05:53); he picks mechanics he can picture using and wants pop-ups that morph and feel alive. So one spine, two jobs: the sky is Today, the ridge is the workout. Plan and what was left out: `docs/one-app-2026-11-15.md`.
+Built: Summit A's live Aarhus sky on Today with the Coach pop-up, tiles that grow into cards and the sky sheet; Ridge's workout (each set raises a peak over Tuesday's dotted one) with Ghost's race line, Summit D's plates and record (the sky clears to a sunlit summit, medal, a flag that stays), Ebb's draining mist with Ma's breathing, Cadence's rolling digits, Aloud's voice logging with the real set parser, and hold to finish. From Paper, the feel, not the look: the sky and the ridge follow your finger and spring back, the ridge drifts by depth, plates tilt on and off, numbers lift before they fly, your peaks answer a touch.
+Judge (one fresh design-judge, Sonnet): 8. Fixed after it: lighter glass on workout pop-ups, readable rest labels, bigger card buttons, the finish ridge lifted off the button, more air under the Coach pop-up. Also fixed from my own pass: a Coach line that contradicted the screen at night, pop-ups that covered the weight, a blank Today after finishing, digits spilling while they roll.
+My own score: 8. Biggest weakness: none of the motion is proven on his phone yet (finger parallax and the drifting ridge re-blur the glass every frame), and the finish ridge still reads a little like a graph.
+Needs his phone: blur and smoothness while the sky follows the finger, banding in the dusk sky, the record's switch to the sunlit photo, the feel of hold to finish.
+Artifact: https://claude.ai/artifact/JT9PDovq9cYJfuL4H4TJj8
+Verdict: waiting for Omar.
+
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.
