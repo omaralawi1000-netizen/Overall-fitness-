@@ -407,3 +407,40 @@ describe('batch size near the cap (first paid run, 3 Nov)', () => {
     await expect(callBatch('gemini-4-argon', items, { ledger: l, purpose: 'judge' })).rejects.toThrow(`up to $${want}`);
   });
 });
+
+describe('OpenAI adapter (offline)', () => {
+  it('turns the request into Chat Completions with the schema non-strict and reasoning room', async () => {
+    const { toOpenAI } = await import('../../exam/providers');
+    const r = toOpenAI('gpt-6.2-sol', BODY, 'medium');
+    expect(r.reasoning_effort).toBe('medium');
+    expect(r.max_completion_tokens).toBe(6144 + 6000);
+    expect(r.messages[0]).toEqual({ role: 'system', content: 'You are the Coach.' });
+    expect(r.messages[1].role).toBe('assistant');
+    expect(r.messages[2]).toEqual({ role: 'user', content: 'log 2 eggs' }); // the thought part is dropped
+    expect((r.response_format as { json_schema: { strict: boolean } }).json_schema.strict).toBe(false);
+  });
+  it('reads usage and cached tokens, and bills a cut-off answer', async () => {
+    const { openaiReply } = await import('../../exam/providers');
+    const ok = openaiReply({ choices: [{ finish_reason: 'stop', message: { content: '{"say":"hi"}' } }], usage: { prompt_tokens: 1000, completion_tokens: 50, prompt_tokens_details: { cached_tokens: 400 } } });
+    expect(ok.usage).toEqual({ inTokens: 1000, cachedTokens: 400, outTokens: 50, searches: 0 });
+    expect(costOf(priceOf('gpt-6.2-sol', '2026-11-22'), ok.usage)).toBeCloseTo((600 * 2 + 400 * 0.1 + 50 * 10) / 1e6, 8);
+    expect(() => openaiReply({ choices: [{ finish_reason: 'length', message: { content: '{' } }], usage: { prompt_tokens: 10, completion_tokens: 5 } })).toThrow(CallError);
+  });
+  it('fails closed with no key, and never puts a key in an error', async () => {
+    const saved = process.env.OPENAI_API_KEY; delete process.env.OPENAI_API_KEY;
+    const ledger = new Ledger(tmp(), 5);
+    await expect(call('gpt-6.2-sol', BODY, { ledger, purpose: 't' })).rejects.toThrow(/OPENAI_API_KEY/);
+    process.env.OPENAI_API_KEY = 'sk-test-secret-123';
+    const fetchFn = (async () => ({ status: 401, json: async () => ({ error: { message: 'Incorrect API key provided: sk-test-***-123.' } }) })) as unknown as typeof fetch;
+    const err = await call('gpt-6.2-sol', BODY, { ledger, purpose: 't', fetchFn }).catch((e) => e);
+    expect(err.message).not.toMatch(/sk-test/);
+    // a body that breaks off after a 200 is a network failure whose worst case is counted, not a free empty answer
+    const broken = (async () => ({ status: 200, json: async () => { throw new Error('terminated'); } })) as unknown as typeof fetch;
+    const l2 = new Ledger(tmp(), 5);
+    const e2 = await call('gpt-6.2-sol', BODY, { ledger: l2, purpose: 't', fetchFn: broken }).catch((e) => e);
+    expect(e2).toBeInstanceOf(CallError);
+    expect(e2.status).toBe(-1);
+    expect(l2.spent).toBeGreaterThan(0);
+    if (saved === undefined) delete process.env.OPENAI_API_KEY; else process.env.OPENAI_API_KEY = saved;
+  });
+});

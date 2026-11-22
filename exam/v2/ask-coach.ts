@@ -3,7 +3,7 @@
  * The same request goes to every setup (Flash, Sonnet, the mix, the Opus opponent), so differences are the model's.
  */
 import { readReply, type CoachRequest, type ModelReply } from '../../src/coach/coach';
-import { call, CallError, type CallOpts, type GeminiBody } from '../providers';
+import { call, CallError, isGpt, type CallOpts, type GeminiBody } from '../providers';
 
 /** Gemini's schema dialect: upper-case types (the same schema reaches Claude through `toJsonSchema`, which lowers them) */
 function geminiSchema(s: unknown): unknown {
@@ -19,7 +19,7 @@ function geminiSchema(s: unknown): unknown {
  */
 export const GEMINI_THINKING = 4096;
 export function toBody(req: CoachRequest, maxOut = 1200, model = 'gemini', thinking = GEMINI_THINKING): GeminiBody {
-  const gemini = !model.startsWith('claude-');
+  const gemini = !model.startsWith('claude-') && !isGpt(model);
   return {
     systemInstruction: { parts: [{ text: req.system }] },
     contents: req.turns.map((t) => ({ role: t.role, parts: [{ text: t.text }] })),

@@ -36,6 +36,10 @@ export const SETUPS: Record<string, Setup> = {
   sonnetfable: { name: 'sonnetfable', quick: 'claude-sonnet-5-5', deep: 'claude-sonnet-5-5', big: 'claude-fable-5-2', bigEffort: 'high' },
   // the control for sonnetfable (Omar, 9 Nov): the same big turns on Sonnet at high effort, a quarter of Fable's price
   sonnethigh: { name: 'sonnethigh', quick: 'claude-sonnet-5-5', deep: 'claude-sonnet-5-5', big: 'claude-sonnet-5-5', bigEffort: 'high' },
+  // OpenAI (22 Nov 2026, Omar's key): the top GPT at medium reasoning, and the two cheap tiers (same findings and rules as sonnet)
+  sol: { name: 'sol', quick: 'gpt-6.2-sol', deep: 'gpt-6.2-sol' },
+  gptmini: { name: 'gptmini', quick: 'gpt-5.4-mini', deep: 'gpt-5.4-mini' },
+  luna: { name: 'luna', quick: 'gpt-6-luna', deep: 'gpt-6-luna' },
   opponent: { name: 'opponent', quick: 'claude-opus-5-5', deep: 'claude-opus-5-5', rules: OPPONENT_RULES },
   // reset plan, stage 1 (12 Nov): the same format on both sides. sonnetbare against the Coach shows what the Coach's rules
   // do to the same model; opusformat is the opponent held to a text with More, so length no longer decides a pair

@@ -39,6 +39,11 @@ export const PRICES: Record<string, Price> = {
   'claude-opus-5-5': { in: 4, out: 20, cacheRead: 0.2, search: 0.01, until: '2026-12-31' },
   // Fable 5.2 (9 Nov, the claude-api reference table dated 3 Nov): 4x Sonnet per token; check again before 31 Dec
   'claude-fable-5-2': { in: 8, out: 40, cacheRead: 0.2, search: 0.01, until: '2026-12-31' },
+  // OpenAI (22 Nov 2026; developers.openai.com/api/docs/models/gpt-6.2-sol and the pricing page; short-context rates).
+  // Reasoning tokens are billed as output and come inside completion_tokens, so costOf needs no extra term.
+  'gpt-6.2-sol': { in: 2, out: 10, cacheRead: 0.1, search: 0, until: '2026-12-15' },
+  'gpt-5.4-mini': { in: 0.75, out: 4.5, cacheRead: 0.075, search: 0, until: '2026-12-15' },
+  'gpt-6-luna': { in: 0.1, out: 0.5, cacheRead: 0.01, search: 0, until: '2026-12-15' },
 };
 
 export class SpendCapError extends Error {}
@@ -189,9 +194,11 @@ function systemBlocks(system: string): Anthropic.TextBlockParam[] {
 export interface CallOpts { ledger: Ledger; purpose: string; dry?: (model: string, body: GeminiBody) => GeminiReply; effort?: 'low' | 'medium' | 'high'; fetchFn?: typeof fetch; dispatcher?: unknown; /** for the offline tests */ client?: Pick<Anthropic, 'messages'> }
 
 let claude: Anthropic | null = null;
+/** OpenAI models (gpt-*): called on Chat Completions with OPENAI_API_KEY from the environment, never from a file */
+export const isGpt = (model: string) => model.startsWith('gpt-');
 const API = 'https://generativelanguage.googleapis.com/v1beta';
 const maxOutOf = (model: string, body: GeminiBody) =>
-  (body.generationConfig?.maxOutputTokens ?? 2048) + (model.startsWith('claude-') ? 6000 : body.generationConfig?.thinkingConfig?.thinkingBudget ?? 8192);
+  (body.generationConfig?.maxOutputTokens ?? 2048) + (model.startsWith('claude-') || isGpt(model) ? 6000 : body.generationConfig?.thinkingConfig?.thinkingBudget ?? 8192);
 const entry = (model: string, purpose: string, usd: number, usage: Usage, ok: boolean): LedgerEntry => ({ at: new Date().toISOString(), model, purpose, usd, usage, ok });
 /**
  * A failure after which the provider may still have done (and billed) the work: the connection dropped or timed out, or a
@@ -228,6 +235,8 @@ export async function call(model: string, body: GeminiBody, o: CallOpts): Promis
         msg = await c.messages.create(req).catch(apiError);
       }
       reply = claudeReply(msg);
+    } else if (isGpt(model)) {
+      reply = openaiReply(await openaiPost(toOpenAI(model, body, o.effort ?? 'medium'), o));
     } else reply = geminiReply(await geminiPost(`models/${encodeURIComponent(model)}:generateContent`, body, o));
   } catch (e) {
     // a refused or cut-off Claude answer is still billed: its real token counts ride on the error
@@ -252,6 +261,43 @@ function claudeClient(): Anthropic {
 function apiError(e: unknown): never {
   if (e instanceof Anthropic.APIError) throw new CallError(e.status ?? -1, `${e.status} ${e.message.slice(0, 200)}`);
   throw new CallError(-1, String((e as Error)?.message ?? e).slice(0, 200));
+}
+
+/** Gemini-shaped request as an OpenAI Chat Completions request. The schema goes in non-strict, because strict wants every property required. */
+export function toOpenAI(model: string, body: GeminiBody, effort: 'low' | 'medium' | 'high') {
+  const text = (parts: GeminiPart[]) => parts.filter((p) => !p.thought).map((p) => p.text ?? '').join('');
+  const schema = body.generationConfig?.responseSchema ? toJsonSchema(body.generationConfig.responseSchema) : null;
+  const messages = [
+    ...(body.systemInstruction ? [{ role: 'system', content: text(body.systemInstruction.parts) }] : []),
+    ...body.contents.map((c) => ({ role: c.role === 'model' ? 'assistant' : 'user', content: text(c.parts) || '…' })),
+  ];
+  return {
+    model, messages, reasoning_effort: effort,
+    max_completion_tokens: (body.generationConfig?.maxOutputTokens ?? 2048) + 6000,
+    ...(schema ? { response_format: { type: 'json_schema', json_schema: { name: 'coach', strict: false, schema } } } : { response_format: { type: 'json_object' } }),
+  };
+}
+/** a key (or the masked copy OpenAI echoes in an error) never reaches a message, a ledger line or a log */
+const scrubKey = (t: string) => t.replace(/sk-[A-Za-z0-9_*.-]+/g, 'sk-…');
+async function openaiPost(body: unknown, o: Pick<CallOpts, 'fetchFn' | 'dispatcher'>): Promise<any> {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) throw new CallError(401, 'no OpenAI key in OPENAI_API_KEY');
+  const f = o.fetchFn ?? fetch;
+  const res: any = await f('https://api.openai.com/v1/chat/completions', { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` }, body: JSON.stringify(body), ...(o.dispatcher ? { dispatcher: o.dispatcher } : {}), signal: AbortSignal.timeout(180_000) } as RequestInit)
+    .catch((e: unknown) => { throw new CallError(-1, scrubKey(`network: ${String((e as Error)?.message ?? e).slice(0, 200)}`)); });
+  // a body that breaks off after a 200 is a network failure that may still be billed, never an empty answer (Codex, PR #136)
+  const data: any = await res.json().catch(() => (res.status === 200 ? undefined : null));
+  if (data === undefined) throw new CallError(-1, 'network: the reply body broke off after a 200');
+  if (res.status !== 200) throw new CallError(res.status, scrubKey(`${res.status} ${String(data?.error?.message ?? '').slice(0, 200)}`));
+  return data;
+}
+export function openaiReply(data: any): GeminiReply {
+  const u = data?.usage ?? {};
+  const usage: Usage = { inTokens: u.prompt_tokens ?? 0, cachedTokens: u.prompt_tokens_details?.cached_tokens ?? 0, outTokens: u.completion_tokens ?? 0, searches: 0 };
+  const ch = data?.choices?.[0];
+  if (ch?.finish_reason === 'length') throw new CallError(0, 'cut off at the token limit', usage);
+  if (ch?.message?.refusal) throw new CallError(0, 'refusal', usage);
+  return { candidates: [{ content: { parts: [{ text: ch?.message?.content ?? '' }] } }], usage, usd: 0 };
 }
 
 async function geminiPost(path: string, body: unknown, o: Pick<CallOpts, 'fetchFn' | 'dispatcher'>, method = 'POST'): Promise<any> {
