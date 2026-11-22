@@ -109,8 +109,9 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
     let live: Pick<TurnLog, 'slips' | 'retried' | 'fellBack' | 'rejected'> = {};
     if (setup.guard) {
       const ctx = { personText: t.text, sheetNumbers: sheetNumbers(sheet), minor: sheet.memory.some((m) => MINOR.test(m.text)) };
+      // the retry is the same request with the note on its last turn, so the playbooks it picked stay (Codex, PR #139)
       const g = await guard(reply.say, ctx, c.person.lang, async (note) => {
-        const again = await askCoach(model, coachRequest(sheet, [...convo.slice(0, -1), { ...convo[convo.length - 1], text: `${t.text}\n\n${note}` }], { voice: t.voice, tier: promptTier(tier), ...(setup.rules ? { rules: setup.rules } : {}) }), { ...o, purpose: `${c.id} ${setup.name} retry`, ...bigEffort(tier), ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
+        const again = await askCoach(model, { ...req, turns: req.turns.map((x, i) => (i === req.turns.length - 1 ? { ...x, text: `${x.text}\n\n${note}` } : x)) }, { ...o, purpose: `${c.id} ${setup.name} retry`, ...bigEffort(tier), ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
         asked.usd += again.usd; asked.ms += again.ms;
         if (again.reply) retryReply = again.reply;
         else if (again.callFailed) retryLost = { ...(again.error ? { error: `retry: ${again.error}` } : {}), ...(again.raw ? { raw: again.raw } : {}) };
