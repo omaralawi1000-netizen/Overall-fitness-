@@ -10,8 +10,10 @@ import { IDBFactory } from 'fake-indexeddb';
 import { Engine } from '../../src/engine/engine';
 import { buildFacts, renderFacts } from '../../src/coach/facts';
 import { unsourcedNumbers } from '../checks/numbers';
-import { coachRequest, finishTurn, moreRequest, unbackedClaims, type CoachTurn, type Shown } from '../../src/coach/coach';
-import { route, type Tier } from '../../src/coach/route';
+import { coachRequest, finishTurn, moreRequest, unbackedClaims, type CoachTurn, type ModelReply, type Shown } from '../../src/coach/coach';
+import { route, MINOR, type Tier } from '../../src/coach/route';
+import { guard } from '../../src/coach/slips';
+import { sheetNumbers } from '../../src/coach/facts';
 import { askCoach } from './ask-coach';
 import { nowOf, type ExamCase } from './cases';
 import { records, TZ } from './people';
@@ -21,7 +23,7 @@ import type { AnyRecord, FoodLog, Plan, Routine } from '../../src/engine/model';
 import type { CallOpts } from '../providers';
 import type { Proposal } from '../../src/coach/actions';
 
-export interface Setup { name: string; quick: string; deep: string; /** the biggest tasks (route.ts); unset = the deep model */ big?: string; /** thinking effort on big turns (default medium, as every other turn) */ bigEffort?: 'low' | 'medium' | 'high'; rules?: string; /** a plain-prompt setup that still gets More, so both sides of a pair play the same format */ more?: boolean; /** Gemini's thinking budget, when not the default */ thinking?: number }
+export interface Setup { name: string; quick: string; deep: string; /** the biggest tasks (route.ts); unset = the deep model */ big?: string; /** thinking effort on big turns (default medium, as every other turn) */ bigEffort?: 'low' | 'medium' | 'high'; rules?: string; /** a plain-prompt setup that still gets More, so both sides of a pair play the same format */ more?: boolean; /** Gemini's thinking budget, or a Gemini 4 thinking level, when not the default */ thinking?: number | 'low' | 'medium' | 'high' | 'xhigh'; /** check each answer with the live code checks (src/coach/slips.ts): one retry with the reason, else the plain fallback */ guard?: boolean }
 
 /** the benchmark opponent's instructions: a capable general coach, no tuning, same facts and knowledge, same JSON format */
 export const OPPONENT_RULES = `You are an expert fitness and nutrition coach inside a training and food app. Help the person as well as you can. FACTS hold their data; KNOWLEDGE holds general guidelines. Reply in their language. You may change things in the app with the actions in the JSON schema: "do" for what they asked, "offer" for a suggestion.`;
@@ -41,6 +43,10 @@ export interface TurnLog {
   dates?: string[];
   /** what "More" unfolds under the last answer, when the run asked for it (round 3 shows it as in the app) */
   more?: string;
+  /** the live checks: what the first answer slipped on, whether it was asked again, and whether the plain fallback was shown (setup.guard only) */
+  slips?: string[]; retried?: boolean; fellBack?: boolean;
+  /** the first answer the checks rejected */
+  rejected?: string;
   /** why that "More" came back empty (not JSON, refused); a failed call marks the whole case failed instead */
   moreError?: string;
 }
@@ -97,11 +103,29 @@ export async function runCase(c: ExamCase, setup: Setup, o: CallOpts & { more?: 
     const req = coachRequest(sheet, convo, { voice: t.voice, tier: promptTier(tier), ...(setup.rules ? { rules: setup.rules } : {}) });
     const asked = await askCoach(model, req, { ...o, purpose: `${c.id} ${setup.name}`, ...bigEffort(tier), ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
     if (!asked.reply) { turns.push({ tier, model, error: asked.error, ...(asked.callFailed ? { callFailed: true } : {}), ...(asked.raw ? { raw: asked.raw } : {}), dropped: asked.dropped, usd: asked.usd, ms: asked.ms }); break; }
-    const shown = await finishTurn(e, asked.reply, { personText: t.text, untrusted, sheet, now, tz: TZ, lang: c.person.lang, pending, lastDid });
+    let retryReply: ModelReply | undefined;
+    let retryLost: { error?: string; raw?: string } | undefined;
+    let reply = asked.reply;
+    let live: Pick<TurnLog, 'slips' | 'retried' | 'fellBack' | 'rejected'> = {};
+    if (setup.guard) {
+      const ctx = { personText: t.text, sheetNumbers: sheetNumbers(sheet), minor: sheet.memory.some((m) => MINOR.test(m.text)) };
+      // the retry is the same request with the note on its last turn, so the playbooks it picked stay (Codex, PR #139)
+      const g = await guard(reply.say, ctx, c.person.lang, async (note) => {
+        const again = await askCoach(model, { ...req, turns: req.turns.map((x, i) => (i === req.turns.length - 1 ? { ...x, text: `${x.text}\n\n${note}` } : x)) }, { ...o, purpose: `${c.id} ${setup.name} retry`, ...bigEffort(tier), ...(setup.thinking !== undefined ? { thinking: setup.thinking } : {}) });
+        asked.usd += again.usd; asked.ms += again.ms;
+        if (again.reply) retryReply = again.reply;
+        else if (again.callFailed) retryLost = { ...(again.error ? { error: `retry: ${again.error}` } : {}), ...(again.raw ? { raw: again.raw } : {}) };
+        return again.reply?.say ?? reply.say;
+      });
+      // a retry that never happened (network, cap) is no answer: the case is not saved as finished, like any failed call
+      if (retryLost) { turns.push({ tier, model, ...retryLost, callFailed: true, dropped: asked.dropped, usd: asked.usd, ms: asked.ms }); break; }
+      if (g.retried) { live = { slips: g.slips.map((x) => x.id), retried: true, fellBack: g.fellBack, rejected: reply.say }; reply = g.fellBack ? { ...reply, say: g.say, actions: [], ...(reply.brokenDo ? { brokenDo: [] } : {}) } : retryReply ?? reply; }
+    }
+    const shown = await finishTurn(e, reply, { personText: t.text, untrusted, sheet, now, tz: TZ, lang: c.person.lang, pending, lastDid });
     pending = shown.offers;
     lastDid = shown.did.map((d) => d.name);
     const given = [req.system, ...req.turns.map((x) => x.text)].join('\n');
-    turns.push({ tier, model, say: asked.reply.say, shown, dropped: asked.dropped, ...(asked.raw ? { raw: asked.raw } : {}), usd: asked.usd, ms: asked.ms, unsourced: unsourcedNumbers(asked.reply.say, given), dates: inventedDates(asked.reply.say, given) });
+    turns.push({ tier, model, say: reply.say, shown, ...live, dropped: asked.dropped, ...(asked.raw ? { raw: asked.raw } : {}), usd: asked.usd, ms: asked.ms, unsourced: unsourcedNumbers(reply.say, given), dates: inventedDates(reply.say, given) });
     // the person saw the Apply button, so the next turn's model sees it too
     convo.push({ role: 'coach', text: shown.offers.length ? `${shown.text}\n\n(Apply button shown: ${shown.offers.map((x) => x.label).join('; ')})` : shown.text });
   }

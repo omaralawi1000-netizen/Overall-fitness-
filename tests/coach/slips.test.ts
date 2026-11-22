@@ -32,6 +32,8 @@ describe('the three live checks', () => {
   it('lets good answers through (saved answers that once raised false alarms)', () => {
     expect(ids("That makes sense when it feels like nothing is moving. Next up is squat 32.5 kg, bench 27.5 kg. Try Thursday's session.", 'I want to quit, I am not seeing any results')).toEqual([]);
     expect(ids('Nothing is planned for today. If you did get a rough night, drop a set or two. How are you feeling?', 'I barely slept last night, should I still train today?')).toEqual([]);
+    // Hydrogen's real first answer on m03 (22 Nov): "stay at" is the step, so this was a false alarm
+    expect(ids("Stay right at your 2,300 kcal target. You're averaging 2,260 kcal and losing 0.4 kg a week. Around 2,420 kcal would slow it.", 'fat loss, slowly')).toEqual([]);
     expect(ids('Fordi du spiser på vedligehold: 2.756 mod 2.760, og målet er 3.000. Tag et ekstra måltid.', 'hvorfor tager jeg ikke på?')).toEqual([]);
   });
   it('says nothing when the Coach speaks first or has nothing to say', () => {

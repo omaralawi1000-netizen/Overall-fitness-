@@ -19,8 +19,8 @@ const W = (list: string) => new RegExp(`(?<![\\p{L}\\p{N}_])(?:${list})(?![\\p{L
 /** a next step, an offer or a question: the answer gives the person something to do or to say (English and Danish) */
 const STEP = W(
   [
-    'try', 'go', 'weigh in', 'i\'?ll', 'log your', 'add', 'keep', 'move', 'swap', 'skip', 'drop', 'cut', 'aim', 'start', 'next', 'tomorrow', 'tonight', 'this week', 'i\'?d', 'i would', 'let\'?s', 'you could', 'you can', 'should', 'want me to', 'shall', 'tell me', 'need to know', 'first i need', 'raise', 'lower', 
-    'prøv', 'tag', 'spis', 'sov', 'hold', 'flyt', 'drop', 'næste', 'i morgen', 'i aften', 'jeg ville', 'skal vi', 'vil du', 'du kan', 'du bør', 'du skal', 'start', 'gør', 'lad', 'så først', 'fortæl', 'planen', 'hvile', 'giv det', 'ekstra', 'skal op', 'nemmeste', 'meal', 'måltid',
+    'try', 'go', 'stay', 'stick', 'weigh in', 'i\'?ll', 'log your', 'add', 'keep', 'move', 'swap', 'skip', 'drop', 'cut', 'aim', 'start', 'next', 'tomorrow', 'tonight', 'this week', 'i\'?d', 'i would', 'let\'?s', 'you could', 'you can', 'should', 'want me to', 'shall', 'tell me', 'need to know', 'first i need', 'raise', 'lower', 
+    'prøv', 'tag', 'bliv', 'spis', 'sov', 'hold', 'flyt', 'drop', 'næste', 'i morgen', 'i aften', 'jeg ville', 'skal vi', 'vil du', 'du kan', 'du bør', 'du skal', 'start', 'gør', 'lad', 'så først', 'fortæl', 'planen', 'hvile', 'giv det', 'ekstra', 'skal op', 'nemmeste', 'meal', 'måltid',
   ].join('|'),
 );
 /** stop signs the playbooks name that the routing regex may not (swelling, numbness, dizziness, chest, blood): a referral is the right answer to these */

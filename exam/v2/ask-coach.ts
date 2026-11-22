@@ -18,15 +18,19 @@ function geminiSchema(s: unknown): unknown {
  * own room; Claude's thinking room is added by `toClaude`.
  */
 export const GEMINI_THINKING = 4096;
-export function toBody(req: CoachRequest, maxOut = 1200, model = 'gemini', thinking = GEMINI_THINKING): GeminiBody {
+/** Gemini 4 takes a thinking level instead of a budget; its thinking can run long, so the answer gets this much room on top */
+export const GEMINI_LEVEL_ROOM = 24000;
+export type GeminiThinking = number | 'low' | 'medium' | 'high' | 'xhigh';
+export function toBody(req: CoachRequest, maxOut = 1200, model = 'gemini', thinking: GeminiThinking = GEMINI_THINKING): GeminiBody {
   const gemini = !model.startsWith('claude-') && !isGpt(model);
+  const level = typeof thinking === 'string';
   return {
     systemInstruction: { parts: [{ text: req.system }] },
     contents: req.turns.map((t) => ({ role: t.role, parts: [{ text: t.text }] })),
     generationConfig: {
       responseMimeType: 'application/json', responseSchema: geminiSchema(req.schema),
-      maxOutputTokens: gemini ? maxOut + thinking : maxOut,
-      ...(gemini ? { thinkingConfig: { thinkingBudget: thinking } } : {}),
+      maxOutputTokens: gemini ? maxOut + (level ? GEMINI_LEVEL_ROOM : thinking) : maxOut,
+      ...(gemini ? { thinkingConfig: level ? { thinkingLevel: thinking } : { thinkingBudget: thinking } } : {}),
     },
   };
 }
@@ -43,7 +47,7 @@ export interface Asked {
 const busy = (e: CallError) => e.status === -1 || e.status === 429 || e.status === 503 || e.status === 529 || e.status === 500;
 export const RETRY_WAITS_MS = [5_000, 15_000, 40_000, 90_000];
 
-export async function askCoach(model: string, req: CoachRequest, o: CallOpts & { wait?: (ms: number) => Promise<void>; thinking?: number }): Promise<Asked> {
+export async function askCoach(model: string, req: CoachRequest, o: CallOpts & { wait?: (ms: number) => Promise<void>; thinking?: GeminiThinking }): Promise<Asked> {
   const t0 = performance.now();
   const wait = o.wait ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   try {

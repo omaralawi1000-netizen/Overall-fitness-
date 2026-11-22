@@ -134,3 +134,5 @@ something goes wrong. The plan these belong to: `docs/COACH.md` §8 "Cheap model
     number; say which model judged, and settle it with people.
 14. **A finding is not a reference fact.** Which days are free is something to use when asked, not something to raise. Rule: findings carry an "applies when" line, reference facts live on the plan lines, and a case where nothing should fire gets a test (22 Nov).
 15. Kept from before: a cheap round before any full run, and stop when the gain is marginal.
+16. **PR #138 merged while Codex's second pass on my fixes was still running** (22 Nov). Rule: after a fix push, wait for the review of that new commit to finish, with nothing unresolved, before merging.
+17. **Neon at extra-high thinking was started on two full arms without a priced test call** (22 Nov): $4.4 for 8 replies before the caps stopped it. Rule: for a model not priced in a run yet, send one real case first and read its cost per reply before starting an arm.
