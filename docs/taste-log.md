@@ -57,6 +57,18 @@ Asked whether design threads should keep using it, Omar said: "No, delete that."
 
 ## Entries
 
+### 15 Nov 2026: second round, style 7 "Reel", cinematic film, Claude's own taste (/_prototypes/reel/)
+Asked (Omar, 06:21): "Keep testing options. Have it have its own taste also on the fitness app. Not only my taste … Be creative, but do not make it ugly." And 06:29: "alive like instant … the best animations … morph animations with pop-ups." Also 05:53: "Do not replicate the today screen to the workout screen."
+Built (Today, live workout, rest, record, finish, clickable, English and Danish): the app behaves like film. Two cream letterbox bars are the one moving set piece: thin on Today, deeper in the workout where they hold the timecode and a filmstrip with one frame per set, cinemascope and dark for a record, and they meet in the middle for a cut. Behind them a warm, bright graded scene (peach morning on Today; a lit stage with no bokeh in the workout, a new grade per exercise), under fine film grain. The Coach speaks in subtitles.
+- **Moments:** Today's card opens into the workout and the exercise name travels to its title (match cut). Logging a set exposes its frame and the strip advances like a projector. Rest is a rack focus: the numbers go soft, the clock comes sharp, and the light cools while you wait; the last three seconds rise out soft. A record grows out of the number you lifted into a title card in cinemascope, and the number racks into focus. Finish rolls up as end credits with a count-up that locks left to right. The next exercise arrives with a whip pan.
+- **Morph pop-ups:** each Today stat opens into its detail card (sleep week, protein meals, weight trend) and folds back into the cell; End morphs into "Finish workout?".
+- **Library motions used:** Days card to page (match cut), Nike takeover (record from the number), Miles countdown flip run the other way (digits rise out instead of falling), Push digit roll (only the changed digit moves), Fitness Wrapped count-up (credits total), Md Vinyl name slide plus Countly colour change (whip pan to the next exercise), Family tray (pop-ups grow from what you tapped), todo-cli segments (the filmstrip as progress).
+Judge (one fresh design-judge, Sonnet): 6. Its findings were fixed, not re-judged: the Today screen ghosting through the workout during the cut, subtitles split into glued boxes, the workout looking like Today (bokeh removed there, its own lit stage, heavier numbers), cream bars on the record card (now dark letterbox), unclear rack focus, "not done" reading as failure on the credits, grain too heavy, repeated dates.
+My own score: 7.5. Biggest weakness: the scene is drawn light, not a real picture, and his log says a real beautiful picture wins; a film look would be far stronger over real footage or a photo graded this way. The dark subtitle boxes may also read heavy on a bright screen.
+Needs his phone: grain shimmer, banding in the peach light, the match cut and rack focus at 120 Hz, the morph pop-ups.
+Artifact: https://claude.ai/artifact/WA8S9p6R89icm6wJQvv2k2
+Verdict: waiting for Omar.
+
 ### 15 Nov 2026: ten-style round, style 5 "Pitwall", sports-broadcast telemetry (/_prototypes/pitwall/)
 Asked (Omar, 03:56): "Please give me 10 different styles of a fitness app. Test each thing on some of them. Test some unique things on some of them." One thread per style; this one was given broadcast telemetry and one experiment, the ghost race.
 Reading of the log before building: plain flat screens were always rejected, Today needs one bold hero, a workout screen has to look like a workout, and a judge's 8 has not predicted his yes. So this is shown as a clickable thing early, not polished further.
